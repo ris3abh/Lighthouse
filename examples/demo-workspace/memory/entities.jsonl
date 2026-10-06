@@ -1,14 +1,14 @@
-{"id":"artifact:github:arivera-demo/fastgrad","kind":"artifact","name":"arivera-demo/fastgrad","url":"https://github.com/arivera-demo/fastgrad","recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"artifact:github:arivera-demo/tinyserve","kind":"artifact","name":"arivera-demo/tinyserve","url":"https://github.com/arivera-demo/tinyserve","recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"artifact:huggingface:arivera-demo/scratch-model","kind":"artifact","name":"arivera-demo/scratch-model","url":"https://huggingface.co/arivera-demo/scratch-model","recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"artifact:huggingface:arivera-demo/tiny-vlm","kind":"artifact","name":"arivera-demo/tiny-vlm","url":"https://huggingface.co/arivera-demo/tiny-vlm","recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"artifact:arxiv:2509.04321","kind":"artifact","name":"RoboGrasp-10k: A Benchmark for Low-Cost Grasping","url":"https://arxiv.org/abs/2509.04321","recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"artifact:huggingface:datasets/arivera-demo/robo-grasp-10k","kind":"artifact","name":"datasets/arivera-demo/robo-grasp-10k","url":"https://huggingface.co/datasets/arivera-demo/robo-grasp-10k","recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"artifact:huggingface:spaces/arivera-demo/tiny-vlm-demo","kind":"artifact","name":"spaces/arivera-demo/tiny-vlm-demo","url":"https://huggingface.co/spaces/arivera-demo/tiny-vlm-demo","recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"event:ieee-senior-member-program","kind":"event","name":"IEEE Senior Member program","url":null,"recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"task:the-neurips-workshop-reviews-are-due-oct","kind":"event","name":"The NeurIPS workshop reviews are due Oct 14, 2026","url":null,"recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"person:dr-priya-natarajan","kind":"letter_writer","name":"Dr. Priya Natarajan","url":null,"recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"event:mlh-fall-hackathon","kind":"event","name":"MLH Fall Hackathon","url":null,"recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"person:marcus-webb","kind":"letter_writer","name":"Marcus Webb","url":null,"recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"event:hackmit-2026","kind":"event","name":"HackMIT 2026","url":null,"recorded_at":"2026-10-06T22:06:33Z"}
-{"id":"task:the-ieee-application-deadline-is-novembe","kind":"event","name":"The IEEE application deadline is November 1","url":null,"recorded_at":"2026-10-06T22:06:33Z"}
+{"id":"artifact:github:arivera-demo/fastgrad","kind":"artifact","name":"arivera-demo/fastgrad","url":"https://github.com/arivera-demo/fastgrad","recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"artifact:github:arivera-demo/tinyserve","kind":"artifact","name":"arivera-demo/tinyserve","url":"https://github.com/arivera-demo/tinyserve","recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"artifact:huggingface:arivera-demo/scratch-model","kind":"artifact","name":"arivera-demo/scratch-model","url":"https://huggingface.co/arivera-demo/scratch-model","recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"artifact:huggingface:arivera-demo/tiny-vlm","kind":"artifact","name":"arivera-demo/tiny-vlm","url":"https://huggingface.co/arivera-demo/tiny-vlm","recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"artifact:arxiv:2509.04321","kind":"artifact","name":"RoboGrasp-10k: A Benchmark for Low-Cost Grasping","url":"https://arxiv.org/abs/2509.04321","recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"artifact:huggingface:datasets/arivera-demo/robo-grasp-10k","kind":"artifact","name":"datasets/arivera-demo/robo-grasp-10k","url":"https://huggingface.co/datasets/arivera-demo/robo-grasp-10k","recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"artifact:huggingface:spaces/arivera-demo/tiny-vlm-demo","kind":"artifact","name":"spaces/arivera-demo/tiny-vlm-demo","url":"https://huggingface.co/spaces/arivera-demo/tiny-vlm-demo","recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"event:ieee-senior-member-program","kind":"event","name":"IEEE Senior Member program","url":null,"recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"task:the-neurips-workshop-reviews-are-due-oct","kind":"event","name":"The NeurIPS workshop reviews are due Oct 14, 2026","url":null,"recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"person:dr-priya-natarajan","kind":"letter_writer","name":"Dr. Priya Natarajan","url":null,"recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"event:mlh-fall-hackathon","kind":"event","name":"MLH Fall Hackathon","url":null,"recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"person:marcus-webb","kind":"letter_writer","name":"Marcus Webb","url":null,"recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"event:hackmit-2026","kind":"event","name":"HackMIT 2026","url":null,"recorded_at":"2026-10-06T22:11:05Z"}
+{"id":"task:the-ieee-application-deadline-is-novembe","kind":"event","name":"The IEEE application deadline is November 1","url":null,"recorded_at":"2026-10-06T22:11:05Z"}

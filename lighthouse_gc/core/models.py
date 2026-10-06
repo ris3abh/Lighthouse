@@ -354,6 +354,24 @@ class WorkspaceConfig(_File):
     )
 
 
+# --------------------------------------------------------------------------- data/changes.jsonl
+
+
+class Change(_Model):
+    """One user- or agent-initiated write, recorded by the service layer (append-only audit trail).
+    ``before`` / ``after`` hold the record's state so a change can be reviewed or undone."""
+
+    id: str = Field(default_factory=lambda: new_id("chg"))
+    at: datetime = Field(default_factory=utcnow)
+    actor: str = Field(description="'user', or 'agent:<run id>'.")
+    action: str = Field(description="e.g. inbox.accept, pipeline.move, deadline.update")
+    target_type: str
+    target_id: str | None = None
+    summary: str = ""
+    before: dict[str, Any] | None = None
+    after: dict[str, Any] | None = None
+
+
 # --------------------------------------------------------------------------- memory/ (section 5b)
 #
 # Append-only JSONL: memory/observations.jsonl, claims.jsonl, edges.jsonl, decisions.jsonl,

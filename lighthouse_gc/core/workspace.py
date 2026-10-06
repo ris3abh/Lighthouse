@@ -33,6 +33,7 @@ from lighthouse_gc.core.models import (
     METRICS_COLUMNS,
     NON_EVIDENTIARY_TIERS,
     Candidate,
+    Change,
     Deadline,
     Deadlines,
     Exhibit,
@@ -191,6 +192,27 @@ class Workspace:
 
     def opportunities(self) -> Opportunities:
         return self._load("opportunities.json", Opportunities)
+
+    # ------------------------------------------------------------------ audit trail
+
+    @property
+    def changes_path(self) -> Path:
+        return self.data_dir / "changes.jsonl"
+
+    def append_change(self, change: Change) -> None:
+        with self.lock:
+            self.changes_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.changes_path.open("a", encoding="utf-8") as fh:
+                fh.write(change.model_dump_json() + "\n")
+
+    def changes(self) -> list[Change]:
+        if not self.changes_path.exists():
+            return []
+        return [
+            Change.model_validate_json(line)
+            for line in self.changes_path.read_text().splitlines()
+            if line.strip()
+        ]
 
     # ------------------------------------------------------------------ domain hooks
 

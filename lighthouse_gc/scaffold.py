@@ -99,6 +99,10 @@ def validate_workspace(ws: Case) -> list[str]:
     except (ValidationError, ValueError) as exc:
         problems.append(f"profiles: {exc}")
     problems += [f"memory: {p}" for p in ws.memory.verify()]
+    try:
+        ws.changes()
+    except (ValidationError, ValueError) as exc:
+        problems.append(f"data/changes.jsonl: {exc}")
     from lighthouse_gc.jobs import JOBS
     from lighthouse_gc.jobs.scheduler import trigger
 

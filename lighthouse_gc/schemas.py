@@ -35,6 +35,7 @@ MODELS: dict[str, type[BaseModel]] = {
     "memory-claim": core.Claim,
     "memory-edge": core.Edge,
     "memory-decision": core.Decision,
+    "change": core.Change,
 }
 
 

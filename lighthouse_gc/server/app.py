@@ -27,6 +27,7 @@ from lighthouse_gc.core.workspace import NotFound, WorkspaceError
 from lighthouse_gc.criteria import overview as views
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.resources import web_static_dir
+from lighthouse_gc.service import Service
 from lighthouse_gc.sources.http import SourceError
 
 WRITE_HEADER = "x-lighthouse"
@@ -126,6 +127,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
     app = FastAPI(
         title="Lighthouse", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json"
     )
+    svc = Service(ws)  # every user-initiated write goes through the service layer
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts or ["127.0.0.1", "localhost"])
 
     @app.middleware("http")
@@ -173,7 +175,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
 
     @app.put("/api/profile")
     def put_profile(body: ProfileBody) -> dict[str, Any]:
-        return ws.set_profile(body.id).model_dump(mode="json")
+        return svc.set_profile(body.id).model_dump(mode="json")
 
     @app.get("/api/scoreboard")
     def get_scoreboard() -> dict[str, Any]:
@@ -181,7 +183,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
 
     @app.put("/api/criteria/{criterion_id}/override")
     def put_override(criterion_id: str, body: OverrideBody) -> dict[str, Any]:
-        return ws.set_override(criterion_id, body.status).model_dump(mode="json")
+        return svc.set_override(criterion_id, body.status).model_dump(mode="json")
 
     # ------------------------------------------------------------------ inbox
 
@@ -197,20 +199,20 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
 
     @app.patch("/api/inbox/{candidate_id}")
     def patch_candidate(candidate_id: str, body: CandidateEdit) -> dict[str, Any]:
-        return ws.edit_candidate(candidate_id, **body.model_dump(exclude_none=True)).model_dump(mode="json")
+        return svc.edit_candidate(candidate_id, **body.model_dump(exclude_none=True)).model_dump(mode="json")
 
     @app.post("/api/inbox/{candidate_id}/accept")
     def accept(candidate_id: str, body: AcceptBody | None = None) -> dict[str, Any]:
         edits = body.model_dump(exclude_none=True) if body else {}
-        return ws.accept_candidate(candidate_id, **edits).model_dump(mode="json")
+        return svc.accept_candidate(candidate_id, **edits).model_dump(mode="json")
 
     @app.post("/api/inbox/{candidate_id}/reject")
     def reject(candidate_id: str) -> dict[str, Any]:
-        return ws.reject_candidate(candidate_id).model_dump(mode="json")
+        return svc.reject_candidate(candidate_id).model_dump(mode="json")
 
     @app.post("/api/inbox/{candidate_id}/snooze")
     def snooze(candidate_id: str, body: SnoozeBody | None = None) -> dict[str, Any]:
-        return ws.snooze_candidate(candidate_id, body.until if body else None).model_dump(mode="json")
+        return svc.snooze_candidate(candidate_id, body.until if body else None).model_dump(mode="json")
 
     @app.post("/api/inbox/upload")
     async def upload_to_inbox(
@@ -223,7 +225,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
             content = await f.read(MAX_UPLOAD_BYTES + 1)
             if len(content) > MAX_UPLOAD_BYTES:
                 raise HTTPException(413, f"{f.filename} is larger than 25 MB")
-            cand = ws.stage_upload(content, f.filename or "upload.bin", criterion or None)
+            cand = svc.stage_upload(content, f.filename or "upload.bin", criterion or None)
             out.append(cand.model_dump(mode="json"))
         return out
 
@@ -294,7 +296,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
         content = await file.read(MAX_UPLOAD_BYTES + 1)
         if len(content) > MAX_UPLOAD_BYTES:
             raise HTTPException(413, "file is larger than 25 MB")
-        exhibit = ws.add_exhibit_file(
+        exhibit = svc.add_exhibit_file(
             content=content,
             filename=file.filename or "upload.bin",
             criterion=criterion,
@@ -310,7 +312,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
 
     @app.patch("/api/exhibits/{exhibit_id}")
     def remap(exhibit_id: str, body: RemapBody) -> dict[str, Any]:
-        return ws.remap_exhibit(exhibit_id, body.criterion, body.evidence_type).model_dump(mode="json")
+        return svc.remap_exhibit(exhibit_id, body.criterion, body.evidence_type).model_dump(mode="json")
 
     @app.get("/api/files/{path:path}")
     def get_file(path: str) -> FileResponse:
@@ -405,15 +407,15 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
 
     @app.post("/api/deadlines")
     def post_deadline(body: DeadlineBody) -> dict[str, Any]:
-        return ws.add_deadline(**body.model_dump(exclude_none=True)).model_dump(mode="json")
+        return svc.add_deadline(**body.model_dump(exclude_none=True)).model_dump(mode="json")
 
     @app.patch("/api/deadlines/{deadline_id}")
     def patch_deadline(deadline_id: str, body: DeadlineBody) -> dict[str, Any]:
-        return ws.update_deadline(deadline_id, **body.model_dump(exclude_unset=True)).model_dump(mode="json")
+        return svc.update_deadline(deadline_id, **body.model_dump(exclude_unset=True)).model_dump(mode="json")
 
     @app.delete("/api/deadlines/{deadline_id}")
     def remove_deadline(deadline_id: str) -> dict[str, Any]:
-        ws.delete_deadline(deadline_id)
+        svc.delete_deadline(deadline_id)
         return {"removed": deadline_id}
 
     @app.get("/api/pipeline")
@@ -422,15 +424,17 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
 
     @app.post("/api/pipeline")
     def post_pipeline(body: PipelineBody) -> dict[str, Any]:
-        return ws.add_pipeline_item(**body.model_dump(exclude_none=True)).model_dump(mode="json")
+        return svc.add_pipeline_item(**body.model_dump(exclude_none=True)).model_dump(mode="json")
 
     @app.patch("/api/pipeline/{item_id}")
     def patch_pipeline(item_id: str, body: PipelineBody) -> dict[str, Any]:
-        return ws.update_pipeline_item(item_id, **body.model_dump(exclude_unset=True)).model_dump(mode="json")
+        return svc.update_pipeline_item(item_id, **body.model_dump(exclude_unset=True)).model_dump(
+            mode="json"
+        )
 
     @app.delete("/api/pipeline/{item_id}")
     def remove_pipeline(item_id: str) -> dict[str, Any]:
-        ws.delete_pipeline_item(item_id)
+        svc.delete_pipeline_item(item_id)
         return {"removed": item_id}
 
     @app.get("/api/letters")
@@ -457,15 +461,15 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
 
     @app.post("/api/letters")
     def post_letter(body: LetterBody) -> dict[str, Any]:
-        return ws.add_letter(**body.model_dump(exclude_none=True)).model_dump(mode="json")
+        return svc.add_letter(**body.model_dump(exclude_none=True)).model_dump(mode="json")
 
     @app.patch("/api/letters/{letter_id}")
     def patch_letter(letter_id: str, body: LetterBody) -> dict[str, Any]:
-        return ws.update_letter(letter_id, **body.model_dump(exclude_unset=True)).model_dump(mode="json")
+        return svc.update_letter(letter_id, **body.model_dump(exclude_unset=True)).model_dump(mode="json")
 
     @app.delete("/api/letters/{letter_id}")
     def remove_letter(letter_id: str) -> dict[str, Any]:
-        ws.delete_letter(letter_id)
+        svc.delete_letter(letter_id)
         return {"removed": letter_id}
 
     @app.get("/api/drafts/{path:path}")

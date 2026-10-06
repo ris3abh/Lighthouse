@@ -63,6 +63,10 @@ All notable changes to this project are documented here. The format follows
 - Calendar week view (remembered per browser) and a full edit dialog for deadlines (title, date, kind,
   link, "needs me", done, delete), opened by clicking any deadline in the month or week view or the list.
 - Letters: per-writer asks (letter, membership reference) as checkboxes and an editable last-contact date.
+- Service layer (`lighthouse_gc/service.py`): every create / update / move from the Inbox, Pipeline,
+  Letters, Calendar and Evidence pages goes through one place and is recorded in `data/changes.jsonl`
+  (actor, action, before / after). A guard test fails if a route writes workspace files outside it, if a
+  new write route isn't covered, or if a page sends a write without the API client.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.

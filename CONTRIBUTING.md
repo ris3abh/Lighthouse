@@ -67,6 +67,13 @@ Profiles are YAML in `profiles/`, validated by the `Profile` model (`lighthouse_
    A breaking change needs a new `schema_version` and a migration.
 4. Record significant design decisions as an ADR in `docs/adr/`.
 
+## Writes go through the service layer
+
+Any create / update / move a page or the agent makes goes through `lighthouse_gc/service.py`, which records
+it in `data/changes.jsonl`. Don't call workspace write methods from a route directly.
+`tests/test_service_layer.py` fails if a route writes outside the service layer, or if a new write route
+isn't covered.
+
 ## Ground rules
 
 - Keep to the current phase in [SPEC.md](SPEC.md) and [TODO.md](TODO.md). Product work (usable out of the box)

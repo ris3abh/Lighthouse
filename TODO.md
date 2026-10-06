@@ -74,7 +74,7 @@ Phase 1b notes / follow-ups:
 - [x] A1. Chat import saves only conversations with suggestions (`--keep-all` opts in)
 - [x] A2. Calendar week view; edit deadlines
 - [x] A3. Letters: editable asks (letter, membership reference) and last-contact date
-- [ ] A4. One service layer for every create / update / move (Pipeline, Letters, Calendar, Inbox), with a guard test
+- [x] A4. One service layer for every create / update / move (Pipeline, Letters, Calendar, Inbox), with a guard test
 
 ## Later in Phase 1
 

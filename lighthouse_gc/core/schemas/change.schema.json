@@ -1,0 +1,81 @@
+{
+  "$id": "https://lighthouse-gc.dev/schemas/v1/change.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One user- or agent-initiated write, recorded by the service layer (append-only audit trail).\n``before`` / ``after`` hold the record's state so a change can be reviewed or undone.",
+  "properties": {
+    "action": {
+      "description": "e.g. inbox.accept, pipeline.move, deadline.update",
+      "title": "Action",
+      "type": "string"
+    },
+    "actor": {
+      "description": "'user', or 'agent:<run id>'.",
+      "title": "Actor",
+      "type": "string"
+    },
+    "after": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "After"
+    },
+    "at": {
+      "format": "date-time",
+      "title": "At",
+      "type": "string"
+    },
+    "before": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Before"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "summary": {
+      "default": "",
+      "title": "Summary",
+      "type": "string"
+    },
+    "target_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Target Id"
+    },
+    "target_type": {
+      "title": "Target Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "actor",
+    "action",
+    "target_type"
+  ],
+  "title": "Change",
+  "type": "object"
+}
