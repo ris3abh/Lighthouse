@@ -1,0 +1,102 @@
+# O-1A — individuals with extraordinary ability in the sciences, education, business or athletics.
+# Community-maintained summary of 8 CFR 214.2(o)(3)(iii). NOT legal advice. Not affiliated with USCIS.
+#
+# Scoring (rule-based, see lighthouse_gc/core/criteria.py):
+#   banked   = accepted exhibits >= bank.min_exhibits AND distinct strength signals >= bank.min_signals
+#   building = at least one accepted exhibit
+#   gap      = no accepted exhibits
+#   dropped  = user override in lighthouse.yaml
+id: o1a
+name: O-1A Extraordinary Ability
+regulation: 8 CFR 214.2(o)(3)(iii)
+description: >
+  Evidence of a major internationally recognized award, or at least three of the eight criteria below.
+  Comparable evidence may be submitted when a criterion does not readily apply to the occupation.
+threshold: 3
+target: 5
+criteria:
+  - id: awards
+    label: Nationally or internationally recognized prizes or awards
+    regulation: 8 CFR 214.2(o)(3)(iii)(B)(1)
+    description: Prizes or awards for excellence in the field, with evidence of their selectivity and reach.
+    evidence_types: [award_certificate, award_notice, fellowship, hackathon_win]
+    strength_signals:
+      - { id: national_or_international, label: "national or international scope" }
+      - { id: selective, label: "selective (documented acceptance rate or field size)" }
+      - { id: excellence_based, label: "awarded for excellence, not participation" }
+    bank: { min_exhibits: 1, min_signals: 1 }
+
+  - id: membership
+    label: Membership in associations requiring outstanding achievement
+    regulation: 8 CFR 214.2(o)(3)(iii)(B)(2)
+    description: Membership judged by recognized national or international experts, not open by dues alone.
+    evidence_types: [membership_certificate, membership_letter, membership_bylaws]
+    strength_signals:
+      - { id: judged_by_experts, label: "admission judged by recognized experts" }
+      - { id: outstanding_achievement_required, label: "outstanding achievement required" }
+    bank: { min_exhibits: 1, min_signals: 1 }
+
+  - id: press
+    label: Published material about you in major media or trade publications
+    regulation: 8 CFR 214.2(o)(3)(iii)(B)(3)
+    description: Material about you and your work, with title, date and author, in professional or major media.
+    evidence_types: [press_article, interview, podcast_feature, media_mention]
+    strength_signals:
+      - { id: about_the_person, label: "primarily about you or your work" }
+      - { id: major_media, label: "major media or professional publication" }
+      - { id: multiple_outlets, label: "multiple independent outlets" }
+    bank: { min_exhibits: 2, min_signals: 1 }
+
+  - id: judging
+    label: Judging the work of others
+    regulation: 8 CFR 214.2(o)(3)(iii)(B)(4)
+    description: Participation on a panel, or individually, as a judge of others' work in the field.
+    evidence_types: [judge_invite, reviewer_record, panel_letter, program_committee]
+    strength_signals:
+      - { id: selective_event, label: "selective event" }
+      - { id: multiple_instances, label: "multiple instances" }
+      - { id: documented_scoring, label: "documented scoring" }
+    bank: { min_exhibits: 2, min_signals: 1 }
+
+  - id: original_contributions
+    label: Original contributions of major significance
+    regulation: 8 CFR 214.2(o)(3)(iii)(B)(5)
+    description: Original scientific, scholarly or business contributions with documented impact on the field.
+    evidence_types: [open_source_project, ml_model, dataset, patent, adoption_evidence, expert_letter]
+    strength_signals:
+      - { id: widely_adopted, label: "widely adopted (stars, downloads, dependents)" }
+      - { id: used_by_others, label: "built on or used by others" }
+      - { id: independent_corroboration, label: "independent corroboration (letters, press, citations)" }
+      - { id: sustained_activity, label: "sustained over time (releases, maintenance)" }
+    bank: { min_exhibits: 2, min_signals: 2 }
+
+  - id: scholarly_articles
+    label: Authorship of scholarly articles
+    regulation: 8 CFR 214.2(o)(3)(iii)(B)(6)
+    description: Scholarly articles in professional journals or other major media.
+    evidence_types: [paper, preprint, journal_article, conference_paper]
+    strength_signals:
+      - { id: peer_reviewed, label: "peer-reviewed" }
+      - { id: cited, label: "citations > 0" }
+      - { id: major_venue, label: "major venue" }
+    bank: { min_exhibits: 1, min_signals: 1 }
+
+  - id: critical_role
+    label: Critical or essential role for distinguished organizations
+    regulation: 8 CFR 214.2(o)(3)(iii)(B)(7)
+    description: Employment in a critical or essential capacity for organizations with a distinguished reputation.
+    evidence_types: [role_letter, org_chart, offer_letter, org_reputation]
+    strength_signals:
+      - { id: distinguished_org, label: "organization has a distinguished reputation" }
+      - { id: critical_capacity, label: "role documented as critical or essential" }
+    bank: { min_exhibits: 2, min_signals: 2 }
+
+  - id: high_salary
+    label: High salary or remuneration
+    regulation: 8 CFR 214.2(o)(3)(iii)(B)(8)
+    description: Salary or other remuneration that is high relative to others in the field.
+    evidence_types: [pay_stub, offer_letter, w2, salary_survey]
+    strength_signals:
+      - { id: comparative_data, label: "comparative wage data (e.g. survey, BLS)" }
+      - { id: above_90th_percentile, label: "above the 90th percentile" }
+    bank: { min_exhibits: 2, min_signals: 1 }

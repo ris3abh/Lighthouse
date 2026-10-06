@@ -1,0 +1,120 @@
+# EB-1A — immigrant petition for aliens of extraordinary ability.
+# Community-maintained summary of 8 CFR 204.5(h)(3). NOT legal advice. Not affiliated with USCIS.
+#
+# Same evidence store and criterion ids as o1a; a stricter rubric (more exhibits and signals per
+# criterion) plus a final-merits narrative layer. Switching profile re-scores, never re-collects.
+id: eb1a
+name: EB-1A Extraordinary Ability
+regulation: 8 CFR 204.5(h)(3)
+description: >
+  Evidence of a one-time major internationally recognized award, or at least three of the ten criteria
+  below, followed by a final-merits determination of sustained national or international acclaim.
+threshold: 3
+target: 5
+criteria:
+  - id: awards
+    label: Lesser nationally or internationally recognized prizes or awards
+    regulation: 8 CFR 204.5(h)(3)(i)
+    evidence_types: [award_certificate, award_notice, fellowship, hackathon_win]
+    strength_signals:
+      - { id: national_or_international, label: "national or international scope" }
+      - { id: selective, label: "selective (documented acceptance rate or field size)" }
+      - { id: excellence_based, label: "awarded for excellence, not participation" }
+    bank: { min_exhibits: 2, min_signals: 2 }
+
+  - id: membership
+    label: Membership in associations requiring outstanding achievement
+    regulation: 8 CFR 204.5(h)(3)(ii)
+    evidence_types: [membership_certificate, membership_letter, membership_bylaws]
+    strength_signals:
+      - { id: judged_by_experts, label: "admission judged by recognized experts" }
+      - { id: outstanding_achievement_required, label: "outstanding achievement required" }
+    bank: { min_exhibits: 1, min_signals: 2 }
+
+  - id: press
+    label: Published material about you in major media or trade publications
+    regulation: 8 CFR 204.5(h)(3)(iii)
+    evidence_types: [press_article, interview, podcast_feature, media_mention]
+    strength_signals:
+      - { id: about_the_person, label: "primarily about you or your work" }
+      - { id: major_media, label: "major media or professional publication" }
+      - { id: multiple_outlets, label: "multiple independent outlets" }
+    bank: { min_exhibits: 3, min_signals: 2 }
+
+  - id: judging
+    label: Judging the work of others
+    regulation: 8 CFR 204.5(h)(3)(iv)
+    evidence_types: [judge_invite, reviewer_record, panel_letter, program_committee]
+    strength_signals:
+      - { id: selective_event, label: "selective event" }
+      - { id: multiple_instances, label: "multiple instances" }
+      - { id: documented_scoring, label: "documented scoring" }
+    bank: { min_exhibits: 3, min_signals: 2 }
+
+  - id: original_contributions
+    label: Original contributions of major significance
+    regulation: 8 CFR 204.5(h)(3)(v)
+    evidence_types: [open_source_project, ml_model, dataset, patent, adoption_evidence, expert_letter]
+    strength_signals:
+      - { id: widely_adopted, label: "widely adopted (stars, downloads, dependents)" }
+      - { id: used_by_others, label: "built on or used by others" }
+      - { id: independent_corroboration, label: "independent corroboration (letters, press, citations)" }
+      - { id: sustained_activity, label: "sustained over time (releases, maintenance)" }
+    bank: { min_exhibits: 3, min_signals: 3 }
+
+  - id: scholarly_articles
+    label: Authorship of scholarly articles
+    regulation: 8 CFR 204.5(h)(3)(vi)
+    evidence_types: [paper, preprint, journal_article, conference_paper]
+    strength_signals:
+      - { id: peer_reviewed, label: "peer-reviewed" }
+      - { id: cited, label: "citations > 0" }
+      - { id: major_venue, label: "major venue" }
+    bank: { min_exhibits: 2, min_signals: 2 }
+
+  - id: display
+    label: Display of work at artistic exhibitions or showcases
+    regulation: 8 CFR 204.5(h)(3)(vii)
+    evidence_types: [exhibition_record, showcase]
+    strength_signals:
+      - { id: major_venue, label: "major venue" }
+      - { id: curated_selection, label: "curated or juried selection" }
+    bank: { min_exhibits: 2, min_signals: 1 }
+
+  - id: critical_role
+    label: Leading or critical role for distinguished organizations
+    regulation: 8 CFR 204.5(h)(3)(viii)
+    evidence_types: [role_letter, org_chart, offer_letter, org_reputation]
+    strength_signals:
+      - { id: distinguished_org, label: "organization has a distinguished reputation" }
+      - { id: critical_capacity, label: "role documented as leading or critical" }
+    bank: { min_exhibits: 2, min_signals: 2 }
+
+  - id: high_salary
+    label: High salary or remuneration relative to others in the field
+    regulation: 8 CFR 204.5(h)(3)(ix)
+    evidence_types: [pay_stub, offer_letter, w2, salary_survey]
+    strength_signals:
+      - { id: comparative_data, label: "comparative wage data (e.g. survey, BLS)" }
+      - { id: above_90th_percentile, label: "above the 90th percentile" }
+    bank: { min_exhibits: 2, min_signals: 2 }
+
+  - id: commercial_success
+    label: Commercial success in the performing arts
+    regulation: 8 CFR 204.5(h)(3)(x)
+    evidence_types: [box_office, sales_record]
+    strength_signals:
+      - { id: documented_receipts, label: "documented receipts or sales" }
+    bank: { min_exhibits: 1, min_signals: 1 }
+
+narrative:
+  - id: final_merits
+    label: Final merits — sustained national or international acclaim
+    description: >
+      After three criteria are met, the totality of the evidence must show you are one of the small
+      percentage at the very top of the field, with sustained acclaim. Written by the agent (Phase 2)
+      and always labeled as an opinion.
+    prompts:
+      - Is the acclaim sustained over several years rather than a single moment?
+      - Does independent evidence (not only your own employer) corroborate the impact?
+      - How does the record compare to others at the top of the field?

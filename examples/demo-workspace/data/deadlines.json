@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "deadlines": [
+    {
+      "id": "dl_demo_letter",
+      "title": "Send draft letter to Dr. Priya Natarajan",
+      "due": "2026-10-09",
+      "kind": "follow_up",
+      "criterion": "original_contributions",
+      "url": null,
+      "human_only": true,
+      "done": false
+    },
+    {
+      "id": "dl_demo_reviews",
+      "title": "NeurIPS 2026 workshop reviews due",
+      "due": "2026-10-14",
+      "kind": "submission",
+      "criterion": "judging",
+      "url": "https://example.org/openreview",
+      "human_only": true,
+      "done": false
+    },
+    {
+      "id": "dl_demo_ieee",
+      "title": "IEEE Senior Member application",
+      "due": "2026-11-01",
+      "kind": "application",
+      "criterion": "membership",
+      "url": null,
+      "human_only": true,
+      "done": false
+    },
+    {
+      "id": "dl_demo_filing",
+      "title": "Target O-1A filing date",
+      "due": "2027-03-01",
+      "kind": "filing",
+      "criterion": null,
+      "url": null,
+      "human_only": true,
+      "done": false
+    },
+    {
+      "id": "dl_demo_done",
+      "title": "Request ICML citation report",
+      "due": "2026-09-15",
+      "kind": "other",
+      "criterion": null,
+      "url": null,
+      "human_only": true,
+      "done": true
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "_id": "m1",
+  "id": "arivera-demo/tiny-vlm",
+  "downloads": 15400,
+  "downloadsAllTime": 118000,
+  "likes": 233,
+  "private": false,
+  "tags": [
+    "transformers",
+    "safetensors",
+    "arxiv:2509.04321",
+    "license:apache-2.0"
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "candidates": [
+    {
+      "id": "cand_9313af032f53",
+      "fingerprint": "huggingface:arivera-demo/tiny-vlm:original_contributions",
+      "source": "huggingface:arivera-demo",
+      "item_id": "huggingface:arivera-demo/tiny-vlm",
+      "evidence_type": "ml_model",
+      "proposed_criterion": "original_contributions",
+      "title": "Hugging Face model: arivera-demo/tiny-vlm",
+      "summary": "Model arivera-demo/tiny-vlm — 118,000 downloads (15,400 last 30d) · ♥ 233 · 14 derivative models",
+      "confidence": 0.7,
+      "raw_url": "https://huggingface.co/arivera-demo/tiny-vlm",
+      "signals": [
+        "widely_adopted",
+        "used_by_others"
+      ],
+      "facts": {
+        "likes": 233,
+        "downloads_30d": 15400,
+        "downloads_all_time": 118000,
+        "derivative_models": 14
+      },
+      "created_at": "2026-10-05T09:00:00Z",
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_c82c7a86c4ab",
+      "fingerprint": "huggingface:datasets/arivera-demo/robo-grasp-10k:original_contributions",
+      "source": "huggingface:arivera-demo",
+      "item_id": "huggingface:datasets/arivera-demo/robo-grasp-10k",
+      "evidence_type": "dataset",
+      "proposed_criterion": "original_contributions",
+      "title": "Hugging Face dataset: arivera-demo/robo-grasp-10k",
+      "summary": "Dataset arivera-demo/robo-grasp-10k — 14,800 downloads (2,300 last 30d) · ♥ 31",
+      "confidence": 0.7,
+      "raw_url": "https://huggingface.co/datasets/arivera-demo/robo-grasp-10k",
+      "signals": [
+        "widely_adopted"
+      ],
+      "facts": {
+        "likes": 31,
+        "downloads_30d": 2300,
+        "downloads_all_time": 14800
+      },
+      "created_at": "2026-10-05T09:00:00Z",
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_afce5c8df2da",
+      "fingerprint": "paper:arxiv:2509.04321:scholarly_articles",
+      "source": "huggingface:arivera-demo",
+      "item_id": "huggingface:datasets/arivera-demo/robo-grasp-10k",
+      "evidence_type": "preprint",
+      "proposed_criterion": "scholarly_articles",
+      "title": "Paper: RoboGrasp-10k (HF Papers page)",
+      "summary": "Paper arXiv:2509.04321 linked from Hugging Face dataset arivera-demo/robo-grasp-10k. Confirm you are an author and add venue / peer-review status.",
+      "confidence": 0.4,
+      "raw_url": "https://arxiv.org/abs/2509.04321",
+      "signals": [],
+      "facts": {
+        "hf_upvotes": 42
+      },
+      "created_at": "2026-10-05T09:00:00Z",
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_571aa59eaed3",
+      "fingerprint": "github:arivera-demo/tinyserve:original_contributions",
+      "source": "github:arivera-demo",
+      "item_id": "github:arivera-demo/tinyserve",
+      "evidence_type": "open_source_project",
+      "proposed_criterion": "original_contributions",
+      "title": "Open-source project: arivera-demo/tinyserve",
+      "summary": "arivera-demo/tinyserve — ★ 46 · 3 forks · 1 releases — Minimal batched inference server",
+      "confidence": 0.63,
+      "raw_url": "https://github.com/arivera-demo/tinyserve",
+      "signals": [],
+      "facts": {
+        "stars": 46,
+        "forks": 3,
+        "releases": 1,
+        "language": "Rust"
+      },
+      "created_at": "2026-10-05T09:00:00Z",
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_ed707c137814",
+      "fingerprint": "github:arivera-demo/dotfiles:original_contributions",
+      "source": "github:arivera-demo",
+      "item_id": "github:arivera-demo/dotfiles",
+      "evidence_type": "open_source_project",
+      "proposed_criterion": "original_contributions",
+      "title": "Open-source project: arivera-demo/dotfiles",
+      "summary": "arivera-demo/dotfiles — ★ 7 · 0 forks · 0 releases",
+      "confidence": 0.34,
+      "raw_url": "https://github.com/arivera-demo/dotfiles",
+      "signals": [],
+      "facts": {},
+      "created_at": "2026-06-01T09:00:00Z",
+      "status": "rejected",
+      "snoozed_until": null
+    }
+  ]
+}

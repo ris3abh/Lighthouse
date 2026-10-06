@@ -1,0 +1,165 @@
+{
+  "$defs": {
+    "SourceRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "added_at": {
+          "format": "date-time",
+          "title": "Added At",
+          "type": "string"
+        },
+        "auth": {
+          "default": "none",
+          "enum": [
+            "none",
+            "token"
+          ],
+          "title": "Auth",
+          "type": "string"
+        },
+        "handle": {
+          "title": "Handle",
+          "type": "string"
+        },
+        "id": {
+          "description": "'<kind>:<handle>', e.g. 'github:octo'.",
+          "title": "Id",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/TrackedItem"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "last_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Error"
+        },
+        "last_sync": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Sync"
+        },
+        "secret_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Keychain entry name holding the token. Never the token.",
+          "title": "Secret Ref"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "handle",
+        "url"
+      ],
+      "title": "SourceRecord",
+      "type": "object"
+    },
+    "TrackedItem": {
+      "additionalProperties": false,
+      "properties": {
+        "discovered_at": {
+          "format": "date-time",
+          "title": "Discovered At",
+          "type": "string"
+        },
+        "id": {
+          "description": "Globally unique: '<source kind>:<path>', e.g. 'github:octo/repo'.",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Item type within the source: repo, model, dataset, space, ...",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "description": "Path within the source, e.g. 'octo/repo' or 'datasets/octo/data'.",
+          "title": "Name",
+          "type": "string"
+        },
+        "private": {
+          "default": false,
+          "title": "Private",
+          "type": "boolean"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        },
+        "tracked": {
+          "default": true,
+          "title": "Tracked",
+          "type": "boolean"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "url"
+      ],
+      "title": "TrackedItem",
+      "type": "object"
+    }
+  },
+  "$id": "https://lighthouse-gc.dev/schemas/v1/sources.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/SourceRecord"
+      },
+      "title": "Sources",
+      "type": "array"
+    }
+  },
+  "title": "SourcesFile",
+  "type": "object"
+}

@@ -1,0 +1,22 @@
+# Lighthouse workspace config. No secrets here — tokens live in the OS keychain.
+schema_version: 1
+workspace_name: demo-workspace
+profile: o1a
+engine: claude_code
+server:
+  host: 127.0.0.1
+  port: 7777
+schedules:
+  sync: 0 8 * * *
+  metrics-snapshot: 0 9 * * mon/2
+  deadline-check: 0 7 * * *
+  digest: 0 17 * * fri
+connectors:
+  include_forks: false
+  min_stars_for_candidate: 5
+  min_downloads_for_candidate: 100
+privacy:
+  redact_before_llm: true
+overrides:
+  o1a:
+    high_salary: dropped

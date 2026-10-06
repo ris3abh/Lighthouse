@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "id": "pipe_demo_ieee",
+      "title": "IEEE Senior Member",
+      "criterion": "membership",
+      "stage": "applied",
+      "url": null,
+      "follow_up": "2026-10-20",
+      "created_at": "2026-08-01T10:00:00Z",
+      "moved_at": "2026-09-10T10:00:00Z",
+      "notes": ""
+    },
+    {
+      "id": "pipe_demo_podcast",
+      "title": "Pitch fastgrad story to an ML newsletter",
+      "criterion": "press",
+      "stage": "idea",
+      "url": null,
+      "follow_up": null,
+      "created_at": "2026-09-01T10:00:00Z",
+      "moved_at": "2026-09-01T10:00:00Z",
+      "notes": ""
+    },
+    {
+      "id": "pipe_demo_mlh",
+      "title": "MLH Fall hackathon judge",
+      "criterion": "judging",
+      "stage": "waiting",
+      "url": "https://example.org/mlh-judges",
+      "follow_up": "2026-10-08",
+      "created_at": "2026-09-05T10:00:00Z",
+      "moved_at": "2026-09-12T10:00:00Z",
+      "notes": ""
+    }
+  ]
+}

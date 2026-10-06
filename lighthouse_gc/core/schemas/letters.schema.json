@@ -1,0 +1,116 @@
+{
+  "$defs": {
+    "Letter": {
+      "additionalProperties": false,
+      "properties": {
+        "asks": {
+          "default": [
+            "letter"
+          ],
+          "items": {
+            "enum": [
+              "letter",
+              "membership_ref"
+            ],
+            "type": "string"
+          },
+          "title": "Asks",
+          "type": "array"
+        },
+        "credentials": {
+          "default": "",
+          "title": "Credentials",
+          "type": "string"
+        },
+        "criteria": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Criteria",
+          "type": "array"
+        },
+        "draft_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Draft Path"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "last_contact": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Contact"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "relationship": {
+          "enum": [
+            "employer",
+            "independent",
+            "coauthor"
+          ],
+          "title": "Relationship",
+          "type": "string"
+        },
+        "status": {
+          "default": "prospect",
+          "enum": [
+            "prospect",
+            "asked",
+            "drafting",
+            "sent",
+            "signed",
+            "declined"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "relationship"
+      ],
+      "title": "Letter",
+      "type": "object"
+    }
+  },
+  "$id": "https://lighthouse-gc.dev/schemas/v1/letters.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "letters": {
+      "items": {
+        "$ref": "#/$defs/Letter"
+      },
+      "title": "Letters",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "title": "Letters",
+  "type": "object"
+}

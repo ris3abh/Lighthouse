@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "letters": [
+    {
+      "id": "let_demo_natarajan",
+      "name": "Dr. Priya Natarajan (fictional)",
+      "relationship": "independent",
+      "credentials": "Professor of Computer Science, (fictional) Lakeshore University",
+      "criteria": [
+        "original_contributions",
+        "judging"
+      ],
+      "asks": [
+        "letter"
+      ],
+      "status": "drafting",
+      "draft_path": "drafts/letters/natarajan.md",
+      "last_contact": "2026-09-28"
+    },
+    {
+      "id": "let_demo_webb",
+      "name": "Marcus Webb (fictional)",
+      "relationship": "employer",
+      "credentials": "VP Engineering, Fernhill Robotics (fictional)",
+      "criteria": [
+        "critical_role"
+      ],
+      "asks": [
+        "letter"
+      ],
+      "status": "asked",
+      "draft_path": null,
+      "last_contact": "2026-08-15"
+    },
+    {
+      "id": "let_demo_okafor",
+      "name": "Dr. Lena Okafor (fictional)",
+      "relationship": "coauthor",
+      "credentials": "Research Scientist, (fictional) Meridian Labs",
+      "criteria": [
+        "scholarly_articles"
+      ],
+      "asks": [
+        "letter",
+        "membership_ref"
+      ],
+      "status": "prospect",
+      "draft_path": null,
+      "last_contact": null
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "$id": "https://lighthouse-gc.dev/schemas/v1/metric-row.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "format": "date",
+      "title": "Date",
+      "type": "string"
+    },
+    "item": {
+      "description": "Item path within the source, e.g. octo/repo.",
+      "title": "Item",
+      "type": "string"
+    },
+    "metric": {
+      "pattern": "^[a-z0-9][a-z0-9_\\-]*$",
+      "title": "Metric",
+      "type": "string"
+    },
+    "source": {
+      "description": "Connector kind, e.g. github, huggingface.",
+      "title": "Source",
+      "type": "string"
+    },
+    "value": {
+      "title": "Value",
+      "type": "number"
+    }
+  },
+  "required": [
+    "date",
+    "source",
+    "item",
+    "metric",
+    "value"
+  ],
+  "title": "MetricRow",
+  "type": "object"
+}

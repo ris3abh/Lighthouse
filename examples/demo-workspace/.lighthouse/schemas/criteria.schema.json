@@ -1,0 +1,147 @@
+{
+  "$defs": {
+    "CriterionScore": {
+      "additionalProperties": false,
+      "properties": {
+        "exhibit_count": {
+          "default": 0,
+          "title": "Exhibit Count",
+          "type": "integer"
+        },
+        "exhibit_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Exhibit Ids",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "matched_signals": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Matched Signals",
+          "type": "array"
+        },
+        "missing_signals": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Signals",
+          "type": "array"
+        },
+        "needed_exhibits": {
+          "default": 0,
+          "description": "Exhibits still needed to reach 'banked'.",
+          "title": "Needed Exhibits",
+          "type": "integer"
+        },
+        "overridden": {
+          "default": false,
+          "title": "Overridden",
+          "type": "boolean"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "banked",
+            "building",
+            "gap",
+            "dropped"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "status"
+      ],
+      "title": "CriterionScore",
+      "type": "object"
+    }
+  },
+  "$id": "https://lighthouse-gc.dev/schemas/v1/criteria.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "banked": {
+      "title": "Banked",
+      "type": "integer"
+    },
+    "building": {
+      "title": "Building",
+      "type": "integer"
+    },
+    "computed_at": {
+      "format": "date-time",
+      "title": "Computed At",
+      "type": "string"
+    },
+    "criteria": {
+      "items": {
+        "$ref": "#/$defs/CriterionScore"
+      },
+      "title": "Criteria",
+      "type": "array"
+    },
+    "profile": {
+      "title": "Profile",
+      "type": "string"
+    },
+    "profile_name": {
+      "title": "Profile Name",
+      "type": "string"
+    },
+    "reviewer_note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Agent-written 'how a reviewer would see this' note. Opinion, not a rule result.",
+      "title": "Reviewer Note"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "target": {
+      "title": "Target",
+      "type": "integer"
+    },
+    "threshold": {
+      "title": "Threshold",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "profile",
+    "profile_name",
+    "threshold",
+    "target",
+    "banked",
+    "building",
+    "criteria"
+  ],
+  "title": "Scoreboard",
+  "type": "object"
+}

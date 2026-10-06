@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "github:arivera-demo",
+      "kind": "github",
+      "handle": "arivera-demo",
+      "url": "https://github.com/arivera-demo",
+      "auth": "none",
+      "secret_ref": null,
+      "added_at": "2026-06-01T09:00:00Z",
+      "last_sync": "2026-10-05T09:00:00Z",
+      "last_error": null,
+      "items": [
+        {
+          "id": "github:arivera-demo/fastgrad",
+          "kind": "repo",
+          "name": "arivera-demo/fastgrad",
+          "url": "https://github.com/arivera-demo/fastgrad",
+          "title": "Gradient compression for data-parallel training",
+          "private": false,
+          "tracked": true,
+          "discovered_at": "2026-06-01T09:00:00Z"
+        },
+        {
+          "id": "github:arivera-demo/tinyserve",
+          "kind": "repo",
+          "name": "arivera-demo/tinyserve",
+          "url": "https://github.com/arivera-demo/tinyserve",
+          "title": "Minimal batched inference server",
+          "private": false,
+          "tracked": true,
+          "discovered_at": "2026-06-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "huggingface:arivera-demo",
+      "kind": "huggingface",
+      "handle": "arivera-demo",
+      "url": "https://huggingface.co/arivera-demo",
+      "auth": "none",
+      "secret_ref": null,
+      "added_at": "2026-06-01T09:05:00Z",
+      "last_sync": "2026-10-05T09:00:00Z",
+      "last_error": null,
+      "items": [
+        {
+          "id": "huggingface:arivera-demo/tiny-vlm",
+          "kind": "model",
+          "name": "arivera-demo/tiny-vlm",
+          "url": "https://huggingface.co/arivera-demo/tiny-vlm",
+          "title": "",
+          "private": false,
+          "tracked": true,
+          "discovered_at": "2026-06-01T09:05:00Z"
+        },
+        {
+          "id": "huggingface:datasets/arivera-demo/robo-grasp-10k",
+          "kind": "dataset",
+          "name": "datasets/arivera-demo/robo-grasp-10k",
+          "url": "https://huggingface.co/datasets/arivera-demo/robo-grasp-10k",
+          "title": "",
+          "private": false,
+          "tracked": true,
+          "discovered_at": "2026-06-01T09:05:00Z"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --color-beam: #f59e0b;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+    font-feature-settings: "tnum" 1, "cv11" 1;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-amber-500;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900;
+  }
+  .input {
+    @apply w-full rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-sm placeholder:text-zinc-400
+      focus:border-amber-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400;
+  }
+  .link {
+    @apply underline decoration-zinc-300 underline-offset-2 hover:decoration-amber-500 dark:decoration-zinc-600;
+  }
+}

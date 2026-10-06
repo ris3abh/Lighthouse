@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Web
+web/node_modules/
+web/dist/
+lighthouse_gc/server/static/
+lighthouse_gc/_data/
+
+# Never commit a real workspace or secrets
+.env
+.env.*
+*.db
+.lighthouse/cache/
+.DS_Store

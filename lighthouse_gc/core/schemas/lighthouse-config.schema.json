@@ -1,0 +1,125 @@
+{
+  "$defs": {
+    "ConnectorConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "include_forks": {
+          "default": false,
+          "title": "Include Forks",
+          "type": "boolean"
+        },
+        "min_downloads_for_candidate": {
+          "default": 100,
+          "minimum": 0,
+          "title": "Min Downloads For Candidate",
+          "type": "integer"
+        },
+        "min_stars_for_candidate": {
+          "default": 5,
+          "minimum": 0,
+          "title": "Min Stars For Candidate",
+          "type": "integer"
+        }
+      },
+      "title": "ConnectorConfig",
+      "type": "object"
+    },
+    "PrivacyConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "redact_before_llm": {
+          "default": true,
+          "title": "Redact Before Llm",
+          "type": "boolean"
+        }
+      },
+      "title": "PrivacyConfig",
+      "type": "object"
+    },
+    "ServerConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "const": "127.0.0.1",
+          "default": "127.0.0.1",
+          "title": "Host",
+          "type": "string"
+        },
+        "port": {
+          "default": 7777,
+          "maximum": 65535,
+          "minimum": 1024,
+          "title": "Port",
+          "type": "integer"
+        }
+      },
+      "title": "ServerConfig",
+      "type": "object"
+    }
+  },
+  "$id": "https://lighthouse-gc.dev/schemas/v1/lighthouse-config.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "connectors": {
+      "$ref": "#/$defs/ConnectorConfig"
+    },
+    "engine": {
+      "default": "claude_code",
+      "enum": [
+        "claude_code",
+        "codex",
+        "api"
+      ],
+      "title": "Engine",
+      "type": "string"
+    },
+    "overrides": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "enum": [
+            "dropped",
+            "gap"
+          ],
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "description": "User status overrides per profile: {profile_id: {criterion_id: dropped|gap}}.",
+      "title": "Overrides",
+      "type": "object"
+    },
+    "privacy": {
+      "$ref": "#/$defs/PrivacyConfig"
+    },
+    "profile": {
+      "default": "o1a",
+      "title": "Profile",
+      "type": "string"
+    },
+    "schedules": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Cron expressions per job. Used by the scheduler (Phase 1) and as cron hints.",
+      "title": "Schedules",
+      "type": "object"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "server": {
+      "$ref": "#/$defs/ServerConfig"
+    },
+    "workspace_name": {
+      "default": "my-case",
+      "title": "Workspace Name",
+      "type": "string"
+    }
+  },
+  "title": "WorkspaceConfig",
+  "type": "object"
+}

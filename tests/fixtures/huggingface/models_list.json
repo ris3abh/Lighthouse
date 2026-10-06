@@ -1,0 +1,23 @@
+[
+  {
+    "_id": "m1",
+    "id": "arivera-demo/tiny-vlm",
+    "modelId": "arivera-demo/tiny-vlm",
+    "likes": 233,
+    "downloads": 15400,
+    "private": false,
+    "tags": [
+      "transformers",
+      "arxiv:2509.04321"
+    ]
+  },
+  {
+    "_id": "m2",
+    "id": "arivera-demo/scratch-model",
+    "modelId": "arivera-demo/scratch-model",
+    "likes": 0,
+    "downloads": 3,
+    "private": false,
+    "tags": []
+  }
+]

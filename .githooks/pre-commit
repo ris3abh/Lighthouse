@@ -1,0 +1,10 @@
+#!/bin/sh
+# App-repo pre-commit hook. Enable once per clone:  git config core.hooksPath .githooks
+set -e
+root=$(git rev-parse --show-toplevel)
+python3 "$root/scripts/check_repo.py" || { echo "pre-commit: repo check failed (see above); commit blocked." >&2; exit 1; }
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --staged --redact --no-banner || { echo "pre-commit: gitleaks found a possible secret; commit blocked." >&2; exit 1; }
+else
+  echo "pre-commit: gitleaks not installed, secret scan skipped." >&2
+fi

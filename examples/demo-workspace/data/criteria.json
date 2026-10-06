@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "profile": "o1a",
+  "profile_name": "O-1A Extraordinary Ability",
+  "computed_at": "2026-10-06T18:00:30Z",
+  "threshold": 3,
+  "target": 5,
+  "banked": 2,
+  "building": 3,
+  "criteria": [
+    {
+      "id": "awards",
+      "label": "Nationally or internationally recognized prizes or awards",
+      "status": "building",
+      "exhibit_count": 1,
+      "exhibit_ids": [
+        "exh_ae7ac805b3ad"
+      ],
+      "matched_signals": [],
+      "missing_signals": [
+        "national_or_international",
+        "selective",
+        "excellence_based"
+      ],
+      "needed_exhibits": 0,
+      "reason": "Needs 1 more strength signal(s).",
+      "overridden": false
+    },
+    {
+      "id": "membership",
+      "label": "Membership in associations requiring outstanding achievement",
+      "status": "gap",
+      "exhibit_count": 0,
+      "exhibit_ids": [],
+      "matched_signals": [],
+      "missing_signals": [
+        "judged_by_experts",
+        "outstanding_achievement_required"
+      ],
+      "needed_exhibits": 1,
+      "reason": "No accepted exhibits yet.",
+      "overridden": false
+    },
+    {
+      "id": "press",
+      "label": "Published material about you in major media or trade publications",
+      "status": "gap",
+      "exhibit_count": 0,
+      "exhibit_ids": [],
+      "matched_signals": [],
+      "missing_signals": [
+        "about_the_person",
+        "major_media",
+        "multiple_outlets"
+      ],
+      "needed_exhibits": 2,
+      "reason": "No accepted exhibits yet.",
+      "overridden": false
+    },
+    {
+      "id": "judging",
+      "label": "Judging the work of others",
+      "status": "banked",
+      "exhibit_count": 2,
+      "exhibit_ids": [
+        "exh_f82a0cfb1e66",
+        "exh_4b43cffdfda2"
+      ],
+      "matched_signals": [
+        "selective_event",
+        "multiple_instances",
+        "documented_scoring"
+      ],
+      "missing_signals": [],
+      "needed_exhibits": 0,
+      "reason": "2 exhibit(s) with 3 strength signal(s) meet the bar.",
+      "overridden": false
+    },
+    {
+      "id": "original_contributions",
+      "label": "Original contributions of major significance",
+      "status": "building",
+      "exhibit_count": 1,
+      "exhibit_ids": [
+        "exh_86c581ae8135"
+      ],
+      "matched_signals": [
+        "widely_adopted",
+        "used_by_others",
+        "sustained_activity"
+      ],
+      "missing_signals": [
+        "independent_corroboration"
+      ],
+      "needed_exhibits": 1,
+      "reason": "Needs 1 more exhibit(s).",
+      "overridden": false
+    },
+    {
+      "id": "scholarly_articles",
+      "label": "Authorship of scholarly articles",
+      "status": "banked",
+      "exhibit_count": 2,
+      "exhibit_ids": [
+        "exh_a26cc3f5e312",
+        "exh_dcc911e3a401"
+      ],
+      "matched_signals": [
+        "peer_reviewed",
+        "cited",
+        "major_venue"
+      ],
+      "missing_signals": [],
+      "needed_exhibits": 0,
+      "reason": "2 exhibit(s) with 3 strength signal(s) meet the bar.",
+      "overridden": false
+    },
+    {
+      "id": "critical_role",
+      "label": "Critical or essential role for distinguished organizations",
+      "status": "building",
+      "exhibit_count": 1,
+      "exhibit_ids": [
+        "exh_4b5adb540a09"
+      ],
+      "matched_signals": [
+        "critical_capacity"
+      ],
+      "missing_signals": [
+        "distinguished_org"
+      ],
+      "needed_exhibits": 1,
+      "reason": "Needs 1 more exhibit(s) and 1 more strength signal(s).",
+      "overridden": false
+    },
+    {
+      "id": "high_salary",
+      "label": "High salary or remuneration",
+      "status": "dropped",
+      "exhibit_count": 0,
+      "exhibit_ids": [],
+      "matched_signals": [],
+      "missing_signals": [
+        "comparative_data",
+        "above_90th_percentile"
+      ],
+      "needed_exhibits": 2,
+      "reason": "Marked dropped by you. Rules say: gap — No accepted exhibits yet.",
+      "overridden": true
+    }
+  ],
+  "reviewer_note": null
+}

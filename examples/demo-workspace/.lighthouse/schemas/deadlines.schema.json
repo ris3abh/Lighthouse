@@ -1,0 +1,96 @@
+{
+  "$defs": {
+    "Deadline": {
+      "additionalProperties": false,
+      "properties": {
+        "criterion": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Criterion"
+        },
+        "done": {
+          "default": false,
+          "title": "Done",
+          "type": "boolean"
+        },
+        "due": {
+          "format": "date",
+          "title": "Due",
+          "type": "string"
+        },
+        "human_only": {
+          "default": true,
+          "description": "Needs the user, not the agent.",
+          "title": "Human Only",
+          "type": "boolean"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "other",
+          "enum": [
+            "filing",
+            "application",
+            "submission",
+            "follow_up",
+            "personal",
+            "other"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        }
+      },
+      "required": [
+        "title",
+        "due"
+      ],
+      "title": "Deadline",
+      "type": "object"
+    }
+  },
+  "$id": "https://lighthouse-gc.dev/schemas/v1/deadlines.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "deadlines": {
+      "items": {
+        "$ref": "#/$defs/Deadline"
+      },
+      "title": "Deadlines",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "title": "Deadlines",
+  "type": "object"
+}

@@ -1,0 +1,83 @@
+[
+  {
+    "id": 2577961,
+    "name": "fastgrad",
+    "full_name": "arivera-demo/fastgrad",
+    "private": false,
+    "owner": {
+      "login": "arivera-demo",
+      "id": 90000001,
+      "type": "User",
+      "html_url": "https://github.com/arivera-demo"
+    },
+    "html_url": "https://github.com/arivera-demo/fastgrad",
+    "description": "Gradient compression for data-parallel training",
+    "fork": false,
+    "created_at": "2024-02-11T18:20:00Z",
+    "updated_at": "2026-10-01T12:00:00Z",
+    "stargazers_count": 1840,
+    "watchers_count": 1840,
+    "subscribers_count": 44,
+    "forks_count": 212,
+    "open_issues_count": 17,
+    "language": "Python",
+    "topics": [
+      "deep-learning",
+      "distributed-training"
+    ],
+    "archived": false,
+    "default_branch": "main"
+  },
+  {
+    "id": 44113338,
+    "name": "tinyserve",
+    "full_name": "arivera-demo/tinyserve",
+    "private": false,
+    "owner": {
+      "login": "arivera-demo",
+      "id": 90000001,
+      "type": "User",
+      "html_url": "https://github.com/arivera-demo"
+    },
+    "html_url": "https://github.com/arivera-demo/tinyserve",
+    "description": "Minimal batched inference server",
+    "fork": false,
+    "created_at": "2024-02-11T18:20:00Z",
+    "updated_at": "2026-10-01T12:00:00Z",
+    "stargazers_count": 46,
+    "watchers_count": 46,
+    "subscribers_count": 4,
+    "forks_count": 3,
+    "open_issues_count": 17,
+    "language": "Rust",
+    "topics": [],
+    "archived": false,
+    "default_branch": "main"
+  },
+  {
+    "id": 22002553,
+    "name": "pytorch",
+    "full_name": "arivera-demo/pytorch",
+    "private": false,
+    "owner": {
+      "login": "arivera-demo",
+      "id": 90000001,
+      "type": "User",
+      "html_url": "https://github.com/arivera-demo"
+    },
+    "html_url": "https://github.com/arivera-demo/pytorch",
+    "description": "Fork of pytorch",
+    "fork": true,
+    "created_at": "2024-02-11T18:20:00Z",
+    "updated_at": "2026-10-01T12:00:00Z",
+    "stargazers_count": 2,
+    "watchers_count": 2,
+    "subscribers_count": 10,
+    "forks_count": 0,
+    "open_issues_count": 17,
+    "language": "Python",
+    "topics": [],
+    "archived": false,
+    "default_branch": "main"
+  }
+]

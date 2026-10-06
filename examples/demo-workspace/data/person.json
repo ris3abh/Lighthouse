@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "name": "Alex Rivera",
+  "aliases": [
+    "A. Rivera",
+    "Alexandra Rivera"
+  ],
+  "field": "Machine learning systems (distributed training, robotics perception)",
+  "current_status": "F-1 STEM OPT",
+  "location": "Pittsburgh, PA",
+  "filing_target": {
+    "profile": "o1a",
+    "target_date": "2027-03-01"
+  },
+  "petitioner": {
+    "name": "Fernhill Robotics, Inc. (fictional)",
+    "kind": "employer"
+  }
+}
