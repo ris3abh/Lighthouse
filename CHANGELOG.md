@@ -60,6 +60,8 @@ All notable changes to this project are documented here. The format follows
 - Letters page: writer roster with relationship, criteria covered, status (mark sent / signed), last
   contact and draft link; per-criterion coverage by independent / employer / co-author writers (declined
   excluded). Draft paths must stay inside `drafts/`. API: `/api/letters`, `/api/drafts/{path}`.
+- Calendar week view (remembered per browser) and a full edit dialog for deadlines (title, date, kind,
+  link, "needs me", done, delete), opened by clicking any deadline in the month or week view or the list.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.

@@ -2,7 +2,7 @@
 
 - Criterion: `original_contributions`
 - Evidence type: `open_source_project`
-- Captured: 2026-09-01 (accepted 2026-10-06T22:00:50+00:00)
+- Captured: 2026-09-01 (accepted 2026-10-06T22:04:30+00:00)
 - Source: github:arivera-demo
 - Link: https://github.com/arivera-demo/fastgrad
 - Strength signals: widely_adopted, used_by_others, sustained_activity

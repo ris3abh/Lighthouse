@@ -81,3 +81,19 @@ def test_feed_and_deadline_api(ws):
     assert c.delete(f"/api/deadlines/{did}", headers=W).status_code == 200
     assert c.delete(f"/api/deadlines/{did}", headers=W).status_code == 404
     assert c.delete("/api/deadlines/x").status_code == 403  # writes need the header
+
+
+def test_deadlines_are_fully_editable(ws):
+    c = TestClient(create_app(ws, allowed_hosts=["testserver"]))
+    did = c.post("/api/deadlines", json={"title": "Old", "due": "2026-10-20"}, headers=W).json()["id"]
+    changes = {"title": "TMLR reviewer signup", "due": "2026-10-22", "kind": "submission",
+               "url": "https://example.org/tmlr", "human_only": False}  # fmt: skip
+    r = c.patch(f"/api/deadlines/{did}", json=changes, headers=W)
+    assert r.status_code == 200, r.text
+    assert {k: r.json()[k] for k in changes} == changes
+    [event] = _events((ws.data_dir / "calendar.ics").read_text()).values()
+    assert str(event["SUMMARY"]) == "TMLR reviewer signup" and event["DTSTART"].dt == date(2026, 10, 22)
+    assert not any(c.name == "VALARM" for c in event.subcomponents)  # no reminder once it doesn't need you
+    assert str(event["URL"]) == "https://example.org/tmlr"
+    assert c.patch(f"/api/deadlines/{did}", json={"url": None}, headers=W).json()["url"] is None  # clearable
+    assert c.patch(f"/api/deadlines/{did}", json={"kind": "someday"}, headers=W).status_code == 400
