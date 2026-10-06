@@ -30,6 +30,15 @@ All notable changes to this project are documented here. The format follows
   (`lighthouse-gc secret set <ref>`). Channels can send `detail: minimal` (counts only). Webhooks only post
   to their real hosts, Discord can't @mention, and every send is logged locally for de-duplication.
   `lighthouse-gc notify test` and a Settings page.
+- Scheduler: `lighthouse-gc up` runs the jobs in `lighthouse.yaml` `schedules` (APScheduler, local time),
+  catches up on runs missed while the machine was off, and records results in `.lighthouse/cache/`
+  (off by default with `--demo`). `/api/jobs` lists jobs with their next run; any job can run on demand.
+- `deadline-check`: alerts once per deadline at 14 / 3 / 1 / 0 days and when overdue, plus pipeline
+  follow-ups within 3 days. A failed send is retried on the next run.
+- `digest`: weekly summary of what changed, top metric moves, deadlines in the next 14 days, stale pipeline
+  items (no movement in 14+ days), next actions and the Inbox count.
+- `sync` now notifies about new candidates and sync errors.
+- `lighthouse-gc validate` checks every schedule's cron expression.
 
 ### Fixed
 - `metrics-snapshot` default schedule: cron can't express "biweekly" (`mon/2` meant something else);

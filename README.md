@@ -146,6 +146,18 @@ The server is **read-only**: `get_scoreboard`, `list_gaps`, `query_claims(entity
 `get_provenance(claim_id)` and `what_changed(since)`. Agents see each claim's verbatim source quote and review
 status, and are told to draft only from approved claims.
 
+### Scheduled jobs
+
+`lighthouse-gc up` runs these in the background (edit the cron expressions under `schedules` in
+`lighthouse.yaml`). Runs missed while your laptop was asleep catch up when `up` starts again.
+
+| Job | Default | Does |
+|---|---|---|
+| `sync` | daily 08:00 | refresh sources; notify about new candidates and errors |
+| `metrics-snapshot` | Mondays, every other week | append metrics (and GitHub's 14-day traffic) |
+| `deadline-check` | daily 07:00 | alert at 14 / 3 / 1 / 0 days and when overdue; follow-ups; calendar |
+| `digest` | Fridays 17:00 | what changed, stale pipeline items, next actions |
+
 `run` jobs are headless, so cron / launchd / GitHub Actions can call them until the built-in scheduler lands.
 
 ## Security and privacy

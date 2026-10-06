@@ -167,7 +167,7 @@ def run(
         raise _fail(f"unknown job {job!r}; available: {', '.join(JOBS)}")
     try:
         ws = find_workspace(workspace)
-        for line in JOBS[job][1](ws):
+        for line in JOBS[job][1](ws, False):
             typer.echo(line)
     except (WorkspaceError, SourceError) as exc:
         raise _fail(str(exc)) from exc
@@ -179,6 +179,13 @@ def up(
     demo: Annotated[
         bool, typer.Option("--demo", help="Serve a throwaway copy of the demo workspace")
     ] = False,
+    scheduler: Annotated[
+        bool | None,
+        typer.Option(
+            "--scheduler/--no-scheduler",
+            help="Run scheduled jobs in the background (default: on; off with --demo)",
+        ),
+    ] = None,
     open_browser: Annotated[
         bool, typer.Option("--open/--no-open", help="Open the dashboard in a browser")
     ] = True,
@@ -210,7 +217,17 @@ def up(
     typer.secho(f"Lighthouse for {ws.root} → {url}", fg=typer.colors.GREEN)
     if open_browser:
         webbrowser.open(url)
-    uvicorn.run(create_app(ws), host="127.0.0.1", port=port, log_level="warning")
+    sched = None
+    if scheduler if scheduler is not None else not demo:
+        from lighthouse_gc.jobs.scheduler import start
+
+        sched = start(ws)
+        typer.echo(f"Scheduler on: {', '.join(sorted(ws.config().schedules))}")
+    try:
+        uvicorn.run(create_app(ws), host="127.0.0.1", port=port, log_level="warning")
+    finally:
+        if sched is not None:
+            sched.shutdown(wait=False)
 
 
 notify_app = typer.Typer(help="Notifications (desktop, email, Slack, Discord, ntfy).", no_args_is_help=True)

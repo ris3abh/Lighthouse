@@ -342,6 +342,23 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
 
         return {"reports": [r.__dict__ for r in snapshot(ws)]}
 
+    # ------------------------------------------------------------------ jobs
+
+    @app.get("/api/jobs")
+    def get_jobs() -> list[dict[str, Any]]:
+        from lighthouse_gc.jobs.scheduler import jobs_status
+
+        return jobs_status(ws)
+
+    @app.post("/api/jobs/{name}/run")
+    def run_job_now(name: str) -> dict[str, Any]:
+        from lighthouse_gc.jobs import JOBS
+        from lighthouse_gc.jobs.scheduler import run_job
+
+        if name not in JOBS:
+            raise HTTPException(404, f"no job {name!r}")
+        return run_job(ws, name)
+
     @app.get("/api/metrics/export.csv")
     def export_csv() -> PlainTextResponse:
         out = io.StringIO()

@@ -99,6 +99,17 @@ def validate_workspace(ws: Case) -> list[str]:
     except (ValidationError, ValueError) as exc:
         problems.append(f"profiles: {exc}")
     problems += [f"memory: {p}" for p in ws.memory.verify()]
+    from lighthouse_gc.jobs import JOBS
+    from lighthouse_gc.jobs.scheduler import trigger
+
+    for job, expr in ws.config().schedules.items():
+        if job not in JOBS:
+            problems.append(f"lighthouse.yaml: schedule for unknown job {job!r}")
+            continue
+        try:
+            trigger(expr)
+        except ValueError as exc:
+            problems.append(f"lighthouse.yaml: schedules.{job}: {exc}")
     for issue in ws.naming_check():
         problems.append(f"{issue['file']}: {issue['problem']} — {issue['detail']}")
     return problems
