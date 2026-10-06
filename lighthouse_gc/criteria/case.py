@@ -117,6 +117,57 @@ class Case(Workspace):
         self._save("letters.json", letters)
         return letter
 
+    LETTER_FIELDS = (
+        "name",
+        "relationship",
+        "credentials",
+        "criteria",
+        "asks",
+        "status",
+        "draft_path",
+        "last_contact",
+    )
+
+    def add_letter(self, **fields: Any) -> Letter:
+        with self.lock:
+            letter = self.apply_tracker("letter", fields)
+            self.after_change()
+            return letter  # type: ignore[return-value]
+
+    def update_letter(self, letter_id: str, **changes: Any) -> Letter:
+        with self.lock:
+            letters = self.letters()
+            idx = next((i for i, lt in enumerate(letters.letters) if lt.id == letter_id), None)
+            if idx is None:
+                raise NotFound(f"no letter writer {letter_id!r}")
+            bad = set(changes) - set(self.LETTER_FIELDS)
+            if bad:
+                raise WorkspaceError(f"not editable: {', '.join(sorted(bad))}")
+            if changes.get("draft_path"):
+                self._check_draft_path(changes["draft_path"])
+            try:
+                letters.letters[idx] = Letter.model_validate({**letters.letters[idx].model_dump(), **changes})
+            except ValueError as exc:
+                raise WorkspaceError(f"invalid letter entry: {exc}") from exc
+            self._save("letters.json", letters)
+            self.after_change()
+            return letters.letters[idx]
+
+    def delete_letter(self, letter_id: str) -> None:
+        with self.lock:
+            letters = self.letters()
+            kept = [lt for lt in letters.letters if lt.id != letter_id]
+            if len(kept) == len(letters.letters):
+                raise NotFound(f"no letter writer {letter_id!r}")
+            letters.letters = kept
+            self._save("letters.json", letters)
+            self.after_change()
+
+    def _check_draft_path(self, rel: str) -> None:
+        path = self.resolve_inside(rel)
+        if (self.root / "drafts") not in path.parents:
+            raise WorkspaceError("draft_path must be inside drafts/")
+
     def classify_upload(self, filename: str) -> tuple[str, str, str | None]:
         from lighthouse_gc.criteria.classify import classify
 

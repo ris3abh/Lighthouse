@@ -54,6 +54,12 @@ All notable changes to this project are documented here. The format follows
   calendar apps on this machine (`webcal://127.0.0.1:7777/calendar.ics`).
 - Calendar page: month view, add / mark done / delete deadlines, subscribe link, and the recurring jobs with
   their next run and a "Run now" button. Deadline API: `GET/POST /api/deadlines`, `PATCH/DELETE /api/deadlines/{id}`.
+- Pipeline page: kanban (Idea / Applied / Waiting / Done) with drag-and-drop and ← / → buttons, inline
+  follow-up dates, and stale flags for items with no movement in 14+ days (changing stage resets the
+  clock; editing notes doesn't). API: `GET/POST /api/pipeline`, `PATCH/DELETE /api/pipeline/{id}`.
+- Letters page: writer roster with relationship, criteria covered, status (mark sent / signed), last
+  contact and draft link; per-criterion coverage by independent / employer / co-author writers (declined
+  excluded). Draft paths must stay inside `drafts/`. API: `/api/letters`, `/api/drafts/{path}`.
 
 ### Fixed
 - `metrics-snapshot` default schedule: cron can't express "biweekly" (`mon/2` meant something else);

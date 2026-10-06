@@ -5,8 +5,10 @@ import { useLoad, useRoute, useTheme } from "./hooks";
 import Calendar from "./pages/Calendar";
 import Evidence from "./pages/Evidence";
 import Inbox from "./pages/Inbox";
+import Letters from "./pages/Letters";
 import Metrics from "./pages/Metrics";
 import OverviewPage from "./pages/Overview";
+import Pipeline from "./pages/Pipeline";
 import Settings from "./pages/Settings";
 import Sources from "./pages/Sources";
 
@@ -19,6 +21,8 @@ const NAV = [
   { id: "inbox", label: "Inbox", icon: "⇣" },
   { id: "evidence", label: "Evidence", icon: "▤" },
   { id: "metrics", label: "Metrics", icon: "∿" },
+  { id: "pipeline", label: "Pipeline", icon: "▥" },
+  { id: "letters", label: "Letters", icon: "✉" },
   { id: "calendar", label: "Calendar", icon: "▦" },
   { id: "sources", label: "Sources", icon: "⛁" },
   { id: "settings", label: "Settings", icon: "⚙" },
@@ -71,6 +75,12 @@ function Shell() {
       break;
     case "sources":
       content = <Sources />;
+      break;
+    case "pipeline":
+      content = <Pipeline />;
+      break;
+    case "letters":
+      content = <Letters />;
       break;
     case "calendar":
       content = <Calendar />;

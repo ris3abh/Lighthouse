@@ -468,6 +468,54 @@ class Workspace:
             self._save("deadlines.json", dl)
             self.after_change()
 
+    # ------------------------------------------------------------------ pipeline
+
+    PIPELINE_FIELDS = ("title", "criterion", "stage", "url", "follow_up", "notes")
+
+    def add_pipeline_item(self, **fields: Any) -> PipelineItem:
+        with self.lock:
+            try:
+                item = PipelineItem.model_validate(fields)
+            except ValueError as exc:
+                raise WorkspaceError(f"invalid pipeline item: {exc}") from exc
+            pl = self.pipeline()
+            pl.items.append(item)
+            self._save("pipeline.json", pl)
+            self.after_change()
+            return item
+
+    def update_pipeline_item(self, item_id: str, **changes: Any) -> PipelineItem:
+        """Edit an item. Changing its stage counts as movement (resets the staleness clock); other edits don't."""
+        with self.lock:
+            pl = self.pipeline()
+            idx = next((i for i, p in enumerate(pl.items) if p.id == item_id), None)
+            if idx is None:
+                raise NotFound(f"no pipeline item {item_id!r}")
+            bad = set(changes) - set(self.PIPELINE_FIELDS)
+            if bad:
+                raise WorkspaceError(f"not editable: {', '.join(sorted(bad))}")
+            old = pl.items[idx]
+            data = {**old.model_dump(), **changes}
+            if "stage" in changes and changes["stage"] != old.stage:
+                data["moved_at"] = utcnow()
+            try:
+                pl.items[idx] = PipelineItem.model_validate(data)
+            except ValueError as exc:
+                raise WorkspaceError(f"invalid pipeline item: {exc}") from exc
+            self._save("pipeline.json", pl)
+            self.after_change()
+            return pl.items[idx]
+
+    def delete_pipeline_item(self, item_id: str) -> None:
+        with self.lock:
+            pl = self.pipeline()
+            kept = [p for p in pl.items if p.id != item_id]
+            if len(kept) == len(pl.items):
+                raise NotFound(f"no pipeline item {item_id!r}")
+            pl.items = kept
+            self._save("pipeline.json", pl)
+            self.after_change()
+
     # ------------------------------------------------------------------ uploads
 
     MAX_UPLOAD_BYTES = 25 * 1024 * 1024

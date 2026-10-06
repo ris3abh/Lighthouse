@@ -274,6 +274,25 @@ export interface JobStatus {
   summary?: string[];
 }
 
+export interface LetterWriter {
+  id: string;
+  name: string;
+  relationship: "employer" | "independent" | "coauthor";
+  credentials: string;
+  criteria: string[];
+  asks: string[];
+  status: "prospect" | "asked" | "drafting" | "sent" | "signed" | "declined";
+  draft_path: string | null;
+  last_contact: string | null;
+  draft_exists: boolean;
+}
+
+export interface LettersView {
+  letters: LetterWriter[];
+  coverage: { id: string; label: string; independent: number; employer: number; coauthor: number }[];
+  criteria: { id: string; label: string }[];
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -356,6 +375,14 @@ export const api = {
   updateDeadline: (id: string, d: Partial<DeadlineItem>) => request<DeadlineItem>("PATCH", `/deadlines/${enc(id)}`, d),
   deleteDeadline: (id: string) => request<{ removed: string }>("DELETE", `/deadlines/${enc(id)}`),
   pipeline: () => request<PipelineCard[]>("GET", "/pipeline"),
+  addPipeline: (p: Partial<PipelineCard>) => request<PipelineCard>("POST", "/pipeline", p),
+  updatePipeline: (id: string, p: Partial<PipelineCard>) => request<PipelineCard>("PATCH", `/pipeline/${enc(id)}`, p),
+  deletePipeline: (id: string) => request<{ removed: string }>("DELETE", `/pipeline/${enc(id)}`),
+  letters: () => request<LettersView>("GET", "/letters"),
+  addLetter: (l: Partial<LetterWriter>) => request<LetterWriter>("POST", "/letters", l),
+  updateLetter: (id: string, l: Partial<LetterWriter>) => request<LetterWriter>("PATCH", `/letters/${enc(id)}`, l),
+  deleteLetter: (id: string) => request<{ removed: string }>("DELETE", `/letters/${enc(id)}`),
+  draftUrl: (path: string) => `./api/drafts/${path.replace(/^drafts\//, "").split("/").map(enc).join("/")}`,
   jobs: () => request<JobStatus[]>("GET", "/jobs"),
   runJob: (name: string) => request<JobStatus>("POST", `/jobs/${enc(name)}/run`),
   calendarUrl: "./calendar.ics",

@@ -1,0 +1,168 @@
+import { useState } from "react";
+import { api, type LetterWriter } from "../api";
+import { useRefresh } from "../App";
+import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
+import { today, useLoad } from "../hooks";
+
+const STATUSES: LetterWriter["status"][] = ["prospect", "asked", "drafting", "sent", "signed", "declined"];
+const RELATIONSHIPS: LetterWriter["relationship"][] = ["independent", "employer", "coauthor"];
+const STATUS_TONE: Record<string, string> = {
+  signed: "text-emerald-700 dark:text-emerald-400",
+  declined: "text-zinc-400 line-through",
+  sent: "text-sky-700 dark:text-sky-400",
+};
+
+export default function Letters() {
+  const { version, bump } = useRefresh();
+  const toast = useToast();
+  const data = useLoad(() => api.letters(), [version]);
+  const [form, setForm] = useState({ name: "", relationship: "independent" as LetterWriter["relationship"], credentials: "" });
+  if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
+  if (!data.data) return <Loading />;
+  const { letters, coverage, criteria } = data.data;
+  const label = Object.fromEntries(criteria.map((c) => [c.id, c.label]));
+
+  const save = async (fn: () => Promise<unknown>, msg: string) => {
+    try {
+      await fn();
+      toast(msg);
+      bump();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+  const setStatus = (lt: LetterWriter, status: LetterWriter["status"]) =>
+    save(() => api.updateLetter(lt.id, { status, last_contact: today() }), `${lt.name}: ${status}`);
+
+  return (
+    <div className="mx-auto max-w-6xl">
+      <PageHeader title="Letters" subtitle="Recommendation letter writers, what each one covers, and where each letter stands." />
+
+      <Card title="Writers" className="mb-4">
+        {letters.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-zinc-500">
+                <tr className="border-b border-zinc-100 dark:border-zinc-800">
+                  <th className="px-4 py-2 font-medium">Writer</th>
+                  <th className="px-2 py-2 font-medium">Relationship</th>
+                  <th className="px-2 py-2 font-medium">Covers</th>
+                  <th className="px-2 py-2 font-medium">Status</th>
+                  <th className="px-2 py-2 font-medium">Last contact</th>
+                  <th className="px-2 py-2 font-medium">Draft</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {letters.map((lt) => (
+                  <tr key={lt.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
+                    <td className="px-4 py-2">
+                      <div className={cx("font-medium", STATUS_TONE[lt.status])}>{lt.name}</div>
+                      {lt.credentials && <div className="text-xs text-zinc-500">{lt.credentials}</div>}
+                    </td>
+                    <td className="px-2 py-2">
+                      <Chip>{lt.relationship}</Chip>
+                    </td>
+                    <td className="px-2 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {lt.criteria.length ? lt.criteria.map((c) => (
+                          <span key={c} title={label[c] ?? c}>
+                            <Chip>{c}</Chip>
+                          </span>
+                        )) : <span className="text-xs text-zinc-400">none yet</span>}
+                      </div>
+                    </td>
+                    <td className="px-2 py-2">
+                      <select aria-label={`Status for ${lt.name}`} className="input w-auto py-1 text-xs" value={lt.status} onChange={(e) => setStatus(lt, e.target.value as LetterWriter["status"])}>
+                        {STATUSES.map((s) => (
+                          <option key={s}>{s}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-2 py-2 text-xs tabular-nums text-zinc-500">{lt.last_contact ?? "—"}</td>
+                    <td className="px-2 py-2 text-xs">
+                      {lt.draft_exists && lt.draft_path ? (
+                        <a className="link" href={api.draftUrl(lt.draft_path)} target="_blank" rel="noreferrer">
+                          open
+                        </a>
+                      ) : (
+                        <span className="text-zinc-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-2 text-right whitespace-nowrap">
+                      {lt.status !== "sent" && lt.status !== "signed" && (
+                        <Button size="sm" variant="ghost" onClick={() => setStatus(lt, "sent")}>
+                          Mark sent
+                        </Button>
+                      )}
+                      {lt.status !== "signed" && (
+                        <Button size="sm" variant="ghost" onClick={() => setStatus(lt, "signed")}>
+                          Mark signed
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty>No writers yet. Add one below, or import your chats; "I asked Dr. … for a letter" becomes a suggestion.</Empty>
+        )}
+        <form
+          className="flex flex-wrap items-end gap-2 border-t border-zinc-100 p-3 dark:border-zinc-800"
+          onSubmit={(e) => {
+            e.preventDefault();
+            save(async () => {
+              await api.addLetter(form);
+              setForm({ ...form, name: "", credentials: "" });
+            }, "Writer added");
+          }}
+        >
+          <label className="min-w-48 flex-1">
+            <span className="label">Name</span>
+            <input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </label>
+          <label className="min-w-48 flex-1">
+            <span className="label">Credentials</span>
+            <input className="input" placeholder="e.g. Professor, Lakeshore University" value={form.credentials} onChange={(e) => setForm({ ...form, credentials: e.target.value })} />
+          </label>
+          <label>
+            <span className="label">Relationship</span>
+            <select className="input" value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value as LetterWriter["relationship"] })}>
+              {RELATIONSHIPS.map((r) => (
+                <option key={r}>{r}</option>
+              ))}
+            </select>
+          </label>
+          <Button type="submit" variant="primary">
+            Add writer
+          </Button>
+        </form>
+      </Card>
+
+      <Card title="Coverage by criterion (declined writers excluded)">
+        <table className="w-full text-sm">
+          <thead className="text-left text-xs text-zinc-500">
+            <tr className="border-b border-zinc-100 dark:border-zinc-800">
+              <th className="px-4 py-2 font-medium">Criterion</th>
+              <th className="px-2 py-2 text-right font-medium">Independent</th>
+              <th className="px-2 py-2 text-right font-medium">Employer</th>
+              <th className="px-4 py-2 text-right font-medium">Co-author</th>
+            </tr>
+          </thead>
+          <tbody>
+            {coverage.map((row) => (
+              <tr key={row.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
+                <td className="px-4 py-1.5">{row.label}</td>
+                <td className={cx("px-2 py-1.5 text-right tabular-nums", row.independent ? "font-medium" : "text-zinc-400")}>{row.independent}</td>
+                <td className={cx("px-2 py-1.5 text-right tabular-nums", !row.employer && "text-zinc-400")}>{row.employer}</td>
+                <td className={cx("px-4 py-1.5 text-right tabular-nums", !row.coauthor && "text-zinc-400")}>{row.coauthor}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}

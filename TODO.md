@@ -61,7 +61,13 @@ Phase 1a notes / follow-ups:
 - [x] Notifications: desktop, email, Slack, Discord, ntfy; routes; keychain secrets; Settings page
 - [x] Scheduler (APScheduler in `up`) + `run deadline-check` / `run digest`; biweekly metrics snapshot
 - [x] Deadlines + calendar.ics + Calendar page
-- [ ] Pipeline kanban with staleness + Letters page
+- [x] Pipeline kanban with staleness + Letters page
+
+Phase 1b notes / follow-ups:
+- Desktop notifications on macOS go through `osascript`; macOS may need notification permission for
+  Script Editor before banners appear.
+- Letter drafting (letter-draft skill) is Phase 2; the Letters page links existing drafts only.
+- One-way Google Calendar push (OAuth) is still open; Google can't subscribe to a localhost feed.
 
 ## Later in Phase 1
 

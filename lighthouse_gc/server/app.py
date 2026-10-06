@@ -83,6 +83,26 @@ class DeadlineBody(BaseModel):
     done: bool | None = None
 
 
+class PipelineBody(BaseModel):
+    title: str | None = None
+    criterion: str | None = None
+    stage: str | None = None
+    url: str | None = None
+    follow_up: dt.date | None = None
+    notes: str | None = None
+
+
+class LetterBody(BaseModel):
+    name: str | None = None
+    relationship: str | None = None
+    credentials: str | None = None
+    criteria: list[str] | None = None
+    asks: list[str] | None = None
+    status: str | None = None
+    draft_path: str | None = None
+    last_contact: dt.date | None = None
+
+
 class NotifyTestBody(BaseModel):
     channel: str | None = None
 
@@ -397,6 +417,62 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
     @app.get("/api/pipeline")
     def get_pipeline() -> list[dict[str, Any]]:
         return pipeline_view(ws)
+
+    @app.post("/api/pipeline")
+    def post_pipeline(body: PipelineBody) -> dict[str, Any]:
+        return ws.add_pipeline_item(**body.model_dump(exclude_none=True)).model_dump(mode="json")
+
+    @app.patch("/api/pipeline/{item_id}")
+    def patch_pipeline(item_id: str, body: PipelineBody) -> dict[str, Any]:
+        return ws.update_pipeline_item(item_id, **body.model_dump(exclude_unset=True)).model_dump(mode="json")
+
+    @app.delete("/api/pipeline/{item_id}")
+    def remove_pipeline(item_id: str) -> dict[str, Any]:
+        ws.delete_pipeline_item(item_id)
+        return {"removed": item_id}
+
+    @app.get("/api/letters")
+    def get_letters() -> dict[str, Any]:
+        profile = ws.profile()
+        letters = ws.letters().letters
+        coverage = []
+        for crit in profile.criteria:
+            writers = [lt for lt in letters if crit.id in lt.criteria and lt.status != "declined"]
+            coverage.append({"id": crit.id, "label": crit.label,
+                             **{rel: sum(lt.relationship == rel for lt in writers)
+                                for rel in ("independent", "employer", "coauthor")}})  # fmt: skip
+        return {
+            "letters": [
+                {
+                    **lt.model_dump(mode="json"),
+                    "draft_exists": bool(lt.draft_path and (ws.root / lt.draft_path).is_file()),
+                }  # fmt: skip
+                for lt in letters
+            ],
+            "coverage": coverage,
+            "criteria": [{"id": c.id, "label": c.label} for c in profile.criteria],
+        }
+
+    @app.post("/api/letters")
+    def post_letter(body: LetterBody) -> dict[str, Any]:
+        return ws.add_letter(**body.model_dump(exclude_none=True)).model_dump(mode="json")
+
+    @app.patch("/api/letters/{letter_id}")
+    def patch_letter(letter_id: str, body: LetterBody) -> dict[str, Any]:
+        return ws.update_letter(letter_id, **body.model_dump(exclude_unset=True)).model_dump(mode="json")
+
+    @app.delete("/api/letters/{letter_id}")
+    def remove_letter(letter_id: str) -> dict[str, Any]:
+        ws.delete_letter(letter_id)
+        return {"removed": letter_id}
+
+    @app.get("/api/drafts/{path:path}")
+    def get_draft(path: str) -> FileResponse:
+        target = ws.resolve_inside(f"drafts/{path}")
+        if not target.is_file() or target.suffix.lower() not in (".md", ".txt"):
+            raise HTTPException(404, "no such draft")
+        return FileResponse(target, media_type="text/plain; charset=utf-8",
+                            headers={"Content-Security-Policy": "sandbox"})  # fmt: skip
 
     @app.get("/calendar.ics")
     def calendar_feed() -> Response:
