@@ -27,6 +27,7 @@ MODELS: dict[str, type[BaseModel]] = {
     "pipeline": core.Pipeline,
     "letters": domain.Letters,
     "deadlines": core.Deadlines,
+    "briefing": core.Briefing,
     "opportunities": core.Opportunities,
     "lighthouse-config": core.WorkspaceConfig,
     "profile": domain.Profile,

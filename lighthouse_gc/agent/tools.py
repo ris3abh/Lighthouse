@@ -9,7 +9,7 @@ import json
 import re
 import socket
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import UTC, date, datetime
 from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -21,6 +21,8 @@ from lighthouse_gc.agent import autopilot
 from lighthouse_gc.agent.redact import redact
 from lighthouse_gc.core.models import (
     AgentRun,
+    Briefing,
+    BriefingTodo,
     Candidate,
     ClaimDraft,
     Deadline,
@@ -374,6 +376,26 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                          proposal=row.model_dump(mode="json"))  # fmt: skip
         return _propose(cand.with_evidence(evidence))
 
+    async def t_briefing(args: S) -> str:
+        pending = {c.id for c in ws.pending_candidates()}
+        todos = []
+        for t in args.get("todos") or []:
+            cid = t.get("candidate_id") or None
+            if cid and cid not in pending:
+                raise ValueError(f"{cid} isn't a pending Inbox item; call list_inbox for current ids")
+            link = t.get("link") or None
+            if link and not link.startswith(("#/", "https://", "http://")):
+                raise ValueError("link must be an app route like #/pipeline or an http(s) URL")
+            todos.append(BriefingTodo(title=t["title"], why=t.get("why", ""), candidate_id=cid, link=link))
+        if len(todos) > 3:
+            raise ValueError("at most three things to do")
+        since = args.get("since")
+        briefing = Briefing(generated_at=datetime.now(UTC), run_id=ctx.run.id,
+                            since=date.fromisoformat(since) if since else None,
+                            changed=[str(c)[:300] for c in args.get("changed") or []][:8], todos=todos)  # fmt: skip
+        ctx.svc.publish_briefing(briefing)
+        return "Published the briefing to the Overview."
+
     criteria = [c.id for c in ws.profile().criteria]
     tool_list = [
         AgentTool("get_scoreboard", "Current criteria scoreboard (banked / building / gap / dropped).", _obj({}, []), t_scoreboard),
@@ -412,6 +434,14 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                         "criterion": {"type": "string", "enum": criteria}, "url": STR, "notes": STR,
                         "follow_up": DATE, "why": STR}, ["title"]),
                   t_propose_pipeline, read_only=False),
+        AgentTool("publish_briefing", "Publish the Overview briefing: what changed (up to 8 short lines) and the three "
+                  "most useful things to do this week. Link a to-do to a pending Inbox item (candidate_id) when it "
+                  "is a decision, so the person can approve or dismiss it right there. Replaces the last briefing.",
+                  _obj({"since": DATE, "changed": {"type": "array", "items": STR, "maxItems": 8},
+                        "todos": {"type": "array", "maxItems": 3, "items": _obj(
+                            {"title": STR, "why": STR, "candidate_id": STR, "link": STR}, ["title"])}},
+                       ["changed", "todos"]),
+                  t_briefing, read_only=False),
         AgentTool("propose_tracker_update", "Change an existing pipeline item, letter writer or deadline (list it "
                   "first for its id). Applied automatically only if the person turned on autopilot for tracker "
                   "updates; otherwise it goes to the Inbox.",
@@ -441,6 +471,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         "propose_letter_writer": ("data/inbox.json",),
         "propose_tracker_update": ("data/inbox.json", "data/pipeline.json", "data/letters.json", "data/deadlines.json"),
         "record_metric": ("data/inbox.json", "data/metrics.csv"),
+        "publish_briefing": ("data/briefing.json",),
     }  # fmt: skip
     for t in tool_list:
         t.touches = touches.get(t.name, ())

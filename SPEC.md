@@ -482,7 +482,7 @@ against the demo workspace and your own.
       could affect a criterion always needs approval.
 - [x] Missions on the existing scheduler: weekly opportunity scout, daily what-changed check; results on the
       Agent page and via notifications.
-- [ ] Overview briefing: agent-written "what changed / 3 things to do", with inline approvals.
+- [x] Overview briefing: agent-written "what changed / 3 things to do", with inline approvals.
 
 ### Phase 2 — Gmail, scans, letters (weekends 3–4)
 

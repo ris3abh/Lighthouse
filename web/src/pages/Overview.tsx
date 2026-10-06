@@ -1,4 +1,5 @@
 import type { Overview } from "../api";
+import Briefing from "../components/Briefing";
 import Sparkline from "../components/Sparkline";
 import { Card, cx, Delta, Empty, ErrorBox, fmt, Loading, STATUS_STYLE } from "../components/ui";
 
@@ -70,6 +71,8 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
           </div>
         </div>
       </div>
+
+      <Briefing />
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* scoreboard */}

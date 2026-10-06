@@ -106,6 +106,9 @@ All notable changes to this project are documented here. The format follows
   changed.
 - New scheduled jobs and notification events merge into an existing `lighthouse.yaml` with their defaults;
   set a schedule to `''` to turn a job off.
+- Overview briefing: a "This week" card with what changed and three things to do, written by the agent
+  (`publish_briefing`, saved to `data/briefing.json`). To-dos that are Inbox decisions have Approve / Dismiss
+  right there. The daily what-changed mission refreshes it, and so does the Refresh button.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.

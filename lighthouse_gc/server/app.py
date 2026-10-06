@@ -716,6 +716,23 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         runner.get(run_id)
         return {"stopping": runner.stop(run_id)}
 
+    @app.get("/api/briefing")
+    def get_briefing() -> dict[str, Any]:
+        """The Overview briefing, with each linked Inbox item's current state for inline approve / dismiss."""
+        b = ws.briefing()
+        inbox = {c.id: c for c in ws.inbox().candidates}
+        running = next(
+            (r for r in runner.runs(limit=50) if r.mission == "what_changed" and r.status == "running"), None
+        )
+        todos = []
+        for t in b.todos:
+            c = inbox.get(t.candidate_id or "")
+            todos.append({**t.model_dump(mode="json"), "candidate": {
+                "id": c.id, "kind": c.kind, "title": c.title, "status": c.status,
+                "proposed_criterion": c.proposed_criterion, "source_tier": c.source_tier} if c else None})  # fmt: skip
+        return {**b.model_dump(mode="json", exclude={"todos"}), "todos": todos,
+                "refreshing": running.id if running else None}  # fmt: skip
+
     @app.get("/api/agent/missions")
     def agent_missions() -> list[dict[str, Any]]:
         from lighthouse_gc.agent.missions import missions_status

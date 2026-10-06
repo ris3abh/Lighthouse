@@ -120,6 +120,16 @@ on the Agent page, and its result goes out as a `mission` notification. New jobs
 merge into existing `lighthouse.yaml` files with their defaults, so upgrading picks them up; `''` turns a
 schedule off.
 
+### 10. Overview briefing (Phase 1c item 6)
+
+The agent writes the briefing through a structured tool, `publish_briefing` (up to 8 "what changed" lines,
+at most three to-dos), never free text scraped from a reply. It goes through the service layer
+(`briefing.publish`, logged in `data/changes.jsonl`) into `data/briefing.json`, an optional file validated
+when present. A to-do can link a pending Inbox item; the tool refuses ids that aren't pending, and links that
+aren't an app route or an http(s) URL. The Overview shows it as "This week", with Approve / Dismiss calling
+the ordinary Inbox routes, so the usual rules apply (self-reported items still can't become evidence). The
+daily what-changed mission refreshes it; Refresh runs that mission now.
+
 ## Consequences
 
 - Chat history is replayed into each turn instead of resumed from a server-side session: more input tokens

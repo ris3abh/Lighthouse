@@ -53,8 +53,11 @@ def _changed_prompt(ws: Case, since: date | None) -> str:
         f"Daily check-in. Since {since.isoformat()}:\n"
         f"1. Call what_changed with since={since.isoformat()}, then list_inbox, list_deadlines, list_pipeline and "
         "get_scoreboard.\n"
-        "2. Summarize what changed that matters, and the three most useful things for the person to do this week, "
-        "each with why. Mention Inbox items that need a decision. Be brief."
+        "2. Call publish_briefing: what changed that matters (short lines), and the three most useful things for "
+        "the person to do this week, each with why. When a to-do is deciding an Inbox item, set its candidate_id; "
+        "otherwise link the page (#/pipeline, #/letters, #/calendar, #/evidence) or the opportunity's URL.\n"
+        f"   Pass since={since.isoformat()}.\n"
+        "3. Reply with the same briefing in a few lines."
     )
 
 

@@ -249,6 +249,28 @@ class Deadlines(_File):
     deadlines: list[Deadline] = Field(default_factory=list)
 
 
+# --------------------------------------------------------------------------- briefing.json
+
+
+class BriefingTodo(_Model):
+    title: str = Field(..., min_length=1, max_length=160)
+    why: str = Field("", max_length=400)
+    candidate_id: str | None = Field(None, description="An Inbox item this action approves or dismisses.")
+    link: str | None = Field(None, description="An in-app route (#/pipeline) or a URL.")
+
+
+class Briefing(_File):
+    """The agent-written Overview briefing, refreshed by the daily what-changed mission."""
+
+    generated_at: datetime | None = None
+    run_id: str | None = None
+    since: date | None = None
+    changed: list[str] = Field(default_factory=list, max_length=8, description="What changed, one line each.")
+    todos: list[BriefingTodo] = Field(
+        default_factory=list, max_length=3, description="Three things this week."
+    )
+
+
 # --------------------------------------------------------------------------- opportunities.json
 
 

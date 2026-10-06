@@ -1,0 +1,122 @@
+{
+  "$defs": {
+    "BriefingTodo": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "An Inbox item this action approves or dismisses.",
+          "title": "Candidate Id"
+        },
+        "link": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "An in-app route (#/pipeline) or a URL.",
+          "title": "Link"
+        },
+        "title": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "why": {
+          "default": "",
+          "maxLength": 400,
+          "title": "Why",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "title": "BriefingTodo",
+      "type": "object"
+    }
+  },
+  "$id": "https://lighthouse-gc.dev/schemas/v1/briefing.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The agent-written Overview briefing, refreshed by the daily what-changed mission.",
+  "properties": {
+    "changed": {
+      "description": "What changed, one line each.",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 8,
+      "title": "Changed",
+      "type": "array"
+    },
+    "generated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Generated At"
+    },
+    "run_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Run Id"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "since": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Since"
+    },
+    "todos": {
+      "description": "Three things this week.",
+      "items": {
+        "$ref": "#/$defs/BriefingTodo"
+      },
+      "maxItems": 3,
+      "title": "Todos",
+      "type": "array"
+    }
+  },
+  "title": "Briefing",
+  "type": "object"
+}

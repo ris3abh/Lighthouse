@@ -23,7 +23,7 @@ from typing import Any, TypeVar
 from pydantic import BaseModel
 
 from lighthouse_gc.agent.autopilot import AUTO_ACTIONS, AutopilotRefused
-from lighthouse_gc.core.models import Candidate, Change, Evidence, Exhibit, MetricRow
+from lighthouse_gc.core.models import Briefing, Candidate, Change, Evidence, Exhibit, MetricRow
 from lighthouse_gc.core.workspace import NotFound, WorkspaceError
 from lighthouse_gc.criteria.case import Case
 
@@ -245,6 +245,18 @@ class Service:
 
         return self._record("metrics.record", "metric", apply, target_id=f"{row.source}/{row.item}/{row.metric}",
                             before=before, summary=f"{row.item} {row.metric} = {row.value:g} ({row.date})")  # fmt: skip
+
+    # ------------------------------------------------------------------ briefing
+
+    def publish_briefing(self, briefing: Briefing) -> Briefing:
+        before = self.ws.briefing()
+
+        def apply() -> Briefing:
+            self.ws.save_briefing(briefing)
+            return briefing
+
+        return self._record("briefing.publish", "briefing", apply, target_id="overview", before=before,
+                            summary=f"{len(briefing.changed)} change(s), {len(briefing.todos)} to-do(s)")  # fmt: skip
 
     # ------------------------------------------------------------------ settings
 

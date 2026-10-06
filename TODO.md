@@ -90,7 +90,7 @@ Phase 1c notes:
   summarizing older turns is a follow-up.
 - [x] 4. Autopilot rules: per-category, off by default, one-click undo, criterion-protection test
 - [x] 5. Missions: weekly opportunity scout, daily what-changed (skips at no cost when nothing changed)
-- [ ] 6. Overview briefing
+- [x] 6. Overview briefing: "This week" card, inline approve/dismiss, refreshed by the daily mission
 
 ## Later in Phase 1
 

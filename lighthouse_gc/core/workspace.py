@@ -32,6 +32,7 @@ from lighthouse_gc.core.models import (
     EXHIBIT_NAME_RE,
     METRICS_COLUMNS,
     NON_EVIDENTIARY_TIERS,
+    Briefing,
     Candidate,
     Change,
     Deadline,
@@ -63,6 +64,10 @@ DATA_FILES: dict[str, type[BaseModel]] = {
     "deadlines.json": Deadlines,
     "opportunities.json": Opportunities,
 }
+
+
+# Written by the app on first use; validated when present.
+OPTIONAL_FILES: dict[str, type[BaseModel]] = {"briefing.json": Briefing}
 
 
 class WorkspaceError(Exception):
@@ -189,6 +194,12 @@ class Workspace:
 
     def deadlines(self) -> Deadlines:
         return self._load("deadlines.json", Deadlines)
+
+    def briefing(self) -> Briefing:
+        return self._load("briefing.json", Briefing)
+
+    def save_briefing(self, briefing: Briefing) -> None:
+        self._save("briefing.json", briefing)
 
     def opportunities(self) -> Opportunities:
         return self._load("opportunities.json", Opportunities)

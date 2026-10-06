@@ -246,6 +246,21 @@ export interface ChangeView {
   undone: boolean;
 }
 
+export interface BriefingView {
+  generated_at: string | null;
+  run_id: string | null;
+  since: string | null;
+  changed: string[];
+  todos: {
+    title: string;
+    why: string;
+    candidate_id: string | null;
+    link: string | null;
+    candidate: { id: string; kind: Candidate["kind"]; title: string; status: string; proposed_criterion: string; source_tier: string | null } | null;
+  }[];
+  refreshing: string | null;
+}
+
 export interface Missions {
   opportunity_scout: boolean;
   what_changed: boolean;
@@ -487,6 +502,7 @@ export const api = {
   agentStatus: () => request<AgentStatus>("GET", "/agent/status"),
   chat: (message: string, conversation_id?: string | null, page?: string) =>
     request<{ run_id: string; conversation_id: string }>("POST", "/agent/chat", { message, conversation_id: conversation_id ?? null, page }),
+  briefing: () => request<BriefingView>("GET", "/briefing"),
   missions: () => request<MissionView[]>("GET", "/agent/missions"),
   runMission: (name: string) => request<{ run_id: string }>("POST", `/agent/missions/${enc(name)}/run`),
   setMissions: (flags: Partial<Missions>) => request<Missions>("PUT", "/settings/missions", flags),
