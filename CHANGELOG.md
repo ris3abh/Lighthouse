@@ -62,6 +62,7 @@ All notable changes to this project are documented here. The format follows
   excluded). Draft paths must stay inside `drafts/`. API: `/api/letters`, `/api/drafts/{path}`.
 - Calendar week view (remembered per browser) and a full edit dialog for deadlines (title, date, kind,
   link, "needs me", done, delete), opened by clicking any deadline in the month or week view or the list.
+- Letters: per-writer asks (letter, membership reference) as checkboxes and an editable last-contact date.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.

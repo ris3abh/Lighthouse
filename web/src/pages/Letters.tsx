@@ -6,6 +6,10 @@ import { today, useLoad } from "../hooks";
 
 const STATUSES: LetterWriter["status"][] = ["prospect", "asked", "drafting", "sent", "signed", "declined"];
 const RELATIONSHIPS: LetterWriter["relationship"][] = ["independent", "employer", "coauthor"];
+const ASKS = [
+  { id: "letter", label: "Letter" },
+  { id: "membership_ref", label: "Membership ref" },
+] as const;
 const STATUS_TONE: Record<string, string> = {
   signed: "text-emerald-700 dark:text-emerald-400",
   declined: "text-zinc-400 line-through",
@@ -47,6 +51,7 @@ export default function Letters() {
                   <th className="px-4 py-2 font-medium">Writer</th>
                   <th className="px-2 py-2 font-medium">Relationship</th>
                   <th className="px-2 py-2 font-medium">Covers</th>
+                  <th className="px-2 py-2 font-medium">Asks</th>
                   <th className="px-2 py-2 font-medium">Status</th>
                   <th className="px-2 py-2 font-medium">Last contact</th>
                   <th className="px-2 py-2 font-medium">Draft</th>
@@ -73,13 +78,40 @@ export default function Letters() {
                       </div>
                     </td>
                     <td className="px-2 py-2">
+                      <div className="flex flex-col gap-0.5">
+                        {ASKS.map((a) => (
+                          <label key={a.id} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={lt.asks.includes(a.id)}
+                              onChange={(e) =>
+                                save(
+                                  () => api.updateLetter(lt.id, { asks: e.target.checked ? [...lt.asks, a.id] : lt.asks.filter((x) => x !== a.id) }),
+                                  `${lt.name}: ${e.target.checked ? "asking for" : "no longer asking for"} ${a.label.toLowerCase()}`,
+                                )
+                              }
+                            />
+                            {a.label}
+                          </label>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-2 py-2">
                       <select aria-label={`Status for ${lt.name}`} className="input w-auto py-1 text-xs" value={lt.status} onChange={(e) => setStatus(lt, e.target.value as LetterWriter["status"])}>
                         {STATUSES.map((s) => (
                           <option key={s}>{s}</option>
                         ))}
                       </select>
                     </td>
-                    <td className="px-2 py-2 text-xs tabular-nums text-zinc-500">{lt.last_contact ?? "—"}</td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="date"
+                        aria-label={`Last contact with ${lt.name}`}
+                        className="input w-auto px-1.5 py-0.5 text-xs"
+                        value={lt.last_contact ?? ""}
+                        onChange={(e) => save(() => api.updateLetter(lt.id, { last_contact: e.target.value || null }), `${lt.name}: last contact updated`)}
+                      />
+                    </td>
                     <td className="px-2 py-2 text-xs">
                       {lt.draft_exists && lt.draft_path ? (
                         <a className="link" href={api.draftUrl(lt.draft_path)} target="_blank" rel="noreferrer">

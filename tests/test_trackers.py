@@ -93,3 +93,21 @@ def test_declined_writers_do_not_count_in_coverage(demo_ws):
         row for row in c.get("/api/letters").json()["coverage"] if row["id"] == "original_contributions"
     )
     assert oc["independent"] == 0
+
+
+def test_letter_asks_and_last_contact_are_editable(demo_ws):
+    c = TestClient(create_app(demo_ws, allowed_hosts=["testserver"]))
+    lt = next(x for x in c.get("/api/letters").json()["letters"] if x["name"].startswith("Marcus"))
+    assert lt["asks"] == ["letter"]
+    r = c.patch(f"/api/letters/{lt['id']}", json={"asks": ["letter", "membership_ref"], "last_contact": "2026-10-05"},
+                headers=W)  # fmt: skip
+    assert r.status_code == 200 and r.json()["asks"] == ["letter", "membership_ref"]
+    assert r.json()["last_contact"] == "2026-10-05"
+    assert demo_ws.letters().letters[1].asks == ["letter", "membership_ref"]  # persisted to letters.json
+    assert (
+        c.patch(f"/api/letters/{lt['id']}", json={"last_contact": None}, headers=W).json()["last_contact"]
+        is None
+    )
+    assert c.patch(f"/api/letters/{lt['id']}", json={"asks": ["coffee"]}, headers=W).status_code == 400
+    assert c.patch(f"/api/letters/{lt['id']}", json={"last_contact": "soon"}, headers=W).status_code == 422
+    assert c.patch(f"/api/letters/{lt['id']}", json={"asks": []}, headers=W).json()["asks"] == []

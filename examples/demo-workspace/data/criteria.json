@@ -2,7 +2,7 @@
   "schema_version": 1,
   "profile": "o1a",
   "profile_name": "O-1A Extraordinary Ability",
-  "computed_at": "2026-10-06T22:04:31Z",
+  "computed_at": "2026-10-06T22:06:33Z",
   "threshold": 3,
   "target": 5,
   "banked": 2,
@@ -14,7 +14,7 @@
       "status": "building",
       "exhibit_count": 1,
       "exhibit_ids": [
-        "exh_a39899c5746c"
+        "exh_85e5442d7ca2"
       ],
       "matched_signals": [],
       "missing_signals": [
@@ -66,8 +66,8 @@
       "status": "banked",
       "exhibit_count": 2,
       "exhibit_ids": [
-        "exh_5e29e6f59908",
-        "exh_ddc88b70031b"
+        "exh_cdb32d8f477c",
+        "exh_9f10b1d7f093"
       ],
       "matched_signals": [
         "selective_event",
@@ -86,7 +86,7 @@
       "status": "building",
       "exhibit_count": 1,
       "exhibit_ids": [
-        "exh_b5f17f4220ba"
+        "exh_76cf7d79cee3"
       ],
       "matched_signals": [
         "widely_adopted",
@@ -107,7 +107,7 @@
       "status": "banked",
       "exhibit_count": 1,
       "exhibit_ids": [
-        "exh_c291422647a3"
+        "exh_b6f7561ed6ed"
       ],
       "matched_signals": [
         "peer_reviewed",
@@ -126,7 +126,7 @@
       "status": "building",
       "exhibit_count": 1,
       "exhibit_ids": [
-        "exh_6e619e13da3e"
+        "exh_057f0ce3c958"
       ],
       "matched_signals": [
         "critical_capacity"
