@@ -103,6 +103,17 @@ about immigration. Profiles and scoring live in a separate layer, so other domai
 | `lighthouse-gc run dashboard` | re-score and regenerate `DASHBOARD.md` |
 | `lighthouse-gc up [--demo]` | serve the dashboard on `127.0.0.1:7777` |
 | `lighthouse-gc validate` | check every workspace file against its schema and naming rules |
+| `lighthouse-gc mcp` | read-only MCP server over stdio for Claude Code, Codex or any MCP client |
+
+### Use it from Claude Code (or any MCP client)
+
+```sh
+claude mcp add lighthouse -- lighthouse-gc mcp -w ~/my-case
+```
+
+The server is **read-only**: `get_scoreboard`, `list_gaps`, `query_claims(entity, as_of)`,
+`get_provenance(claim_id)` and `what_changed(since)`. Agents see each claim's verbatim source quote and review
+status, and are told to draft only from approved claims.
 
 `run` jobs are headless, so cron / launchd / GitHub Actions can call them until the built-in scheduler lands.
 

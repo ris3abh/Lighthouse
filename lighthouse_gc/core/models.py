@@ -97,6 +97,10 @@ class SourcesFile(_File):
 
 class Candidate(_Model):
     id: str = Field(default_factory=lambda: new_id("cand"))
+    kind: Literal["evidence", "pipeline", "deadline", "letter"] = Field(
+        "evidence",
+        description="evidence becomes an exhibit; the others become tracker entries, never exhibits.",
+    )
     fingerprint: str = Field(description="Stable de-duplication key; re-imports never duplicate a candidate.")
     source: str = Field(description="Source record id that produced this candidate (or 'manual').")
     item_id: str | None = None

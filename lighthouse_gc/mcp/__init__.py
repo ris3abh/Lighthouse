@@ -1,1 +1,1 @@
-"""MCP server exposing workspace tools. Arrives in Phase 1."""
+"""Read-only MCP server exposing the workspace to agents (``lighthouse-gc mcp``)."""

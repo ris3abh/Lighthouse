@@ -190,6 +190,18 @@ def up(
 
 
 @app.command()
+def mcp(workspace: WorkspaceOpt = None) -> None:
+    """Run a read-only MCP server over stdio (e.g. `claude mcp add lighthouse -- lighthouse-gc mcp -w <dir>`)."""
+    from lighthouse_gc.mcp.server import serve
+
+    try:
+        ws = find_workspace(workspace)
+    except WorkspaceError as exc:
+        raise _fail(str(exc)) from exc
+    serve(ws)  # stdout belongs to the MCP protocol: print nothing else
+
+
+@app.command()
 def validate(workspace: WorkspaceOpt = None) -> None:
     """Check every workspace file against its schema and the evidence naming rules."""
     from lighthouse_gc.scaffold import validate_workspace

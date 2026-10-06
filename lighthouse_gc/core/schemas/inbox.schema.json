@@ -66,6 +66,18 @@
           "default": null,
           "title": "Item Id"
         },
+        "kind": {
+          "default": "evidence",
+          "description": "evidence becomes an exhibit; the others become tracker entries, never exhibits.",
+          "enum": [
+            "evidence",
+            "pipeline",
+            "deadline",
+            "letter"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
         "proposed_criterion": {
           "title": "Proposed Criterion",
           "type": "string"
