@@ -306,9 +306,34 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
             {changes.length ? (
               <ul className="divide-y divide-zinc-100 text-xs dark:divide-zinc-800">
                 {changes.map((ch) => (
-                  <li key={ch.id} className="px-3 py-2">
-                    <span className="font-mono text-[11px]">{ch.action}</span> {ch.summary}
-                    <p className="text-[11px] text-zinc-400">{new Date(ch.at).toLocaleString()}</p>
+                  <li key={ch.id} className={cx("px-3 py-2", ch.undone && "opacity-60")}>
+                    <div className="flex items-start gap-1.5">
+                      <span className="min-w-0 flex-1">
+                        {ch.auto && <Chip tone="amber">auto</Chip>} <span className="font-mono text-[11px]">{ch.action}</span> {ch.summary}
+                      </span>
+                      {ch.undoable && !ch.undone && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            api
+                              .undoChange(ch.id)
+                              .then(() => {
+                                toast("Undone");
+                                stored.reload();
+                                onChanged();
+                              })
+                              .catch((e: Error) => toast(e.message, "error"))
+                          }
+                        >
+                          Undo
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-400">
+                      {new Date(ch.at).toLocaleString()}
+                      {ch.undone && " · undone"}
+                    </p>
                   </li>
                 ))}
               </ul>

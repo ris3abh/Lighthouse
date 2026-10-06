@@ -23,7 +23,7 @@ PDF = b"%PDF-1.4 fictional\n"
 
 # Routes the five pages write through. Every mutating route under these prefixes must be covered below.
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
-                 "/api/criteria")  # fmt: skip
+                 "/api/criteria", "/api/changes", "/api/settings/autopilot")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -89,7 +89,17 @@ def _ids(ws):
         "deadline": ws.deadlines().deadlines[0].id,
         "pipeline": ws.pipeline().items[0].id,
         "letter": ws.letters().letters[0].id,
+        "undo": _undoable_change(ws),
     }
+
+
+def _undoable_change(ws) -> str:
+    """Make one undoable change (a pipeline move) so the undo route has something to revert."""
+    from lighthouse_gc.service import Service
+
+    item = ws.pipeline().items[-1]
+    Service(ws).update_pipeline_item(item.id, stage="done" if item.stage != "done" else "idea")
+    return ws.changes()[-1].id
 
 
 # (method, route template) -> (concrete path, request kwargs, expected change action)
@@ -120,6 +130,8 @@ SAMPLES = {
                                "letter.add"),
     ("PATCH", "/api/letters/{letter_id}"): ("/api/letters/{letter}", {"json": {"status": "sent"}}, "letter.update"),
     ("DELETE", "/api/letters/{letter_id}"): ("/api/letters/{letter}", {}, "letter.delete"),
+    ("PUT", "/api/settings/autopilot"): ("/api/settings/autopilot", {"json": {"metrics": True}}, "settings.autopilot"),
+    ("POST", "/api/changes/{change_id}/undo"): ("/api/changes/{undo}/undo", {}, "pipeline_item.undo"),
 }  # fmt: skip
 
 

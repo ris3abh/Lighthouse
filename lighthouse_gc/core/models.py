@@ -106,9 +106,10 @@ class SourcesFile(_File):
 
 class Candidate(_Model):
     id: str = Field(default_factory=lambda: new_id("cand"))
-    kind: Literal["evidence", "pipeline", "deadline", "letter"] = Field(
+    kind: Literal["evidence", "pipeline", "deadline", "letter", "update", "metric"] = Field(
         "evidence",
-        description="evidence becomes an exhibit; the others become tracker entries, never exhibits.",
+        description="evidence becomes an exhibit; pipeline / deadline / letter add tracker entries; update changes "
+        "an existing tracker entry; metric records a metric value. Only evidence can ever become an exhibit.",
     )
     fingerprint: str = Field(description="Stable de-duplication key; re-imports never duplicate a candidate.")
     source: str = Field(description="Source record id that produced this candidate (or 'manual').")
@@ -331,6 +332,19 @@ class NotificationsConfig(_Model):
     )
 
 
+class AutopilotConfig(_Model):
+    """What the agent may apply without asking. Everything is off by default; nothing that could affect a
+    criterion (evidence, exhibits, overrides, profile) can ever be auto-applied, whatever is set here."""
+
+    tracker_updates: bool = Field(
+        False, description="Pipeline stage / follow-up / notes, letter status / contact, deadline edits."
+    )
+    metrics: bool = Field(False, description="Metric values the agent read from a page and quoted.")
+    tier1_deadlines: bool = Field(
+        False, description="New deadlines quoted from a Tier-1 source (primary law or agency pages, SPEC 5a)."
+    )
+
+
 class AgentBudget(_Model):
     """Spend caps. Tokens counted = input + output + cache-creation (cache reads are recorded, not counted)."""
 
@@ -371,6 +385,7 @@ class AgentConfig(_Model):
     web_search: bool = True
     max_turns: int = Field(25, ge=1, le=200)
     budget: AgentBudget = Field(default_factory=AgentBudget)
+    autopilot: AutopilotConfig = Field(default_factory=AutopilotConfig)
 
     def model_for(self, kind: str) -> str:
         return getattr(self.models, RUN_TYPE.get(kind, "task"))
@@ -416,6 +431,8 @@ class Change(_Model):
     summary: str = ""
     before: dict[str, Any] | None = None
     after: dict[str, Any] | None = None
+    auto: bool = Field(False, description="Applied by autopilot without the user's approval (undoable).")
+    undoes: str | None = Field(None, description="For an undo: the id of the change it reverted.")
 
 
 # --------------------------------------------------------------------------- agent/ (ADR 0005)

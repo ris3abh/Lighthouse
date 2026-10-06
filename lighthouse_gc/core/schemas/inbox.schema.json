@@ -81,12 +81,14 @@
         },
         "kind": {
           "default": "evidence",
-          "description": "evidence becomes an exhibit; the others become tracker entries, never exhibits.",
+          "description": "evidence becomes an exhibit; pipeline / deadline / letter add tracker entries; update changes an existing tracker entry; metric records a metric value. Only evidence can ever become an exhibit.",
           "enum": [
             "evidence",
             "pipeline",
             "deadline",
-            "letter"
+            "letter",
+            "update",
+            "metric"
           ],
           "title": "Kind",
           "type": "string"

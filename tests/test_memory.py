@@ -163,3 +163,28 @@ def test_metrics_snapshot_records_metric_claims(ws, http_mock):
     predicates = {c.predicate for c in ws.memory.claims()}
     assert {"stars", "forks", "views_14d", "clones_14d"} <= predicates
     assert ws.memory.verify() == []
+
+
+def test_same_text_at_two_urls_keeps_both_sources(tmp_path):
+    from lighthouse_gc.core.models import Evidence
+
+    mem = Memory(tmp_path, tmp_path / ".cache")
+    a = mem.snapshot(
+        Evidence(
+            connector="agent", source_url="https://a.example/", payload="same text", media_type="text/plain"
+        )
+    )
+    b = mem.snapshot(
+        Evidence(
+            connector="agent", source_url="https://b.example/", payload="same text", media_type="text/plain"
+        )
+    )
+    again = mem.snapshot(
+        Evidence(
+            connector="agent", source_url="https://a.example/", payload="same text", media_type="text/plain"
+        )
+    )
+    assert a.id != b.id and again.id == a.id
+    assert (a.source_url, b.source_url) == ("https://a.example/", "https://b.example/")
+    assert a.snapshot == b.snapshot  # one file on disk
+    assert mem.verify() == []

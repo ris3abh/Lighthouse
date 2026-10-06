@@ -93,7 +93,7 @@ export interface Candidate {
   snoozed_until: string | null;
   stage: string | null;
   claim_ids: string[];
-  kind: "evidence" | "pipeline" | "deadline" | "letter";
+  kind: "evidence" | "pipeline" | "deadline" | "letter" | "update" | "metric";
   attachment: string | null;
   source_tier: string | null;
   proposal: Record<string, unknown>;
@@ -226,6 +226,26 @@ export interface ChannelView {
   to_addr?: string | null;
 }
 
+export interface Autopilot {
+  tracker_updates: boolean;
+  metrics: boolean;
+  tier1_deadlines: boolean;
+}
+
+export interface ChangeView {
+  id: string;
+  at: string;
+  actor: string;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  summary: string;
+  auto: boolean;
+  undoes: string | null;
+  undoable: boolean;
+  undone: boolean;
+}
+
 export interface SettingsView {
   profile: string;
   engine: string;
@@ -233,6 +253,7 @@ export interface SettingsView {
   channels: ChannelView[];
   routes: Record<string, string[]>;
   deadline_alert_days: number[];
+  autopilot: Autopilot;
   schedules: Record<string, string>;
   recent_notifications: { at: string; event: string; title: string; ok: boolean; results: { channel: string; ok: boolean; error: string | null }[] }[];
 }
@@ -453,11 +474,9 @@ export const api = {
   runs: () => request<AgentRunView[]>("GET", "/agent/runs"),
   run: (id: string) => request<AgentRunView>("GET", `/agent/runs/${enc(id)}`),
   runStreamUrl: (id: string) => `./api/agent/runs/${enc(id)}/stream`,
-  changes: (actor?: string) =>
-    request<{ id: string; at: string; actor: string; action: string; target_type: string; target_id: string | null; summary: string }[]>(
-      "GET",
-      `/changes${actor ? `?actor=${enc(actor)}` : ""}`,
-    ),
+  changes: (actor?: string) => request<ChangeView[]>("GET", `/changes${actor ? `?actor=${enc(actor)}` : ""}`),
+  undoChange: (id: string) => request<ChangeView>("POST", `/changes/${enc(id)}/undo`),
+  setAutopilot: (flags: Partial<Autopilot>) => request<Autopilot>("PUT", "/settings/autopilot", flags),
   allCandidates: () => request<Candidate[]>("GET", "/inbox?status=all"),
   conversations: () => request<{ id: string; title: string; updated_at: string; messages: number }[]>("GET", "/agent/conversations"),
   conversation: (id: string) => request<ConversationView>("GET", `/agent/conversations/${enc(id)}`),

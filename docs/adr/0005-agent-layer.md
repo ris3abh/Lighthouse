@@ -96,6 +96,19 @@ consecutive mission runs (`claude-sonnet-5-5`, demo workspace): run 1 wrote 4,85
 tokens; run 2 read 6,759 and wrote 2,442, with only 26 uncached input tokens in each, and cost about 40% less.
 The Agent page shows cached / written / uncached input per run and the month's cache hit rate.
 
+### 8. Autopilot (Phase 1c item 4)
+
+Three categories, each off by default and toggled in Settings: tracker updates (pipeline stage / follow-up /
+notes, letter status / contact / asks, deadline edits), metrics (a value quoted from a page the agent read)
+and Tier-1 deadlines (a deadline quoted from uscis.gov, ecfr.gov, federalregister.gov, travel.state.gov or
+justice.gov). Auto-applied changes go through `Service(auto=True)`, which refuses every action outside
+`AUTO_ACTIONS` and every field outside `AUTO_FIELDS`. Tests prove `AUTO_ACTIONS` never overlaps the actions
+that can affect a criterion (accepting or editing evidence, uploads, remaps, overrides, profile, settings).
+Every auto change is marked `auto` in `data/changes.jsonl` and can be undone in one click: undo restores the
+recorded "before" state, and refuses if the record changed again since, so it never clobbers a later edit.
+Observations are now keyed by source *and* content, so the same text read at two URLs keeps both sources.
+That matters when "is this a Tier-1 page?" decides what may be auto-applied.
+
 ## Consequences
 
 - Chat history is replayed into each turn instead of resumed from a server-side session: more input tokens

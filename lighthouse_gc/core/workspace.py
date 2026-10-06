@@ -442,9 +442,59 @@ class Workspace:
                 pl.items.append(item)
                 self._save("pipeline.json", pl)
                 return item
-        except ValueError as exc:
+            if kind == "update":
+                return self.update_tracker(
+                    proposal["target_type"], proposal["target_id"], **proposal["changes"]
+                )
+            if kind == "metric":
+                row = MetricRow.model_validate(proposal)
+                self.append_metrics([row])
+                return row
+        except (ValueError, KeyError) as exc:
             raise WorkspaceError(f"invalid {kind} entry: {exc}") from exc
         raise WorkspaceError(f"unknown tracker kind {kind!r}")
+
+    def update_tracker(self, target_type: str, target_id: str, **changes: Any) -> BaseModel:
+        if target_type == "pipeline_item":
+            return self.update_pipeline_item(target_id, **changes)
+        if target_type == "deadline":
+            return self.update_deadline(target_id, **changes)
+        raise WorkspaceError(f"can't update {target_type!r}")
+
+    def restore_record(self, target_type: str, record_id: str, before: dict[str, Any] | None) -> None:
+        """Put a tracker record back exactly as ``before`` (or remove it when ``before`` is None). For undo."""
+        files: dict[str, tuple[str, Any, str, type[BaseModel]]] = {
+            "pipeline_item": ("pipeline.json", self.pipeline, "items", PipelineItem),
+            "deadline": ("deadlines.json", self.deadlines, "deadlines", Deadline),
+        }
+        if target_type not in files:
+            raise WorkspaceError(f"can't restore {target_type!r}")
+        name, load, attr, model = files[target_type]
+        with self.lock:
+            data = load()
+            records = [r for r in getattr(data, attr) if r.id != record_id]
+            if before is not None:
+                restored = model.model_validate(before)
+                old = [r.id for r in getattr(data, attr)]
+                records.insert(old.index(record_id) if record_id in old else len(records), restored)
+            setattr(data, attr, records)
+            self._save(name, data)
+            self.after_change()
+
+    def remove_metric(self, on: date, source: str, item: str, metric: str) -> None:
+        with self.lock:
+            keep = [
+                r
+                for r in self.metrics()
+                if (r.date, r.source, r.item, r.metric) != (on, source, item, metric)
+            ]
+            out = io.StringIO()
+            writer = csv.writer(out, lineterminator="\n")
+            writer.writerow(METRICS_COLUMNS)
+            for r in sorted(keep, key=lambda r: (r.date, r.source, r.item, r.metric)):
+                writer.writerow([r.date.isoformat(), r.source, r.item, r.metric,
+                                 int(r.value) if float(r.value).is_integer() else r.value])  # fmt: skip
+            _atomic_write(self.metrics_path, out.getvalue())
 
     # ------------------------------------------------------------------ deadlines
 

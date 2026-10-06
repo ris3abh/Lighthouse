@@ -18,7 +18,7 @@ export default function Inbox() {
   const trackers = candidates.filter((c) => c.kind !== "evidence");
   const groups = new Map<string, Candidate[]>();
   for (const c of evidence) groups.set(c.proposed_criterion, [...(groups.get(c.proposed_criterion) ?? []), c]);
-  const trackerGroups = (["deadline", "pipeline", "letter"] as const)
+  const trackerGroups = (["deadline", "pipeline", "letter", "update", "metric"] as const)
     .map((k) => [k, trackers.filter((c) => c.kind === k)] as const)
     .filter(([, list]) => list.length);
   const order = [...groups.keys()].sort(
@@ -42,8 +42,8 @@ export default function Inbox() {
           {trackerGroups.length > 0 && (
             <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3 dark:border-sky-900 dark:bg-sky-950/20">
               <p className="mb-3 text-xs text-sky-900 dark:text-sky-200">
-                <strong>From your chats (self-reported).</strong> Adding these updates your trackers. They never count
-                toward a criterion. For evidence, upload the underlying document on the Evidence page.
+                <strong>Tracker suggestions</strong> from your chats and the agent. Adding them updates your trackers and
+                metrics; they never count toward a criterion. For evidence, upload the underlying document on the Evidence page.
               </p>
               {trackerGroups.map(([kind, list]) => (
                 <section key={kind} className="mb-3 last:mb-0">

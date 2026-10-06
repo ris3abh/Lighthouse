@@ -118,6 +118,12 @@ class RunBody(BaseModel):
     prompt: str
 
 
+class AutopilotBody(BaseModel):
+    tracker_updates: bool | None = None
+    metrics: bool | None = None
+    tier1_deadlines: bool | None = None
+
+
 class NotifyTestBody(BaseModel):
     channel: str | None = None
 
@@ -616,6 +622,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
             "channels": channels,
             "routes": cfg.notifications.routes,
             "deadline_alert_days": cfg.notifications.deadline_alert_days,
+            "autopilot": cfg.agent.autopilot.model_dump(),
             "schedules": cfg.schedules,
             "recent_notifications": history(ws, limit=20)[::-1],
         }
@@ -634,8 +641,24 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     @app.get("/api/changes")
     def get_changes(actor: str = "", limit: int = 200) -> list[dict[str, Any]]:
         """The audit trail (data/changes.jsonl), newest first, optionally for one actor (e.g. agent:<run>)."""
-        changes = [c for c in ws.changes() if not actor or c.actor == actor]
-        return [c.model_dump(mode="json") for c in reversed(changes[-limit:])]
+        every = ws.changes()
+        changes = [c for c in every if not actor or c.actor == actor]
+        return [
+            {
+                **c.model_dump(mode="json"),
+                "undoable": svc.undoable(c, every),
+                "undone": any(x.undoes == c.id for x in every),
+            }  # fmt: skip
+            for c in reversed(changes[-limit:])
+        ]
+
+    @app.post("/api/changes/{change_id}/undo")
+    def undo_change(change_id: str) -> dict[str, Any]:
+        return svc.undo(change_id).model_dump(mode="json")
+
+    @app.put("/api/settings/autopilot")
+    def put_autopilot(body: AutopilotBody) -> dict[str, Any]:
+        return svc.set_autopilot(**body.model_dump(exclude_none=True)).model_dump()
 
     @app.get("/api/agent/status")
     def agent_status() -> dict[str, Any]:

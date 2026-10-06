@@ -93,6 +93,13 @@ All notable changes to this project are documented here. The format follows
   €4.5M, 1,200 dollars). Plain numbers (downloads, stars, citations, dates, versions, ids, percentages)
   always pass through; emails and phone numbers are still redacted. 56 test cases, and punctuation next to an
   amount is preserved.
+- Autopilot (off by default; per category in Settings): tracker updates, metrics and Tier-1 deadlines can be
+  applied by the agent without asking, each logged as `auto` in `data/changes.jsonl` with one-click undo on
+  the Agent page (undo refuses if the record changed since). New agent tools `propose_tracker_update` and
+  `record_metric` (quote must contain the number); `propose_deadline` can cite a page. With autopilot off they
+  land in the Inbox as "Tracker updates" / "Metrics". Nothing that could affect a criterion is ever
+  auto-applied; the autopilot service refuses it, and a test runs every write tool with everything on and
+  proves no exhibit, criterion status, override or profile moved.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.
@@ -105,4 +112,6 @@ All notable changes to this project are documented here. The format follows
 - Request bodies for `/api/notify/test` were read as a query parameter (model defined inside the app factory).
 - `read_page` treated a bot-protection response (HTTP 202, empty body) as a page and saved an empty snapshot.
   Empty, script-only and non-200 responses are now errors the agent sees, and nothing is snapshotted.
+- The same text read at two URLs shared one observation and lost the second source. Observations are now keyed
+  by source and content (the snapshot file is still shared).
 - The chat panel crashed in browsers where `scrollIntoView()` returns a Promise (an effect returned it).

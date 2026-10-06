@@ -22,8 +22,9 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
-from lighthouse_gc.core.models import Candidate, Change, Exhibit
-from lighthouse_gc.core.workspace import NotFound
+from lighthouse_gc.agent.autopilot import AUTO_ACTIONS, AutopilotRefused
+from lighthouse_gc.core.models import Candidate, Change, Evidence, Exhibit, MetricRow
+from lighthouse_gc.core.workspace import NotFound, WorkspaceError
 from lighthouse_gc.criteria.case import Case
 
 T = TypeVar("T")
@@ -44,9 +45,13 @@ def _dump(value: Any) -> dict[str, Any] | None:
 
 
 class Service:
-    def __init__(self, ws: Case, actor: str = "user"):
+    """``auto=True`` is the autopilot service: it may only perform the actions in
+    :data:`lighthouse_gc.agent.autopilot.AUTO_ACTIONS` and refuses everything else."""
+
+    def __init__(self, ws: Case, actor: str = "user", *, auto: bool = False):
         self.ws = ws
         self.actor = actor
+        self.auto = auto
 
     @contextmanager
     def _guard(self, action: str) -> Iterator[None]:
@@ -65,7 +70,10 @@ class Service:
         target_id: str | None = None,
         before: Any = None,
         summary: str = "",
+        undoes: str | None = None,
     ) -> T:
+        if self.auto and action not in AUTO_ACTIONS:
+            raise AutopilotRefused(f"autopilot can't {action}; it needs the user's approval")
         with self._guard(action):
             result = fn()
             after = None if action.endswith(".delete") else _dump(result)
@@ -80,6 +88,8 @@ class Service:
                     summary=summary,
                     before=_dump(before),
                     after=after,
+                    auto=self.auto,
+                    undoes=undoes,
                 )  # fmt: skip
             )
             return result
@@ -210,3 +220,117 @@ class Service:
         before = self._find(self.ws.letters().letters, letter_id, "letter writer")
         self._record("letter.delete", "letter", lambda: self.ws.delete_letter(letter_id),
                      target_id=letter_id, before=before, summary=before.name)  # fmt: skip
+
+    # ------------------------------------------------------------------ trackers (generic) + metrics
+
+    def update_tracker(self, target_type: str, target_id: str, **changes: Any) -> Any:
+        if target_type == "pipeline_item":
+            return self.update_pipeline_item(target_id, **changes)
+        if target_type == "letter":
+            return self.update_letter(target_id, **changes)
+        if target_type == "deadline":
+            return self.update_deadline(target_id, **changes)
+        raise WorkspaceError(f"can't update {target_type!r}")
+
+    def record_metric(self, row: MetricRow, evidence: Evidence | None = None) -> MetricRow:
+        key = (row.date, row.source, row.item, row.metric)
+        before = next((r for r in self.ws.metrics() if (r.date, r.source, r.item, r.metric) == key), None)
+        if evidence is not None:
+            row = row.with_evidence(evidence)
+
+        def apply() -> MetricRow:
+            self.ws.append_metrics([row])
+            self.ws.after_change()
+            return row
+
+        return self._record("metrics.record", "metric", apply, target_id=f"{row.source}/{row.item}/{row.metric}",
+                            before=before, summary=f"{row.item} {row.metric} = {row.value:g} ({row.date})")  # fmt: skip
+
+    # ------------------------------------------------------------------ settings
+
+    def set_autopilot(self, **flags: bool) -> Any:
+        if self.auto:
+            raise AutopilotRefused("autopilot can't change its own settings")
+        cfg = self.ws.config()
+        before = cfg.agent.autopilot.model_dump()
+
+        def apply() -> Any:
+            cfg.agent.autopilot = cfg.agent.autopilot.model_validate(
+                {**before, **{k: bool(v) for k, v in flags.items()}}
+            )
+            self.ws.save_config(cfg)
+            return cfg.agent.autopilot
+
+        return self._record("settings.autopilot", "settings", apply, target_id="autopilot", before=before,
+                            summary=", ".join(f"{k}={'on' if v else 'off'}" for k, v in flags.items()))  # fmt: skip
+
+    # ------------------------------------------------------------------ undo
+
+    UNDOABLE = frozenset({"pipeline.add", "pipeline.update", "pipeline.move", "deadline.add", "deadline.update",
+                          "letter.update", "metrics.record"})  # fmt: skip
+
+    def undoable(self, change: Change, changes: list[Change] | None = None) -> bool:
+        changes = changes if changes is not None else self.ws.changes()
+        return change.action in self.UNDOABLE and not any(c.undoes == change.id for c in changes)
+
+    def undo(self, change_id: str) -> Change:
+        """Revert one change to its recorded 'before' state, if nothing has changed the record since."""
+        changes = self.ws.changes()
+        change = next((c for c in changes if c.id == change_id), None)
+        if change is None:
+            raise NotFound(f"no change {change_id!r}")
+        if change.action not in self.UNDOABLE:
+            raise WorkspaceError(f"{change.action} can't be undone here")
+        if not self.undoable(change, changes):
+            raise WorkspaceError("already undone")
+        if change.action == "metrics.record":
+            self._undo_metric(change)
+        else:
+            current = self._current(change.target_type, change.target_id)
+            if not _same_record(current, change.after):
+                raise WorkspaceError("it was changed again since; undo that first, or edit it by hand")
+            self._record(f"{change.target_type}.undo", change.target_type,
+                         lambda: self.ws.restore_record(change.target_type, change.target_id or "", change.before),
+                         target_id=change.target_id, before=current, summary=f"undo: {change.summary}",
+                         undoes=change.id)  # fmt: skip
+        return self.ws.changes()[-1]
+
+    def _current(self, target_type: str, target_id: str | None) -> dict[str, Any] | None:
+        items: list[Any]
+        if target_type == "pipeline_item":
+            items = list(self.ws.pipeline().items)
+        elif target_type == "deadline":
+            items = list(self.ws.deadlines().deadlines)
+        elif target_type == "letter":
+            items = list(self.ws.letters().letters)
+        else:
+            raise WorkspaceError(f"can't undo changes to {target_type!r}")
+        found = next((i for i in items if i.id == target_id), None)
+        return found.model_dump(mode="json") if found else None
+
+    def _undo_metric(self, change: Change) -> None:
+        after = MetricRow.model_validate(change.after or {})
+        key = (after.date, after.source, after.item, after.metric)
+        current = next((r for r in self.ws.metrics() if (r.date, r.source, r.item, r.metric) == key), None)
+        if current is None or current.value != after.value:
+            raise WorkspaceError("that metric was changed again since; undo that first")
+
+        def revert() -> Any:
+            if change.before:
+                self.ws.append_metrics([MetricRow.model_validate(change.before)])
+            else:
+                self.ws.remove_metric(*key)
+            self.ws.after_change()
+            return change.before
+
+        self._record("metrics.undo", "metric", revert, target_id=change.target_id,
+                     before=current, summary=f"undo: {change.summary}", undoes=change.id)  # fmt: skip
+
+
+def _same_record(current: dict[str, Any] | None, after: dict[str, Any] | None) -> bool:
+    if current is None or after is None:
+        return current == after
+    strip = {"moved_at"}
+    return {k: v for k, v in current.items() if k not in strip} == {
+        k: v for k, v in after.items() if k not in strip
+    }

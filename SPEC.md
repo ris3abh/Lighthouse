@@ -470,15 +470,15 @@ against the demo workspace and your own.
 
 ### Phase 1c — Agent layer (see ADR 0005)
 
-- [ ] Agent engine: Claude Agent SDK adapter (Codex stubbed behind the same interface), web search on, the MCP
+- [x] Agent engine: Claude Agent SDK adapter (Codex stubbed behind the same interface), web search on, the MCP
       read tools attached, plus write tools that call the service layer: they propose to the Inbox, or
       auto-apply per autopilot rules. Per-run and monthly token budget caps in lighthouse.yaml. Model mocked
       in tests.
-- [ ] Chat panel docked on every page: streaming, each tool call visible (search, page read, file touched),
+- [x] Chat panel docked on every page: streaming, each tool call visible (search, page read, file touched),
       proposals linked to the Inbox, conversations saved in the workspace.
-- [ ] Agent page: every run (chat, manual, scheduled) with live stream, sources read, changes and proposals
+- [x] Agent page: every run (chat, manual, scheduled) with live stream, sources read, changes and proposals
       made, cost per run.
-- [ ] Autopilot rules: auto-apply with undo for tracker updates, metrics and Tier-1 deadlines; anything that
+- [x] Autopilot rules: auto-apply with undo for tracker updates, metrics and Tier-1 deadlines; anything that
       could affect a criterion always needs approval.
 - [ ] Missions on the existing scheduler: weekly opportunity scout, daily what-changed check; results on the
       Agent page and via notifications.

@@ -224,7 +224,9 @@ class Memory:
         filename: str | None,
     ) -> Observation:
         sha = hashlib.sha256(data).hexdigest()
-        obs_id = f"obs_{sha[:16]}"
+        # One observation per (source, content): the same text read at two URLs is two observations (each with
+        # its own provenance) sharing one content-addressed snapshot file.
+        obs_id = "obs_" + hashlib.sha256(f"{source_url}\n{sha}".encode()).hexdigest()[:16]
         known = self._observation_index()
         if obs_id in known:
             return known[obs_id]

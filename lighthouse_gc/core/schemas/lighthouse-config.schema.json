@@ -49,6 +49,9 @@
     "AgentConfig": {
       "additionalProperties": false,
       "properties": {
+        "autopilot": {
+          "$ref": "#/$defs/AutopilotConfig"
+        },
         "budget": {
           "$ref": "#/$defs/AgentBudget"
         },
@@ -104,6 +107,32 @@
         }
       },
       "title": "AgentModels",
+      "type": "object"
+    },
+    "AutopilotConfig": {
+      "additionalProperties": false,
+      "description": "What the agent may apply without asking. Everything is off by default; nothing that could affect a\ncriterion (evidence, exhibits, overrides, profile) can ever be auto-applied, whatever is set here.",
+      "properties": {
+        "metrics": {
+          "default": false,
+          "description": "Metric values the agent read from a page and quoted.",
+          "title": "Metrics",
+          "type": "boolean"
+        },
+        "tier1_deadlines": {
+          "default": false,
+          "description": "New deadlines quoted from a Tier-1 source (primary law or agency pages, SPEC 5a).",
+          "title": "Tier1 Deadlines",
+          "type": "boolean"
+        },
+        "tracker_updates": {
+          "default": false,
+          "description": "Pipeline stage / follow-up / notes, letter status / contact, deadline edits.",
+          "title": "Tracker Updates",
+          "type": "boolean"
+        }
+      },
+      "title": "AutopilotConfig",
       "type": "object"
     },
     "ChannelConfig": {

@@ -4,6 +4,12 @@ import { useRefresh } from "../App";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 
+const AUTOPILOT = [
+  { id: "tracker_updates", label: "Tracker updates", detail: "Move pipeline items, set follow-ups and notes, update a letter writer's status or last contact, mark deadlines done." },
+  { id: "metrics", label: "Metrics", detail: "Record a metric (e.g. citations) the agent read on a page and quoted, word for word." },
+  { id: "tier1_deadlines", label: "Tier-1 deadlines", detail: "Add a deadline quoted from a primary source (uscis.gov, ecfr.gov, federalregister.gov, travel.state.gov, justice.gov)." },
+] as const;
+
 export default function Settings() {
   const { version, bump } = useRefresh();
   const toast = useToast();
@@ -65,6 +71,44 @@ export default function Settings() {
             </li>
           ))}
         </ul>
+      </Card>
+
+      <Card title="Agent autopilot" className="mb-4">
+        <div className="p-4">
+          <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+            Let the agent apply some changes without asking. Each one is logged and can be undone in one click on the Agent page.
+            Anything that could affect a criterion (evidence, exhibits, overrides, your profile) always waits for your approval,
+            whatever you turn on here.
+          </p>
+          <div className="flex flex-col gap-2">
+            {AUTOPILOT.map((a) => (
+              <label key={a.id} className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={s.autopilot[a.id]}
+                  disabled={busy === a.id}
+                  onChange={async (e) => {
+                    setBusy(a.id);
+                    try {
+                      await api.setAutopilot({ [a.id]: e.target.checked });
+                      toast(`${a.label}: ${e.target.checked ? "on" : "off"}`);
+                      bump();
+                    } catch (err) {
+                      toast((err as Error).message, "error");
+                    } finally {
+                      setBusy(null);
+                    }
+                  }}
+                />
+                <span>
+                  <span className="font-medium">{a.label}</span>
+                  <span className="block text-xs text-zinc-500">{a.detail}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
       </Card>
 
       <div className="mb-4 grid gap-4 md:grid-cols-2">

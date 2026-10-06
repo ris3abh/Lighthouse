@@ -106,6 +106,8 @@ class Case(Workspace):
         return board
 
     def apply_tracker(self, kind: str, proposal: dict[str, Any]) -> BaseModel:
+        if kind == "update" and proposal.get("target_type") == "letter":
+            return self.update_letter(proposal["target_id"], **proposal.get("changes", {}))
         if kind != "letter":
             return super().apply_tracker(kind, proposal)
         try:
@@ -167,6 +169,26 @@ class Case(Workspace):
         path = self.resolve_inside(rel)
         if (self.root / "drafts") not in path.parents:
             raise WorkspaceError("draft_path must be inside drafts/")
+
+    def update_tracker(self, target_type: str, target_id: str, **changes: Any) -> BaseModel:
+        if target_type == "letter":
+            return self.update_letter(target_id, **changes)
+        return super().update_tracker(target_type, target_id, **changes)
+
+    def restore_record(self, target_type: str, record_id: str, before: dict[str, Any] | None) -> None:
+        if target_type != "letter":
+            return super().restore_record(target_type, record_id, before)
+        with self.lock:
+            letters = self.letters()
+            old = [lt.id for lt in letters.letters]
+            kept = [lt for lt in letters.letters if lt.id != record_id]
+            if before is not None:
+                kept.insert(
+                    old.index(record_id) if record_id in old else len(kept), Letter.model_validate(before)
+                )
+            letters.letters = kept
+            self._save("letters.json", letters)
+            self.after_change()
 
     def classify_upload(self, filename: str) -> tuple[str, str, str | None]:
         from lighthouse_gc.criteria.classify import classify

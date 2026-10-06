@@ -59,6 +59,10 @@ agent:
     per_run_usd: 2.0
     monthly_tokens: 10000000
     monthly_usd: 50.0
+  autopilot:
+    tracker_updates: false
+    metrics: false
+    tier1_deadlines: false
 privacy:
   redact_before_llm: true
 overrides:

@@ -157,12 +157,21 @@ def test_cli_keep_all_flag(ws, tmp_path):
 
 def test_reimport_adds_nothing(ws):
     import_chats(ws, CLAUDE)
-    lines = [p.read_text() for p in sorted((ws.root / "memory").glob("*.jsonl"))]
-    again = import_chats(ws, _zip(CLAUDE), "export.zip")
+    files = sorted((ws.root / "memory").glob("*.jsonl"))
+    lines = [p.read_text() for p in files]
+    again = import_chats(ws, CLAUDE)  # same file again
     assert again.candidates_added == {} and again.snapshots_new == 0
+    assert [p.read_text() for p in files] == lines  # nothing appended anywhere
+
+    # The same export under another file name is a new source: only its manifest is recorded.
+    renamed = import_chats(ws, _zip(CLAUDE), "export.zip")
+    assert renamed.candidates_added == {} and renamed.snapshots_new == 0
     assert len(ws.inbox().candidates) == 7
-    # Same conversations and same manifest content (the export's hash): nothing is appended anywhere.
-    assert [p.read_text() for p in sorted((ws.root / "memory").glob("*.jsonl"))] == lines
+    new_obs = ws.memory.observations()[-1]
+    assert new_obs.source_url == "file:export.zip"
+    assert [p.read_text() for p in files if p.name != "observations.jsonl"] == [
+        line for p, line in zip(files, lines, strict=True) if p.name != "observations.jsonl"
+    ]
 
 
 def test_accepting_tracker_candidates_updates_trackers(ws):

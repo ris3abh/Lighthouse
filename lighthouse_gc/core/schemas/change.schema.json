@@ -32,6 +32,12 @@
       "title": "At",
       "type": "string"
     },
+    "auto": {
+      "default": false,
+      "description": "Applied by autopilot without the user's approval (undoable).",
+      "title": "Auto",
+      "type": "boolean"
+    },
     "before": {
       "anyOf": [
         {
@@ -69,6 +75,19 @@
     "target_type": {
       "title": "Target Type",
       "type": "string"
+    },
+    "undoes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "For an undo: the id of the change it reverted.",
+      "title": "Undoes"
     }
   },
   "required": [

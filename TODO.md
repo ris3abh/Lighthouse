@@ -88,7 +88,7 @@ Phase 1c notes:
   and falls back to search results, which it labels as unverified.
 - Chat history is replayed into each turn (no server-side session), so long chats cost more input tokens;
   summarizing older turns is a follow-up.
-- [ ] 4. Autopilot rules (after the user tries chat)
+- [x] 4. Autopilot rules: per-category, off by default, one-click undo, criterion-protection test
 - [ ] 5. Missions
 - [ ] 6. Overview briefing
 

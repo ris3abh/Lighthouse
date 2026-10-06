@@ -17,6 +17,7 @@ from urllib.parse import urljoin, urlparse
 import httpx
 
 from lighthouse_gc import __version__
+from lighthouse_gc.agent import autopilot
 from lighthouse_gc.agent.redact import redact
 from lighthouse_gc.core.models import (
     AgentRun,
@@ -24,8 +25,10 @@ from lighthouse_gc.core.models import (
     ClaimDraft,
     Deadline,
     Evidence,
+    MetricRow,
     PipelineItem,
     RunSource,
+    slugify,
 )
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.criteria.models import Letter
@@ -47,6 +50,8 @@ class RunContext:
 
     def __post_init__(self) -> None:
         self.svc = Service(self.ws, actor=f"agent:{self.run.id}")
+        # Autopilot writes go through a service that refuses anything outside AUTO_ACTIONS.
+        self.auto_svc = Service(self.ws, actor=f"agent:{self.run.id}", auto=True)
 
     def out(self, value: Any) -> str:
         text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, default=str)
@@ -273,6 +278,21 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         proposal = {"title": args["title"], "due": args["due"], "kind": args.get("kind", "other"),
                     "url": args.get("url"), "human_only": True}  # fmt: skip
         Deadline.model_validate(proposal)
+        if args.get("observation_id") and args.get("quote"):
+            obs, text = _page(args["observation_id"], args["quote"])
+            proposal["url"] = proposal["url"] or obs.source_url
+            if autopilot.allowed("tier1_deadlines", ws.config().agent.autopilot) and autopilot.is_tier1(
+                obs.source_url
+            ):
+                ws.memory.record(Evidence(connector="agent", source_url=obs.source_url, payload=text,
+                                          media_type="text/plain", claims=[ClaimDraft(
+                                              subject=f"task:{slugify(args['title'], 40)}", subject_kind="event",
+                                              subject_name=args["title"][:80], predicate="deadline",
+                                              value=args["due"], excerpt=args["quote"], valid_from=date.today(),
+                                              confidence="high")]))  # fmt: skip
+                ctx.auto_svc.add_deadline(**proposal)
+                return ("Added to deadlines automatically (autopilot: Tier-1 deadlines). The person can undo it "
+                        "on the Agent page.")  # fmt: skip
         cand = Candidate(kind="deadline", fingerprint=f"agent:deadline:{args['title'].lower()}:{args['due']}",
                          source=f"agent:{ctx.run.id}", evidence_type="agent_suggestion", proposed_criterion="",
                          title=args["title"][:120], summary=args.get("why", "")[:500] or "Suggested by the agent.",
@@ -298,6 +318,61 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                          title=f"Letter writer: {args['name']}", summary=args.get("why", "")[:500] or "Suggested by the agent.",
                          proposal=proposal)  # fmt: skip
         return _propose(cand)
+
+    def _record_of(target_type: str, target_id: str) -> Any:
+        items: dict[str, list[Any]] = {
+            "pipeline_item": list(ws.pipeline().items),
+            "letter": list(ws.letters().letters),
+            "deadline": list(ws.deadlines().deadlines),
+        }
+        if target_type not in items:
+            raise ValueError("target_type must be pipeline_item, letter or deadline")
+        found = next((r for r in items[target_type] if r.id == target_id), None)
+        if found is None:
+            raise ValueError(f"no {target_type} {target_id!r}; list it first to get its id")
+        return found
+
+    async def t_update(args: S) -> str:
+        tt, tid, changes = args["target_type"], args["target_id"], dict(args.get("changes") or {})
+        if not changes:
+            raise ValueError("changes is empty")
+        record = _record_of(tt, tid)
+        type(record).model_validate({**record.model_dump(), **changes})  # fail early on bad values
+        label = getattr(record, "title", None) or getattr(record, "name", tid)
+        if autopilot.allowed("tracker_updates", ws.config().agent.autopilot) and autopilot.fields_allowed(
+            tt, changes
+        ):
+            ctx.auto_svc.update_tracker(tt, tid, **changes)
+            return (f"Updated {label} automatically (autopilot: tracker updates). The person can undo it on the "
+                    "Agent page.")  # fmt: skip
+        key = hashlib.sha256(json.dumps(changes, sort_keys=True, default=str).encode()).hexdigest()[:12]
+        cand = Candidate(kind="update", fingerprint=f"agent:update:{tt}:{tid}:{key}", source=f"agent:{ctx.run.id}",
+                         evidence_type="agent_suggestion", proposed_criterion="", title=f"Update: {label}"[:120],
+                         summary=args.get("why", "")[:500] or "Suggested by the agent.",
+                         proposal={"target_type": tt, "target_id": tid, "changes": changes})  # fmt: skip
+        return _propose(cand)
+
+    async def t_metric(args: S) -> str:
+        obs, text = _page(args["observation_id"], args["quote"])
+        value = float(args["value"])
+        shown = {f"{value:g}", f"{value:,.0f}", f"{int(value)}"} if value.is_integer() else {f"{value:g}"}
+        if not any(s in args["quote"] for s in shown):
+            raise ValueError("the quote must contain the number you're recording")
+        row = MetricRow(date=args.get("date") or date.today(), source=slugify(args.get("source") or "web", 24),
+                        item=args["item"][:120], metric=slugify(args["metric"], 40).replace("-", "_"), value=value)  # fmt: skip
+        evidence = Evidence(connector="agent", source_url=obs.source_url, payload=text, media_type="text/plain",
+                            claims=[ClaimDraft(subject=f"artifact:{row.source}:{row.item}", subject_name=row.item,
+                                               subject_url=obs.source_url, predicate=row.metric, value=value,
+                                               excerpt=args["quote"], valid_from=row.date, confidence="medium")])  # fmt: skip
+        if autopilot.allowed("metrics", ws.config().agent.autopilot):
+            ctx.auto_svc.record_metric(row, evidence)
+            return f"Recorded {row.item} {row.metric} = {value:g} automatically (autopilot: metrics). Undo is on the Agent page."
+        cand = Candidate(kind="metric", fingerprint=f"agent:metric:{row.source}:{row.item}:{row.metric}:{row.date}:{value:g}",
+                         source=f"agent:{ctx.run.id}", evidence_type="agent_suggestion", proposed_criterion="",
+                         title=f"Metric: {row.item} {row.metric} = {value:g}"[:120],
+                         summary=f"Read on {obs.source_url} ({row.date}).", raw_url=obs.source_url,
+                         proposal=row.model_dump(mode="json"))  # fmt: skip
+        return _propose(cand.with_evidence(evidence))
 
     criteria = [c.id for c in ws.profile().criteria]
     tool_list = [
@@ -325,15 +400,30 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                                                              "granted"]}},
                        ["criterion", "evidence_type", "title", "summary", "observation_id", "quote"]),
                   t_propose_evidence, read_only=False),
-        AgentTool("propose_deadline", "Propose a deadline (goes to the Inbox).",
+        AgentTool("propose_deadline", "Propose a deadline (goes to the Inbox). Cite observation_id + a verbatim quote "
+                  "when it comes from a page; Tier-1 deadlines (uscis.gov, ecfr.gov, ...) may then be added "
+                  "automatically if the person turned on that autopilot.",
                   _obj({"title": STR, "due": DATE, "kind": {"type": "string", "enum": ["application", "submission",
-                        "filing", "follow_up", "personal", "other"]}, "url": STR, "why": STR}, ["title", "due"]),
+                        "filing", "follow_up", "personal", "other"]}, "url": STR, "why": STR,
+                        "observation_id": STR, "quote": STR}, ["title", "due"]),
                   t_propose_deadline, read_only=False),
         AgentTool("propose_pipeline_item", "Propose a pipeline item, e.g. an opportunity to apply to (goes to the Inbox).",
                   _obj({"title": STR, "stage": {"type": "string", "enum": ["idea", "applied", "waiting", "done"]},
                         "criterion": {"type": "string", "enum": criteria}, "url": STR, "notes": STR,
                         "follow_up": DATE, "why": STR}, ["title"]),
                   t_propose_pipeline, read_only=False),
+        AgentTool("propose_tracker_update", "Change an existing pipeline item, letter writer or deadline (list it "
+                  "first for its id). Applied automatically only if the person turned on autopilot for tracker "
+                  "updates; otherwise it goes to the Inbox.",
+                  _obj({"target_type": {"type": "string", "enum": ["pipeline_item", "letter", "deadline"]},
+                        "target_id": STR, "changes": {"type": "object"}, "why": STR},
+                       ["target_type", "target_id", "changes"]),
+                  t_update, read_only=False),
+        AgentTool("record_metric", "Record a metric value (e.g. citations, downloads) read on a page. Requires an "
+                  "observation_id from read_page and a verbatim quote containing the number.",
+                  _obj({"item": STR, "metric": STR, "value": {"type": "number"}, "date": DATE, "source": STR,
+                        "observation_id": STR, "quote": STR}, ["item", "metric", "value", "observation_id", "quote"]),
+                  t_metric, read_only=False),
         AgentTool("propose_letter_writer", "Propose a recommendation letter writer (goes to the Inbox).",
                   _obj({"name": STR, "relationship": {"type": "string", "enum": ["independent", "employer", "coauthor"]},
                         "credentials": STR, "criteria": {"type": "array", "items": {"type": "string", "enum": criteria}},
@@ -349,6 +439,8 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         "read_page": ("memory/sources/",), "propose_evidence": ("data/inbox.json",),
         "propose_deadline": ("data/inbox.json",), "propose_pipeline_item": ("data/inbox.json",),
         "propose_letter_writer": ("data/inbox.json",),
+        "propose_tracker_update": ("data/inbox.json", "data/pipeline.json", "data/letters.json", "data/deadlines.json"),
+        "record_metric": ("data/inbox.json", "data/metrics.csv"),
     }  # fmt: skip
     for t in tool_list:
         t.touches = touches.get(t.name, ())

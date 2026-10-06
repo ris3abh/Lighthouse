@@ -4,8 +4,20 @@ import ClaimsPanel, { StageChip } from "./Claims";
 import { Button, Chip, useToast } from "./ui";
 import { today } from "../hooks";
 
-export const TRACKER_LABEL = { deadline: "Deadlines", pipeline: "Pipeline", letter: "Letter writers" } as const;
-const ADD_TO = { deadline: "Add to deadlines", pipeline: "Add to pipeline", letter: "Add to letters" } as const;
+export const TRACKER_LABEL = {
+  deadline: "Deadlines",
+  pipeline: "Pipeline",
+  letter: "Letter writers",
+  update: "Tracker updates",
+  metric: "Metrics",
+} as const;
+const ADD_TO = {
+  deadline: "Add to deadlines",
+  pipeline: "Add to pipeline",
+  letter: "Add to letters",
+  update: "Apply update",
+  metric: "Record metric",
+} as const;
 const PIPELINE_STAGES = ["idea", "applied", "waiting", "done"];
 const LETTER_STATUSES = ["prospect", "asked", "drafting", "sent", "signed", "declined"];
 const RELATIONSHIPS = ["employer", "independent", "coauthor"];
@@ -42,7 +54,15 @@ export default function TrackerCard({ c, onDone }: { c: Candidate; onDone: () =>
     <article className="card p-3">
       <div className="flex flex-wrap items-start gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium">{kind === "letter" ? String(p.name) : String(p.title)}</h3>
+          <h3 className="text-sm font-medium">{kind === "letter" ? String(p.name) : kind === "update" || kind === "metric" ? c.title : String(p.title)}</h3>
+          {kind === "update" && (
+            <p className="mt-0.5 text-xs text-zinc-500">
+              {String(p.target_type).replace("_", " ")}:{" "}
+              {Object.entries((p.changes as unknown as Record<string, unknown>) ?? {})
+                .map(([k, v]) => `${k} → ${String(v)}`)
+                .join(", ")}
+            </p>
+          )}
           <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500">
             {kind === "deadline" && <span className="font-medium tabular-nums text-zinc-700 dark:text-zinc-200">due {String(p.due)}</span>}
             {kind === "pipeline" && <Chip>pipeline: {String(p.stage)}</Chip>}
@@ -53,7 +73,7 @@ export default function TrackerCard({ c, onDone }: { c: Candidate; onDone: () =>
               </>
             )}
             <StageChip stage={c.stage} />
-            <Chip tone="amber">self-reported</Chip>
+            {c.source_tier === "self_reported" ? <Chip tone="amber">self-reported</Chip> : c.source.startsWith("agent:") ? <Chip>from the agent</Chip> : null}
           </p>
           <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400">{c.summary}</p>
           <ClaimsPanel ids={c.claim_ids} verb="Adding approves" />
@@ -115,9 +135,11 @@ export default function TrackerCard({ c, onDone }: { c: Candidate; onDone: () =>
         <Button variant="primary" size="sm" disabled={busy} onClick={add}>
           {editing ? `Save & ${ADD_TO[kind].toLowerCase()}` : ADD_TO[kind]}
         </Button>
-        <Button size="sm" disabled={busy} onClick={() => setEditing(!editing)}>
-          {editing ? "Cancel edit" : "Edit"}
-        </Button>
+        {kind !== "update" && kind !== "metric" && (
+          <Button size="sm" disabled={busy} onClick={() => setEditing(!editing)}>
+            {editing ? "Cancel edit" : "Edit"}
+          </Button>
+        )}
         <Button size="sm" variant="ghost" disabled={busy} onClick={() => act(() => api.snooze(c.id, today(7)), "Snoozed for 7 days")}>
           Snooze 7d
         </Button>
