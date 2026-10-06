@@ -298,6 +298,7 @@ export interface AgentStatus {
   available: boolean;
   reason: string;
   model: string;
+  models: { chat: string; task: string; mission: string };
   effort: string;
   web_search: boolean;
   budget: { per_run_tokens: number; per_run_usd: number | null; monthly_tokens: number; monthly_usd: number | null };

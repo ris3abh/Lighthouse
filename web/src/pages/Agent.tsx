@@ -88,7 +88,9 @@ export default function Agent({ focus }: { focus: string | null }) {
               </Button>
             </div>
             <p className="mt-1.5 text-xs text-zinc-500">
-              {status.available ? `${status.model} · effort ${status.effort} · web search ${status.web_search ? "on" : "off"}` : `Unavailable: ${status.reason}`}
+              {status.available
+                ? `chat ${status.models.chat} · tasks ${status.models.task} · missions ${status.models.mission} · effort ${status.effort} · web search ${status.web_search ? "on" : "off"}`
+                : `Unavailable: ${status.reason}`}
             </p>
           </form>
         </Card>

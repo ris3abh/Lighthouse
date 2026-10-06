@@ -12,7 +12,7 @@ import uuid
 from datetime import UTC, date, datetime
 from typing import Annotated, Any, Final, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator, model_validator
 
 SCHEMA_VERSION: Final = 1
 
@@ -340,12 +340,40 @@ class AgentBudget(_Model):
     monthly_usd: float | None = Field(50.0, gt=0)
 
 
+class AgentModels(_Model):
+    """Model per run type: chat (the chat panel), task (a run started by hand), mission (scheduled)."""
+
+    chat: str = "claude-opus-5-5"
+    task: str = "claude-opus-5-5"
+    mission: str = "claude-sonnet-5-5"
+
+
+RUN_TYPE = {"chat": "chat", "manual": "task", "scheduled": "mission"}
+
+
 class AgentConfig(_Model):
-    model: str = "claude-opus-5-5"
+    models: AgentModels = Field(default_factory=AgentModels)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_single_model(cls, data: Any) -> Any:
+        # Before per-run-type models, lighthouse.yaml had `agent.model`; keep those workspaces loading.
+        if isinstance(data, dict) and "model" in data:
+            data = dict(data)
+            legacy = data.pop("model")
+            models = dict(data.get("models") or {})
+            models.setdefault("chat", legacy)
+            models.setdefault("task", legacy)
+            data["models"] = models
+        return data
+
     effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
     web_search: bool = True
     max_turns: int = Field(25, ge=1, le=200)
     budget: AgentBudget = Field(default_factory=AgentBudget)
+
+    def model_for(self, kind: str) -> str:
+        return getattr(self.models, RUN_TYPE.get(kind, "task"))
 
 
 class WorkspaceConfig(_File):

@@ -129,7 +129,7 @@ in (or `ANTHROPIC_API_KEY`). Spend is capped per run and per month in `lighthous
 
 ```yaml
 agent:
-  model: claude-opus-5-5
+  models: {chat: claude-opus-5-5, task: claude-opus-5-5, mission: claude-sonnet-5-5}
   effort: medium
   web_search: true
   budget: {per_run_tokens: 300000, per_run_usd: 2.0, monthly_tokens: 10000000, monthly_usd: 50.0}

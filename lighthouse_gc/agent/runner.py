@@ -112,7 +112,8 @@ class AgentRunner:
         except EngineUnavailable as exc:
             ok, why = False, str(exc)
         b = cfg.agent.budget
-        return {"engine": cfg.engine, "available": ok, "reason": why, "model": cfg.agent.model,
+        return {"engine": cfg.engine, "available": ok, "reason": why, "model": cfg.agent.models.chat,
+                "models": cfg.agent.models.model_dump(),
                 "effort": cfg.agent.effort, "web_search": cfg.agent.web_search,
                 "budget": b.model_dump(), "month": self.month_usage()}  # fmt: skip
 
@@ -140,7 +141,8 @@ class AgentRunner:
         conv = None
         if kind == "chat":
             conv = self.conversation(conversation_id) if conversation_id else Conversation(title=prompt[:60])
-        run = AgentRun(kind=kind, engine=engine.name, model=cfg.agent.model, prompt=prompt,  # type: ignore[arg-type]
+        model = cfg.agent.model_for(kind)
+        run = AgentRun(kind=kind, engine=engine.name, model=model, prompt=prompt,  # type: ignore[arg-type]
                        conversation_id=conv.id if conv else None)  # fmt: skip
         if conv is not None:
             history = list(conv.messages)
@@ -158,7 +160,7 @@ class AgentRunner:
         request = EngineRequest(
             system_prompt=SYSTEM_PROMPT,
             prompt=_render_turn(prompt, history, self.ws, page),
-            model=cfg.agent.model,
+            model=model,
             effort=cfg.agent.effort,
             web_search=cfg.agent.web_search,
             max_turns=cfg.agent.max_turns,

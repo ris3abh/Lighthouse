@@ -381,3 +381,35 @@ def test_read_page_never_snapshots_an_empty_page(
     with pytest.raises(ValueError, match=message):
         anyio.run(t["read_page"].handler, {"url": "https://site.example/p"})
     assert len(demo_ws.memory.observations()) == before and ctx.run.sources == []
+
+
+def test_model_per_run_type(demo_ws):
+    cfg = demo_ws.config()
+    assert (cfg.agent.models.chat, cfg.agent.models.task, cfg.agent.models.mission) == (
+        "claude-opus-5-5",
+        "claude-opus-5-5",
+        "claude-sonnet-5-5",
+    )
+    cfg.agent.models.task = "claude-sonnet-5-5"
+    demo_ws.save_config(cfg)
+    runner, engine = _runner(demo_ws, [("text", "ok")])
+
+    async def go(kind):
+        run = await runner.start(kind, "hi")
+        return (await runner.wait(run.id)).model
+
+    assert anyio.run(go, "chat") == "claude-opus-5-5"
+    assert anyio.run(go, "manual") == "claude-sonnet-5-5"
+    assert anyio.run(go, "scheduled") == "claude-sonnet-5-5"
+    assert [r.model for r in engine.requests] == ["claude-opus-5-5", "claude-sonnet-5-5", "claude-sonnet-5-5"]
+
+
+def test_legacy_single_model_config_still_loads():
+    from lighthouse_gc.core.models import AgentConfig
+
+    cfg = AgentConfig.model_validate({"model": "claude-opus-5", "effort": "high"})
+    assert (cfg.models.chat, cfg.models.task, cfg.models.mission) == (
+        "claude-opus-5",
+        "claude-opus-5",
+        "claude-sonnet-5-5",
+    )

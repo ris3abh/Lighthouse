@@ -47,7 +47,10 @@ notifications:
   - 1
   - 0
 agent:
-  model: claude-opus-5-5
+  models:
+    chat: claude-opus-5-5
+    task: claude-opus-5-5
+    mission: claude-sonnet-5-5
   effort: medium
   web_search: true
   max_turns: 25

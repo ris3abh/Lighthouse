@@ -85,6 +85,8 @@ All notable changes to this project are documented here. The format follows
   spend against the caps; and per run: live stream while running (with Stop), the step-by-step timeline,
   sources read with their snapshot ids, proposals linked to the Inbox, workspace changes from the audit
   trail, tokens (in / out / cache read) and cost. `GET /api/changes?actor=` exposes the audit trail.
+- Model per run type: `agent.models` in `lighthouse.yaml` (`chat` and `task` default to `claude-opus-5-5`,
+  `mission` to `claude-sonnet-5-5`). The old single `agent.model` key still loads.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.

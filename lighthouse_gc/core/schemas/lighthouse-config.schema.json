@@ -71,10 +71,8 @@
           "title": "Max Turns",
           "type": "integer"
         },
-        "model": {
-          "default": "claude-opus-5-5",
-          "title": "Model",
-          "type": "string"
+        "models": {
+          "$ref": "#/$defs/AgentModels"
         },
         "web_search": {
           "default": true,
@@ -83,6 +81,29 @@
         }
       },
       "title": "AgentConfig",
+      "type": "object"
+    },
+    "AgentModels": {
+      "additionalProperties": false,
+      "description": "Model per run type: chat (the chat panel), task (a run started by hand), mission (scheduled).",
+      "properties": {
+        "chat": {
+          "default": "claude-opus-5-5",
+          "title": "Chat",
+          "type": "string"
+        },
+        "mission": {
+          "default": "claude-sonnet-5-5",
+          "title": "Mission",
+          "type": "string"
+        },
+        "task": {
+          "default": "claude-opus-5-5",
+          "title": "Task",
+          "type": "string"
+        }
+      },
+      "title": "AgentModels",
       "type": "object"
     },
     "ChannelConfig": {
