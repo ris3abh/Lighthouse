@@ -101,6 +101,8 @@ def missed(ws: Case, now: datetime | None = None) -> list[str]:
     out = []
     for name, expr in ws.config().schedules.items():
         last = state.get(name, {}).get("last_run")
+        if not expr:
+            continue
         try:
             trig = trigger(expr)
         except ValueError:
@@ -119,6 +121,8 @@ def start(ws: Case) -> BackgroundScheduler:
     sched = BackgroundScheduler(timezone=get_localzone(), job_defaults={"coalesce": True, "max_instances": 1,
                                                                           "misfire_grace_time": 3600})  # fmt: skip
     for name, expr in ws.config().schedules.items():
+        if not expr:
+            continue  # turned off
         if name not in JOBS:
             log.warning("schedule for unknown job %r ignored", name)
             continue

@@ -219,6 +219,19 @@
       "title": "Kind",
       "type": "string"
     },
+    "mission": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "For scheduled runs: which mission.",
+      "title": "Mission"
+    },
     "model": {
       "title": "Model",
       "type": "string"

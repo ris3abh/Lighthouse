@@ -480,7 +480,7 @@ against the demo workspace and your own.
       made, cost per run.
 - [x] Autopilot rules: auto-apply with undo for tracker updates, metrics and Tier-1 deadlines; anything that
       could affect a criterion always needs approval.
-- [ ] Missions on the existing scheduler: weekly opportunity scout, daily what-changed check; results on the
+- [x] Missions on the existing scheduler: weekly opportunity scout, daily what-changed check; results on the
       Agent page and via notifications.
 - [ ] Overview briefing: agent-written "what changed / 3 things to do", with inline approvals.
 

@@ -74,6 +74,9 @@
           "title": "Max Turns",
           "type": "integer"
         },
+        "missions": {
+          "$ref": "#/$defs/MissionsConfig"
+        },
         "models": {
           "$ref": "#/$defs/AgentModels"
         },
@@ -286,6 +289,26 @@
       "title": "ConnectorConfig",
       "type": "object"
     },
+    "MissionsConfig": {
+      "additionalProperties": false,
+      "description": "Scheduled agent runs. Off by default: they spend tokens without anyone pressing a button. Schedules live\nin ``schedules`` (mission-opportunity-scout, mission-what-changed); budgets apply as for any run.",
+      "properties": {
+        "opportunity_scout": {
+          "default": false,
+          "description": "Weekly: find opportunities for the weakest criteria.",
+          "title": "Opportunity Scout",
+          "type": "boolean"
+        },
+        "what_changed": {
+          "default": false,
+          "description": "Daily: review what changed and write the briefing.",
+          "title": "What Changed",
+          "type": "boolean"
+        }
+      },
+      "title": "MissionsConfig",
+      "type": "object"
+    },
     "NotificationsConfig": {
       "additionalProperties": false,
       "properties": {
@@ -319,6 +342,7 @@
               "digest",
               "new_candidates",
               "sync_error",
+              "mission",
               "test"
             ]
           },
@@ -413,7 +437,7 @@
       "additionalProperties": {
         "type": "string"
       },
-      "description": "Cron expressions per job. Used by the scheduler (Phase 1) and as cron hints.",
+      "description": "Cron per job; '' turns a job off.",
       "title": "Schedules",
       "type": "object"
     },

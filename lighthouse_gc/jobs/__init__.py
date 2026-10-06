@@ -72,10 +72,27 @@ def _run_digest(ws: Case, scheduled: bool = False) -> list[str]:
     return alerts.digest(ws)
 
 
+def _mission(name: str) -> Callable[[Case, bool], list[str]]:
+    def run(ws: Case, scheduled: bool = False) -> list[str]:
+        from lighthouse_gc.agent import missions
+
+        return missions.run_job(ws, name, scheduled)
+
+    return run
+
+
 JOBS: dict[str, tuple[str, Callable[[Case, bool], list[str]]]] = {
     "sync": ("refresh all sources, push new candidates to the Inbox", _run_sync),
     "metrics-snapshot": ("append dated rows to data/metrics.csv (biweekly when scheduled)", _run_snapshot),
     "deadline-check": ("alert on deadlines within 14 days, regenerate calendar.ics", _run_deadline_check),
     "digest": ("weekly summary: what changed, stale pipeline items, next actions", _run_digest),
     "dashboard": ("re-score criteria and regenerate DASHBOARD.md", _run_dashboard),
+    "mission-opportunity-scout": (
+        "agent: weekly opportunity scout (off until enabled in Settings)",
+        _mission("opportunity_scout"),
+    ),
+    "mission-what-changed": (
+        "agent: daily what-changed check (off until enabled in Settings)",
+        _mission("what_changed"),
+    ),
 }

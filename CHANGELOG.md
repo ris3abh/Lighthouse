@@ -100,6 +100,12 @@ All notable changes to this project are documented here. The format follows
   land in the Inbox as "Tracker updates" / "Metrics". Nothing that could affect a criterion is ever
   auto-applied; the autopilot service refuses it, and a test runs every write tool with everything on and
   proves no exhibit, criterion status, override or profile moved.
+- Missions (off by default; Settings → Missions): a weekly opportunity scout and a daily what-changed check,
+  run by the scheduler on the missions model, inside the budget caps. Results are on the Agent page (with
+  "Run now") and go out as a `mission` notification. The daily check skips, spending nothing, when nothing
+  changed.
+- New scheduled jobs and notification events merge into an existing `lighthouse.yaml` with their defaults;
+  set a schedule to `''` to turn a job off.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.

@@ -10,6 +10,7 @@ Local-only hardening: the server binds to 127.0.0.1 (see ``cli.up``), rejects fo
 
 from __future__ import annotations
 
+import asyncio
 import csv
 import datetime as dt
 import io
@@ -17,6 +18,7 @@ import json
 from collections.abc import AsyncIterator
 from typing import Any
 
+import anyio
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -122,6 +124,11 @@ class AutopilotBody(BaseModel):
     tracker_updates: bool | None = None
     metrics: bool | None = None
     tier1_deadlines: bool | None = None
+
+
+class MissionsBody(BaseModel):
+    opportunity_scout: bool | None = None
+    what_changed: bool | None = None
 
 
 class NotifyTestBody(BaseModel):
@@ -623,6 +630,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
             "routes": cfg.notifications.routes,
             "deadline_alert_days": cfg.notifications.deadline_alert_days,
             "autopilot": cfg.agent.autopilot.model_dump(),
+            "missions": cfg.agent.missions.model_dump(),
             "schedules": cfg.schedules,
             "recent_notifications": history(ws, limit=20)[::-1],
         }
@@ -707,6 +715,34 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     def agent_stop(run_id: str) -> dict[str, Any]:
         runner.get(run_id)
         return {"stopping": runner.stop(run_id)}
+
+    @app.get("/api/agent/missions")
+    def agent_missions() -> list[dict[str, Any]]:
+        from lighthouse_gc.agent.missions import missions_status
+
+        return missions_status(ws, runner)
+
+    @app.put("/api/settings/missions")
+    def put_missions(body: MissionsBody) -> dict[str, Any]:
+        return svc.set_missions(**body.model_dump(exclude_none=True)).model_dump()
+
+    @app.post("/api/agent/missions/{name}/run")
+    async def agent_mission_run(name: str) -> dict[str, Any]:
+        from lighthouse_gc.agent import missions
+
+        if name not in missions.MISSIONS:
+            raise HTTPException(404, f"no mission {name!r}")
+        run = await missions.start(runner, name)
+
+        async def notify_when_done() -> None:
+            finished = await runner.wait(run.id)
+            await anyio.to_thread.run_sync(missions.notify_result, ws, finished)
+
+        app.state.background = getattr(app.state, "background", set())
+        task = asyncio.create_task(notify_when_done())
+        app.state.background.add(task)
+        task.add_done_callback(app.state.background.discard)
+        return {"run_id": run.id}
 
     @app.get("/api/agent/conversations")
     def agent_conversations() -> list[dict[str, Any]]:

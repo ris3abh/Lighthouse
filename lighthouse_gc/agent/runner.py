@@ -125,7 +125,13 @@ class AgentRunner:
     # ------------------------------------------------------------------ running
 
     async def start(
-        self, kind: str, prompt: str, *, conversation_id: str | None = None, page: str | None = None
+        self,
+        kind: str,
+        prompt: str,
+        *,
+        conversation_id: str | None = None,
+        page: str | None = None,
+        mission: str | None = None,
     ) -> AgentRun:
         prompt = prompt.strip()
         if not prompt:
@@ -146,7 +152,7 @@ class AgentRunner:
         if kind == "chat":
             conv = self.conversation(conversation_id) if conversation_id else Conversation(title=prompt[:60])
         model = cfg.agent.model_for(kind)
-        run = AgentRun(kind=kind, engine=engine.name, model=model, prompt=prompt,  # type: ignore[arg-type]
+        run = AgentRun(kind=kind, engine=engine.name, model=model, prompt=prompt, mission=mission,  # type: ignore[arg-type]
                        conversation_id=conv.id if conv else None)  # fmt: skip
         if conv is not None:
             history = list(conv.messages)
@@ -270,7 +276,14 @@ class AgentRunner:
         """Every event of a run from the start, then live ones until it finishes."""
         live = self._live.get(run_id)
         if live is None:
-            yield {"type": "done", "run": json.loads(dump_model(self.get(run_id)))}
+            # Started elsewhere (e.g. by the scheduler in another thread): poll its record until it finishes.
+            run = self.get(run_id)
+            for _ in range(3600):
+                if run.status != "running":
+                    break
+                await asyncio.sleep(1)
+                run = self.get(run_id)
+            yield {"type": "done", "run": json.loads(dump_model(run))}
             return
         sent = 0
         while True:

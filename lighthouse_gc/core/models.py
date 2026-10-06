@@ -311,12 +311,12 @@ class ChannelConfig(_Model):
     topic: str | None = None
 
 
-NotificationEvent = Literal["deadline", "digest", "new_candidates", "sync_error", "test"]
+NotificationEvent = Literal["deadline", "digest", "new_candidates", "sync_error", "mission", "test"]
 
 
 def _default_routes() -> dict[NotificationEvent, list[str]]:
     return {"deadline": ["desktop"], "digest": ["desktop"], "new_candidates": ["desktop"],
-            "sync_error": ["desktop"], "test": ["desktop"]}  # fmt: skip
+            "sync_error": ["desktop"], "mission": ["desktop"], "test": ["desktop"]}  # fmt: skip
 
 
 class NotificationsConfig(_Model):
@@ -327,6 +327,13 @@ class NotificationsConfig(_Model):
     routes: dict[NotificationEvent, list[str]] = Field(
         default_factory=lambda: _default_routes(), description="Which channels each event goes to."
     )
+
+    @field_validator("routes", mode="before")
+    @classmethod
+    def _new_events_get_default_routes(cls, v: Any) -> Any:
+        # Events added in later versions route to their defaults until the user configures them.
+        return {**_default_routes(), **v} if isinstance(v, dict) else v
+
     deadline_alert_days: list[int] = Field(
         default_factory=lambda: [14, 3, 1, 0], description="Alert when a deadline is this many days away."
     )
@@ -365,8 +372,17 @@ class AgentModels(_Model):
 RUN_TYPE = {"chat": "chat", "manual": "task", "scheduled": "mission"}
 
 
+class MissionsConfig(_Model):
+    """Scheduled agent runs. Off by default: they spend tokens without anyone pressing a button. Schedules live
+    in ``schedules`` (mission-opportunity-scout, mission-what-changed); budgets apply as for any run."""
+
+    opportunity_scout: bool = Field(False, description="Weekly: find opportunities for the weakest criteria.")
+    what_changed: bool = Field(False, description="Daily: review what changed and write the briefing.")
+
+
 class AgentConfig(_Model):
     models: AgentModels = Field(default_factory=AgentModels)
+    missions: MissionsConfig = Field(default_factory=MissionsConfig)
 
     @model_validator(mode="before")
     @classmethod
@@ -391,20 +407,31 @@ class AgentConfig(_Model):
         return getattr(self.models, RUN_TYPE.get(kind, "task"))
 
 
+DEFAULT_SCHEDULES: dict[str, str] = {
+    "sync": "0 8 * * *",
+    "metrics-snapshot": "0 9 * * mon",  # runs weekly; the job itself skips unless 13+ days passed
+    "deadline-check": "0 7 * * *",
+    "digest": "0 17 * * fri",
+    "mission-opportunity-scout": "0 9 * * fri",
+    "mission-what-changed": "0 7 * * *",
+}
+
+
 class WorkspaceConfig(_File):
     workspace_name: str = "my-case"
     profile: str = Field("", description="Active profile id; the domain layer supplies the default.")
     engine: Literal["claude_code", "codex", "api"] = "claude_code"
     server: ServerConfig = Field(default_factory=ServerConfig)
     schedules: dict[str, str] = Field(
-        default_factory=lambda: {
-            "sync": "0 8 * * *",
-            "metrics-snapshot": "0 9 * * mon",  # runs weekly; the job itself skips unless 13+ days passed
-            "deadline-check": "0 7 * * *",
-            "digest": "0 17 * * fri",
-        },
-        description="Cron expressions per job. Used by the scheduler (Phase 1) and as cron hints.",
+        default_factory=lambda: dict(DEFAULT_SCHEDULES), description="Cron per job; '' turns a job off."
     )
+
+    @field_validator("schedules", mode="before")
+    @classmethod
+    def _new_jobs_get_default_schedules(cls, v: Any) -> Any:
+        # Jobs added in later versions get their default schedule until the user sets one ('' to turn off).
+        return {**DEFAULT_SCHEDULES, **v} if isinstance(v, dict) else v
+
     connectors: ConnectorConfig = Field(default_factory=ConnectorConfig)
     notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)
     agent: AgentConfig = Field(default_factory=AgentConfig)
@@ -472,6 +499,7 @@ class RunSource(_Model):
 class AgentRun(_File):
     id: str = Field(default_factory=lambda: new_id("run"))
     kind: Literal["chat", "manual", "scheduled"]
+    mission: str | None = Field(None, description="For scheduled runs: which mission.")
     status: Literal["running", "done", "error", "stopped"] = "running"
     engine: str
     model: str

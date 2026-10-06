@@ -226,7 +226,7 @@ def up(
         from lighthouse_gc.jobs.scheduler import start
 
         sched = start(ws)
-        typer.echo(f"Scheduler on: {', '.join(sorted(ws.config().schedules))}")
+        typer.echo(f"Scheduler on: {', '.join(sorted(n for n, e in ws.config().schedules.items() if e))}")
     try:
         uvicorn.run(create_app(ws), host="127.0.0.1", port=port, log_level="warning")
     finally:

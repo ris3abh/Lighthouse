@@ -246,6 +246,22 @@ export interface ChangeView {
   undone: boolean;
 }
 
+export interface Missions {
+  opportunity_scout: boolean;
+  what_changed: boolean;
+}
+
+export interface MissionView {
+  name: keyof Missions;
+  title: string;
+  enabled: boolean;
+  job: string;
+  schedule: string | null;
+  next_run: string | null;
+  model: string;
+  last_run: { id: string; at: string; proposals: number; cost_usd: number | null } | null;
+}
+
 export interface SettingsView {
   profile: string;
   engine: string;
@@ -254,6 +270,7 @@ export interface SettingsView {
   routes: Record<string, string[]>;
   deadline_alert_days: number[];
   autopilot: Autopilot;
+  missions: Missions;
   schedules: Record<string, string>;
   recent_notifications: { at: string; event: string; title: string; ok: boolean; results: { channel: string; ok: boolean; error: string | null }[] }[];
 }
@@ -340,6 +357,7 @@ export interface TimelineItem {
 export interface AgentRunView {
   id: string;
   kind: "chat" | "manual" | "scheduled";
+  mission: string | null;
   status: "running" | "done" | "error" | "stopped";
   engine: string;
   model: string;
@@ -469,6 +487,9 @@ export const api = {
   agentStatus: () => request<AgentStatus>("GET", "/agent/status"),
   chat: (message: string, conversation_id?: string | null, page?: string) =>
     request<{ run_id: string; conversation_id: string }>("POST", "/agent/chat", { message, conversation_id: conversation_id ?? null, page }),
+  missions: () => request<MissionView[]>("GET", "/agent/missions"),
+  runMission: (name: string) => request<{ run_id: string }>("POST", `/agent/missions/${enc(name)}/run`),
+  setMissions: (flags: Partial<Missions>) => request<Missions>("PUT", "/settings/missions", flags),
   startRun: (prompt: string) => request<{ run_id: string }>("POST", "/agent/runs", { prompt }),
   stopRun: (id: string) => request<{ stopping: boolean }>("POST", `/agent/runs/${enc(id)}/stop`),
   runs: () => request<AgentRunView[]>("GET", "/agent/runs"),

@@ -109,6 +109,17 @@ recorded "before" state, and refuses if the record changed again since, so it ne
 Observations are now keyed by source *and* content, so the same text read at two URLs keeps both sources.
 That matters when "is this a Tier-1 page?" decides what may be auto-applied.
 
+### 9. Missions (Phase 1c item 5)
+
+Two scheduled runs, jobs on the existing scheduler (`mission-opportunity-scout`, Fridays 09:00;
+`mission-what-changed`, daily 07:00), both off until enabled (`agent.missions`, Settings). They use the
+`mission` model and the same per-run and monthly budgets as any run; a run the budget refuses is skipped and
+logged. The daily check calls the model only if something changed since its last run (changes, claims,
+Inbox items) or a deadline is due within three days. Each run is a `scheduled` run with `mission` set, shown
+on the Agent page, and its result goes out as a `mission` notification. New jobs and notification events now
+merge into existing `lighthouse.yaml` files with their defaults, so upgrading picks them up; `''` turns a
+schedule off.
+
 ## Consequences
 
 - Chat history is replayed into each turn instead of resumed from a server-side session: more input tokens

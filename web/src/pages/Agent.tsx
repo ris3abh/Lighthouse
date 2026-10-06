@@ -24,7 +24,7 @@ function duration(r: AgentRunView) {
 export default function Agent({ focus }: { focus: string | null }) {
   const { version, bump } = useRefresh();
   const toast = useToast();
-  const data = useLoad(() => Promise.all([api.runs(), api.agentStatus()]), [version]);
+  const data = useLoad(() => Promise.all([api.runs(), api.agentStatus(), api.missions()]), [version]);
   const [kind, setKind] = useState<"all" | "chat" | "manual" | "scheduled">("all");
   const [selected, setSelected] = useState<string | null>(focus);
   const [prompt, setPrompt] = useState("");
@@ -36,7 +36,17 @@ export default function Agent({ focus }: { focus: string | null }) {
 
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
   if (!data.data) return <Loading />;
-  const [runs, status] = data.data;
+  const [runs, status, missionList] = data.data;
+  const runMission = async (name: string) => {
+    try {
+      const r = await api.runMission(name);
+      setSelected(r.run_id);
+      window.location.hash = `#/agent?run=${r.run_id}`;
+      bump();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
   const shown = runs.filter((r) => kind === "all" || r.kind === kind);
   const current = selected ?? shown[0]?.id ?? null;
 
@@ -117,6 +127,41 @@ export default function Agent({ focus }: { focus: string | null }) {
         </Card>
       </div>
 
+      <Card title="Missions" className="mb-4">
+        <ul className="grid divide-y divide-zinc-100 md:grid-cols-2 md:divide-x md:divide-y-0 dark:divide-zinc-800">
+          {missionList.map((m) => (
+            <li key={m.name} className="flex items-start gap-3 p-4">
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  {m.title} <Chip tone={m.enabled ? "emerald" : "zinc"}>{m.enabled ? "on" : "off"}</Chip>
+                </p>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  {m.name === "opportunity_scout"
+                    ? "Weekly: finds judging calls, CFPs, awards and memberships for your weakest criteria."
+                    : "Daily: what changed and the three things to do this week. Skipped (no cost) when nothing changed."}
+                </p>
+                <p className="mt-1 text-[11px] text-zinc-400">
+                  {m.enabled && m.next_run ? `Next ${new Date(m.next_run).toLocaleString()} · ` : m.enabled ? "" : "Turn on in Settings · "}
+                  {m.model}
+                  {m.last_run && (
+                    <>
+                      {" · last "}
+                      <a className="underline" href={`#/agent?run=${m.last_run.id}`}>
+                        {new Date(m.last_run.at).toLocaleDateString()}
+                      </a>
+                      {`, ${m.last_run.proposals} proposal(s), ${fmtUsd(m.last_run.cost_usd)}`}
+                    </>
+                  )}
+                </p>
+              </div>
+              <Button size="sm" disabled={!status.available} onClick={() => runMission(m.name)}>
+                Run now
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
       <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
         <Card
           title="Runs"
@@ -142,7 +187,7 @@ export default function Agent({ focus }: { focus: string | null }) {
                     className={cx("w-full px-3 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50", current === r.id && "bg-zinc-100 dark:bg-zinc-800")}
                   >
                     <div className="flex items-center gap-1.5 text-[11px]">
-                      <Chip>{KIND_LABEL[r.kind]}</Chip>
+                      <Chip>{r.mission ? (missionList.find((m) => m.name === r.mission)?.title ?? r.mission) : KIND_LABEL[r.kind]}</Chip>
                       <span className={cx("font-medium", STATUS_TONE[r.status])}>{r.status}</span>
                       <span className="ml-auto text-zinc-400 tabular-nums">{new Date(r.started_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                     </div>

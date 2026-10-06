@@ -264,6 +264,22 @@ class Service:
         return self._record("settings.autopilot", "settings", apply, target_id="autopilot", before=before,
                             summary=", ".join(f"{k}={'on' if v else 'off'}" for k, v in flags.items()))  # fmt: skip
 
+    def set_missions(self, **flags: bool) -> Any:
+        if self.auto:
+            raise AutopilotRefused("autopilot can't change mission settings")
+        cfg = self.ws.config()
+        before = cfg.agent.missions.model_dump()
+
+        def apply() -> Any:
+            cfg.agent.missions = cfg.agent.missions.model_validate(
+                {**before, **{k: bool(v) for k, v in flags.items()}}
+            )
+            self.ws.save_config(cfg)
+            return cfg.agent.missions
+
+        return self._record("settings.missions", "settings", apply, target_id="missions", before=before,
+                            summary=", ".join(f"{k}={'on' if v else 'off'}" for k, v in flags.items()))  # fmt: skip
+
     # ------------------------------------------------------------------ undo
 
     UNDOABLE = frozenset({"pipeline.add", "pipeline.update", "pipeline.move", "deadline.add", "deadline.update",

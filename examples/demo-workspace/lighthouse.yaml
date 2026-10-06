@@ -11,6 +11,8 @@ schedules:
   metrics-snapshot: 0 9 * * mon
   deadline-check: 0 7 * * *
   digest: 0 17 * * fri
+  mission-opportunity-scout: 0 9 * * fri
+  mission-what-changed: 0 7 * * *
 connectors:
   include_forks: false
   min_stars_for_candidate: 5
@@ -39,6 +41,8 @@ notifications:
     - desktop
     sync_error:
     - desktop
+    mission:
+    - desktop
     test:
     - desktop
   deadline_alert_days:
@@ -51,6 +55,9 @@ agent:
     chat: claude-opus-5-5
     task: claude-opus-5-5
     mission: claude-sonnet-5-5
+  missions:
+    opportunity_scout: false
+    what_changed: false
   effort: medium
   web_search: true
   max_turns: 25

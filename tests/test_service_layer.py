@@ -23,7 +23,8 @@ PDF = b"%PDF-1.4 fictional\n"
 
 # Routes the five pages write through. Every mutating route under these prefixes must be covered below.
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
-                 "/api/criteria", "/api/changes", "/api/settings/autopilot")  # fmt: skip
+                 "/api/criteria", "/api/changes", "/api/settings/autopilot",
+                 "/api/settings/missions")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -34,6 +35,7 @@ SYSTEM_ROUTES = {
     # Agent runs write their own records (agent/runs, agent/conversations); anything the agent changes in
     # the workspace goes through Service(actor="agent:<run>"), covered in tests/test_agent.py.
     ("POST", "/api/agent/chat"), ("POST", "/api/agent/runs"), ("POST", "/api/agent/runs/{run_id}/stop"),
+    ("POST", "/api/agent/missions/{name}/run"),
 }  # fmt: skip
 
 
@@ -131,6 +133,7 @@ SAMPLES = {
     ("PATCH", "/api/letters/{letter_id}"): ("/api/letters/{letter}", {"json": {"status": "sent"}}, "letter.update"),
     ("DELETE", "/api/letters/{letter_id}"): ("/api/letters/{letter}", {}, "letter.delete"),
     ("PUT", "/api/settings/autopilot"): ("/api/settings/autopilot", {"json": {"metrics": True}}, "settings.autopilot"),
+    ("PUT", "/api/settings/missions"): ("/api/settings/missions", {"json": {"what_changed": True}}, "settings.missions"),
     ("POST", "/api/changes/{change_id}/undo"): ("/api/changes/{undo}/undo", {}, "pipeline_item.undo"),
 }  # fmt: skip
 

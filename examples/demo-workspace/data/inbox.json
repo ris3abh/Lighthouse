@@ -2,7 +2,7 @@
   "schema_version": 1,
   "candidates": [
     {
-      "id": "cand_522f71457938",
+      "id": "cand_ce363bed7520",
       "kind": "evidence",
       "fingerprint": "paper:arxiv:2502.01234:scholarly_articles",
       "source": "github:arivera-demo",
@@ -15,10 +15,10 @@
       "raw_url": "https://arxiv.org/abs/2502.01234",
       "signals": [],
       "facts": {},
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": "preprint",
       "claim_ids": [
-        "clm_2f88317cd3a2"
+        "clm_03154c96a7b4"
       ],
       "attachment": null,
       "source_tier": null,
@@ -27,7 +27,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_9fdb63bc75e1",
+      "id": "cand_7cc5067eaf87",
       "kind": "evidence",
       "fingerprint": "github:arivera-demo/tinyserve:original_contributions",
       "source": "github:arivera-demo",
@@ -47,14 +47,14 @@
         "topics": "",
         "created": "2024-02-11"
       },
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": null,
       "claim_ids": [
-        "clm_27758b74ae7b",
-        "clm_e9f25603db8c",
-        "clm_752e0909a334",
-        "clm_5291c33b2764",
-        "clm_a72927d1637e"
+        "clm_0e782e098f38",
+        "clm_d8ef845d1165",
+        "clm_4e612201f813",
+        "clm_1a077aa07919",
+        "clm_466585ac5eb8"
       ],
       "attachment": null,
       "source_tier": null,
@@ -63,7 +63,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_361f11dfc7e7",
+      "id": "cand_5501c64425f7",
       "kind": "evidence",
       "fingerprint": "huggingface:arivera-demo/tiny-vlm:original_contributions",
       "source": "huggingface:arivera-demo",
@@ -84,12 +84,12 @@
         "downloads_30d": 15400,
         "downloads_all_time": 118000
       },
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": null,
       "claim_ids": [
-        "clm_1e0ea3a3a90f",
-        "clm_0fef3a216ae7",
-        "clm_1b345316e4a1"
+        "clm_73dc9ae03570",
+        "clm_71202d5ac997",
+        "clm_1402eacb0bef"
       ],
       "attachment": null,
       "source_tier": null,
@@ -98,7 +98,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_030a53b8a924",
+      "id": "cand_822dc7f09fc0",
       "kind": "evidence",
       "fingerprint": "paper:arxiv:2509.04321:scholarly_articles",
       "source": "huggingface:arivera-demo",
@@ -113,11 +113,11 @@
       "facts": {
         "hf_upvotes": 42
       },
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": "preprint",
       "claim_ids": [
-        "clm_ad23c450080f",
-        "clm_afcb036bf589"
+        "clm_595fd5fbeb32",
+        "clm_1c4ff9bcea8e"
       ],
       "attachment": null,
       "source_tier": null,
@@ -126,7 +126,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_f35b6c7b31ce",
+      "id": "cand_327803a4a6ab",
       "kind": "evidence",
       "fingerprint": "huggingface:datasets/arivera-demo/robo-grasp-10k:original_contributions",
       "source": "huggingface:arivera-demo",
@@ -145,12 +145,12 @@
         "downloads_30d": 2300,
         "downloads_all_time": 14800
       },
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": null,
       "claim_ids": [
-        "clm_9e3d8aae144e",
-        "clm_087d58d86270",
-        "clm_94a54a309daf"
+        "clm_e2c526c54d15",
+        "clm_e64d383ff97f",
+        "clm_222797aa4138"
       ],
       "attachment": null,
       "source_tier": null,
@@ -159,7 +159,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_e85a982c701a",
+      "id": "cand_93247fe30f04",
       "kind": "evidence",
       "fingerprint": "huggingface:spaces/arivera-demo/tiny-vlm-demo:original_contributions",
       "source": "huggingface:arivera-demo",
@@ -174,10 +174,10 @@
       "facts": {
         "likes": 12
       },
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": null,
       "claim_ids": [
-        "clm_5045e7c6acbe"
+        "clm_fb8fd6482a53"
       ],
       "attachment": null,
       "source_tier": null,
@@ -186,7 +186,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_47f7b9faa460",
+      "id": "cand_253f0a68a42c",
       "kind": "pipeline",
       "fingerprint": "chat:pipeline:ieee-senior-member-program",
       "source": "chat:claude",
@@ -199,10 +199,10 @@
       "raw_url": null,
       "signals": [],
       "facts": {},
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": "applied",
       "claim_ids": [
-        "clm_bc1e109e7978"
+        "clm_a72ba34af89d"
       ],
       "attachment": null,
       "source_tier": "self_reported",
@@ -216,7 +216,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_9a0f9dbe3fa9",
+      "id": "cand_368d58242b98",
       "kind": "deadline",
       "fingerprint": "chat:deadline:the-neurips-workshop-reviews-are-due-oct:2026-10-14",
       "source": "chat:claude",
@@ -229,10 +229,10 @@
       "raw_url": null,
       "signals": [],
       "facts": {},
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": null,
       "claim_ids": [
-        "clm_f819d0f701bc"
+        "clm_b23fd0390c6a"
       ],
       "attachment": null,
       "source_tier": "self_reported",
@@ -246,7 +246,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_0db193780438",
+      "id": "cand_d6b2043f97fd",
       "kind": "letter",
       "fingerprint": "chat:letter:dr-priya-natarajan",
       "source": "chat:claude",
@@ -259,10 +259,10 @@
       "raw_url": null,
       "signals": [],
       "facts": {},
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": null,
       "claim_ids": [
-        "clm_b99d9c4975e3"
+        "clm_fbc218c946ee"
       ],
       "attachment": null,
       "source_tier": "self_reported",
@@ -276,7 +276,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_4bffb372358e",
+      "id": "cand_85fbe467b208",
       "kind": "pipeline",
       "fingerprint": "chat:pipeline:mlh-fall-hackathon",
       "source": "chat:claude",
@@ -289,10 +289,10 @@
       "raw_url": null,
       "signals": [],
       "facts": {},
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": "invited",
       "claim_ids": [
-        "clm_6f389529828b"
+        "clm_eb0330b3272d"
       ],
       "attachment": null,
       "source_tier": "self_reported",
@@ -306,7 +306,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_bd14b92a486a",
+      "id": "cand_e36fd5600aa5",
       "kind": "letter",
       "fingerprint": "chat:letter:marcus-webb",
       "source": "chat:claude",
@@ -319,10 +319,10 @@
       "raw_url": null,
       "signals": [],
       "facts": {},
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": null,
       "claim_ids": [
-        "clm_d7baf394e9e7"
+        "clm_29ad328700d2"
       ],
       "attachment": null,
       "source_tier": "self_reported",
@@ -336,7 +336,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_a047aa205b3a",
+      "id": "cand_0c30269829b6",
       "kind": "pipeline",
       "fingerprint": "chat:pipeline:hackmit-2026",
       "source": "chat:claude",
@@ -349,10 +349,10 @@
       "raw_url": null,
       "signals": [],
       "facts": {},
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": "completed",
       "claim_ids": [
-        "clm_cd70c8c88a66"
+        "clm_28aef55b8163"
       ],
       "attachment": null,
       "source_tier": "self_reported",
@@ -366,7 +366,7 @@
       "snoozed_until": null
     },
     {
-      "id": "cand_f4facb883994",
+      "id": "cand_f326d9d13597",
       "kind": "deadline",
       "fingerprint": "chat:deadline:the-ieee-application-deadline-is-novembe:2026-11-01",
       "source": "chat:claude",
@@ -379,10 +379,10 @@
       "raw_url": null,
       "signals": [],
       "facts": {},
-      "created_at": "2026-10-06T23:05:39Z",
+      "created_at": "2026-10-06T23:13:33Z",
       "stage": null,
       "claim_ids": [
-        "clm_9dc69083f6a9"
+        "clm_b1f16037230b"
       ],
       "attachment": null,
       "source_tier": "self_reported",

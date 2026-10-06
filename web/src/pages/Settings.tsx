@@ -4,6 +4,11 @@ import { useRefresh } from "../App";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 
+const MISSIONS = [
+  { id: "opportunity_scout", job: "mission-opportunity-scout", label: "Weekly opportunity scout", detail: "Finds current opportunities for your weakest criteria and proposes them." },
+  { id: "what_changed", job: "mission-what-changed", label: "Daily what-changed check", detail: "Reviews what changed and writes this week's briefing. Skipped, at no cost, when nothing changed." },
+] as const;
+
 const AUTOPILOT = [
   { id: "tracker_updates", label: "Tracker updates", detail: "Move pipeline items, set follow-ups and notes, update a letter writer's status or last contact, mark deadlines done." },
   { id: "metrics", label: "Metrics", detail: "Record a metric (e.g. citations) the agent read on a page and quoted, word for word." },
@@ -71,6 +76,45 @@ export default function Settings() {
             </li>
           ))}
         </ul>
+      </Card>
+
+      <Card title="Missions" className="mb-4">
+        <div className="p-4">
+          <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+            Scheduled agent runs on the missions model, inside your monthly budget. Results land on the Agent page and as a
+            notification; suggestions go to your Inbox (or are applied, where autopilot is on).
+          </p>
+          <div className="flex flex-col gap-2">
+            {MISSIONS.map((m) => (
+              <label key={m.id} className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={s.missions[m.id]}
+                  disabled={busy === m.id}
+                  onChange={async (e) => {
+                    setBusy(m.id);
+                    try {
+                      await api.setMissions({ [m.id]: e.target.checked });
+                      toast(`${m.label}: ${e.target.checked ? "on" : "off"}`);
+                      bump();
+                    } catch (err) {
+                      toast((err as Error).message, "error");
+                    } finally {
+                      setBusy(null);
+                    }
+                  }}
+                />
+                <span>
+                  <span className="font-medium">{m.label}</span>
+                  <span className="block text-xs text-zinc-500">
+                    {m.detail} Schedule: <code>{s.schedules[m.job] || "off"}</code>
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
       </Card>
 
       <Card title="Agent autopilot" className="mb-4">
