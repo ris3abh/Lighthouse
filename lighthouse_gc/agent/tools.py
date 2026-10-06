@@ -149,6 +149,10 @@ async def fetch_page(url: str, client: httpx.AsyncClient | None = None) -> tuple
                 continue
             if resp.status_code >= 400:
                 raise ValueError(f"HTTP {resp.status_code} from {url}")
+            if resp.status_code != 200 or not resp.content.strip():
+                # e.g. 202 with an empty body: a bot-protection challenge, not the page.
+                raise ValueError(f"{url} returned no readable content (HTTP {resp.status_code}); the site may block "
+                                 "automated reading. Try another source, or cite the search result as unverified.")  # fmt: skip
             if len(resp.content) > MAX_PAGE_BYTES:
                 raise ValueError("page is larger than 2 MB")
             ctype = resp.headers.get("content-type", "")
@@ -158,6 +162,10 @@ async def fetch_page(url: str, client: httpx.AsyncClient | None = None) -> tuple
                 title, text = "", resp.text
             else:
                 raise ValueError(f"can't read {ctype or 'unknown content type'} (only HTML and text)")
+            if len(text.strip()) < 40:
+                raise ValueError(
+                    f"{url} has almost no readable text (it may need JavaScript); try another source"
+                )
             return url, title, text
         raise ValueError("too many redirects")
     finally:

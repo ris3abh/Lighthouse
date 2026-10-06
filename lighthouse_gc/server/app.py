@@ -631,6 +631,12 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
 
     # ------------------------------------------------------------------ agent (ADR 0005)
 
+    @app.get("/api/changes")
+    def get_changes(actor: str = "", limit: int = 200) -> list[dict[str, Any]]:
+        """The audit trail (data/changes.jsonl), newest first, optionally for one actor (e.g. agent:<run>)."""
+        changes = [c for c in ws.changes() if not actor or c.actor == actor]
+        return [c.model_dump(mode="json") for c in reversed(changes[-limit:])]
+
     @app.get("/api/agent/status")
     def agent_status() -> dict[str, Any]:
         return runner.status()

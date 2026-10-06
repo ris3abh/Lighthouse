@@ -81,6 +81,10 @@ All notable changes to this project are documented here. The format follows
   conversation picker; month-to-date tokens and cost. Conversations are saved in `agent/conversations/`.
   API: `POST /api/agent/chat`, `GET /api/agent/runs/{id}/stream` (Server-Sent Events), stop, conversations,
   status.
+- Agent page: every run (chat, manual, scheduled) with a kind filter; a "Run a task" box; month-to-date
+  spend against the caps; and per run: live stream while running (with Stop), the step-by-step timeline,
+  sources read with their snapshot ids, proposals linked to the Inbox, workspace changes from the audit
+  trail, tokens (in / out / cache read) and cost. `GET /api/changes?actor=` exposes the audit trail.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.
@@ -91,3 +95,6 @@ All notable changes to this project are documented here. The format follows
 - `metrics-snapshot` default schedule: cron can't express "biweekly" (`mon/2` meant something else);
   it now runs weekly on Mondays and the job skips unless 13+ days have passed.
 - Request bodies for `/api/notify/test` were read as a query parameter (model defined inside the app factory).
+- `read_page` treated a bot-protection response (HTTP 202, empty body) as a page and saved an empty snapshot.
+  Empty, script-only and non-200 responses are now errors the agent sees, and nothing is snapshotted.
+- The chat panel crashed in browsers where `scrollIntoView()` returns a Promise (an effect returned it).

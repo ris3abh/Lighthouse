@@ -81,7 +81,13 @@ Phase 1b notes / follow-ups:
 - [x] 1. Agent engine: Claude Agent SDK adapter + Codex stub, web search, MCP read tools, service-layer
       propose tools, per-run / monthly budgets, mocked model in tests
 - [x] 2. Chat panel on every page (verified live against Claude in the demo workspace)
-- [ ] 3. Agent page
+- [x] 3. Agent page (verified live: web search → read_page → proposal decision)
+
+Phase 1c notes:
+- Sites behind bot protection (e.g. ieee.org returns 202 + empty body) can't be read; the agent is told so
+  and falls back to search results, which it labels as unverified.
+- Chat history is replayed into each turn (no server-side session), so long chats cost more input tokens;
+  summarizing older turns is a follow-up.
 - [ ] 4. Autopilot rules (after the user tries chat)
 - [ ] 5. Missions
 - [ ] 6. Overview briefing

@@ -3,6 +3,7 @@ import { api } from "./api";
 import ChatPanel from "./components/ChatPanel";
 import { Button, cx, ToastProvider, useToast } from "./components/ui";
 import { useLoad, useRoute, useTheme } from "./hooks";
+import Agent from "./pages/Agent";
 import Calendar from "./pages/Calendar";
 import Evidence from "./pages/Evidence";
 import Inbox from "./pages/Inbox";
@@ -25,6 +26,7 @@ const NAV = [
   { id: "pipeline", label: "Pipeline", icon: "▥" },
   { id: "letters", label: "Letters", icon: "✉" },
   { id: "calendar", label: "Calendar", icon: "▦" },
+  { id: "agent", label: "Agent", icon: "✦" },
   { id: "sources", label: "Sources", icon: "⛁" },
   { id: "settings", label: "Settings", icon: "⚙" },
 ] as const;
@@ -97,6 +99,9 @@ function Shell() {
       break;
     case "letters":
       content = <Letters />;
+      break;
+    case "agent":
+      content = <Agent focus={params.get("run")} />;
       break;
     case "calendar":
       content = <Calendar />;

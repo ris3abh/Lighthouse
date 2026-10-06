@@ -97,3 +97,15 @@ def test_budget_and_unavailable_engine_errors(demo_ws):
         assert c.get("/api/agent/status").json()["available"] is False
         r = c.post("/api/agent/chat", json={"message": "hi"}, headers=W)
         assert r.status_code == 503 and "claude" in r.json()["detail"]
+
+
+def test_changes_api_filters_by_actor(demo_ws):
+    engine = FakeEngine([("tool", "propose_deadline", {"title": "CFP closes", "due": "2026-11-15"})])
+    with TestClient(create_app(demo_ws, allowed_hosts=["testserver"], engine=engine)) as c:
+        run_id = c.post("/api/agent/runs", json={"prompt": "go"}, headers=W).json()["run_id"]
+        c.get(f"/api/agent/runs/{run_id}/stream")
+        c.post("/api/deadlines", json={"title": "mine", "due": "2026-12-01"}, headers=W)
+        mine = c.get(f"/api/changes?actor=agent:{run_id}").json()
+        assert [x["action"] for x in mine] == ["inbox.propose"] and mine[0]["summary"] == "CFP closes"
+        assert {x["actor"] for x in c.get("/api/changes").json()} == {"user", f"agent:{run_id}"}
+        assert c.get(f"/api/agent/runs/{run_id}").json()["changes"] == [mine[0]["id"]]

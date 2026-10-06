@@ -354,3 +354,30 @@ def test_unavailable_engine_is_reported(demo_ws):
     assert runner.status()["available"] is False
     with pytest.raises(EngineUnavailable, match="claude"):
         anyio.run(runner.start, "manual", "hi")
+
+
+@pytest.mark.parametrize(
+    ("status", "body", "ctype", "message"),
+    [
+        (202, "", "text/html", "no readable content"),  # bot-protection challenge
+        (200, "", "text/html", "no readable content"),
+        (
+            200,
+            "<html><body><div id=root></div><script>app()</script></body></html>",
+            "text/html",
+            "almost no readable text",
+        ),
+        (200, "%PDF-1.4", "application/pdf", "only HTML and text"),
+        (404, "nope", "text/html", "HTTP 404"),
+    ],
+)
+def test_read_page_never_snapshots_an_empty_page(
+    demo_ws, monkeypatch, http_mock, status, body, ctype, message
+):
+    _public_dns(monkeypatch)
+    http_mock.get("https://site.example/p").respond(status, text=body, headers={"content-type": ctype})
+    ctx, t = _tools(demo_ws)
+    before = len(demo_ws.memory.observations())
+    with pytest.raises(ValueError, match=message):
+        anyio.run(t["read_page"].handler, {"url": "https://site.example/p"})
+    assert len(demo_ws.memory.observations()) == before and ctx.run.sources == []

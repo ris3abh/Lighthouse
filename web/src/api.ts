@@ -452,6 +452,12 @@ export const api = {
   runs: () => request<AgentRunView[]>("GET", "/agent/runs"),
   run: (id: string) => request<AgentRunView>("GET", `/agent/runs/${enc(id)}`),
   runStreamUrl: (id: string) => `./api/agent/runs/${enc(id)}/stream`,
+  changes: (actor?: string) =>
+    request<{ id: string; at: string; actor: string; action: string; target_type: string; target_id: string | null; summary: string }[]>(
+      "GET",
+      `/changes${actor ? `?actor=${enc(actor)}` : ""}`,
+    ),
+  allCandidates: () => request<Candidate[]>("GET", "/inbox?status=all"),
   conversations: () => request<{ id: string; title: string; updated_at: string; messages: number }[]>("GET", "/agent/conversations"),
   conversation: (id: string) => request<ConversationView>("GET", `/agent/conversations/${enc(id)}`),
 
