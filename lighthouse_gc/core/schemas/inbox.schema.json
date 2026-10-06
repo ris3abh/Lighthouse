@@ -3,6 +3,19 @@
     "Candidate": {
       "additionalProperties": false,
       "properties": {
+        "attachment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Observation id of an uploaded file filed on accept.",
+          "title": "Attachment"
+        },
         "claim_ids": {
           "description": "Memory claims this candidate rests on.",
           "items": {
@@ -78,6 +91,12 @@
           "title": "Kind",
           "type": "string"
         },
+        "proposal": {
+          "additionalProperties": true,
+          "description": "For tracker candidates: the pipeline / deadline / letter entry to add.",
+          "title": "Proposal",
+          "type": "object"
+        },
         "proposed_criterion": {
           "title": "Proposed Criterion",
           "type": "string"
@@ -119,6 +138,27 @@
           "description": "Source record id that produced this candidate (or 'manual').",
           "title": "Source",
           "type": "string"
+        },
+        "source_tier": {
+          "anyOf": [
+            {
+              "enum": [
+                "tier1",
+                "tier2",
+                "tier3",
+                "platform",
+                "user",
+                "self_reported"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tier of the source this candidate came from.",
+          "title": "Source Tier"
         },
         "stage": {
           "anyOf": [

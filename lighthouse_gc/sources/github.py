@@ -183,6 +183,7 @@ class GitHubSource:
                     continue
                 traffic = Evidence(
                     connector=self.kind,
+                    tier="platform",
                     source_url=f"{API}/repos/{item.name}/traffic/{kind}",
                     payload=resp.data,
                     claims=field_claims(
@@ -201,6 +202,7 @@ class GitHubSource:
                   "open_issues": "open_issues_count", "created_at": "created_at"}  # fmt: skip
         return Evidence(
             connector=self.kind,
+            tier="platform",
             source_url=f"{API}/repos/{item.name}",
             payload=repo,
             claims=field_claims(
@@ -264,6 +266,7 @@ class GitHubSource:
                 quote = next(m.group(0) for m in ARXIV_RE.finditer(readme.data) if m["id"] == arxiv_id)
                 evidence = Evidence(
                     connector=self.kind,
+                    tier="platform",
                     source_url=f"{API}/repos/{item.name}/readme",
                     payload=readme.data,
                     media_type="text/markdown",

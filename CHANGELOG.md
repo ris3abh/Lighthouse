@@ -11,6 +11,12 @@ All notable changes to this project are documented here. The format follows
 - `lighthouse-gc mcp`: read-only MCP server (stdio) with `get_scoreboard`, `list_gaps`,
   `query_claims(entity, as_of)`, `get_provenance(claim_id)` and `what_changed(since)`; every tool is
   annotated read-only and never writes a workspace file (tested).
+- Drag-and-drop on the Evidence page (or click to choose): each file is snapshotted byte-for-byte in
+  `memory/sources/` (tier `user`) and proposed in the Inbox with a guessed criterion, type and stage
+  (an invitation is proposed as `invited`). Dropping onto a criterion card targets it. Accepting files
+  the original bytes as `evidence/<crit>/<crit>_<date>_<slug>.<ext>`. Uploads can be previewed before
+  filing; duplicates are detected by content hash.
+- Source tiers on observations, candidates and exhibits (`platform`, `user`, `self_reported`, `tier1-3`).
 - Phase 0 core: workspace store, JSON Schemas for every file, `lighthouse-gc init / import / run / up / validate`.
 - GitHub (public + fine-grained PAT, incl. 14-day traffic history) and Hugging Face connectors.
 - O-1A and EB-1A profiles with a rule-based criteria engine; criterion overrides (gap / dropped).

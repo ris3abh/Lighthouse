@@ -101,6 +101,11 @@ class Case(Workspace):
         write_dashboard(self, board)
         return board
 
+    def classify_upload(self, filename: str) -> tuple[str, str, str | None]:
+        from lighthouse_gc.criteria.classify import classify
+
+        return classify(filename, self.profile())
+
     def validate_criterion(self, criterion_id: str) -> None:
         known = {c.id for p in self.profiles().values() for c in p.criteria}
         if criterion_id not in known:

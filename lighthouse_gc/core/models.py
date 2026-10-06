@@ -59,6 +59,15 @@ def stage_counts(stage: str | None) -> bool:
     return stage is None or stage in COMPLETED_STAGES
 
 
+# --------------------------------------------------------------------------- source tiers
+
+# How much a source can be trusted on its own. Tiers 1-3 follow SPEC 5a (primary law, adjudication,
+# secondary); "platform" is a service's own API (GitHub, Hugging Face); "user" is a document the user filed;
+# "self_reported" is the user's own words (e.g. imported chat history): useful for trackers, never proof.
+SourceTier = Literal["tier1", "tier2", "tier3", "platform", "user", "self_reported"]
+NON_EVIDENTIARY_TIERS: frozenset[str] = frozenset({"self_reported"})
+
+
 # --------------------------------------------------------------------------- sources.json
 
 
@@ -115,6 +124,12 @@ class Candidate(_Model):
     created_at: datetime = Field(default_factory=utcnow)
     stage: Stage | None = Field(None, description="Event stage the evidence shows; None if not an activity.")
     claim_ids: list[str] = Field(default_factory=list, description="Memory claims this candidate rests on.")
+    attachment: str | None = Field(None, description="Observation id of an uploaded file filed on accept.")
+    source_tier: SourceTier | None = Field(None, description="Tier of the source this candidate came from.")
+    proposal: dict[str, Any] = Field(
+        default_factory=dict,
+        description="For tracker candidates: the pipeline / deadline / letter entry to add.",
+    )
     status: Literal["pending", "snoozed", "rejected"] = "pending"
     snoozed_until: date | None = None
 
@@ -154,6 +169,9 @@ class Exhibit(_Model):
         None, description="Fingerprint of the accepted candidate, for de-duplication."
     )
     signals: list[str] = Field(default_factory=list)
+    source_tier: SourceTier | None = Field(
+        None, description="self_reported exhibits never count toward a criterion."
+    )
     stage: Stage | None = Field(None, description="Only completed stages (or None) count toward a criterion.")
     claim_ids: list[str] = Field(
         default_factory=list, description="Approved memory claims this exhibit cites."
@@ -318,6 +336,8 @@ class Observation(_Model):
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     snapshot: str = Field(description="Path relative to the workspace, memory/sources/<sha256>.<ext>")
     media_type: str = "application/json"
+    tier: SourceTier | None = None
+    filename: str | None = Field(None, description="Original file name, for uploads and imported exports.")
 
 
 class Entity(_Model):
@@ -392,6 +412,8 @@ class Evidence(_Model):
     source_url: str
     payload: Any = Field(description="Raw JSON payload, or a string for text/markdown.")
     media_type: str = "application/json"
+    tier: SourceTier | None = None
+    filename: str | None = None
     claims: list[ClaimDraft] = Field(default_factory=list)
 
 

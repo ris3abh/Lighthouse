@@ -163,6 +163,33 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
     def snooze(candidate_id: str, body: SnoozeBody | None = None) -> dict[str, Any]:
         return ws.snooze_candidate(candidate_id, body.until if body else None).model_dump(mode="json")
 
+    @app.post("/api/inbox/upload")
+    async def upload_to_inbox(
+        files: list[UploadFile] = File(...),
+        criterion: str = Form("", description="Optional: the criterion the files were dropped on"),
+    ) -> list[dict[str, Any]]:
+        """Drag-and-drop: each file becomes a snapshot in memory/ and a candidate in the Inbox."""
+        out = []
+        for f in files:
+            content = await f.read(MAX_UPLOAD_BYTES + 1)
+            if len(content) > MAX_UPLOAD_BYTES:
+                raise HTTPException(413, f"{f.filename} is larger than 25 MB")
+            cand = ws.stage_upload(content, f.filename or "upload.bin", criterion or None)
+            out.append(cand.model_dump(mode="json"))
+        return out
+
+    @app.get("/api/attachments/{obs_id}")
+    def get_attachment(obs_id: str) -> FileResponse:
+        """Preview an uploaded file before it's filed (only files staged via upload)."""
+        obs = ws.memory.observation(obs_id)
+        if obs is None or obs.connector != "upload":
+            raise HTTPException(404, "no such upload")
+        target = ws.resolve_inside(obs.snapshot)
+        if target.suffix.lower() not in PREVIEWABLE:
+            raise HTTPException(415, "no preview for this file type")
+        media = "text/plain; charset=utf-8" if target.suffix.lower() in (".md", ".txt", ".csv") else None
+        return FileResponse(target, media_type=media, headers={"Content-Security-Policy": "sandbox"})
+
     # ------------------------------------------------------------------ evidence
 
     @app.get("/api/exhibits")

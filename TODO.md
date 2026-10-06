@@ -45,7 +45,7 @@ Running checklist against [SPEC.md](SPEC.md) section 11. Product-first ordering 
 - [x] GitHub Actions CI: repo guard, ruff, mypy, pytest (3.11 + 3.13), validate examples/, web build
 - [x] `lighthouse-gc mcp`: read-only MCP server (get_scoreboard, list_gaps, query_claims, get_provenance,
       what_changed); tested in-process and over real stdio, plus a no-writes digest test
-- [ ] Evidence page drag-and-drop upload → Inbox → exhibit
+- [x] Evidence page drag-and-drop upload → Inbox → exhibit (tested via API + real drag events in Chrome)
 - [ ] Claude / ChatGPT export import → snapshots + self-reported tracker candidates (never count)
 
 ## Later in Phase 1

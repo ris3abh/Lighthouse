@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type EvidenceCriterion, type Exhibit, STAGES, stageCounts } from "../api";
 import ClaimsPanel, { StageChip } from "../components/Claims";
+import DropZone, { useFileDrop } from "../components/DropZone";
 import { useRefresh } from "../App";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, Modal, PageHeader, StatusBadge, useToast } from "../components/ui";
 import { today, useLoad } from "../hooks";
@@ -10,6 +11,24 @@ export default function Evidence({ focus }: { focus: string | null }) {
   const view = useLoad(() => api.evidence(), [version]);
   const [uploadFor, setUploadFor] = useState<EvidenceCriterion | null>(null);
   const [preview, setPreview] = useState<Exhibit | null>(null);
+  const [sending, setSending] = useState(false);
+  const toast = useToast();
+
+  /** Dropped files go to the Inbox (snapshotted in memory/); accepting there files them as exhibits. */
+  const sendToInbox = async (files: File[], criterion?: string) => {
+    setSending(true);
+    try {
+      const cands = await api.uploadToInbox(files, criterion);
+      const unsorted = cands.filter((c) => !c.proposed_criterion).length;
+      toast(`${cands.length} file${cands.length > 1 ? "s" : ""} sent to the Inbox${unsorted ? ` — ${unsorted} need a criterion` : ""}`);
+      bump();
+      window.location.hash = "#/inbox";
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setSending(false);
+    }
+  };
 
   useEffect(() => {
     if (focus && view.data) document.getElementById(`crit-${focus}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -22,6 +41,14 @@ export default function Evidence({ focus }: { focus: string | null }) {
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader title="Evidence" subtitle="Accepted exhibits per criterion. Files live in evidence/<criterion>/ in your workspace." />
+
+      <DropZone onFiles={(f) => sendToInbox(f)} busy={sending}>
+        <p className="text-sm font-medium">{sending ? "Uploading…" : "Drop certificates, letters, screenshots or PDFs here"}</p>
+        <p className="text-xs text-zinc-500">
+          or click to choose. They go to your Inbox with a suggested criterion and stage; nothing is filed until you accept. Drop
+          onto a criterion below to propose it there.
+        </p>
+      </DropZone>
 
       {naming_issues.length > 0 && (
         <div className="card mb-4 border-amber-300 p-3 text-sm dark:border-amber-800">
@@ -44,6 +71,7 @@ export default function Evidence({ focus }: { focus: string | null }) {
             highlighted={focus === c.id}
             allCriteria={criteria}
             onUpload={() => setUploadFor(c)}
+            onDropFiles={(files) => sendToInbox(files, c.id)}
             onPreview={setPreview}
             onChanged={bump}
           />
@@ -72,6 +100,7 @@ function CriterionSection({
   highlighted,
   allCriteria,
   onUpload,
+  onDropFiles,
   onPreview,
   onChanged,
 }: {
@@ -79,6 +108,7 @@ function CriterionSection({
   highlighted: boolean;
   allCriteria: EvidenceCriterion[];
   onUpload: () => void;
+  onDropFiles: (files: File[]) => void;
   onPreview: (e: Exhibit) => void;
   onChanged: () => void;
 }) {
@@ -86,6 +116,7 @@ function CriterionSection({
   const [busy, setBusy] = useState(false);
   const signalLabel = Object.fromEntries(c.strength_signals.map((s) => [s.id, s.label]));
   const need = c.bank;
+  const { over, bind } = useFileDrop(onDropFiles);
 
   const override = async (status: "dropped" | "gap" | null) => {
     setBusy(true);
@@ -111,7 +142,16 @@ function CriterionSection({
   };
 
   return (
-    <section id={`crit-${c.id}`} className={cx("card scroll-mt-4", highlighted && "ring-2 ring-amber-400")}>
+    <section
+      id={`crit-${c.id}`}
+      {...bind}
+      className={cx("card relative scroll-mt-4", highlighted && "ring-2 ring-amber-400", over && "ring-2 ring-amber-500")}
+    >
+      {over && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-amber-50/90 text-sm font-medium text-amber-900 dark:bg-amber-950/80 dark:text-amber-200">
+          Drop to propose under “{c.label}”
+        </div>
+      )}
       <header className="flex flex-wrap items-center gap-3 px-4 py-3">
         <StatusBadge status={c.status} />
         <h2 className="min-w-0 flex-1 text-sm font-semibold">{c.label}</h2>

@@ -17,14 +17,15 @@ in a **private workspace directory** on your machine (its own Git repo); this re
 
 ## Status
 
-**Phase 0 (core + dashboard)** — see [SPEC.md](SPEC.md) for the full plan and [TODO.md](TODO.md) for progress.
+**Phase 0 (core + dashboard) is done; Phase 1a is in progress.** See [SPEC.md](SPEC.md) for the full plan and [TODO.md](TODO.md) for progress.
 
 | Works today | Coming next (Phase 1+) |
 |---|---|
+| Drag-and-drop evidence into the Inbox; read-only MCP server for agents | Claude / ChatGPT export import |
 | `init`, `import`, `run sync / metrics-snapshot / dashboard`, `up`, `validate` | scheduler, notifications |
 | GitHub (public + fine-grained PAT, incl. 14-day traffic history) | Website, Semantic Scholar, OpenAlex, ORCID, arXiv |
 | Hugging Face (models, datasets, Spaces, linked Papers) | Gmail triage, opportunity scans |
-| O-1A + EB-1A rubrics, rule-based scoreboard | MCP server, Claude Code / Codex agent, chat |
+| O-1A + EB-1A rubrics, rule-based scoreboard | MCP write tools (through the Inbox), Claude Code / Codex agent, chat |
 | Dashboard: Overview, Inbox, Evidence, Metrics, Sources | Pipeline, Letters, Calendar, Opportunities |
 
 ## Quick start

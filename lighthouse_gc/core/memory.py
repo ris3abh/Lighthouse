@@ -50,6 +50,7 @@ FILES = {
     "decisions": Decision,
 }
 _EXT = {"application/json": "json", "text/markdown": "md", "text/plain": "txt", "text/html": "html"}
+TEXT_TYPES = frozenset(_EXT)
 
 
 class MemoryError(Exception):
@@ -182,25 +183,64 @@ class Memory:
             return out
 
     def _observe(self, evidence: Evidence, text: str) -> Observation:
-        sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        return self._store(
+            text.encode("utf-8"),
+            ext=_EXT.get(evidence.media_type, "txt"),
+            connector=evidence.connector,
+            source_url=evidence.source_url,
+            media_type=evidence.media_type,
+            tier=evidence.tier,
+            filename=evidence.filename,
+        )
+
+    def record_file(
+        self, content: bytes, *, filename: str, media_type: str, connector: str = "upload", tier: str = "user"
+    ) -> Observation:
+        """Snapshot an uploaded file byte-for-byte (content-addressed, deduplicated)."""
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
+        if not ext.isalnum() or len(ext) > 8:
+            ext = "bin"
+        with self.lock:
+            return self._store(
+                content, ext=ext, connector=connector, source_url=f"upload:{filename}",
+                media_type=media_type, tier=tier, filename=filename,
+            )  # fmt: skip
+
+    def _store(
+        self,
+        data: bytes,
+        *,
+        ext: str,
+        connector: str,
+        source_url: str,
+        media_type: str,
+        tier: str | None,
+        filename: str | None,
+    ) -> Observation:
+        sha = hashlib.sha256(data).hexdigest()
         obs_id = f"obs_{sha[:16]}"
         for existing in self._read("observations", Observation):
             if existing.id == obs_id:
                 return existing
-        rel = f"memory/sources/{sha}.{_EXT.get(evidence.media_type, 'txt')}"
+        rel = f"memory/sources/{sha}.{ext}"
         path = self.root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8")
+        path.write_bytes(data)
         obs = Observation(
             id=obs_id,
-            connector=evidence.connector,
-            source_url=evidence.source_url,
+            connector=connector,
+            source_url=source_url,
             sha256=sha,
             snapshot=rel,
-            media_type=evidence.media_type,
+            media_type=media_type,
+            tier=tier,  # type: ignore[arg-type]
+            filename=filename,
         )
         self._append("observations", [obs])
         return obs
+
+    def observation(self, obs_id: str) -> Observation | None:
+        return next((o for o in self._read("observations", Observation) if o.id == obs_id), None)
 
     def _current_claims(self) -> dict[tuple[str, str], Claim]:
         """Latest claim per (subject, predicate): the ones nothing has superseded."""
@@ -269,10 +309,11 @@ class Memory:
             if not path.exists():
                 problems.append(f"{obs.snapshot}: snapshot missing for {obs.id}")
                 continue
-            text = path.read_text(encoding="utf-8")
-            if hashlib.sha256(text.encode("utf-8")).hexdigest() != obs.sha256:
+            data = path.read_bytes()
+            if hashlib.sha256(data).hexdigest() != obs.sha256:
                 problems.append(f"{obs.snapshot}: content no longer matches its sha256")
-            texts[obs.id] = text
+            if obs.media_type in TEXT_TYPES:
+                texts[obs.id] = data.decode("utf-8", errors="replace")
         for c in claims:
             snap = texts.get(c.observation_id)
             if snap is None:

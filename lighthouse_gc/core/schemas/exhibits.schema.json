@@ -75,6 +75,27 @@
           "title": "Signals",
           "type": "array"
         },
+        "source_tier": {
+          "anyOf": [
+            {
+              "enum": [
+                "tier1",
+                "tier2",
+                "tier3",
+                "platform",
+                "user",
+                "self_reported"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "self_reported exhibits never count toward a criterion.",
+          "title": "Source Tier"
+        },
         "source_url": {
           "anyOf": [
             {

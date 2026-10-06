@@ -12,7 +12,7 @@ export default function Inbox() {
   if (!inbox.data) return <Loading />;
   const [candidates, profile] = inbox.data;
 
-  const labels = Object.fromEntries(profile.criteria.map((c) => [c.id, c.label]));
+  const labels: Record<string, string> = { "": "Needs a criterion", ...Object.fromEntries(profile.criteria.map((c) => [c.id, c.label])) };
   const groups = new Map<string, Candidate[]>();
   for (const c of candidates) groups.set(c.proposed_criterion, [...(groups.get(c.proposed_criterion) ?? []), c]);
   const order = [...groups.keys()].sort(
@@ -68,7 +68,7 @@ function Confidence({ value }: { value: number }) {
 function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile; onDone: () => void }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(!c.proposed_criterion);
   const [form, setForm] = useState({
     proposed_criterion: c.proposed_criterion,
     evidence_type: c.evidence_type,
@@ -124,6 +124,11 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
             <span className="text-xs text-zinc-400">from {c.source}</span>
             {c.status === "snoozed" && <Chip tone="amber">snooze ended {c.snoozed_until}</Chip>}
           </div>
+          {c.attachment && (
+            <a href={api.attachmentUrl(c.attachment)} target="_blank" rel="noreferrer" className="link mt-2 inline-block text-xs">
+              📎 Preview the uploaded file
+            </a>
+          )}
           <ClaimsPanel ids={c.claim_ids} />
         </div>
         <Confidence value={c.confidence} />
@@ -141,6 +146,7 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
                 setForm({ ...form, proposed_criterion: e.target.value, evidence_type: next?.evidence_types.includes(form.evidence_type) ? form.evidence_type : (next?.evidence_types[0] ?? form.evidence_type) });
               }}
             >
+              {!form.proposed_criterion && <option value="">Choose a criterion…</option>}
               {profile.criteria.map((x) => (
                 <option key={x.id} value={x.id}>
                   {x.label}
@@ -172,7 +178,7 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
       )}
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button variant="primary" size="sm" disabled={busy} onClick={accept}>
+        <Button variant="primary" size="sm" disabled={busy || !form.proposed_criterion} onClick={accept}>
           {editing ? "Save & accept" : "Accept"}
         </Button>
         <Button size="sm" disabled={busy} onClick={() => setEditing(!editing)}>

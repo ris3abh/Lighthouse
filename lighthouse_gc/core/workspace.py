@@ -339,10 +339,23 @@ class Workspace:
                     raise WorkspaceError(f"field {key!r} is not editable")
                 if value is not None:
                     setattr(cand, key, value)
+            if not cand.proposed_criterion:
+                raise WorkspaceError("choose a criterion before accepting")
             self.validate_criterion(cand.proposed_criterion)
 
-            rel = self._unique_evidence_path(cand.proposed_criterion, exhibit_date, cand.title, "md")
-            _atomic_write(self.root / rel, _capture_markdown(cand, exhibit_date))
+            if cand.attachment:
+                # An uploaded document: file the original bytes under the naming convention.
+                obs = self.memory.observation(cand.attachment)
+                if obs is None or not (self.root / obs.snapshot).exists():
+                    raise WorkspaceError(f"uploaded file for {cand.id} is missing from memory/sources/")
+                ext = obs.snapshot.rsplit(".", 1)[-1]
+                rel = self._unique_evidence_path(cand.proposed_criterion, exhibit_date, cand.title, ext)
+                path = self.root / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes((self.root / obs.snapshot).read_bytes())
+            else:
+                rel = self._unique_evidence_path(cand.proposed_criterion, exhibit_date, cand.title, "md")
+                _atomic_write(self.root / rel, _capture_markdown(cand, exhibit_date))
             exhibit = Exhibit(
                 criterion=cand.proposed_criterion,
                 evidence_type=cand.evidence_type,
@@ -355,6 +368,7 @@ class Workspace:
                 fingerprint=cand.fingerprint,
                 signals=list(cand.signals),
                 stage=cand.stage,
+                source_tier=cand.source_tier,
                 claim_ids=list(cand.claim_ids),
             )
             if cand.claim_ids:
@@ -368,6 +382,53 @@ class Workspace:
             self.save_inbox(inbox)
             self.after_change()
             return exhibit
+
+    # ------------------------------------------------------------------ uploads
+
+    MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+
+    def classify_upload(self, filename: str) -> tuple[str, str, str | None]:
+        """(criterion, evidence_type, stage) guess for a dropped file. The domain layer knows the rubric."""
+        return "", "document", None
+
+    def stage_upload(self, content: bytes, filename: str, criterion: str | None = None) -> Candidate:
+        """A dropped file: snapshot it in memory/ and propose it in the Inbox. Accepting files it as an exhibit."""
+        if len(content) > self.MAX_UPLOAD_BYTES:
+            raise WorkspaceError(f"{filename} is larger than 25 MB")
+        if not content:
+            raise WorkspaceError(f"{filename} is empty")
+        name = Path(filename).name or "upload.bin"
+        guessed_crit, etype, stage = self.classify_upload(name)
+        if criterion:
+            self.validate_criterion(criterion)
+            if criterion != guessed_crit:
+                etype, stage = "document", None
+        crit = criterion or guessed_crit
+        with self.lock:
+            obs = self.memory.record_file(content, filename=name, media_type=_media_type(name))
+            title = re.sub(r"[_\-]+", " ", Path(name).stem).strip() or name
+            cand = Candidate(
+                fingerprint=f"upload:{obs.sha256}",
+                source="upload",
+                evidence_type=etype,
+                proposed_criterion=crit,
+                title=title[:120],
+                summary=f"Uploaded {name} ({_size(len(content))}). Check the criterion, type and stage, then accept.",
+                confidence=0.6 if crit else 0.3,
+                stage=stage,  # type: ignore[arg-type]
+                attachment=obs.id,
+                source_tier="user",
+            )
+            added = self.add_candidates([cand])
+            if not added:
+                existing = next(
+                    (c for c in self.inbox().candidates if c.fingerprint == cand.fingerprint), None
+                )
+                if existing is None:
+                    raise WorkspaceError(f"{name} is already filed as an exhibit")
+                return existing
+            self.after_change()
+            return cand
 
     # ------------------------------------------------------------------ evidence
 
@@ -541,3 +602,13 @@ def _capture_markdown(cand: Candidate, on: date) -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+def _media_type(filename: str) -> str:
+    import mimetypes
+
+    return mimetypes.guess_type(filename)[0] or "application/octet-stream"
+
+
+def _size(n: int) -> str:
+    return f"{n / 1024 / 1024:.1f} MB" if n >= 1024 * 1024 else f"{max(1, n // 1024)} KB"

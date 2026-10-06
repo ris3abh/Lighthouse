@@ -93,6 +93,10 @@ export interface Candidate {
   snoozed_until: string | null;
   stage: string | null;
   claim_ids: string[];
+  kind: "evidence" | "pipeline" | "deadline" | "letter";
+  attachment: string | null;
+  source_tier: string | null;
+  proposal: Record<string, unknown>;
 }
 
 export type ReviewStatus = "proposed" | "corroborated" | "approved" | "rejected";
@@ -256,6 +260,13 @@ export const api = {
   editCandidate: (id: string, edits: Partial<Candidate>) => request<Candidate>("PATCH", `/inbox/${enc(id)}`, edits),
   accept: (id: string, edits: Partial<Candidate> & { date?: string }) =>
     request<Exhibit>("POST", `/inbox/${enc(id)}/accept`, edits),
+  uploadToInbox: (files: File[], criterion?: string) => {
+    const form = new FormData();
+    for (const f of files) form.append("files", f);
+    if (criterion) form.append("criterion", criterion);
+    return request<Candidate[]>("POST", "/inbox/upload", form);
+  },
+  attachmentUrl: (obsId: string) => `./api/attachments/${enc(obsId)}`,
   reject: (id: string) => request<Candidate>("POST", `/inbox/${enc(id)}/reject`),
   snooze: (id: string, until?: string) => request<Candidate>("POST", `/inbox/${enc(id)}/snooze`, { until }),
 

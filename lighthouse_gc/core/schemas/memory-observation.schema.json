@@ -13,6 +13,19 @@
       "title": "Connector",
       "type": "string"
     },
+    "filename": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Original file name, for uploads and imported exports.",
+      "title": "Filename"
+    },
     "id": {
       "description": "'obs_' + first 16 hex chars of sha256.",
       "title": "Id",
@@ -36,6 +49,26 @@
     "source_url": {
       "title": "Source Url",
       "type": "string"
+    },
+    "tier": {
+      "anyOf": [
+        {
+          "enum": [
+            "tier1",
+            "tier2",
+            "tier3",
+            "platform",
+            "user",
+            "self_reported"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tier"
     }
   },
   "required": [

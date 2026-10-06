@@ -171,6 +171,7 @@ class HuggingFaceSource:
             "downloads_30d": "downloads", "downloads_all_time": "downloadsAllTime", "likes": "likes"}  # fmt: skip
         return Evidence(
             connector=self.kind,
+            tier="platform",
             source_url=f"{API}/api/{KINDS[kind][1]}/{repo_id}",
             payload=info,
             claims=field_claims(
@@ -181,6 +182,7 @@ class HuggingFaceSource:
     def _paper_evidence(self, arxiv_id: str, paper: dict[str, Any]) -> Evidence:
         return Evidence(
             connector=self.kind,
+            tier="platform",
             source_url=f"{API}/api/papers/{arxiv_id}",
             payload=paper,
             claims=field_claims(
