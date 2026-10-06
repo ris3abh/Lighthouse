@@ -1,0 +1,155 @@
+{
+  "$defs": {
+    "DiffSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "added": {
+          "default": 0,
+          "title": "Added",
+          "type": "integer"
+        },
+        "removed": {
+          "default": 0,
+          "title": "Removed",
+          "type": "integer"
+        },
+        "sample": {
+          "description": "A few added or changed lines.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Sample",
+          "type": "array"
+        }
+      },
+      "title": "DiffSummary",
+      "type": "object"
+    }
+  },
+  "$id": "https://lighthouse-gc.dev/schemas/v1/vault-fetch.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One fetch of one source, appended to the workspace's vault/log.jsonl (unchanged re-checks aren't logged).",
+  "properties": {
+    "chars": {
+      "default": 0,
+      "title": "Chars",
+      "type": "integer"
+    },
+    "diff": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DiffSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "effective_date": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Effective Date"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error"
+    },
+    "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "origin": {
+      "default": "fetch",
+      "description": "manual: imported from a saved page.",
+      "enum": [
+        "fetch",
+        "manual"
+      ],
+      "title": "Origin",
+      "type": "string"
+    },
+    "previous_sha256": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Previous Sha256"
+    },
+    "sha256": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sha256"
+    },
+    "source_id": {
+      "title": "Source Id",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "new",
+        "changed",
+        "unchanged",
+        "unreadable",
+        "error"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "tier": {
+      "enum": [
+        1,
+        2,
+        3
+      ],
+      "title": "Tier",
+      "type": "integer"
+    },
+    "url": {
+      "title": "Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_id",
+    "url",
+    "tier",
+    "status"
+  ],
+  "title": "VaultFetch",
+  "type": "object"
+}

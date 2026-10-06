@@ -81,12 +81,22 @@ def _mission(name: str) -> Callable[[Case, bool], list[str]]:
     return run
 
 
+def _vault_watch(ws: Case, scheduled: bool = False) -> list[str]:
+    from lighthouse_gc.vault.watch import run_watch
+
+    return run_watch(ws, scheduled)
+
+
 JOBS: dict[str, tuple[str, Callable[[Case, bool], list[str]]]] = {
     "sync": ("refresh all sources, push new candidates to the Inbox", _run_sync),
     "metrics-snapshot": ("append dated rows to data/metrics.csv (biweekly when scheduled)", _run_snapshot),
     "deadline-check": ("alert on deadlines within 14 days, regenerate calendar.ics", _run_deadline_check),
     "digest": ("weekly summary: what changed, stale pipeline items, next actions", _run_digest),
     "dashboard": ("re-score criteria and regenerate DASHBOARD.md", _run_dashboard),
+    "vault-watch": (
+        "re-check the knowledge vault: Tier 1 daily, others when stale; notify on Tier 1 changes",
+        _vault_watch,
+    ),
     "mission-opportunity-scout": (
         "agent: weekly opportunity scout (off until enabled in Settings)",
         _mission("opportunity_scout"),

@@ -92,6 +92,22 @@ Phase 1c notes:
 - [x] 5. Missions: weekly opportunity scout, daily what-changed (skips at no cost when nothing changed)
 - [x] 6. Overview briefing: "This week" card, inline approve/dismiss, refreshed by the daily mission
 
+## Phase 1d (knowledge vault, ADR 0006)
+
+- [x] 1. Knowledge vault: manifest (Tier 1–3), fetch + snapshots + hybrid index, TTL registry, vault-watch,
+      manual import for blocked sites
+- [ ] 2. rule-check gate
+- [ ] 3. Agent: vault first, Tier-1-then-Tier-2 web fallback
+- [ ] 4. Knowledge page
+
+Phase 1d notes:
+- USCIS (Akamai), travel.state.gov and egov processing times answer automated clients with 403. They show
+  as unreadable; `lighthouse-gc vault import <source> <saved page>` fills them by hand. We don't disguise the
+  client.
+- uscode.house.gov was "Under Maintenance" when the manifest was written; the statute markers are unverified
+  against its live text.
+- The hashing embedder is weak on paraphrase; FTS carries exact terms. A dense local model is a follow-up.
+
 ## Later in Phase 1
 
 - Website + scholarly connectors, scheduler, notifications, calendar, pipeline kanban, agent adapters,

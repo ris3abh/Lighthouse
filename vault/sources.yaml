@@ -1,0 +1,178 @@
+# Knowledge vault manifest (SPEC 5a). Community-maintained: URLs, tiers and freshness windows only.
+# Fetched content and embeddings live in each workspace's cache (.lighthouse/cache/vault), never here.
+#
+# Tiers: 1 = primary law and agency pages, 2 = adjudication, 3 = secondary (context only, never the sole
+# source for a rule claim).
+#
+# A workspace can add or override sources in its own vault/sources.yaml (same format, matched by id).
+#
+# url placeholders: {ecfr_date} (latest eCFR issue date for ecfr_title), {year}, {month} (e.g. october),
+# {fy} (US federal fiscal year of the current month). start / end are regexes (multiline) that cut the
+# extracted text to the part that matters, e.g. one paragraph of a long regulation section.
+version: 1
+
+# Freshness registry: how long a fetched fact stays usable before it must be re-fetched. Volatile facts
+# (fees, form editions, processing times, the Visa Bulletin) have short windows. "monthly" expires at the
+# start of the next calendar month.
+ttl_days:
+  fees: 7
+  form: 7
+  processing_times: 7
+  visa_bulletin: monthly
+  federal_register: 7
+  regulation: 30
+  statute: 30
+  policy: 30
+  guidance: 30
+  decisions: 30
+  case_law: 365
+  secondary: 30
+
+# Tier 1 domains: the agent's web-search fallback tries these first.
+tier1_domains: [uscis.gov, ecfr.gov, federalregister.gov, travel.state.gov, justice.gov, uscode.house.gov]
+
+sources:
+  # --------------------------------------------------------------------------- Tier 1: regulations, statute
+  - id: ecfr-8cfr-214-2-o
+    title: "8 CFR 214.2(o): aliens of extraordinary ability or achievement (O-1)"
+    url: "https://www.ecfr.gov/api/versioner/v1/full/{ecfr_date}/title-8.xml?part=214&section=214.2"
+    ecfr_title: 8
+    tier: 1
+    kind: regulation
+    topics: [o1a]
+    # The section opens with a table of contents; the paragraph itself continues "—(1) Classifications".
+    start: '^\(o\) Aliens of extraordinary ability or achievement—'
+    end: '^\(p\) Artists, athletes, and entertainers—'
+  - id: ecfr-8cfr-204-5-h
+    title: "8 CFR 204.5(h): aliens with extraordinary ability (EB-1A)"
+    url: "https://www.ecfr.gov/api/versioner/v1/full/{ecfr_date}/title-8.xml?part=204&section=204.5"
+    ecfr_title: 8
+    tier: 1
+    kind: regulation
+    topics: [eb1a]
+    start: '^\(h\) Aliens with extraordinary ability\. \(1\)'
+    end: '^\(i\) Outstanding professors and researchers\. \(1\)'
+  - id: ina-101-a-15-o
+    title: "INA 101(a)(15)(O) (8 U.S.C. 1101(a)(15)(O))"
+    url: "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title8-section1101&num=0&edition=prelim"
+    tier: 1
+    kind: statute
+    topics: [o1a]
+    start: '\(O\) an alien who'
+    end: '\(P\) an alien having a foreign residence'
+  - id: ina-203-b-1-a
+    title: "INA 203(b)(1)(A) (8 U.S.C. 1153(b)(1)(A))"
+    url: "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title8-section1153&num=0&edition=prelim"
+    tier: 1
+    kind: statute
+    topics: [eb1a]
+    start: '\(A\) Aliens with extraordinary ability'
+    end: '\(B\) Outstanding professors and researchers'
+
+  # --------------------------------------------------------------------------- Tier 1: USCIS Policy Manual
+  - id: uscis-pm-2-m-4
+    title: "USCIS Policy Manual, Volume 2, Part M, Chapter 4: O-1 beneficiaries"
+    url: "https://www.uscis.gov/policy-manual/volume-2-part-m-chapter-4"
+    tier: 1
+    kind: policy
+    topics: [o1a]
+  - id: uscis-pm-6-f-2
+    title: "USCIS Policy Manual, Volume 6, Part F, Chapter 2: extraordinary ability"
+    url: "https://www.uscis.gov/policy-manual/volume-6-part-f-chapter-2"
+    tier: 1
+    kind: policy
+    topics: [eb1a]
+
+  # --------------------------------------------------------------------------- Tier 1: USCIS pages and forms
+  - id: uscis-o1
+    title: "USCIS: O-1 visa, individuals with extraordinary ability or achievement"
+    url: "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+    tier: 1
+    kind: guidance
+    topics: [o1a]
+  - id: uscis-eb1
+    title: "USCIS: employment-based immigration, first preference EB-1"
+    url: "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+    tier: 1
+    kind: guidance
+    topics: [eb1a]
+  - id: uscis-i-129
+    title: "Form I-129, Petition for a Nonimmigrant Worker (edition, instructions, where to file)"
+    url: "https://www.uscis.gov/i-129"
+    tier: 1
+    kind: form
+    topics: [o1a]
+  - id: uscis-i-140
+    title: "Form I-140, Immigrant Petition for Alien Workers (edition, instructions, where to file)"
+    url: "https://www.uscis.gov/i-140"
+    tier: 1
+    kind: form
+    topics: [eb1a]
+  - id: uscis-g-1055
+    title: "USCIS fee schedule, Form G-1055 (PDF)"
+    url: "https://www.uscis.gov/sites/default/files/document/forms/g-1055.pdf"
+    tier: 1
+    kind: fees
+    topics: [o1a, eb1a]
+  - id: uscis-premium-processing
+    title: "USCIS: how do I request premium processing?"
+    url: "https://www.uscis.gov/forms/all-forms/how-do-i-request-premium-processing"
+    tier: 1
+    kind: processing_times
+    topics: [o1a, eb1a]
+  - id: uscis-processing-times
+    title: "USCIS case processing times"
+    url: "https://egov.uscis.gov/processing-times/"
+    tier: 1
+    kind: processing_times
+    topics: [o1a, eb1a]
+    notes: "A JavaScript app behind bot protection; usually unreadable automatically. Check it by hand."
+
+  # --------------------------------------------------------------------------- Tier 1: State Dept, Federal Register
+  - id: visa-bulletin
+    title: "Visa Bulletin (current month)"
+    url: "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/{fy}/visa-bulletin-for-{month}-{year}.html"
+    tier: 1
+    kind: visa_bulletin
+    topics: [eb1a]
+    notes: "travel.state.gov often blocks automated reading; if so, check the bulletin by hand."
+  - id: federal-register-uscis
+    title: "Federal Register: newest USCIS documents"
+    url: "https://www.federalregister.gov/api/v1/documents.json?conditions%5Bagencies%5D%5B%5D=u-s-citizenship-and-immigration-services&order=newest&per_page=20&fields%5B%5D=title&fields%5B%5D=publication_date&fields%5B%5D=type&fields%5B%5D=html_url&fields%5B%5D=abstract&fields%5B%5D=effective_on"
+    tier: 1
+    kind: federal_register
+    topics: [o1a, eb1a]
+
+  # --------------------------------------------------------------------------- Tier 2: adjudication
+  - id: kazarian-v-uscis
+    title: "Kazarian v. USCIS, 596 F.3d 1115 (9th Cir. 2010): two-step review"
+    url: "https://cdn.ca9.uscourts.gov/datastore/opinions/2010/03/04/07-56774.pdf"
+    tier: 2
+    kind: case_law
+    topics: [eb1a, o1a]
+  - id: matter-of-chawathe
+    title: "Matter of Chawathe, 25 I&N Dec. 369 (AAO 2010): preponderance of the evidence"
+    url: "https://www.justice.gov/sites/default/files/eoir/legacy/2014/07/25/3700.pdf"
+    tier: 2
+    kind: case_law
+    topics: [eb1a, o1a]
+  - id: aao-non-precedent
+    title: "AAO non-precedent decisions (index)"
+    url: "https://www.uscis.gov/administrative-appeals/aao-decisions/aao-non-precedent-decisions"
+    tier: 2
+    kind: decisions
+    topics: [eb1a, o1a]
+
+  # --------------------------------------------------------------------------- Tier 3: secondary (context only)
+  - id: wikipedia-o-1
+    title: "Wikipedia: O-1 visa"
+    url: "https://en.wikipedia.org/wiki/O-1_visa"
+    tier: 3
+    kind: secondary
+    topics: [o1a]
+  - id: wikipedia-eb-1
+    title: "Wikipedia: EB-1 visa"
+    url: "https://en.wikipedia.org/wiki/EB-1_visa"
+    tier: 3
+    kind: secondary
+    topics: [eb1a]

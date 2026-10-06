@@ -4,19 +4,13 @@ only by proposing to the Inbox through the service layer."""
 from __future__ import annotations
 
 import hashlib
-import ipaddress
 import json
-import re
-import socket
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
-from html.parser import HTMLParser
 from typing import Any
-from urllib.parse import urljoin, urlparse
 
 import httpx
 
-from lighthouse_gc import __version__
 from lighthouse_gc.agent import autopilot
 from lighthouse_gc.agent.redact import redact
 from lighthouse_gc.core.models import (
@@ -37,10 +31,11 @@ from lighthouse_gc.criteria.models import Letter
 from lighthouse_gc.engine.base import AgentTool
 from lighthouse_gc.mcp import tools as read
 from lighthouse_gc.service import Service
+from lighthouse_gc.web import UnsafeURL, check_url, fetch_page, html_to_text
 
-MAX_PAGE_BYTES = 2_000_000
+__all__ = ["RunContext", "UnsafeURL", "build_tools", "check_url", "fetch_page", "html_to_text"]
+
 MAX_RESULT_CHARS = 20_000
-MAX_REDIRECTS = 3
 
 
 @dataclass
@@ -63,121 +58,6 @@ class RunContext:
 
 
 # ----------------------------------------------------------------------------- web
-
-
-class UnsafeURL(ValueError):
-    pass
-
-
-def check_url(url: str) -> None:
-    """Only public http(s) hosts: a page the agent reads must not be able to point it at this machine or the LAN."""
-    parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https") or not parsed.hostname:
-        raise UnsafeURL("only http(s) URLs can be read")
-    try:
-        infos = socket.getaddrinfo(parsed.hostname, parsed.port or (443 if parsed.scheme == "https" else 80))
-    except socket.gaierror as exc:
-        raise UnsafeURL(f"can't resolve {parsed.hostname}") from exc
-    for info in infos:
-        ip = ipaddress.ip_address(info[4][0])
-        if not ip.is_global or ip.is_multicast:
-            raise UnsafeURL(f"refusing to read {parsed.hostname}: it resolves to a private or local address")
-
-
-class _Text(HTMLParser):
-    SKIP = {"script", "style", "noscript", "svg", "nav", "footer", "header", "form", "iframe"}
-    BLOCK = {
-        "p",
-        "div",
-        "br",
-        "li",
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "h5",
-        "h6",
-        "tr",
-        "section",
-        "article",
-        "blockquote",
-    }
-
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.parts: list[str] = []
-        self.title = ""
-        self._skip = 0
-        self._in_title = False
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag in self.SKIP:
-            self._skip += 1
-        elif tag == "title":
-            self._in_title = True
-        elif tag in self.BLOCK:
-            self.parts.append("\n")
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag in self.SKIP and self._skip:
-            self._skip -= 1
-        elif tag == "title":
-            self._in_title = False
-        elif tag in self.BLOCK:
-            self.parts.append("\n")
-
-    def handle_data(self, data: str) -> None:
-        if self._in_title:
-            self.title += data
-        elif not self._skip:
-            self.parts.append(data)
-
-
-def html_to_text(html: str) -> tuple[str, str]:
-    p = _Text()
-    p.feed(html)
-    text = re.sub(r"[ \t\r\f\v]+", " ", "".join(p.parts))
-    text = re.sub(r"\n\s*\n+", "\n\n", text).strip()
-    return " ".join(p.title.split()), text
-
-
-async def fetch_page(url: str, client: httpx.AsyncClient | None = None) -> tuple[str, str, str]:
-    """(final url, title, text). Follows up to 3 redirects, re-checking each hop."""
-    own = client is None
-    client = client or httpx.AsyncClient(
-        timeout=15.0, headers={"User-Agent": f"lighthouse-gc/{__version__} (agent)"}
-    )
-    try:
-        for _ in range(MAX_REDIRECTS + 1):
-            check_url(url)
-            resp = await client.get(url, follow_redirects=False)
-            if resp.is_redirect and resp.headers.get("location"):
-                url = urljoin(url, resp.headers["location"])
-                continue
-            if resp.status_code >= 400:
-                raise ValueError(f"HTTP {resp.status_code} from {url}")
-            if resp.status_code != 200 or not resp.content.strip():
-                # e.g. 202 with an empty body: a bot-protection challenge, not the page.
-                raise ValueError(f"{url} returned no readable content (HTTP {resp.status_code}); the site may block "
-                                 "automated reading. Try another source, or cite the search result as unverified.")  # fmt: skip
-            if len(resp.content) > MAX_PAGE_BYTES:
-                raise ValueError("page is larger than 2 MB")
-            ctype = resp.headers.get("content-type", "")
-            if "html" in ctype:
-                title, text = html_to_text(resp.text)
-            elif ctype.startswith("text/") or "json" in ctype:
-                title, text = "", resp.text
-            else:
-                raise ValueError(f"can't read {ctype or 'unknown content type'} (only HTML and text)")
-            if len(text.strip()) < 40:
-                raise ValueError(
-                    f"{url} has almost no readable text (it may need JavaScript); try another source"
-                )
-            return url, title, text
-        raise ValueError("too many redirects")
-    finally:
-        if own:
-            await client.aclose()
 
 
 # ----------------------------------------------------------------------------- tool schemas

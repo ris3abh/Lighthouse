@@ -22,6 +22,10 @@ def profiles_dir() -> Path:
     return _pick("profiles", "profiles")
 
 
+def vault_manifest_path() -> Path:
+    return _pick("vault", "vault") / "sources.yaml"
+
+
 def demo_workspace_dir() -> Path:
     return _pick("demo-workspace", "examples/demo-workspace")
 

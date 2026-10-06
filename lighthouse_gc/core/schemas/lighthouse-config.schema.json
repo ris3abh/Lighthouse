@@ -343,6 +343,7 @@
               "new_candidates",
               "sync_error",
               "mission",
+              "vault",
               "test"
             ]
           },
@@ -383,6 +384,19 @@
         }
       },
       "title": "ServerConfig",
+      "type": "object"
+    },
+    "VaultConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": true,
+          "description": "Fetch the public sources listed in the vault manifest.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "VaultConfig",
       "type": "object"
     }
   },
@@ -449,6 +463,9 @@
     },
     "server": {
       "$ref": "#/$defs/ServerConfig"
+    },
+    "vault": {
+      "$ref": "#/$defs/VaultConfig"
     },
     "workspace_name": {
       "default": "my-case",

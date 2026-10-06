@@ -97,6 +97,14 @@ def validate_workspace(ws: Case) -> list[str]:
                 model.model_validate_json(path.read_text(encoding="utf-8"))
             except ValidationError as exc:
                 problems.append(f"data/{filename}: {exc}")
+    from lighthouse_gc.vault import Vault
+
+    try:
+        vault = Vault(ws)
+        vault.manifest  # noqa: B018 - parse the bundled + workspace manifest
+        vault.log()
+    except (ValidationError, ValueError, OSError) as exc:
+        problems.append(f"vault: {exc}")
     try:
         ws.metrics()
     except (ValidationError, ValueError) as exc:

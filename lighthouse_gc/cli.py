@@ -237,7 +237,10 @@ def up(
 notify_app = typer.Typer(help="Notifications (desktop, email, Slack, Discord, ntfy).", no_args_is_help=True)
 secret_app = typer.Typer(help="Store or remove a secret (token, webhook URL, SMTP password) in the keychain.",
                          no_args_is_help=True)  # fmt: skip
+vault_app = typer.Typer(help="Knowledge vault: official sources, fetched, snapshotted and searchable.",
+                        no_args_is_help=True)  # fmt: skip
 app.add_typer(notify_app, name="notify")
+app.add_typer(vault_app, name="vault")
 app.add_typer(secret_app, name="secret")
 
 
@@ -260,6 +263,90 @@ def notify_test(
     typer.secho(report.line(), fg=typer.colors.GREEN if report.ok else typer.colors.RED)
     if not report.ok:
         raise typer.Exit(1)
+
+
+@vault_app.command("sync")
+def vault_sync(
+    source: Annotated[list[str] | None, typer.Option("--source", "-s", help="Only these source ids")] = None,
+    force: Annotated[bool, typer.Option(help="Re-fetch even if still fresh")] = False,
+    workspace: WorkspaceOpt = None,
+) -> None:
+    """Fetch the vault sources that are due (never fetched or past their freshness window)."""
+    import anyio
+
+    from lighthouse_gc.vault import Vault
+    from lighthouse_gc.vault.watch import summarize
+
+    try:
+        ws = find_workspace(workspace)
+    except WorkspaceError as exc:
+        raise _fail(str(exc)) from exc
+    vault = Vault(ws)
+    try:
+        results = anyio.run(lambda: vault.sync(source or None, force=force))
+    except ValueError as exc:
+        raise _fail(str(exc)) from exc
+    for r in results:
+        color = {"new": typer.colors.GREEN, "changed": typer.colors.YELLOW, "unreadable": typer.colors.RED,
+                 "error": typer.colors.RED}.get(r.status)  # fmt: skip
+        typer.secho(f"{r.status:>10}  {r.source_id}" + (f"  {r.error}" if r.error else ""), fg=color)
+    typer.echo(summarize(results))
+
+
+@vault_app.command("import")
+def vault_import(
+    source: Annotated[str, typer.Argument(help="Source id (see `lighthouse-gc vault status`)")],
+    file: Annotated[Path, typer.Argument(exists=True, dir_okay=False, help="A page saved from your browser")],
+    workspace: WorkspaceOpt = None,
+) -> None:
+    """Import a page you saved from your browser, for sources that block automated reading."""
+    from lighthouse_gc.vault import Vault
+
+    try:
+        ws = find_workspace(workspace)
+        r = Vault(ws).import_file(source, file.read_bytes(), file.name)
+    except (WorkspaceError, ValueError) as exc:
+        raise _fail(str(exc)) from exc
+    typer.secho(
+        f"{r.status}  {source}  ({r.chars:,} characters, fresh until it expires)", fg=typer.colors.GREEN
+    )
+
+
+@vault_app.command("search")
+def vault_search(
+    query: str,
+    k: Annotated[int, typer.Option("-k", help="How many results")] = 5,
+    workspace: WorkspaceOpt = None,
+) -> None:
+    """Search the vault (full text + local embeddings)."""
+    from lighthouse_gc.vault import Vault
+
+    try:
+        ws = find_workspace(workspace)
+    except WorkspaceError as exc:
+        raise _fail(str(exc)) from exc
+    hits = Vault(ws).search(query, k=k)
+    if not hits:
+        typer.echo("no matches (run `lighthouse-gc vault sync` first?)")
+    for h in hits:
+        fresh = "fresh" if h.fresh else "STALE"
+        typer.secho(f"[tier {h.tier} · {fresh}] {h.title}", bold=True)
+        typer.echo(f"  {h.url}")
+        typer.echo("  " + " ".join(h.text.split())[:400] + "\n")
+
+
+@vault_app.command("status")
+def vault_status(workspace: WorkspaceOpt = None) -> None:
+    """Each source: tier, freshness, last check, last change."""
+    from lighthouse_gc.vault import Vault
+
+    try:
+        ws = find_workspace(workspace)
+    except WorkspaceError as exc:
+        raise _fail(str(exc)) from exc
+    for s in Vault(ws).status():
+        state = "fresh" if s["fresh"] else s["status"] if s["status"] != "ok" else "stale"
+        typer.echo(f"T{s['tier']}  {state:<15} {s['id']:<28} {s['checked_at'] or '-'}")
 
 
 @secret_app.command("set")

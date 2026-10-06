@@ -193,7 +193,10 @@ status, and are told to draft only from approved claims.
   keychain entry name.
 - Use **read-only** tokens: GitHub fine-grained PAT with Metadata + Contents read (Administration read only
   if you want traffic); Hugging Face read token.
-- No telemetry. The only network calls are to the sources you connect.
+- No telemetry. The only network calls are to the sources you connect, the agent's model and web search when
+  you use it, and the public sources in the knowledge vault manifest (`vault/sources.yaml`: eCFR, USCIS,
+  State Department, Federal Register, court opinions). Turn the vault off with `vault: {enabled: false}` in
+  `lighthouse.yaml`.
 
 See [SECURITY.md](SECURITY.md).
 

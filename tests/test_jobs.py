@@ -161,6 +161,7 @@ def test_scheduler_registers_jobs_from_config(demo_ws):
             "digest",
             "mission-opportunity-scout",
             "mission-what-changed",
+            "vault-watch",
         }  # missions are scheduled but skip while off
         digest = sched.get_job("digest")
         assert digest.next_run_time.weekday() == 4 and digest.next_run_time.hour == 17  # Friday 17:00
@@ -209,7 +210,7 @@ def test_cli_and_api(ws, sent):
     c = TestClient(create_app(ws, allowed_hosts=["testserver"]))
     names = {j["name"] for j in c.get("/api/jobs").json()}
     assert {"sync", "metrics-snapshot", "deadline-check", "digest", "dashboard", "mission-opportunity-scout",
-            "mission-what-changed"} == names  # fmt: skip
+            "mission-what-changed", "vault-watch"} == names  # fmt: skip
     r = c.post("/api/jobs/dashboard/run", headers={"X-Lighthouse": "1"})
     assert r.status_code == 200 and r.json()["ok"]
     assert c.post("/api/jobs/nope/run", headers={"X-Lighthouse": "1"}).status_code == 404

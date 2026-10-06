@@ -5,6 +5,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Knowledge vault (SPEC 5a, ADR 0006): `vault/sources.yaml` lists Tier 1–3 sources (eCFR 8 CFR 214.2(o) and
+  204.5(h), INA, the USCIS Policy Manual chapters, I-129 / I-140, the G-1055 fee schedule, premium
+  processing, processing times, the Visa Bulletin, the Federal Register, Kazarian, Chawathe, AAO decisions,
+  secondary pages) with a freshness registry (fees, forms, processing times 7 days; Visa Bulletin monthly).
+  Pages are fetched through the shared public-web guard, stored as content-addressed snapshots (history
+  kept), chunked with exact offsets and searchable with full text + local embeddings.
+  `lighthouse-gc vault sync | search | status | import`. The daily `vault-watch` job re-checks Tier 1 sources
+  and notifies when one changes.
+- Bot-protection and maintenance pages are recognized even when served with HTTP 200, and recorded as
+  unreadable. Pages from sites that block automated reading can be imported from a saved copy.
+
 ## [0.1.0] - 2026-10-06
 
 First release: the local-first evidence command center (Phases 0, 1a, 1b, 1c). A Zenodo DOI is minted for

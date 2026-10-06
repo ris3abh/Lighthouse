@@ -6,6 +6,8 @@ engine: claude_code
 server:
   host: 127.0.0.1
   port: 7777
+vault:
+  enabled: true
 schedules:
   sync: 0 8 * * *
   metrics-snapshot: 0 9 * * mon
@@ -13,6 +15,7 @@ schedules:
   digest: 0 17 * * fri
   mission-opportunity-scout: 0 9 * * fri
   mission-what-changed: 0 7 * * *
+  vault-watch: 0 6 * * *
 connectors:
   include_forks: false
   min_stars_for_candidate: 5
@@ -42,6 +45,8 @@ notifications:
     sync_error:
     - desktop
     mission:
+    - desktop
+    vault:
     - desktop
     test:
     - desktop

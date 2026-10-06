@@ -333,12 +333,12 @@ class ChannelConfig(_Model):
     topic: str | None = None
 
 
-NotificationEvent = Literal["deadline", "digest", "new_candidates", "sync_error", "mission", "test"]
+NotificationEvent = Literal["deadline", "digest", "new_candidates", "sync_error", "mission", "vault", "test"]
 
 
 def _default_routes() -> dict[NotificationEvent, list[str]]:
     return {"deadline": ["desktop"], "digest": ["desktop"], "new_candidates": ["desktop"],
-            "sync_error": ["desktop"], "mission": ["desktop"], "test": ["desktop"]}  # fmt: skip
+            "sync_error": ["desktop"], "mission": ["desktop"], "vault": ["desktop"], "test": ["desktop"]}  # fmt: skip
 
 
 class NotificationsConfig(_Model):
@@ -436,7 +436,12 @@ DEFAULT_SCHEDULES: dict[str, str] = {
     "digest": "0 17 * * fri",
     "mission-opportunity-scout": "0 9 * * fri",
     "mission-what-changed": "0 7 * * *",
+    "vault-watch": "0 6 * * *",
 }
+
+
+class VaultConfig(_Model):
+    enabled: bool = Field(True, description="Fetch the public sources listed in the vault manifest.")
 
 
 class WorkspaceConfig(_File):
@@ -444,6 +449,7 @@ class WorkspaceConfig(_File):
     profile: str = Field("", description="Active profile id; the domain layer supplies the default.")
     engine: Literal["claude_code", "codex", "api"] = "claude_code"
     server: ServerConfig = Field(default_factory=ServerConfig)
+    vault: VaultConfig = Field(default_factory=VaultConfig)
     schedules: dict[str, str] = Field(
         default_factory=lambda: dict(DEFAULT_SCHEDULES), description="Cron per job; '' turns a job off."
     )

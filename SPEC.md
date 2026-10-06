@@ -157,7 +157,7 @@ What's in the vault (source tiers):
 How it stays current:
 
 - **Fetch + snapshot.** Each source is fetched, stored with URL, fetch time, content hash and effective date,
-  chunked, and embedded locally (SQLite + sqlite-vec or LanceDB). Snapshots are kept, so you can see what a
+  chunked, and embedded locally (SQLite FTS5 + local embeddings; sqlite-vec or LanceDB when the corpus grows). Snapshots are kept, so you can see what a
   page said on any date.
 - **Volatile-fact registry.** Facts that change get a TTL: fees and form editions 7 days, processing times 7
   days, Visa Bulletin monthly, regulations 30 days. Expired facts are re-fetched before use.
@@ -483,6 +483,20 @@ against the demo workspace and your own.
 - [x] Missions on the existing scheduler: weekly opportunity scout, daily what-changed check; results on the
       Agent page and via notifications.
 - [x] Overview briefing: agent-written "what changed / 3 things to do", with inline approvals.
+
+### Phase 1d — Knowledge vault and grounded answers (see ADR 0006)
+
+- [x] Knowledge vault (5a): `vault/sources.yaml` with Tier 1–3 sources; fetch + content-addressed snapshots +
+      local embeddings (FTS5 + hashing embedder, fused); TTL registry for volatile facts; vault-watch job
+      notifying on Tier 1 changes; manual import for sites that block automated reading.
+- [ ] rule-check gate: rule claims in every agent answer and briefing must match a fresh vault chunk that
+      entails them, else "unverified"; Tier 1 disagreements show as "conflict"; unverified claims can't enter
+      letters, exhibits or exports.
+- [ ] Agent uses the vault first; web search fallback restricted to Tier 1 domains, then Tier 2; new findings
+      enter as observations.
+- [ ] Knowledge page: sources, freshness, recent changes, open conflicts.
+- [ ] Scholarly connectors: Semantic Scholar, OpenAlex, arXiv, ORCID.
+- [ ] Website connector (readability extraction, bot-blocked pages unreadable, shared private-network guard).
 
 ### Phase 2 — Gmail, scans, letters (weekends 3–4)
 

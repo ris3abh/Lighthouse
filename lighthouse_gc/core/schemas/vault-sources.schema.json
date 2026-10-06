@@ -1,0 +1,173 @@
+{
+  "$defs": {
+    "VaultSource": {
+      "additionalProperties": false,
+      "properties": {
+        "ecfr_title": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "For {ecfr_date}: the CFR title whose latest issue date to use.",
+          "title": "Ecfr Title"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Regex (multiline): stop before the first match after start.",
+          "title": "End"
+        },
+        "format": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "html",
+            "xml",
+            "pdf",
+            "json",
+            "text"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9-]{1,79}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Fact kind; its freshness window comes from the manifest's ttl_days.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "notes": {
+          "default": "",
+          "title": "Notes",
+          "type": "string"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Regex (multiline): keep text from the first match.",
+          "title": "Start"
+        },
+        "tier": {
+          "enum": [
+            1,
+            2,
+            3
+          ],
+          "title": "Tier",
+          "type": "integer"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "topics": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Topics",
+          "type": "array"
+        },
+        "ttl_days": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Overrides the kind's freshness window.",
+          "title": "Ttl Days"
+        },
+        "url": {
+          "description": "May contain {ecfr_date}, {year}, {month}, {fy}.",
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "url",
+        "tier",
+        "kind"
+      ],
+      "title": "VaultSource",
+      "type": "object"
+    }
+  },
+  "$id": "https://lighthouse-gc.dev/schemas/v1/vault-sources.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/VaultSource"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "tier1_domains": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tier1 Domains",
+      "type": "array"
+    },
+    "ttl_days": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "const": "monthly",
+            "type": "string"
+          }
+        ]
+      },
+      "title": "Ttl Days",
+      "type": "object"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "title": "VaultManifest",
+  "type": "object"
+}

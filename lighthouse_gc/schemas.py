@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from lighthouse_gc.core import models as core
 from lighthouse_gc.core.schemas import SCHEMA_DIR
 from lighthouse_gc.criteria import models as domain
+from lighthouse_gc.vault import models as vault
 
 SCHEMA_BASE_URI = "https://lighthouse-gc.dev/schemas"
 
@@ -39,6 +40,8 @@ MODELS: dict[str, type[BaseModel]] = {
     "change": core.Change,
     "agent-run": core.AgentRun,
     "agent-conversation": core.Conversation,
+    "vault-sources": vault.VaultManifest,
+    "vault-fetch": vault.VaultFetch,
 }
 
 
