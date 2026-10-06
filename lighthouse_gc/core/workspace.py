@@ -1,4 +1,8 @@
-"""The workspace store: every read and write of a private case directory goes through here.
+"""The workspace store: every read and write of a workspace directory goes through here.
+
+Domain-agnostic: it stores sources, the inbox, exhibits, metrics and the memory graph, and knows
+nothing about any criteria profile. The domain layer (``lighthouse_gc.criteria.case.Case``) subclasses
+it to add scoring via the ``after_change`` / ``validate_criterion`` hooks.
 
 Files are the source of truth. Every write is validated against the pydantic models and written
 atomically (temp file + rename) as pretty, stable JSON so diffs stay small and reviewable.
@@ -17,12 +21,12 @@ import threading
 from collections.abc import Iterable
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, Self, TypeVar
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 
-from lighthouse_gc.core import criteria as engine
+from lighthouse_gc.core.memory import Memory
 from lighthouse_gc.core.models import (
     EXHIBIT_NAME_RE,
     METRICS_COLUMNS,
@@ -31,13 +35,10 @@ from lighthouse_gc.core.models import (
     Exhibit,
     Exhibits,
     Inbox,
-    Letters,
     MetricRow,
     Opportunities,
-    Person,
     Pipeline,
-    Profile,
-    Scoreboard,
+    Slug,
     SourceRecord,
     SourcesFile,
     WorkspaceConfig,
@@ -50,12 +51,10 @@ M = TypeVar("M", bound=BaseModel)
 CONFIG_FILE = "lighthouse.yaml"
 
 DATA_FILES: dict[str, type[BaseModel]] = {
-    "person.json": Person,
     "sources.json": SourcesFile,
     "inbox.json": Inbox,
     "exhibits.json": Exhibits,
     "pipeline.json": Pipeline,
-    "letters.json": Letters,
     "deadlines.json": Deadlines,
     "opportunities.json": Opportunities,
 }
@@ -115,10 +114,14 @@ class Workspace:
     def metrics_path(self) -> Path:
         return self.data_dir / "metrics.csv"
 
+    @property
+    def memory(self) -> Memory:
+        return Memory(self.root, self.cache_dir)
+
     def exists(self) -> bool:
         return (self.root / CONFIG_FILE).is_file()
 
-    def require(self) -> Workspace:
+    def require(self) -> Self:
         if not self.exists():
             raise WorkspaceError(f"{self.root} is not a Lighthouse workspace (no {CONFIG_FILE}).")
         return self
@@ -158,12 +161,6 @@ class Workspace:
 
     # ------------------------------------------------------------------ typed files
 
-    def person(self) -> Person:
-        return self._load("person.json", Person)
-
-    def save_person(self, v: Person) -> None:
-        self._save("person.json", v)
-
     def sources(self) -> SourcesFile:
         return self._load("sources.json", SourcesFile)
 
@@ -185,82 +182,24 @@ class Workspace:
     def pipeline(self) -> Pipeline:
         return self._load("pipeline.json", Pipeline)
 
-    def letters(self) -> Letters:
-        return self._load("letters.json", Letters)
-
     def deadlines(self) -> Deadlines:
         return self._load("deadlines.json", Deadlines)
 
     def opportunities(self) -> Opportunities:
         return self._load("opportunities.json", Opportunities)
 
-    def scoreboard(self) -> Scoreboard:
-        path = self.data_dir / "criteria.json"
-        if path.exists():
-            board = Scoreboard.model_validate_json(path.read_text(encoding="utf-8"))
-            if board.profile == self.config().profile:
-                return board
-        return self.recompute()
+    # ------------------------------------------------------------------ domain hooks
 
-    # ------------------------------------------------------------------ profiles + scoring
+    def after_change(self) -> Any:
+        """Called after every write that could change derived views. The domain layer re-scores here."""
+        return None
 
-    def profiles(self) -> dict[str, Profile]:
-        return engine.load_profiles(self.root / "profiles")
-
-    def profile(self, profile_id: str | None = None) -> Profile:
-        pid = profile_id or self.config().profile
-        profiles = self.profiles()
-        if pid not in profiles:
-            raise WorkspaceError(f"unknown profile {pid!r}; available: {', '.join(sorted(profiles))}")
-        return profiles[pid]
-
-    def recompute(self) -> Scoreboard:
-        with self.lock:
-            cfg = self.config()
-            board = engine.score(
-                self.profile(cfg.profile), self.exhibits().exhibits, cfg.overrides.get(cfg.profile)
-            )
-            previous = self.data_dir / "criteria.json"
-            if previous.exists():
-                # Keep the agent's reviewer note across rule recomputes for the same profile.
-                old = Scoreboard.model_validate_json(previous.read_text(encoding="utf-8"))
-                if old.profile == board.profile:
-                    board.reviewer_note = old.reviewer_note
-            self._save("criteria.json", board)
-            return board
-
-    def set_profile(self, profile_id: str) -> Scoreboard:
-        with self.lock:
-            self.profile(profile_id)  # validates
-            cfg = self.config()
-            cfg.profile = profile_id
-            self.save_config(cfg)
-            return self.after_change()
-
-    def set_override(self, criterion_id: str, status: str | None) -> Scoreboard:
-        with self.lock:
-            cfg = self.config()
-            if self.profile(cfg.profile).criterion(criterion_id) is None:
-                raise NotFound(f"criterion {criterion_id!r} is not in profile {cfg.profile!r}")
-            per_profile = cfg.overrides.setdefault(cfg.profile, {})
-            if status is None:
-                per_profile.pop(criterion_id, None)
-            elif status in ("dropped", "gap"):
-                per_profile[criterion_id] = status  # type: ignore[assignment]
-            else:
-                raise WorkspaceError("override must be 'dropped', 'gap' or null")
-            if not per_profile:
-                cfg.overrides.pop(cfg.profile, None)
-            self.save_config(cfg)
-            return self.after_change()
-
-    def after_change(self) -> Scoreboard:
-        """Recompute the scoreboard and regenerate DASHBOARD.md."""
-        from lighthouse_gc.core.dashboard import write_dashboard
-
-        board = self.recompute()
-        write_dashboard(self, board)
-        return board
+    def validate_criterion(self, criterion_id: str) -> None:
+        """The domain layer checks ids against its profiles; the core only checks the shape."""
+        try:
+            TypeAdapter(Slug).validate_python(criterion_id)
+        except ValueError as exc:
+            raise WorkspaceError(f"invalid criterion id {criterion_id!r}") from exc
 
     # ------------------------------------------------------------------ sources
 
@@ -318,6 +257,10 @@ class Workspace:
                 if cand.fingerprint in seen:
                     continue
                 seen.add(cand.fingerprint)
+                if cand._evidence is not None:
+                    # Observation + proposed claims go to memory; the candidate points at them.
+                    claims = self.memory.record(cand._evidence)
+                    cand.claim_ids = [c.id for c in claims]
                 inbox.candidates.append(cand)
                 added.append(cand)
             if added:
@@ -340,7 +283,14 @@ class Workspace:
             raise NotFound(f"no candidate {candidate_id!r}")
         return cand
 
-    EDITABLE_CANDIDATE_FIELDS = ("proposed_criterion", "evidence_type", "title", "summary", "signals")
+    EDITABLE_CANDIDATE_FIELDS = (
+        "proposed_criterion",
+        "evidence_type",
+        "title",
+        "summary",
+        "signals",
+        "stage",
+    )
 
     def edit_candidate(self, candidate_id: str, **changes: Any) -> Candidate:
         with self.lock:
@@ -361,6 +311,8 @@ class Workspace:
             cand = self._candidate(inbox, candidate_id)
             cand.status = "rejected"
             self.save_inbox(inbox)
+            if cand.claim_ids:
+                self.memory.decide(cand.claim_ids, "rejected", rationale="rejected in the Inbox")
             self.after_change()
             return cand
 
@@ -387,7 +339,7 @@ class Workspace:
                     raise WorkspaceError(f"field {key!r} is not editable")
                 if value is not None:
                     setattr(cand, key, value)
-            self._check_criterion(cand.proposed_criterion)
+            self.validate_criterion(cand.proposed_criterion)
 
             rel = self._unique_evidence_path(cand.proposed_criterion, exhibit_date, cand.title, "md")
             _atomic_write(self.root / rel, _capture_markdown(cand, exhibit_date))
@@ -402,7 +354,13 @@ class Workspace:
                 candidate_id=cand.id,
                 fingerprint=cand.fingerprint,
                 signals=list(cand.signals),
+                stage=cand.stage,
+                claim_ids=list(cand.claim_ids),
             )
+            if cand.claim_ids:
+                # Approval records a decision; it does not certify truth or legal sufficiency.
+                self.memory.decide(cand.claim_ids, "approved", rationale="accepted in the Inbox")
+                self.memory.cite(exhibit.id, cand.claim_ids)
             ex = self.exhibits()
             ex.exhibits.append(exhibit)
             self.save_exhibits(ex)
@@ -412,11 +370,6 @@ class Workspace:
             return exhibit
 
     # ------------------------------------------------------------------ evidence
-
-    def _check_criterion(self, criterion_id: str) -> None:
-        known = {c.id for p in self.profiles().values() for c in p.criteria}
-        if criterion_id not in known:
-            raise WorkspaceError(f"unknown criterion {criterion_id!r}")
 
     def _unique_evidence_path(self, criterion: str, on: date, title: str, ext: str) -> str:
         name = exhibit_filename(criterion, on, title, ext)
@@ -440,10 +393,11 @@ class Workspace:
         summary: str = "",
         signals: list[str] | None = None,
         source_url: str | None = None,
+        stage: str | None = None,
     ) -> Exhibit:
         """Manual upload: the user is filing this themselves, so it becomes an exhibit directly."""
         with self.lock:
-            self._check_criterion(criterion)
+            self.validate_criterion(criterion)
             ext = Path(filename).suffix.lstrip(".") or "bin"
             if not re.fullmatch(r"[A-Za-z0-9]{1,8}", ext):
                 raise WorkspaceError(f"unsupported file extension {ext!r}")
@@ -460,6 +414,7 @@ class Workspace:
                 file=rel,
                 source_url=source_url,
                 signals=signals or [],
+                stage=stage,  # type: ignore[arg-type]
             )
             ex = self.exhibits()
             ex.exhibits.append(exhibit)
@@ -470,7 +425,7 @@ class Workspace:
     def remap_exhibit(self, exhibit_id: str, criterion: str, evidence_type: str | None = None) -> Exhibit:
         """File an exhibit under another criterion, moving and renaming its file to match."""
         with self.lock:
-            self._check_criterion(criterion)
+            self.validate_criterion(criterion)
             ex = self.exhibits()
             exhibit = next((e for e in ex.exhibits if e.id == exhibit_id), None)
             if exhibit is None:
@@ -538,6 +493,13 @@ class Workspace:
     def append_metrics(self, rows: Iterable[MetricRow]) -> int:
         """Upsert rows keyed on (date, source, item, metric). Returns how many rows were new or changed."""
         with self.lock:
+            rows = list(rows)
+            # Each connector response behind these rows becomes an observation with metric claims.
+            recorded: set[int] = set()
+            for row in rows:
+                if row._evidence is not None and id(row._evidence) not in recorded:
+                    recorded.add(id(row._evidence))
+                    self.memory.record(row._evidence)
             existing = {(r.date, r.source, r.item, r.metric): r for r in self.metrics()}
             changed = 0
             for row in rows:

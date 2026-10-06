@@ -1,0 +1,50 @@
+{
+  "$id": "https://lighthouse-gc.dev/schemas/v1/memory-observation.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A raw snapshot exactly as it was captured.",
+  "properties": {
+    "captured_at": {
+      "format": "date-time",
+      "title": "Captured At",
+      "type": "string"
+    },
+    "connector": {
+      "title": "Connector",
+      "type": "string"
+    },
+    "id": {
+      "description": "'obs_' + first 16 hex chars of sha256.",
+      "title": "Id",
+      "type": "string"
+    },
+    "media_type": {
+      "default": "application/json",
+      "title": "Media Type",
+      "type": "string"
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Sha256",
+      "type": "string"
+    },
+    "snapshot": {
+      "description": "Path relative to the workspace, memory/sources/<sha256>.<ext>",
+      "title": "Snapshot",
+      "type": "string"
+    },
+    "source_url": {
+      "title": "Source Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "connector",
+    "source_url",
+    "sha256",
+    "snapshot"
+  ],
+  "title": "Observation",
+  "type": "object"
+}

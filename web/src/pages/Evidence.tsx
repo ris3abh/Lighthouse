@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { api, type EvidenceCriterion, type Exhibit } from "../api";
+import { api, type EvidenceCriterion, type Exhibit, STAGES, stageCounts } from "../api";
+import ClaimsPanel, { StageChip } from "../components/Claims";
 import { useRefresh } from "../App";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, Modal, PageHeader, StatusBadge, useToast } from "../components/ui";
 import { today, useLoad } from "../hooks";
@@ -118,6 +119,7 @@ function CriterionSection({
           have {c.exhibit_count}
           {need && ` / need ${need.min_exhibits}`}
           {need && need.min_signals > 0 && ` · signals ${c.matched_signals.length}/${need.min_signals}`}
+          {c.in_progress_count > 0 && ` · ${c.in_progress_count} in progress`}
         </span>
         <div className="flex gap-1">
           <Button size="sm" variant="primary" onClick={onUpload}>
@@ -162,7 +164,7 @@ function CriterionSection({
       {c.exhibits.length > 0 ? (
         <ul className="divide-y divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-800 dark:border-zinc-800">
           {c.exhibits.map((e) => (
-            <li key={e.id} className="flex flex-wrap items-center gap-3 px-4 py-2">
+            <li key={e.id} className={cx("flex flex-wrap items-center gap-3 px-4 py-2", !stageCounts(e.stage) && "bg-amber-50/50 dark:bg-amber-950/20")}>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
                   {e.source_url ? (
@@ -176,12 +178,15 @@ function CriterionSection({
                 <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500">
                   <span className="tabular-nums">{e.date}</span>
                   <Chip>{e.evidence_type}</Chip>
+                  <StageChip stage={e.stage} />
+                  {!stageCounts(e.stage) && <span className="text-amber-700 dark:text-amber-400">not counted until completed</span>}
                   {e.signals.map((s) => (
                     <Chip key={s} tone="emerald">
                       {signalLabel[s] ?? s}
                     </Chip>
                   ))}
                 </p>
+                <ClaimsPanel ids={e.claim_ids} verb="Cites" />
               </div>
               <Button size="sm" variant="ghost" onClick={() => onPreview(e)} title={e.file}>
                 Preview
@@ -220,6 +225,7 @@ function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClo
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [type, setType] = useState(crit.evidence_types[0] ?? "");
+  const [stage, setStage] = useState(/invite/.test(crit.evidence_types[0] ?? "") ? "invited" : "");
   const [date, setDate] = useState(today());
   const [summary, setSummary] = useState("");
   const [signals, setSignals] = useState<string[]>([]);
@@ -236,6 +242,7 @@ function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClo
     form.append("date", date);
     form.append("summary", summary);
     form.append("signals", signals.join(","));
+    form.append("stage", stage);
     setBusy(true);
     try {
       const ex = await api.upload(form);
@@ -262,7 +269,14 @@ function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClo
         <div className="grid grid-cols-2 gap-3">
           <label>
             <span className="label">Evidence type</span>
-            <select className="input" value={type} onChange={(e) => setType(e.target.value)}>
+            <select
+              className="input"
+              value={type}
+              onChange={(e) => {
+                setType(e.target.value);
+                if (/invite/.test(e.target.value) && !stage) setStage("invited");
+              }}
+            >
               {crit.evidence_types.map((t) => (
                 <option key={t}>{t}</option>
               ))}
@@ -273,6 +287,18 @@ function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClo
             <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
           </label>
         </div>
+        <label>
+          <span className="label">Stage — an invitation isn't a completion; only completed / published / granted count</span>
+          <select className="input" value={stage} onChange={(e) => setStage(e.target.value)}>
+            <option value="">Not an activity (e.g. a certificate, a pay stub)</option>
+            {STAGES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+                {stageCounts(s) ? " — counts" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           <span className="label">Summary</span>
           <textarea className="input" rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} />

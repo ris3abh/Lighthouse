@@ -74,15 +74,23 @@ repositories**:
 
 1. **Connectors** (`lighthouse_gc/sources/`) discover your repos / models / datasets, snapshot their metrics
    into `data/metrics.csv`, and propose evidence **candidates**.
-2. Candidates land in the **Inbox**. Nothing becomes evidence until you accept it. Accepting writes a capture
-   file to `evidence/<criterion>/<crit>_<yyyy-mm-dd>_<slug>.md` and logs it in `data/exhibits.json`.
-3. The **criteria engine** scores your exhibits against a YAML profile (`profiles/o1a.yaml`,
-   `profiles/eb1a.yaml`): each criterion is `banked`, `building`, `gap` or `dropped`. Switching profiles
-   re-scores the same evidence.
-4. `DASHBOARD.md` and the web dashboard show where you stand.
+2. Every raw response becomes an **observation** in `memory/`, and every fact drawn from it becomes a **claim**
+   that quotes its source verbatim, with offsets (e.g. `"stargazers_count": 1840` from
+   `api.github.com/repos/…`). Claims are append-only: a new value supersedes the old one, and nothing is
+   overwritten, so you can ask what was known on any date.
+3. Candidates land in the **Inbox**, where you can expand the exact claims behind each one. Nothing becomes
+   evidence until you accept it. Accepting approves those claims, writes a capture file to
+   `evidence/<criterion>/<crit>_<yyyy-mm-dd>_<slug>.md`, and logs it in `data/exhibits.json`. Approval records
+   your decision; it does not certify legal sufficiency.
+4. The **criteria engine** (`lighthouse_gc/criteria/`) scores exhibits against a YAML profile
+   (`profiles/o1a.yaml`, `profiles/eb1a.yaml`): each criterion is `banked`, `building`, `gap` or `dropped`.
+   **An invitation is not a completion.** Only completed, published or granted evidence counts. Switching
+   profiles re-scores the same evidence.
+5. `DASHBOARD.md` and the web dashboard show where you stand.
 
-All workspace data is plain JSON / CSV / Markdown with JSON Schemas (`lighthouse_gc/core/schemas/`), so you,
-the dashboard, and any agent all edit the same files.
+All workspace data is plain JSON / JSONL / CSV / Markdown with JSON Schemas (`lighthouse_gc/core/schemas/`), so
+you, the dashboard, and any agent all read the same files. The core (`lighthouse_gc/core/`) knows nothing
+about immigration. Profiles and scoring live in a separate layer, so other domains can reuse it.
 
 ## Commands
 

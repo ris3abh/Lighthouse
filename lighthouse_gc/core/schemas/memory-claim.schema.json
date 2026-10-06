@@ -1,0 +1,196 @@
+{
+  "$defs": {
+    "ExtractedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "connector",
+            "model",
+            "user"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "description": "Connector kind, model id, or 'user'.",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "default": "",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "name"
+      ],
+      "title": "ExtractedBy",
+      "type": "object"
+    }
+  },
+  "$id": "https://lighthouse-gc.dev/schemas/v1/memory-claim.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One factual statement, tied to the exact text it was read from.",
+  "properties": {
+    "confidence": {
+      "default": "medium",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "event_date": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Event Date"
+    },
+    "excerpt": {
+      "description": "Exact supporting text from the observation snapshot.",
+      "title": "Excerpt",
+      "type": "string"
+    },
+    "excerpt_end": {
+      "minimum": 0,
+      "title": "Excerpt End",
+      "type": "integer"
+    },
+    "excerpt_start": {
+      "minimum": 0,
+      "title": "Excerpt Start",
+      "type": "integer"
+    },
+    "extracted_by": {
+      "$ref": "#/$defs/ExtractedBy"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "observation_id": {
+      "title": "Observation Id",
+      "type": "string"
+    },
+    "predicate": {
+      "pattern": "^[a-z0-9][a-z0-9_\\-]*$",
+      "title": "Predicate",
+      "type": "string"
+    },
+    "recorded_at": {
+      "description": "When Lighthouse learned it.",
+      "format": "date-time",
+      "title": "Recorded At",
+      "type": "string"
+    },
+    "stage": {
+      "anyOf": [
+        {
+          "enum": [
+            "invited",
+            "accepted",
+            "completed",
+            "declined",
+            "cancelled",
+            "preprint",
+            "submitted",
+            "published",
+            "retracted",
+            "applied",
+            "granted",
+            "denied"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stage"
+    },
+    "subject": {
+      "description": "Entity id the claim is about.",
+      "title": "Subject",
+      "type": "string"
+    },
+    "valid_from": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "When it became true in the world.",
+      "title": "Valid From"
+    },
+    "valid_to": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Valid To"
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Value"
+    },
+    "version": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "subject",
+    "predicate",
+    "value",
+    "observation_id",
+    "excerpt",
+    "excerpt_start",
+    "excerpt_end",
+    "extracted_by"
+  ],
+  "title": "Claim",
+  "type": "object"
+}

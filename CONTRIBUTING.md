@@ -35,6 +35,9 @@ npm --prefix web run build
 1. Create `lighthouse_gc/sources/<kind>.py` with a class implementing the `Source` protocol in
    `lighthouse_gc/sources/base.py`: `detect`, `parse`, `source_url`, `discover`, `snapshot`, `candidates`.
    Use the provided `HttpClient` (ETag cache, backoff) for every request.
+   Attach the raw response to each candidate / metric row with `.with_evidence(Evidence(...))` and make every
+   `ClaimDraft.excerpt` a verbatim substring of it. The memory store rejects claims that don't quote their
+   source. Set `stage` on activities (an invitation is `invited`, not `completed`).
 2. Register it in `CONNECTORS` in `lighthouse_gc/sources/__init__.py`.
 3. Connectors **never** write evidence. `candidates()` returns proposals; the user decides in the Inbox. Give
    each candidate a stable `fingerprint` so re-imports don't create duplicates.
@@ -54,10 +57,14 @@ Profiles are YAML in `profiles/`, validated by the `Profile` model (`lighthouse_
 
 ## Changing a workspace file shape
 
-1. Edit the model in `lighthouse_gc/core/models.py`.
-2. Regenerate schemas: `python -m lighthouse_gc.core.schemas`.
-3. Update `examples/demo-workspace/` so `lighthouse-gc validate -w examples/demo-workspace` still passes.
+1. Edit the model: domain-agnostic shapes in `lighthouse_gc/core/models.py`, profile/case shapes in
+   `lighthouse_gc/criteria/models.py`. `lighthouse_gc/core` must never import from the domain layer or
+   mention a specific profile (`tests/test_layering.py` enforces this).
+2. Regenerate schemas: `python -m lighthouse_gc.schemas`.
+3. Regenerate the demo: `python scripts/make_demo.py` (runs the real connectors against recorded fixtures,
+   no network), then check `lighthouse-gc validate -w examples/demo-workspace`.
    A breaking change needs a new `schema_version` and a migration.
+4. Record significant design decisions as an ADR in `docs/adr/`.
 
 ## Ground rules
 

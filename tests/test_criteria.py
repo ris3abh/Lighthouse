@@ -4,8 +4,9 @@ from datetime import date
 
 import pytest
 
-from lighthouse_gc.core.criteria import load_profiles, score
-from lighthouse_gc.core.models import Exhibit, Profile
+from lighthouse_gc.core.models import Exhibit
+from lighthouse_gc.criteria.engine import load_profiles, score
+from lighthouse_gc.criteria.models import Profile
 
 
 @pytest.fixture(scope="module")
@@ -119,3 +120,34 @@ def test_threshold_counts(profiles):
     ]
     board = score(profiles["o1a"], exhibits)
     assert board.banked == 3 >= board.threshold
+
+
+def staged(criterion, etype, stage, signals=(), n=0):
+    e = ex(criterion, etype, signals, n)
+    e.stage = stage
+    return e
+
+
+def test_invitation_is_not_completion(profiles):
+    board = score(profiles["o1a"], [staged("judging", "judge_invite", "invited", ["selective_event"], 1),
+                                    staged("judging", "judge_invite", "invited", [], 2)])  # fmt: skip
+    j = status(board, "judging")
+    assert j.status == "building" and j.exhibit_count == 0 and j.in_progress_count == 2
+    assert "not counted until completed" in j.reason and "invited" in j.reason
+
+
+def test_completed_stages_count(profiles):
+    board = score(profiles["o1a"], [staged("judging", "judge_invite", "completed", ["selective_event"], 1),
+                                    staged("judging", "reviewer_record", None, [], 2),
+                                    staged("judging", "judge_invite", "invited", [], 3)])  # fmt: skip
+    j = status(board, "judging")
+    assert j.status == "banked" and j.exhibit_count == 2 and j.in_progress_count == 1
+
+
+def test_preprint_is_not_publication(profiles):
+    board = score(profiles["o1a"], [staged("scholarly_articles", "preprint", "preprint", ["cited"])])
+    assert status(board, "scholarly_articles").status == "building"
+    board = score(
+        profiles["o1a"], [staged("scholarly_articles", "conference_paper", "published", ["peer_reviewed"])]
+    )
+    assert status(board, "scholarly_articles").status == "banked"

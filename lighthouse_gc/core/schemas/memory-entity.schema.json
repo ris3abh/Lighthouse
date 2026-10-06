@@ -1,0 +1,53 @@
+{
+  "$id": "https://lighthouse-gc.dev/schemas/v1/memory-entity.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "'<kind>:<stable key>', e.g. 'artifact:github:octo/repo'.",
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "person",
+        "artifact",
+        "org",
+        "venue",
+        "event",
+        "letter_writer",
+        "other"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "recorded_at": {
+      "format": "date-time",
+      "title": "Recorded At",
+      "type": "string"
+    },
+    "url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Url"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "name"
+  ],
+  "title": "Entity",
+  "type": "object"
+}

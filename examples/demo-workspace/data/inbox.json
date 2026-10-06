@@ -2,7 +2,60 @@
   "schema_version": 1,
   "candidates": [
     {
-      "id": "cand_9313af032f53",
+      "id": "cand_05c020884b2b",
+      "fingerprint": "paper:arxiv:2502.01234:scholarly_articles",
+      "source": "github:arivera-demo",
+      "item_id": "github:arivera-demo/fastgrad",
+      "evidence_type": "preprint",
+      "proposed_criterion": "scholarly_articles",
+      "title": "arXiv 2502.01234",
+      "summary": "Paper arXiv:2502.01234 linked from the arivera-demo/fastgrad README. Confirm you are an author and add venue / peer-review status.",
+      "confidence": 0.4,
+      "raw_url": "https://arxiv.org/abs/2502.01234",
+      "signals": [],
+      "facts": {},
+      "created_at": "2026-10-06T18:34:00Z",
+      "stage": "preprint",
+      "claim_ids": [
+        "clm_8ed3c3842495"
+      ],
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_4ebe2b425f25",
+      "fingerprint": "github:arivera-demo/tinyserve:original_contributions",
+      "source": "github:arivera-demo",
+      "item_id": "github:arivera-demo/tinyserve",
+      "evidence_type": "open_source_project",
+      "proposed_criterion": "original_contributions",
+      "title": "Open-source project: arivera-demo/tinyserve",
+      "summary": "arivera-demo/tinyserve — ★ 46 · 3 forks · 0 releases — Minimal batched inference server",
+      "confidence": 0.63,
+      "raw_url": "https://github.com/arivera-demo/tinyserve",
+      "signals": [],
+      "facts": {
+        "stars": 46,
+        "forks": 3,
+        "releases": 0,
+        "language": "Rust",
+        "topics": "",
+        "created": "2024-02-11"
+      },
+      "created_at": "2026-10-06T18:34:00Z",
+      "stage": null,
+      "claim_ids": [
+        "clm_f9c14c55b708",
+        "clm_10b1663ead69",
+        "clm_c9d9e30930bb",
+        "clm_1a3daad4326e",
+        "clm_f0904b5f0019"
+      ],
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_9141ad39c334",
       "fingerprint": "huggingface:arivera-demo/tiny-vlm:original_contributions",
       "source": "huggingface:arivera-demo",
       "item_id": "huggingface:arivera-demo/tiny-vlm",
@@ -18,16 +71,46 @@
       ],
       "facts": {
         "likes": 233,
+        "derivative_models": 14,
         "downloads_30d": 15400,
-        "downloads_all_time": 118000,
-        "derivative_models": 14
+        "downloads_all_time": 118000
       },
-      "created_at": "2026-10-05T09:00:00Z",
+      "created_at": "2026-10-06T18:34:00Z",
+      "stage": null,
+      "claim_ids": [
+        "clm_23e277fc60f3",
+        "clm_9d2f4883ad48",
+        "clm_76a6eb8ff880"
+      ],
       "status": "pending",
       "snoozed_until": null
     },
     {
-      "id": "cand_c82c7a86c4ab",
+      "id": "cand_665722e02d0d",
+      "fingerprint": "paper:arxiv:2509.04321:scholarly_articles",
+      "source": "huggingface:arivera-demo",
+      "item_id": "huggingface:arivera-demo/tiny-vlm",
+      "evidence_type": "preprint",
+      "proposed_criterion": "scholarly_articles",
+      "title": "Paper: RoboGrasp-10k: A Benchmark for Low-Cost Grasping",
+      "summary": "Paper arXiv:2509.04321 linked from Hugging Face model arivera-demo/tiny-vlm. Confirm you are an author and add venue / peer-review status.",
+      "confidence": 0.4,
+      "raw_url": "https://arxiv.org/abs/2509.04321",
+      "signals": [],
+      "facts": {
+        "hf_upvotes": 42
+      },
+      "created_at": "2026-10-06T18:34:00Z",
+      "stage": "preprint",
+      "claim_ids": [
+        "clm_1302b9dbd864",
+        "clm_93812034999b"
+      ],
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_73c70fe2766a",
       "fingerprint": "huggingface:datasets/arivera-demo/robo-grasp-10k:original_contributions",
       "source": "huggingface:arivera-demo",
       "item_id": "huggingface:datasets/arivera-demo/robo-grasp-10k",
@@ -45,65 +128,36 @@
         "downloads_30d": 2300,
         "downloads_all_time": 14800
       },
-      "created_at": "2026-10-05T09:00:00Z",
+      "created_at": "2026-10-06T18:34:00Z",
+      "stage": null,
+      "claim_ids": [
+        "clm_6b80a584dedb",
+        "clm_ff1972ec1ecd",
+        "clm_6b35f52740a5"
+      ],
       "status": "pending",
       "snoozed_until": null
     },
     {
-      "id": "cand_afce5c8df2da",
-      "fingerprint": "paper:arxiv:2509.04321:scholarly_articles",
+      "id": "cand_46d7d495e5fd",
+      "fingerprint": "huggingface:spaces/arivera-demo/tiny-vlm-demo:original_contributions",
       "source": "huggingface:arivera-demo",
-      "item_id": "huggingface:datasets/arivera-demo/robo-grasp-10k",
-      "evidence_type": "preprint",
-      "proposed_criterion": "scholarly_articles",
-      "title": "Paper: RoboGrasp-10k (HF Papers page)",
-      "summary": "Paper arXiv:2509.04321 linked from Hugging Face dataset arivera-demo/robo-grasp-10k. Confirm you are an author and add venue / peer-review status.",
-      "confidence": 0.4,
-      "raw_url": "https://arxiv.org/abs/2509.04321",
-      "signals": [],
-      "facts": {
-        "hf_upvotes": 42
-      },
-      "created_at": "2026-10-05T09:00:00Z",
-      "status": "pending",
-      "snoozed_until": null
-    },
-    {
-      "id": "cand_571aa59eaed3",
-      "fingerprint": "github:arivera-demo/tinyserve:original_contributions",
-      "source": "github:arivera-demo",
-      "item_id": "github:arivera-demo/tinyserve",
+      "item_id": "huggingface:spaces/arivera-demo/tiny-vlm-demo",
       "evidence_type": "open_source_project",
       "proposed_criterion": "original_contributions",
-      "title": "Open-source project: arivera-demo/tinyserve",
-      "summary": "arivera-demo/tinyserve — ★ 46 · 3 forks · 1 releases — Minimal batched inference server",
-      "confidence": 0.63,
-      "raw_url": "https://github.com/arivera-demo/tinyserve",
+      "title": "Hugging Face space: arivera-demo/tiny-vlm-demo",
+      "summary": "Space arivera-demo/tiny-vlm-demo — ♥ 12",
+      "confidence": 0.45,
+      "raw_url": "https://huggingface.co/spaces/arivera-demo/tiny-vlm-demo",
       "signals": [],
       "facts": {
-        "stars": 46,
-        "forks": 3,
-        "releases": 1,
-        "language": "Rust"
+        "likes": 12
       },
-      "created_at": "2026-10-05T09:00:00Z",
-      "status": "pending",
-      "snoozed_until": null
-    },
-    {
-      "id": "cand_ed707c137814",
-      "fingerprint": "github:arivera-demo/dotfiles:original_contributions",
-      "source": "github:arivera-demo",
-      "item_id": "github:arivera-demo/dotfiles",
-      "evidence_type": "open_source_project",
-      "proposed_criterion": "original_contributions",
-      "title": "Open-source project: arivera-demo/dotfiles",
-      "summary": "arivera-demo/dotfiles — ★ 7 · 0 forks · 0 releases",
-      "confidence": 0.34,
-      "raw_url": "https://github.com/arivera-demo/dotfiles",
-      "signals": [],
-      "facts": {},
-      "created_at": "2026-06-01T09:00:00Z",
+      "created_at": "2026-10-06T18:34:00Z",
+      "stage": null,
+      "claim_ids": [
+        "clm_9b0492e516bc"
+      ],
       "status": "rejected",
       "snoozed_until": null
     }

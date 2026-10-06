@@ -1,0 +1,7 @@
+{"id":"artifact:github:arivera-demo/fastgrad","kind":"artifact","name":"arivera-demo/fastgrad","url":"https://github.com/arivera-demo/fastgrad","recorded_at":"2026-10-06T18:34:00Z"}
+{"id":"artifact:github:arivera-demo/tinyserve","kind":"artifact","name":"arivera-demo/tinyserve","url":"https://github.com/arivera-demo/tinyserve","recorded_at":"2026-10-06T18:34:00Z"}
+{"id":"artifact:huggingface:arivera-demo/scratch-model","kind":"artifact","name":"arivera-demo/scratch-model","url":"https://huggingface.co/arivera-demo/scratch-model","recorded_at":"2026-10-06T18:34:00Z"}
+{"id":"artifact:huggingface:arivera-demo/tiny-vlm","kind":"artifact","name":"arivera-demo/tiny-vlm","url":"https://huggingface.co/arivera-demo/tiny-vlm","recorded_at":"2026-10-06T18:34:00Z"}
+{"id":"artifact:arxiv:2509.04321","kind":"artifact","name":"RoboGrasp-10k: A Benchmark for Low-Cost Grasping","url":"https://arxiv.org/abs/2509.04321","recorded_at":"2026-10-06T18:34:00Z"}
+{"id":"artifact:huggingface:datasets/arivera-demo/robo-grasp-10k","kind":"artifact","name":"datasets/arivera-demo/robo-grasp-10k","url":"https://huggingface.co/datasets/arivera-demo/robo-grasp-10k","recorded_at":"2026-10-06T18:34:00Z"}
+{"id":"artifact:huggingface:spaces/arivera-demo/tiny-vlm-demo","kind":"artifact","name":"spaces/arivera-demo/tiny-vlm-demo","url":"https://huggingface.co/spaces/arivera-demo/tiny-vlm-demo","recorded_at":"2026-10-06T18:34:00Z"}

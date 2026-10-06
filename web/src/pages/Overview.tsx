@@ -92,6 +92,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
                     <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">
                       {STATUS_STYLE[c.status].label}
                       {c.status === "building" && c.needed_exhibits > 0 && ` · needs ${c.needed_exhibits} more`}
+                      {c.in_progress_count > 0 && ` · ${c.in_progress_count} in progress`}
                       {c.matched_signals.length > 0 && ` · ${c.matched_signals.length} signal${c.matched_signals.length > 1 ? "s" : ""}`}
                     </span>
                   </span>

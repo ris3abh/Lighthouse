@@ -1,0 +1,29 @@
+{
+  "archived": false,
+  "created_at": "2024-02-11T18:20:00Z",
+  "default_branch": "main",
+  "description": "Gradient compression for data-parallel training",
+  "fork": false,
+  "forks_count": 212,
+  "full_name": "arivera-demo/fastgrad",
+  "html_url": "https://github.com/arivera-demo/fastgrad",
+  "id": 2577961,
+  "language": "Python",
+  "name": "fastgrad",
+  "open_issues_count": 17,
+  "owner": {
+    "html_url": "https://github.com/arivera-demo",
+    "id": 90000001,
+    "login": "arivera-demo",
+    "type": "User"
+  },
+  "private": false,
+  "stargazers_count": 1840,
+  "subscribers_count": 44,
+  "topics": [
+    "deep-learning",
+    "distributed-training"
+  ],
+  "updated_at": "2026-10-01T12:00:00Z",
+  "watchers_count": 1840
+}

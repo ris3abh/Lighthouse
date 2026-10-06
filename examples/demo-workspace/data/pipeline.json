@@ -13,7 +13,7 @@
       "notes": ""
     },
     {
-      "id": "pipe_demo_podcast",
+      "id": "pipe_demo_press",
       "title": "Pitch fastgrad story to an ML newsletter",
       "criterion": "press",
       "stage": "idea",
@@ -25,7 +25,7 @@
     },
     {
       "id": "pipe_demo_mlh",
-      "title": "MLH Fall hackathon judge",
+      "title": "MLH Fall hackathon: confirm judging completed",
       "criterion": "judging",
       "stage": "waiting",
       "url": "https://example.org/mlh-judges",

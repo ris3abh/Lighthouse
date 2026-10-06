@@ -2,7 +2,7 @@
   "schema_version": 1,
   "profile": "o1a",
   "profile_name": "O-1A Extraordinary Ability",
-  "computed_at": "2026-10-06T18:00:30Z",
+  "computed_at": "2026-10-06T18:34:00Z",
   "threshold": 3,
   "target": 5,
   "banked": 2,
@@ -14,7 +14,7 @@
       "status": "building",
       "exhibit_count": 1,
       "exhibit_ids": [
-        "exh_ae7ac805b3ad"
+        "exh_f88ff76b03ca"
       ],
       "matched_signals": [],
       "missing_signals": [
@@ -23,6 +23,7 @@
         "excellence_based"
       ],
       "needed_exhibits": 0,
+      "in_progress_count": 0,
       "reason": "Needs 1 more strength signal(s).",
       "overridden": false
     },
@@ -38,6 +39,7 @@
         "outstanding_achievement_required"
       ],
       "needed_exhibits": 1,
+      "in_progress_count": 0,
       "reason": "No accepted exhibits yet.",
       "overridden": false
     },
@@ -54,6 +56,7 @@
         "multiple_outlets"
       ],
       "needed_exhibits": 2,
+      "in_progress_count": 0,
       "reason": "No accepted exhibits yet.",
       "overridden": false
     },
@@ -63,8 +66,8 @@
       "status": "banked",
       "exhibit_count": 2,
       "exhibit_ids": [
-        "exh_f82a0cfb1e66",
-        "exh_4b43cffdfda2"
+        "exh_d2aee61e159c",
+        "exh_0b40b6c8d8df"
       ],
       "matched_signals": [
         "selective_event",
@@ -73,7 +76,8 @@
       ],
       "missing_signals": [],
       "needed_exhibits": 0,
-      "reason": "2 exhibit(s) with 3 strength signal(s) meet the bar.",
+      "in_progress_count": 1,
+      "reason": "2 exhibit(s) with 3 strength signal(s) meet the bar. 1 exhibit(s) not counted until completed (stage: invited).",
       "overridden": false
     },
     {
@@ -82,7 +86,7 @@
       "status": "building",
       "exhibit_count": 1,
       "exhibit_ids": [
-        "exh_86c581ae8135"
+        "exh_eff7394ab578"
       ],
       "matched_signals": [
         "widely_adopted",
@@ -93,6 +97,7 @@
         "independent_corroboration"
       ],
       "needed_exhibits": 1,
+      "in_progress_count": 0,
       "reason": "Needs 1 more exhibit(s).",
       "overridden": false
     },
@@ -100,10 +105,9 @@
       "id": "scholarly_articles",
       "label": "Authorship of scholarly articles",
       "status": "banked",
-      "exhibit_count": 2,
+      "exhibit_count": 1,
       "exhibit_ids": [
-        "exh_a26cc3f5e312",
-        "exh_dcc911e3a401"
+        "exh_5dd06b50299e"
       ],
       "matched_signals": [
         "peer_reviewed",
@@ -112,7 +116,8 @@
       ],
       "missing_signals": [],
       "needed_exhibits": 0,
-      "reason": "2 exhibit(s) with 3 strength signal(s) meet the bar.",
+      "in_progress_count": 1,
+      "reason": "1 exhibit(s) with 3 strength signal(s) meet the bar. 1 exhibit(s) not counted until completed (stage: preprint).",
       "overridden": false
     },
     {
@@ -121,7 +126,7 @@
       "status": "building",
       "exhibit_count": 1,
       "exhibit_ids": [
-        "exh_4b5adb540a09"
+        "exh_5dcc908acb3f"
       ],
       "matched_signals": [
         "critical_capacity"
@@ -130,6 +135,7 @@
         "distinguished_org"
       ],
       "needed_exhibits": 1,
+      "in_progress_count": 0,
       "reason": "Needs 1 more exhibit(s) and 1 more strength signal(s).",
       "overridden": false
     },
@@ -145,6 +151,7 @@
         "above_90th_percentile"
       ],
       "needed_exhibits": 2,
+      "in_progress_count": 0,
       "reason": "Marked dropped by you. Rules say: gap — No accepted exhibits yet.",
       "overridden": true
     }

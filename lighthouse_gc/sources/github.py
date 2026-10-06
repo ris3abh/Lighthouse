@@ -13,8 +13,8 @@ from datetime import date, datetime
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-from lighthouse_gc.core.models import Candidate, ConnectorConfig, MetricRow, TrackedItem
-from lighthouse_gc.sources.base import Creds, paper_candidate
+from lighthouse_gc.core.models import Candidate, ClaimDraft, ConnectorConfig, Evidence, MetricRow, TrackedItem
+from lighthouse_gc.sources.base import Creds, artifact_id, field_claims, paper_candidate
 from lighthouse_gc.sources.http import HttpClient
 
 API = "https://api.github.com"
@@ -159,11 +159,14 @@ class GitHubSource:
         def row(metric: str, value: float, on: date = today) -> MetricRow:
             return MetricRow(date=on, source=self.kind, item=item.name, metric=metric, value=value)
 
+        evidence = self._repo_evidence(item, repo)
         rows = [
-            row("stars", repo["stargazers_count"]),
-            row("forks", repo["forks_count"]),
-            row("watchers", repo.get("subscribers_count", repo.get("watchers_count", 0))),
-            row("open_issues", repo.get("open_issues_count", 0)),
+            row("stars", repo["stargazers_count"]).with_evidence(evidence),
+            row("forks", repo["forks_count"]).with_evidence(evidence),
+            row("watchers", repo.get("subscribers_count", repo.get("watchers_count", 0))).with_evidence(
+                evidence
+            ),
+            row("open_issues", repo.get("open_issues_count", 0)).with_evidence(evidence),
         ]
         contributors = self._count(f"/repos/{item.name}/contributors", creds, {"anon": 1})
         if contributors is not None:
@@ -178,11 +181,32 @@ class GitHubSource:
                 resp = self.http.get(f"/repos/{item.name}/traffic/{kind}", token=creds, allow=(403, 404))
                 if not resp.ok or not resp.data:
                     continue
+                traffic = Evidence(
+                    connector=self.kind,
+                    source_url=f"{API}/repos/{item.name}/traffic/{kind}",
+                    payload=resp.data,
+                    claims=field_claims(
+                        artifact_id(self.kind, item.name), item.name, item.url, resp.data,
+                        {f"{kind}_14d": "count", f"{kind}_unique_14d": "uniques"}, today,
+                    ),
+                )  # fmt: skip
                 for point in resp.data.get(kind, []):
                     on = datetime.fromisoformat(point["timestamp"].replace("Z", "+00:00")).date()
-                    rows.append(row(kind, point["count"], on))
-                    rows.append(row(f"{kind}_unique", point["uniques"], on))
+                    rows.append(row(kind, point["count"], on).with_evidence(traffic))
+                    rows.append(row(f"{kind}_unique", point["uniques"], on).with_evidence(traffic))
         return rows
+
+    def _repo_evidence(self, item: TrackedItem, repo: dict[str, Any]) -> Evidence:
+        fields = {"stars": "stargazers_count", "forks": "forks_count", "watchers": "subscribers_count",
+                  "open_issues": "open_issues_count", "created_at": "created_at"}  # fmt: skip
+        return Evidence(
+            connector=self.kind,
+            source_url=f"{API}/repos/{item.name}",
+            payload=repo,
+            claims=field_claims(
+                artifact_id(self.kind, item.name), item.name, item.url, repo, fields, self.today()
+            ),
+        )
 
     # -- candidates --------------------------------------------------------------------------
 
@@ -225,7 +249,7 @@ class GitHubSource:
                         "topics": ", ".join(repo.get("topics") or []),
                         "created": (repo.get("created_at") or "")[:10],
                     },
-                )
+                ).with_evidence(self._repo_evidence(item, repo))
             )
 
         readme = self.http.get(
@@ -237,9 +261,25 @@ class GitHubSource:
         )
         if readme.ok and readme.data:
             for arxiv_id in sorted(set(ARXIV_RE.findall(readme.data))):
-                out.append(
-                    paper_candidate(
-                        arxiv_id, source_id, item.id, f"linked from the {repo['full_name']} README"
-                    )
+                quote = next(m.group(0) for m in ARXIV_RE.finditer(readme.data) if m["id"] == arxiv_id)
+                evidence = Evidence(
+                    connector=self.kind,
+                    source_url=f"{API}/repos/{item.name}/readme",
+                    payload=readme.data,
+                    media_type="text/markdown",
+                    claims=[
+                        ClaimDraft(
+                            subject=artifact_id(self.kind, item.name),
+                            subject_name=item.name,
+                            subject_url=item.url,
+                            predicate="links_paper",
+                            value=f"arxiv:{arxiv_id}",
+                            excerpt=quote,
+                            valid_from=self.today(),
+                            confidence="medium",  # a link doesn't prove authorship
+                        )
+                    ],
                 )
+                context = f"linked from the {repo['full_name']} README"
+                out.append(paper_candidate(arxiv_id, source_id, item.id, context, evidence=evidence))
         return out

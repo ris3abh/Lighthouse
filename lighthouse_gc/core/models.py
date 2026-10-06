@@ -1,8 +1,8 @@
-"""Pydantic models for every workspace file.
+"""Domain-agnostic pydantic models: workspace files, the inbox, metrics and the memory store (5b).
 
 These models are the single definition of each file's shape. The JSON Schemas in
-``lighthouse_gc/core/schemas/`` are generated from them (``python -m lighthouse_gc.core.schemas``)
-and a test fails if the two drift apart.
+``lighthouse_gc/core/schemas/`` are generated from them (``python -m lighthouse_gc.schemas``)
+and a test fails if the two drift apart. Nothing here knows about any particular profile.
 """
 
 from __future__ import annotations
@@ -10,9 +10,9 @@ from __future__ import annotations
 import re
 import uuid
 from datetime import UTC, date, datetime
-from typing import Annotated, Final, Literal
+from typing import Annotated, Any, Final, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 SCHEMA_VERSION: Final = 1
 
@@ -43,27 +43,20 @@ class _File(_Model):
     schema_version: Literal[1] = SCHEMA_VERSION
 
 
-# --------------------------------------------------------------------------- person.json
+# --------------------------------------------------------------------------- event stages
+
+# Lifecycle of an activity. An invitation is not a completion: only COMPLETED_STAGES count toward
+# anything. ``None`` means the evidence isn't an activity (e.g. a repo's star count).
+Stage = Literal[
+    "invited", "accepted", "completed", "declined", "cancelled",  # judging, talks, reviewing
+    "preprint", "submitted", "published", "retracted",  # papers
+    "applied", "granted", "denied",  # memberships, awards
+]  # fmt: skip
+COMPLETED_STAGES: frozenset[str] = frozenset({"completed", "published", "granted"})
 
 
-class FilingTarget(_Model):
-    profile: str = "o1a"
-    target_date: date | None = None
-
-
-class Petitioner(_Model):
-    name: str = ""
-    kind: Literal["employer", "agent", "self", "other"] = "employer"
-
-
-class Person(_File):
-    name: str = ""
-    aliases: list[str] = Field(default_factory=list, description="Other spellings used for mention matching.")
-    field: str = ""
-    current_status: str = Field("", description="Current immigration status, e.g. F-1 OPT, H-1B.")
-    location: str = ""
-    filing_target: FilingTarget = Field(default_factory=FilingTarget)
-    petitioner: Petitioner = Field(default_factory=Petitioner)
+def stage_counts(stage: str | None) -> bool:
+    return stage is None or stage in COMPLETED_STAGES
 
 
 # --------------------------------------------------------------------------- sources.json
@@ -116,8 +109,17 @@ class Candidate(_Model):
     signals: list[str] = Field(default_factory=list, description="Strength signal ids the source observed.")
     facts: dict[str, float | int | str] = Field(default_factory=dict, description="Numbers at capture time.")
     created_at: datetime = Field(default_factory=utcnow)
+    stage: Stage | None = Field(None, description="Event stage the evidence shows; None if not an activity.")
+    claim_ids: list[str] = Field(default_factory=list, description="Memory claims this candidate rests on.")
     status: Literal["pending", "snoozed", "rejected"] = "pending"
     snoozed_until: date | None = None
+
+    # Raw evidence a connector attached; turned into an observation + claims by the sync job.
+    _evidence: Evidence | None = PrivateAttr(default=None)
+
+    def with_evidence(self, evidence: Evidence) -> Candidate:
+        self._evidence = evidence
+        return self
 
 
 class Inbox(_File):
@@ -148,6 +150,10 @@ class Exhibit(_Model):
         None, description="Fingerprint of the accepted candidate, for de-duplication."
     )
     signals: list[str] = Field(default_factory=list)
+    stage: Stage | None = Field(None, description="Only completed stages (or None) count toward a criterion.")
+    claim_ids: list[str] = Field(
+        default_factory=list, description="Approved memory claims this exhibit cites."
+    )
     accepted_at: datetime = Field(default_factory=utcnow)
     notes: str = ""
 
@@ -163,39 +169,6 @@ class Exhibits(_File):
     exhibits: list[Exhibit] = Field(default_factory=list)
 
 
-# --------------------------------------------------------------------------- criteria.json
-
-
-CriterionState = Literal["banked", "building", "gap", "dropped"]
-
-
-class CriterionScore(_Model):
-    id: str
-    label: str
-    status: CriterionState
-    exhibit_count: int = 0
-    exhibit_ids: list[str] = Field(default_factory=list)
-    matched_signals: list[str] = Field(default_factory=list)
-    missing_signals: list[str] = Field(default_factory=list)
-    needed_exhibits: int = Field(0, description="Exhibits still needed to reach 'banked'.")
-    reason: str = ""
-    overridden: bool = False
-
-
-class Scoreboard(_File):
-    profile: str
-    profile_name: str
-    computed_at: datetime = Field(default_factory=utcnow)
-    threshold: int
-    target: int
-    banked: int
-    building: int
-    criteria: list[CriterionScore]
-    reviewer_note: str | None = Field(
-        None, description="Agent-written 'how a reviewer would see this' note. Opinion, not a rule result."
-    )
-
-
 # --------------------------------------------------------------------------- metrics.csv
 
 
@@ -208,6 +181,12 @@ class MetricRow(_Model):
     item: str = Field(description="Item path within the source, e.g. octo/repo.")
     metric: Slug
     value: float
+
+    _evidence: Evidence | None = PrivateAttr(default=None)
+
+    def with_evidence(self, evidence: Evidence) -> MetricRow:
+        self._evidence = evidence
+        return self
 
 
 # --------------------------------------------------------------------------- pipeline.json
@@ -227,25 +206,6 @@ class PipelineItem(_Model):
 
 class Pipeline(_File):
     items: list[PipelineItem] = Field(default_factory=list)
-
-
-# --------------------------------------------------------------------------- letters.json
-
-
-class Letter(_Model):
-    id: str = Field(default_factory=lambda: new_id("let"))
-    name: str
-    relationship: Literal["employer", "independent", "coauthor"]
-    credentials: str = ""
-    criteria: list[str] = Field(default_factory=list)
-    asks: list[Literal["letter", "membership_ref"]] = Field(default=["letter"])
-    status: Literal["prospect", "asked", "drafting", "sent", "signed", "declined"] = "prospect"
-    draft_path: str | None = None
-    last_contact: date | None = None
-
-
-class Letters(_File):
-    letters: list[Letter] = Field(default_factory=list)
 
 
 # --------------------------------------------------------------------------- deadlines.json
@@ -306,7 +266,7 @@ class ConnectorConfig(_Model):
 
 class WorkspaceConfig(_File):
     workspace_name: str = "my-case"
-    profile: str = "o1a"
+    profile: str = Field("", description="Active profile id; the domain layer supplies the default.")
     engine: Literal["claude_code", "codex", "api"] = "claude_code"
     server: ServerConfig = Field(default_factory=ServerConfig)
     schedules: dict[str, str] = Field(
@@ -326,72 +286,126 @@ class WorkspaceConfig(_File):
     )
 
 
-# --------------------------------------------------------------------------- profiles/*.yaml
+# --------------------------------------------------------------------------- memory/ (section 5b)
+#
+# Append-only JSONL: memory/observations.jsonl, claims.jsonl, edges.jsonl, decisions.jsonl,
+# entities.jsonl, plus raw snapshots in memory/sources/<sha256>.<ext>. Nothing is overwritten;
+# a newer claim SUPERSEDES an older one. A SQLite index in .lighthouse/cache/ is rebuilt from these.
+
+ConfidenceBand = Literal["high", "medium", "low"]
+ReviewStatus = Literal["proposed", "corroborated", "approved", "rejected"]
+EdgeType = Literal["DERIVED_FROM", "ABOUT", "SUPPORTS", "CONTRADICTS", "SUPERSEDES", "REVIEWED_BY", "CITES"]
+ClaimValue = str | int | float | bool | None
 
 
-class StrengthSignal(_Model):
-    id: Slug
-    label: str
+class ExtractedBy(_Model):
+    kind: Literal["connector", "model", "user"]
+    name: str = Field(description="Connector kind, model id, or 'user'.")
+    version: str = ""
 
 
-class CriterionRule(_Model):
-    min_exhibits: int = Field(1, ge=1, description="Accepted exhibits needed to bank the criterion.")
-    min_signals: int = Field(0, ge=0, description="Distinct strength signals needed to bank it.")
+class Observation(_Model):
+    """A raw snapshot exactly as it was captured."""
+
+    id: str = Field(description="'obs_' + first 16 hex chars of sha256.")
+    connector: str
+    source_url: str
+    captured_at: datetime = Field(default_factory=utcnow)
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    snapshot: str = Field(description="Path relative to the workspace, memory/sources/<sha256>.<ext>")
+    media_type: str = "application/json"
 
 
-class ProfileCriterion(_Model):
-    id: Slug
-    label: str
-    regulation: str = ""
-    description: str = ""
-    evidence_types: list[Slug]
-    strength_signals: list[StrengthSignal] = Field(default_factory=list)
-    bank: CriterionRule = Field(default_factory=CriterionRule)
-
-    @field_validator("strength_signals", mode="before")
-    @classmethod
-    def _signals_from_strings(cls, v: object) -> object:
-        # Profiles may list signals as plain strings ("peer-reviewed"); derive a stable id.
-        if isinstance(v, list):
-            return [{"id": slugify(s).replace("-", "_"), "label": s} if isinstance(s, str) else s for s in v]
-        return v
-
-
-class NarrativeLayer(_Model):
-    id: Slug
-    label: str
-    description: str = ""
-    prompts: list[str] = Field(default_factory=list)
-
-
-class Profile(_Model):
-    id: Slug
+class Entity(_Model):
+    id: str = Field(description="'<kind>:<stable key>', e.g. 'artifact:github:octo/repo'.")
+    kind: Literal["person", "artifact", "org", "venue", "event", "letter_writer", "other"]
     name: str
-    regulation: str = ""
-    description: str = ""
-    threshold: int = Field(ge=1)
-    target: int = Field(ge=1)
-    criteria: list[ProfileCriterion]
-    narrative: list[NarrativeLayer] = Field(
-        default_factory=list, description="Qualitative layers scored by the agent, e.g. EB-1A final merits."
+    url: str | None = None
+    recorded_at: datetime = Field(default_factory=utcnow)
+
+
+class Claim(_Model):
+    """One factual statement, tied to the exact text it was read from."""
+
+    id: str = Field(default_factory=lambda: new_id("clm"))
+    subject: str = Field(description="Entity id the claim is about.")
+    predicate: Slug
+    value: ClaimValue
+    stage: Stage | None = None
+    event_date: date | None = None
+    valid_from: date | None = Field(None, description="When it became true in the world.")
+    valid_to: date | None = None
+    recorded_at: datetime = Field(default_factory=utcnow, description="When Lighthouse learned it.")
+    observation_id: str
+    excerpt: str = Field(description="Exact supporting text from the observation snapshot.")
+    excerpt_start: int = Field(ge=0)
+    excerpt_end: int = Field(ge=0)
+    extracted_by: ExtractedBy
+    confidence: ConfidenceBand = "medium"
+    version: int = Field(1, ge=1)
+
+
+class Edge(_Model):
+    id: str = Field(default_factory=lambda: new_id("edge"))
+    type: EdgeType
+    src: str
+    dst: str
+    recorded_at: datetime = Field(default_factory=utcnow)
+
+
+class Decision(_Model):
+    """A review record. Approval records a decision; it does not certify truth or legal sufficiency."""
+
+    id: str = Field(default_factory=lambda: new_id("dec"))
+    claim_id: str
+    decision: Literal["approved", "rejected"]
+    reviewer: str = "user"
+    at: datetime = Field(default_factory=utcnow)
+    rationale: str = ""
+
+
+# Drafts: what a connector hands over before the memory store assigns ids and offsets.
+
+
+class ClaimDraft(_Model):
+    subject: str
+    subject_kind: Literal["person", "artifact", "org", "venue", "event", "letter_writer", "other"] = (
+        "artifact"
     )
+    subject_name: str
+    subject_url: str | None = None
+    predicate: Slug
+    value: ClaimValue
+    excerpt: str = Field(description="Must occur verbatim in the observation's canonical text.")
+    stage: Stage | None = None
+    event_date: date | None = None
+    valid_from: date | None = None
+    confidence: ConfidenceBand = "high"
 
-    def criterion(self, criterion_id: str) -> ProfileCriterion | None:
-        return next((c for c in self.criteria if c.id == criterion_id), None)
+
+class Evidence(_Model):
+    connector: str
+    source_url: str
+    payload: Any = Field(description="Raw JSON payload, or a string for text/markdown.")
+    media_type: str = "application/json"
+    claims: list[ClaimDraft] = Field(default_factory=list)
 
 
-# Files the schema generator emits, keyed by schema file stem.
-WORKSPACE_FILE_MODELS: dict[str, type[BaseModel]] = {
-    "person": Person,
-    "sources": SourcesFile,
-    "inbox": Inbox,
-    "exhibits": Exhibits,
-    "criteria": Scoreboard,
-    "metric-row": MetricRow,
-    "pipeline": Pipeline,
-    "letters": Letters,
-    "deadlines": Deadlines,
-    "opportunities": Opportunities,
-    "lighthouse-config": WorkspaceConfig,
-    "profile": Profile,
-}
+def canonical_text(payload: Any, media_type: str) -> str:
+    """The exact text stored as a snapshot; excerpt offsets index into this."""
+    import json
+
+    if media_type == "application/json":
+        return json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    return str(payload)
+
+
+def json_excerpt(key: str, value: Any) -> str:
+    """The verbatim line fragment ``"key": value`` as it appears in a canonical JSON snapshot."""
+    import json
+
+    return f"{json.dumps(key)}: {json.dumps(value, ensure_ascii=False)}"
+
+
+Candidate.model_rebuild()
+MetricRow.model_rebuild()

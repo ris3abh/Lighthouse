@@ -9,10 +9,11 @@ import jsonschema
 import pytest
 import yaml
 
-from lighthouse_gc.core.scaffold import validate_workspace
-from lighthouse_gc.core.schemas import SCHEMA_DIR, build_schemas, schema_text
-from lighthouse_gc.core.workspace import Workspace
+from lighthouse_gc.core.schemas import SCHEMA_DIR
+from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.resources import demo_workspace_dir, profiles_dir
+from lighthouse_gc.scaffold import validate_workspace
+from lighthouse_gc.schemas import build_schemas, schema_text
 
 FILE_SCHEMAS = {
     "person.json": "person",
@@ -35,7 +36,7 @@ def load_schema(stem: str) -> dict:
 def test_committed_schemas_match_models(name):
     committed = (SCHEMA_DIR / name).read_text()
     assert committed == schema_text(build_schemas()[name]), (
-        f"{name} is stale — run `python -m lighthouse_gc.core.schemas`"
+        f"{name} is stale — run `python -m lighthouse_gc.schemas`"
     )
 
 
@@ -69,4 +70,18 @@ def test_profiles_match_schema(path):
 
 
 def test_demo_workspace_validates():
-    assert validate_workspace(Workspace(demo_workspace_dir())) == []
+    assert validate_workspace(Case(demo_workspace_dir())) == []
+
+
+@pytest.mark.parametrize(
+    ("name", "stem"),
+    [("observations", "observation"), ("entities", "entity"), ("claims", "claim"), ("edges", "edge"),
+     ("decisions", "decision")],
+)  # fmt: skip
+def test_demo_memory_lines_match_schema(name, stem):
+    path = demo_workspace_dir() / "memory" / f"{name}.jsonl"
+    lines = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    assert lines, f"demo memory/{name}.jsonl is empty"
+    schema = load_schema(f"memory-{stem}")
+    for line in lines:
+        jsonschema.validate(line, schema)

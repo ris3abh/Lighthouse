@@ -12,9 +12,9 @@ import httpx
 import pytest
 import respx
 
-from lighthouse_gc.core.scaffold import create_workspace
-from lighthouse_gc.core.workspace import Workspace
+from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.resources import demo_workspace_dir
+from lighthouse_gc.scaffold import create_workspace
 
 FIXTURES = Path(__file__).parent / "fixtures"
 TODAY = date(2026, 10, 6)
@@ -40,15 +40,15 @@ def fake_keyring(monkeypatch):
 
 
 @pytest.fixture
-def ws(tmp_path) -> Workspace:
+def ws(tmp_path) -> Case:
     return create_workspace(tmp_path / "case", name="Test Person", git=False)
 
 
 @pytest.fixture
-def demo_ws(tmp_path) -> Workspace:
+def demo_ws(tmp_path) -> Case:
     target = tmp_path / "demo"
     shutil.copytree(demo_workspace_dir(), target)
-    return Workspace(target)
+    return Case(target)
 
 
 @pytest.fixture
@@ -69,13 +69,15 @@ def _link_last(path: str, last: int) -> dict[str, str]:
     }
 
 
-def mock_github(router: respx.MockRouter, *, authed: bool = False) -> None:
+def mock_github(router: respx.MockRouter, *, authed: bool = False, include_private: bool = True) -> None:
     g = lambda path, **kw: router.route(method="GET", host=GH, path=path, **kw)  # noqa: E731
     g("/users/arivera-demo").respond(json=fixture_json("github", "user.json"))
     g("/users/arivera-demo/repos").respond(json=fixture_json("github", "user_repos.json"))
     if authed:
         g("/user").respond(json=fixture_json("github", "auth_user.json"))
-        g("/user/repos").respond(json=fixture_json("github", "auth_user_repos.json"))
+        g("/user/repos").respond(
+            json=fixture_json("github", "auth_user_repos.json" if include_private else "user_repos.json")
+        )
     else:
         g("/user").respond(401, json={"message": "Requires authentication"})
     for name in ("fastgrad", "tinyserve"):

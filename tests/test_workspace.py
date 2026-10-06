@@ -6,8 +6,8 @@ from datetime import date
 import pytest
 
 from lighthouse_gc.core.models import Candidate, MetricRow
-from lighthouse_gc.core.scaffold import create_workspace, validate_workspace
 from lighthouse_gc.core.workspace import NotFound, WorkspaceError
+from lighthouse_gc.scaffold import create_workspace, validate_workspace
 
 
 def cand(fp="github:x/y:original_contributions", **kw) -> Candidate:

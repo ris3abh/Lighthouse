@@ -12,7 +12,8 @@ from typing import Annotated
 import typer
 
 from lighthouse_gc import __version__
-from lighthouse_gc.core.workspace import Workspace, WorkspaceError
+from lighthouse_gc.core.workspace import WorkspaceError
+from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.sources.http import SourceError
 
 app = typer.Typer(
@@ -33,14 +34,14 @@ WorkspaceOpt = Annotated[
 ]
 
 
-def find_workspace(explicit: Path | None) -> Workspace:
+def find_workspace(explicit: Path | None) -> Case:
     if explicit:
-        return Workspace(explicit).require()
+        return Case(explicit).require()
     if os.environ.get("LIGHTHOUSE_GC_WORKSPACE"):
-        return Workspace(os.environ["LIGHTHOUSE_GC_WORKSPACE"]).require()
+        return Case(os.environ["LIGHTHOUSE_GC_WORKSPACE"]).require()
     here = Path.cwd().resolve()
     for candidate in (here, *here.parents):
-        ws = Workspace(candidate)
+        ws = Case(candidate)
         if ws.exists():
             return ws
     raise WorkspaceError("No workspace found. Run `lighthouse-gc init <dir>` or pass --workspace.")
@@ -70,7 +71,7 @@ def init(
     ] = True,
 ) -> None:
     """Create a private case workspace (its own Git repo)."""
-    from lighthouse_gc.core.scaffold import create_workspace
+    from lighthouse_gc.scaffold import create_workspace
 
     try:
         ws = create_workspace(path, name=name, profile=profile, git=git)
@@ -169,7 +170,7 @@ def up(
         if demo:
             tmp = Path(tempfile.mkdtemp(prefix="lighthouse-demo-"))
             shutil.copytree(demo_workspace_dir(), tmp / "demo-workspace")
-            ws = Workspace(tmp / "demo-workspace").require()
+            ws = Case(tmp / "demo-workspace").require()
             typer.echo(f"Demo workspace copied to {ws.root} (changes are thrown away).")
         else:
             ws = find_workspace(workspace)
@@ -191,7 +192,7 @@ def up(
 @app.command()
 def validate(workspace: WorkspaceOpt = None) -> None:
     """Check every workspace file against its schema and the evidence naming rules."""
-    from lighthouse_gc.core.scaffold import validate_workspace
+    from lighthouse_gc.scaffold import validate_workspace
 
     try:
         ws = find_workspace(workspace)

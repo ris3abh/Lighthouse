@@ -22,9 +22,10 @@ from pydantic import BaseModel
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from lighthouse_gc import __version__
-from lighthouse_gc.core import overview as views
 from lighthouse_gc.core.models import METRICS_COLUMNS
-from lighthouse_gc.core.workspace import NotFound, Workspace, WorkspaceError
+from lighthouse_gc.core.workspace import NotFound, WorkspaceError
+from lighthouse_gc.criteria import overview as views
+from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.resources import web_static_dir
 from lighthouse_gc.sources.http import SourceError
 
@@ -72,7 +73,7 @@ class TokenBody(BaseModel):
     token: str
 
 
-def create_app(ws: Workspace, allowed_hosts: list[str] | None = None) -> FastAPI:
+def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
     app = FastAPI(
         title="Lighthouse", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json"
     )
@@ -195,6 +196,7 @@ def create_app(ws: Workspace, allowed_hosts: list[str] | None = None) -> FastAPI
         summary: str = Form(""),
         signals: str = Form("", description="Comma-separated signal ids"),
         source_url: str = Form(""),
+        stage: str = Form("", description="Event stage, e.g. invited / completed; empty if not an activity"),
     ) -> dict[str, Any]:
         content = await file.read(MAX_UPLOAD_BYTES + 1)
         if len(content) > MAX_UPLOAD_BYTES:
@@ -209,6 +211,7 @@ def create_app(ws: Workspace, allowed_hosts: list[str] | None = None) -> FastAPI
             summary=summary,
             signals=[s.strip() for s in signals.split(",") if s.strip()],
             source_url=source_url or None,
+            stage=stage or None,
         )
         return exhibit.model_dump(mode="json")
 
@@ -225,6 +228,51 @@ def create_app(ws: Workspace, allowed_hosts: list[str] | None = None) -> FastAPI
             raise HTTPException(415, "no preview for this file type")
         media = "text/plain; charset=utf-8" if target.suffix.lower() in (".md", ".txt", ".csv") else None
         return FileResponse(target, media_type=media, headers={"Content-Security-Policy": "sandbox"})
+
+    # ------------------------------------------------------------------ memory (5b)
+
+    @app.get("/api/claims")
+    def get_claims(ids: str = "", subject: str = "", status: str = "") -> list[dict[str, Any]]:
+        """Claims with review status and provenance. ``ids`` is comma-separated."""
+        mem = ws.memory
+        statuses = mem.statuses()
+        observations = {o.id: o for o in mem.observations()}
+        wanted = {i for i in ids.split(",") if i}
+        out = []
+        for c in mem.claims():
+            if wanted and c.id not in wanted:
+                continue
+            if subject and c.subject != subject:
+                continue
+            if status and statuses[c.id] != status:
+                continue
+            obs = observations.get(c.observation_id)
+            out.append(
+                {
+                    **c.model_dump(mode="json"),
+                    "status": statuses[c.id],
+                    "source_url": obs.source_url if obs else None,
+                    "connector": obs.connector if obs else None,
+                    "captured_at": obs.captured_at.isoformat() if obs else None,
+                    "snapshot": obs.snapshot if obs else None,
+                }
+            )
+        return out
+
+    @app.get("/api/memory")
+    def memory_summary() -> dict[str, Any]:
+        mem = ws.memory
+        statuses = mem.statuses()
+        counts: dict[str, int] = {}
+        for s in statuses.values():
+            counts[s] = counts.get(s, 0) + 1
+        return {
+            "observations": len(mem.observations()),
+            "claims": len(statuses),
+            "by_status": counts,
+            "edges": len(mem.edges()),
+            "problems": mem.verify(),
+        }
 
     # ------------------------------------------------------------------ metrics
 

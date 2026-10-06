@@ -19,6 +19,12 @@
           "title": "Id",
           "type": "string"
         },
+        "in_progress_count": {
+          "default": 0,
+          "description": "Exhibits not counted yet because their stage isn't completed.",
+          "title": "In Progress Count",
+          "type": "integer"
+        },
         "label": {
           "title": "Label",
           "type": "string"

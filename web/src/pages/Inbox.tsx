@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, type Candidate, type Profile } from "../api";
 import { useRefresh } from "../App";
+import ClaimsPanel, { StageChip } from "../components/Claims";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { today, useLoad } from "../hooks";
 
@@ -22,7 +23,7 @@ export default function Inbox() {
     <div className="mx-auto max-w-5xl">
       <PageHeader
         title="Inbox"
-        subtitle="Connectors propose; you decide. Nothing becomes evidence until you accept it."
+        subtitle="Connectors propose; you decide. Nothing becomes evidence until you accept it — and accepting records your decision, it doesn't certify legal sufficiency."
       />
       {candidates.length === 0 ? (
         <Card>
@@ -114,6 +115,7 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{c.summary}</p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <Chip>{c.evidence_type}</Chip>
+            <StageChip stage={c.stage} />
             {c.signals.map((s) => (
               <Chip key={s} tone="emerald">
                 {s}
@@ -122,6 +124,7 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
             <span className="text-xs text-zinc-400">from {c.source}</span>
             {c.status === "snoozed" && <Chip tone="amber">snooze ended {c.snoozed_until}</Chip>}
           </div>
+          <ClaimsPanel ids={c.claim_ids} />
         </div>
         <Confidence value={c.confidence} />
       </div>

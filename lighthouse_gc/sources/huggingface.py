@@ -10,8 +10,8 @@ from collections.abc import Callable
 from datetime import date
 from typing import Any
 
-from lighthouse_gc.core.models import Candidate, ConnectorConfig, MetricRow, TrackedItem
-from lighthouse_gc.sources.base import Creds, paper_candidate
+from lighthouse_gc.core.models import Candidate, ConnectorConfig, Evidence, MetricRow, TrackedItem
+from lighthouse_gc.sources.base import Creds, artifact_id, field_claims, paper_candidate
 from lighthouse_gc.sources.http import HttpClient
 
 API = "https://huggingface.co"
@@ -148,18 +148,46 @@ class HuggingFaceSource:
         def row(metric: str, value: float, name: str = item.name) -> MetricRow:
             return MetricRow(date=today, source=self.kind, item=name, metric=metric, value=value)
 
+        evidence = self._info_evidence(item, kind, repo_id, info)
         rows = []
         if kind != "space":
             if info.get("downloads") is not None:
-                rows.append(row("downloads", info["downloads"]))  # rolling 30 days
+                rows.append(row("downloads", info["downloads"]).with_evidence(evidence))  # rolling 30 days
             if info.get("downloadsAllTime") is not None:
-                rows.append(row("downloads_all_time", info["downloadsAllTime"]))
-        rows.append(row("likes", info.get("likes", 0)))
+                rows.append(row("downloads_all_time", info["downloadsAllTime"]).with_evidence(evidence))
+        rows.append(row("likes", info.get("likes", 0)).with_evidence(evidence))
         for arxiv_id in self._arxiv_ids(info):
             paper = self._paper(arxiv_id, creds)
             if paper and paper.get("upvotes") is not None:
-                rows.append(row("upvotes", paper["upvotes"], f"papers/{arxiv_id}"))
+                rows.append(
+                    row("upvotes", paper["upvotes"], f"papers/{arxiv_id}").with_evidence(
+                        self._paper_evidence(arxiv_id, paper)
+                    )
+                )
         return rows
+
+    def _info_evidence(self, item: TrackedItem, kind: str, repo_id: str, info: dict[str, Any]) -> Evidence:
+        fields = {"likes": "likes"} if kind == "space" else {
+            "downloads_30d": "downloads", "downloads_all_time": "downloadsAllTime", "likes": "likes"}  # fmt: skip
+        return Evidence(
+            connector=self.kind,
+            source_url=f"{API}/api/{KINDS[kind][1]}/{repo_id}",
+            payload=info,
+            claims=field_claims(
+                artifact_id(self.kind, item.name), item.name, item.url, info, fields, self.today()
+            ),
+        )
+
+    def _paper_evidence(self, arxiv_id: str, paper: dict[str, Any]) -> Evidence:
+        return Evidence(
+            connector=self.kind,
+            source_url=f"{API}/api/papers/{arxiv_id}",
+            payload=paper,
+            claims=field_claims(
+                artifact_id("arxiv", arxiv_id), paper.get("title") or f"arXiv {arxiv_id}",
+                f"https://arxiv.org/abs/{arxiv_id}", paper, {"title": "title", "hf_upvotes": "upvotes"}, self.today(),
+            ),
+        )  # fmt: skip
 
     # -- candidates --------------------------------------------------------------------------
 
@@ -215,7 +243,7 @@ class HuggingFaceSource:
                     raw_url=item.url,
                     signals=signals,
                     facts=facts,
-                )
+                ).with_evidence(self._info_evidence(item, kind, repo_id, info))
             )
 
         for arxiv_id in self._arxiv_ids(info):
@@ -230,6 +258,7 @@ class HuggingFaceSource:
                     f"linked from Hugging Face {kind} {repo_id}",
                     title=f"Paper: {title}" if title else None,
                     facts=facts,
+                    evidence=self._paper_evidence(arxiv_id, paper) if paper else None,
                 )
             )
         return out

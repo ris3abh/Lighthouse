@@ -8,8 +8,8 @@
       "url": "https://github.com/arivera-demo",
       "auth": "none",
       "secret_ref": null,
-      "added_at": "2026-06-01T09:00:00Z",
-      "last_sync": "2026-10-05T09:00:00Z",
+      "added_at": "2026-10-06T18:34:00Z",
+      "last_sync": "2026-10-06T18:34:00Z",
       "last_error": null,
       "items": [
         {
@@ -20,7 +20,7 @@
           "title": "Gradient compression for data-parallel training",
           "private": false,
           "tracked": true,
-          "discovered_at": "2026-06-01T09:00:00Z"
+          "discovered_at": "2026-10-06T18:34:00Z"
         },
         {
           "id": "github:arivera-demo/tinyserve",
@@ -30,7 +30,7 @@
           "title": "Minimal batched inference server",
           "private": false,
           "tracked": true,
-          "discovered_at": "2026-06-01T09:00:00Z"
+          "discovered_at": "2026-10-06T18:34:00Z"
         }
       ]
     },
@@ -41,10 +41,20 @@
       "url": "https://huggingface.co/arivera-demo",
       "auth": "none",
       "secret_ref": null,
-      "added_at": "2026-06-01T09:05:00Z",
-      "last_sync": "2026-10-05T09:00:00Z",
+      "added_at": "2026-10-06T18:34:00Z",
+      "last_sync": "2026-10-06T18:34:00Z",
       "last_error": null,
       "items": [
+        {
+          "id": "huggingface:arivera-demo/scratch-model",
+          "kind": "model",
+          "name": "arivera-demo/scratch-model",
+          "url": "https://huggingface.co/arivera-demo/scratch-model",
+          "title": "",
+          "private": false,
+          "tracked": true,
+          "discovered_at": "2026-10-06T18:34:00Z"
+        },
         {
           "id": "huggingface:arivera-demo/tiny-vlm",
           "kind": "model",
@@ -53,7 +63,7 @@
           "title": "",
           "private": false,
           "tracked": true,
-          "discovered_at": "2026-06-01T09:05:00Z"
+          "discovered_at": "2026-10-06T18:34:00Z"
         },
         {
           "id": "huggingface:datasets/arivera-demo/robo-grasp-10k",
@@ -63,7 +73,17 @@
           "title": "",
           "private": false,
           "tracked": true,
-          "discovered_at": "2026-06-01T09:05:00Z"
+          "discovered_at": "2026-10-06T18:34:00Z"
+        },
+        {
+          "id": "huggingface:spaces/arivera-demo/tiny-vlm-demo",
+          "kind": "space",
+          "name": "spaces/arivera-demo/tiny-vlm-demo",
+          "url": "https://huggingface.co/spaces/arivera-demo/tiny-vlm-demo",
+          "title": "",
+          "private": false,
+          "tracked": true,
+          "discovered_at": "2026-10-06T18:34:00Z"
         }
       ]
     }

@@ -11,6 +11,7 @@ export interface CriterionScore {
   matched_signals: string[];
   missing_signals: string[];
   needed_exhibits: number;
+  in_progress_count: number;
   reason: string;
   overridden: boolean;
 }
@@ -90,7 +91,36 @@ export interface Candidate {
   created_at: string;
   status: "pending" | "snoozed" | "rejected";
   snoozed_until: string | null;
+  stage: string | null;
+  claim_ids: string[];
 }
+
+export type ReviewStatus = "proposed" | "corroborated" | "approved" | "rejected";
+
+export interface Claim {
+  id: string;
+  subject: string;
+  predicate: string;
+  value: string | number | boolean | null;
+  stage: string | null;
+  valid_from: string | null;
+  recorded_at: string;
+  excerpt: string;
+  excerpt_start: number;
+  excerpt_end: number;
+  confidence: "high" | "medium" | "low";
+  version: number;
+  status: ReviewStatus;
+  source_url: string | null;
+  connector: string | null;
+  captured_at: string | null;
+  snapshot: string | null;
+}
+
+/** Stages that count toward a criterion; everything else (invited, submitted, preprint…) waits. */
+export const COMPLETED_STAGES = new Set(["completed", "published", "granted"]);
+export const STAGES = ["invited", "accepted", "completed", "declined", "cancelled", "preprint", "submitted", "published", "retracted", "applied", "granted", "denied"];
+export const stageCounts = (stage: string | null) => stage === null || COMPLETED_STAGES.has(stage);
 
 export interface Exhibit {
   id: string;
@@ -102,6 +132,8 @@ export interface Exhibit {
   file: string;
   source_url: string | null;
   signals: string[];
+  stage: string | null;
+  claim_ids: string[];
   accepted_at: string;
 }
 
@@ -226,6 +258,8 @@ export const api = {
     request<Exhibit>("POST", `/inbox/${enc(id)}/accept`, edits),
   reject: (id: string) => request<Candidate>("POST", `/inbox/${enc(id)}/reject`),
   snooze: (id: string, until?: string) => request<Candidate>("POST", `/inbox/${enc(id)}/snooze`, { until }),
+
+  claims: (ids: string[]) => request<Claim[]>("GET", `/claims?ids=${ids.map(enc).join(",")}`),
 
   evidence: () => request<EvidenceView>("GET", "/exhibits"),
   upload: (form: FormData) => request<Exhibit>("POST", "/exhibits/upload", form),

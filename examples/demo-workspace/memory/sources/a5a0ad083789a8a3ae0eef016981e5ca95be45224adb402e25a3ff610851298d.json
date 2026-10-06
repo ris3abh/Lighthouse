@@ -1,0 +1,26 @@
+{
+  "archived": false,
+  "created_at": "2024-02-11T18:20:00Z",
+  "default_branch": "main",
+  "description": "Minimal batched inference server",
+  "fork": false,
+  "forks_count": 3,
+  "full_name": "arivera-demo/tinyserve",
+  "html_url": "https://github.com/arivera-demo/tinyserve",
+  "id": 44113338,
+  "language": "Rust",
+  "name": "tinyserve",
+  "open_issues_count": 17,
+  "owner": {
+    "html_url": "https://github.com/arivera-demo",
+    "id": 90000001,
+    "login": "arivera-demo",
+    "type": "User"
+  },
+  "private": false,
+  "stargazers_count": 46,
+  "subscribers_count": 4,
+  "topics": [],
+  "updated_at": "2026-10-01T12:00:00Z",
+  "watchers_count": 46
+}

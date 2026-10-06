@@ -93,7 +93,8 @@
       "$ref": "#/$defs/PrivacyConfig"
     },
     "profile": {
-      "default": "o1a",
+      "default": "",
+      "description": "Active profile id; the domain layer supplies the default.",
       "title": "Profile",
       "type": "string"
     },

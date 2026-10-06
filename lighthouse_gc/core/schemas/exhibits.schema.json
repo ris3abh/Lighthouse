@@ -20,6 +20,14 @@
           "default": null,
           "title": "Candidate Id"
         },
+        "claim_ids": {
+          "description": "Approved memory claims this exhibit cites.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Claim Ids",
+          "type": "array"
+        },
         "criterion": {
           "title": "Criterion",
           "type": "string"
@@ -78,6 +86,33 @@
           ],
           "default": null,
           "title": "Source Url"
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "enum": [
+                "invited",
+                "accepted",
+                "completed",
+                "declined",
+                "cancelled",
+                "preprint",
+                "submitted",
+                "published",
+                "retracted",
+                "applied",
+                "granted",
+                "denied"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Only completed stages (or None) count toward a criterion.",
+          "title": "Stage"
         },
         "summary": {
           "default": "",

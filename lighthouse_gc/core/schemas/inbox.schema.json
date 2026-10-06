@@ -3,6 +3,14 @@
     "Candidate": {
       "additionalProperties": false,
       "properties": {
+        "claim_ids": {
+          "description": "Memory claims this candidate rests on.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Claim Ids",
+          "type": "array"
+        },
         "confidence": {
           "default": 0.5,
           "maximum": 1.0,
@@ -99,6 +107,33 @@
           "description": "Source record id that produced this candidate (or 'manual').",
           "title": "Source",
           "type": "string"
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "enum": [
+                "invited",
+                "accepted",
+                "completed",
+                "declined",
+                "cancelled",
+                "preprint",
+                "submitted",
+                "published",
+                "retracted",
+                "applied",
+                "granted",
+                "denied"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Event stage the evidence shows; None if not an activity.",
+          "title": "Stage"
         },
         "status": {
           "default": "pending",

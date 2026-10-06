@@ -4,7 +4,7 @@ import pytest
 from conftest import mock_github
 from fastapi.testclient import TestClient
 
-from lighthouse_gc.core.dashboard import render
+from lighthouse_gc.criteria.dashboard import render
 from lighthouse_gc.server.app import create_app
 
 W = {"X-Lighthouse": "1"}
@@ -20,7 +20,7 @@ def test_overview(client):
     assert data["person"]["name"] == "Alex Rivera"
     board = data["scoreboard"]
     assert board["profile"] == "o1a" and board["banked"] == 2 and board["threshold"] == 3
-    assert data["inbox_pending"] == 4
+    assert data["inbox_pending"] == 5
     assert {p["id"] for p in data["profiles"]} >= {"o1a", "eb1a"}
     assert data["sparklines"] and data["sparklines"][0]["points"]
     assert len(data["deadlines"]) <= 3
@@ -46,13 +46,13 @@ def test_foreign_host_rejected(demo_ws):
 
 def test_inbox_accept_flow(client, demo_ws):
     pending = client.get("/api/inbox").json()
-    assert len(pending) == 4 and pending[0]["confidence"] >= pending[-1]["confidence"]
+    assert len(pending) == 5 and pending[0]["confidence"] >= pending[-1]["confidence"]
     target = next(c for c in pending if c["evidence_type"] == "ml_model")
     r = client.post(f"/api/inbox/{target['id']}/accept", json={"date": "2026-10-06"}, headers=W)
     assert r.status_code == 200, r.text
     exhibit = r.json()
     assert (demo_ws.root / exhibit["file"]).exists()
-    assert len(client.get("/api/inbox").json()) == 3
+    assert len(client.get("/api/inbox").json()) == 4
     row = next(
         c for c in client.get("/api/scoreboard").json()["criteria"] if c["id"] == "original_contributions"
     )
@@ -68,14 +68,15 @@ def test_inbox_edit_reject_snooze(client):
     assert (
         client.post(f"/api/inbox/{ids[2]}/snooze", json={"until": "2099-01-01"}, headers=W).status_code == 200
     )
-    assert len(client.get("/api/inbox").json()) == 2
+    assert len(client.get("/api/inbox").json()) == 3
     assert client.post("/api/inbox/cand_missing/reject", headers=W).status_code == 404
 
 
 def test_evidence_listing_and_upload(client, demo_ws):
     data = client.get("/api/exhibits").json()
     judging = next(c for c in data["criteria"] if c["id"] == "judging")
-    assert judging["status"] == "banked" and len(judging["exhibits"]) == 2
+    assert judging["status"] == "banked" and len(judging["exhibits"]) == 3
+    assert judging["exhibit_count"] == 2 and judging["in_progress_count"] == 1  # the MLH invitation
     assert "judge_invite" in judging["evidence_types"]
     assert data["naming_issues"] == []
 
@@ -155,3 +156,36 @@ def test_demo_renders_with_no_network(demo_ws, http_mock):
 
 def test_api_responses_are_not_cached(client):
     assert client.get("/api/overview").headers["cache-control"] == "no-store"
+
+
+def test_claims_api_shows_provenance(client):
+    pending = client.get("/api/inbox").json()
+    model = next(c for c in pending if c["evidence_type"] == "ml_model")
+    claims = client.get(f"/api/claims?ids={','.join(model['claim_ids'])}").json()
+    assert claims and {c["status"] for c in claims} == {"proposed"}
+    downloads = next(c for c in claims if c["predicate"] == "downloads_all_time")
+    assert downloads["excerpt"] == '"downloadsAllTime": 118000'
+    assert downloads["source_url"].startswith("https://huggingface.co/api/models/")
+    client.post(f"/api/inbox/{model['id']}/accept", json={}, headers=W)
+    after = client.get(f"/api/claims?ids={','.join(model['claim_ids'])}").json()
+    assert {c["status"] for c in after} == {"approved"}
+    summary = client.get("/api/memory").json()
+    assert summary["problems"] == [] and summary["by_status"]["approved"] >= 1
+
+
+def test_upload_with_stage(client):
+    r = client.post(
+        "/api/exhibits/upload",
+        files={"file": ("i.pdf", b"%PDF", "application/pdf")},
+        data={
+            "criterion": "judging",
+            "evidence_type": "judge_invite",
+            "title": "Invite",
+            "date": "2026-10-01",
+            "stage": "invited",
+        },
+        headers=W,
+    )
+    assert r.json()["stage"] == "invited"
+    judging = next(c for c in client.get("/api/scoreboard").json()["criteria"] if c["id"] == "judging")
+    assert judging["in_progress_count"] == 2  # the demo's MLH invitation + this one
