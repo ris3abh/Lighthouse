@@ -302,7 +302,7 @@ export interface AgentStatus {
   effort: string;
   web_search: boolean;
   budget: { per_run_tokens: number; per_run_usd: number | null; monthly_tokens: number; monthly_usd: number | null };
-  month: { tokens: number; usd: number };
+  month: { tokens: number; usd: number; cache_read: number; cache_write: number; uncached_input: number; cache_hit_rate: number | null };
 }
 
 export interface TimelineItem {

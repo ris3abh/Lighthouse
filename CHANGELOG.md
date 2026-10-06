@@ -87,6 +87,8 @@ All notable changes to this project are documented here. The format follows
   trail, tokens (in / out / cache read) and cost. `GET /api/changes?actor=` exposes the audit trail.
 - Model per run type: `agent.models` in `lighthouse.yaml` (`chat` and `task` default to `claude-opus-5-5`,
   `mission` to `claude-sonnet-5-5`). The old single `agent.model` key still loads.
+- Prompt caching verified for the system prompt and tool definitions (a test keeps that prefix byte-stable).
+  The Agent page shows cached / written / uncached input tokens per run and the month's cache hit rate.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.

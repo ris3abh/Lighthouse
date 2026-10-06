@@ -96,14 +96,19 @@ class AgentRunner:
 
     # ------------------------------------------------------------------ budgets
 
-    def month_usage(self, today: date | None = None) -> dict[str, float]:
+    def month_usage(self, today: date | None = None) -> dict[str, float | None]:
         today = today or date.today()
-        tokens, usd = 0, 0.0
+        tokens, usd, cached, written, uncached = 0, 0.0, 0, 0, 0
         for run in self.runs(limit=100_000):
             if run.started_at.year == today.year and run.started_at.month == today.month:
                 tokens += run.usage.counted
                 usd += run.cost_usd or 0.0
-        return {"tokens": tokens, "usd": round(usd, 4)}
+                cached += run.usage.cache_read_input_tokens
+                written += run.usage.cache_creation_input_tokens
+                uncached += run.usage.input_tokens
+        total_in = cached + written + uncached
+        return {"tokens": tokens, "usd": round(usd, 4), "cache_read": cached, "cache_write": written,
+                "uncached_input": uncached, "cache_hit_rate": round(cached / total_in, 3) if total_in else None}  # fmt: skip
 
     def status(self) -> dict[str, Any]:
         cfg = self.ws.config()
@@ -131,12 +136,11 @@ class AgentRunner:
         if not ok:
             raise EngineUnavailable(why)
         b, month = cfg.agent.budget, self.month_usage()
-        if month["tokens"] >= b.monthly_tokens:
-            raise BudgetExceeded(
-                f"monthly token budget reached ({month['tokens']:,} of {b.monthly_tokens:,})"
-            )
-        if b.monthly_usd is not None and month["usd"] >= b.monthly_usd:
-            raise BudgetExceeded(f"monthly budget reached (${month['usd']:.2f} of ${b.monthly_usd:.2f})")
+        used_tokens, used_usd = int(month["tokens"] or 0), float(month["usd"] or 0.0)
+        if used_tokens >= b.monthly_tokens:
+            raise BudgetExceeded(f"monthly token budget reached ({used_tokens:,} of {b.monthly_tokens:,})")
+        if b.monthly_usd is not None and used_usd >= b.monthly_usd:
+            raise BudgetExceeded(f"monthly budget reached (${used_usd:.2f} of ${b.monthly_usd:.2f})")
 
         conv = None
         if kind == "chat":
@@ -153,9 +157,7 @@ class AgentRunner:
         self.save(run)
 
         caps = [
-            c
-            for c in (b.per_run_usd, (b.monthly_usd - month["usd"]) if b.monthly_usd else None)
-            if c is not None
+            c for c in (b.per_run_usd, (b.monthly_usd - used_usd) if b.monthly_usd else None) if c is not None
         ]
         request = EngineRequest(
             system_prompt=SYSTEM_PROMPT,
@@ -165,11 +167,11 @@ class AgentRunner:
             web_search=cfg.agent.web_search,
             max_turns=cfg.agent.max_turns,
             max_budget_usd=min(caps) if caps else None,
-            task_budget_tokens=max(20_000, min(b.per_run_tokens, b.monthly_tokens - int(month["tokens"]))),
+            task_budget_tokens=max(20_000, min(b.per_run_tokens, b.monthly_tokens - used_tokens)),
         )
         live = _Live()
         self._live[run.id] = live
-        live.task = asyncio.create_task(self._execute(run, request, live, int(month["tokens"])))
+        live.task = asyncio.create_task(self._execute(run, request, live, used_tokens))
         return run
 
     async def _execute(self, run: AgentRun, request: EngineRequest, live: _Live, month_tokens: int) -> None:

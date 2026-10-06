@@ -94,5 +94,12 @@ export function countTokens(u: { input_tokens?: number; output_tokens?: number; 
   return (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
 }
 
+/** Share of input tokens served from the prompt cache (system prompt + tool definitions + earlier turns). */
+export function cacheRate(u: { input_tokens: number; cache_creation_input_tokens: number; cache_read_input_tokens: number }) {
+  const total = u.input_tokens + u.cache_creation_input_tokens + u.cache_read_input_tokens;
+  return total ? u.cache_read_input_tokens / total : null;
+}
+export const fmtPct = (r: number | null) => (r === null ? "—" : `${Math.round(r * 100)}%`);
+
 export const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n));
 export const fmtUsd = (n: number | null | undefined) => (n === null || n === undefined ? "—" : n < 0.01 ? "<$0.01" : `$${n.toFixed(2)}`);

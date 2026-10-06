@@ -87,6 +87,15 @@ with junk the user declines. It cannot change evidence, trackers or files.
   model an advisory token target so it paces itself.
 - Cost per run comes from the SDK's `total_cost_usd`.
 
+### 7. Prompt caching (verified 2026-10-06)
+
+The system prompt and tool definitions form the cached prefix, so they stay byte-stable: no dates, ids or
+page names (those go in the user turn), and tools are built in a fixed order. `tests/test_agent.py` fails if
+volatile content enters the prefix. The Claude Code harness applies the cache breakpoints. Measured on two
+consecutive mission runs (`claude-sonnet-5-5`, demo workspace): run 1 wrote 4,850 and read 3,771 cached
+tokens; run 2 read 6,759 and wrote 2,442, with only 26 uncached input tokens in each, and cost about 40% less.
+The Agent page shows cached / written / uncached input per run and the month's cache hit rate.
+
 ## Consequences
 
 - Chat history is replayed into each turn instead of resumed from a server-side session: more input tokens

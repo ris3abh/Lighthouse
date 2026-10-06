@@ -5,7 +5,7 @@ import Markdown from "../components/Markdown";
 import ToolCall from "../components/ToolCall";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
-import { countTokens, fmtTokens, fmtUsd, itemsFromTimeline, useRunStream } from "../runStream";
+import { cacheRate, countTokens, fmtPct, fmtTokens, fmtUsd, itemsFromTimeline, useRunStream } from "../runStream";
 
 const KIND_LABEL = { chat: "chat", manual: "manual", scheduled: "scheduled" } as const;
 const STATUS_TONE: Record<string, string> = {
@@ -107,7 +107,11 @@ export default function Agent({ focus }: { focus: string | null }) {
               style={{ width: `${Math.min(100, (100 * status.month.tokens) / b.monthly_tokens)}%` }}
             />
           </div>
-          <p className="mt-1.5 text-[11px] text-zinc-400">
+          <p className="mt-1.5 text-[11px] text-zinc-500">
+            Prompt cache: {fmtPct(status.month.cache_hit_rate)} of input tokens served from cache ({fmtTokens(status.month.cache_read)} cached,{" "}
+            {fmtTokens(status.month.cache_write)} written, {fmtTokens(status.month.uncached_input)} uncached)
+          </p>
+          <p className="mt-1 text-[11px] text-zinc-400">
             Per run: {fmtTokens(b.per_run_tokens)} tokens{b.per_run_usd ? `, $${b.per_run_usd}` : ""} · set in lighthouse.yaml
           </p>
         </Card>
@@ -145,7 +149,8 @@ export default function Agent({ focus }: { focus: string | null }) {
                     <p className="mt-0.5 truncate text-sm">{r.prompt}</p>
                     <p className="text-[11px] text-zinc-500 tabular-nums">
                       {r.tool_calls ?? 0} tool call{r.tool_calls === 1 ? "" : "s"} · {r.sources.length} source{r.sources.length === 1 ? "" : "s"} ·{" "}
-                      {r.proposals.length} proposal{r.proposals.length === 1 ? "" : "s"} · {fmtTokens(r.counted_tokens)} · {fmtUsd(r.cost_usd)}
+                      {r.proposals.length} proposal{r.proposals.length === 1 ? "" : "s"} · {fmtTokens(r.counted_tokens)} · {fmtPct(cacheRate(r.usage))} cached ·{" "}
+                      {fmtUsd(r.cost_usd)}
                     </p>
                   </button>
                 </li>
@@ -202,7 +207,7 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
       >
         <div className="px-4 py-3">
           <p className="text-sm font-medium">{run.prompt}</p>
-          <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4">
+          <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-5">
             <div>
               <dt className="text-zinc-500">Cost</dt>
               <dd className="font-medium tabular-nums">{fmtUsd(run.cost_usd)}</dd>
@@ -212,10 +217,16 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
               <dd className="font-medium tabular-nums">{fmtTokens(tokens)}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">In / out / cache read</dt>
-              <dd className="tabular-nums">
-                {fmtTokens(run.usage.input_tokens)} / {fmtTokens(run.usage.output_tokens)} / {fmtTokens(run.usage.cache_read_input_tokens)}
+              <dt className="text-zinc-500">Input: cached / written / uncached</dt>
+              <dd className="tabular-nums" title="Cached = read from the prompt cache (system prompt, tools, earlier turns); written = added to the cache this run; uncached = billed at the full rate">
+                {fmtTokens(run.usage.cache_read_input_tokens)} / {fmtTokens(run.usage.cache_creation_input_tokens)} /{" "}
+                {fmtTokens(run.usage.input_tokens)}{" "}
+                <span className="text-zinc-400">({fmtPct(cacheRate(run.usage))} cached)</span>
               </dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500">Output</dt>
+              <dd className="tabular-nums">{fmtTokens(run.usage.output_tokens)}</dd>
             </div>
             <div>
               <dt className="text-zinc-500">Duration</dt>

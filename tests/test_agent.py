@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 import socket
 
 import anyio
@@ -413,3 +415,44 @@ def test_legacy_single_model_config_still_loads():
         "claude-opus-5",
         "claude-sonnet-5-5",
     )
+
+
+# ----------------------------------------------------------------------------- prompt caching
+
+
+def _tool_defs(ws):
+    ctx = RunContext(ws, _run(ws))
+    return json.dumps([(t.name, t.description, t.input_schema) for t in build_tools(ctx)], sort_keys=True)
+
+
+def test_cacheable_prefix_is_byte_stable(demo_ws, tmp_path):
+    """System prompt + tool definitions are the cached prefix: identical across runs, no volatile content."""
+    from lighthouse_gc.agent.prompt import SYSTEM_PROMPT
+
+    assert not re.search(r"\d{4}-\d{2}-\d{2}|\b(run|conv|cand|obs|clm)_[0-9a-f]{6,}", SYSTEM_PROMPT)
+    assert _tool_defs(demo_ws) == _tool_defs(demo_ws)  # deterministic order and content
+    runner, engine = _runner(demo_ws, [("text", "ok")])
+
+    async def two():
+        for kind in ("chat", "manual"):
+            await runner.wait((await runner.start(kind, f"hello {kind}", page="inbox")).id)
+
+    anyio.run(two)
+    first, second = engine.requests
+    assert first.system_prompt == second.system_prompt == SYSTEM_PROMPT
+    # Per-run context (date, page, history) goes in the user turn, after the cached prefix.
+    assert "Today is" in first.prompt and "Today is" not in first.system_prompt
+
+
+def test_cache_usage_is_reported(demo_ws):
+    runner, _ = _runner(demo_ws, [("usage", {"input_tokens": 40, "output_tokens": 200,
+                                             "cache_creation_input_tokens": 0, "cache_read_input_tokens": 9000})])  # fmt: skip
+
+    async def go():
+        return await runner.wait((await runner.start("manual", "go")).id)
+
+    run = anyio.run(go)
+    assert run.usage.cache_read_input_tokens == 9000 and run.usage.counted == 240
+    month = runner.month_usage()
+    assert month["cache_read"] == 9000 and month["uncached_input"] == 40
+    assert month["cache_hit_rate"] == pytest.approx(9000 / 9040, rel=1e-3)
