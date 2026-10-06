@@ -87,7 +87,13 @@ def init(
 
 @app.command("import")
 def import_(
-    url: Annotated[str, typer.Argument(help="GitHub or Hugging Face URL / handle (github:octo, hf:octo)")],
+    url: Annotated[
+        str,
+        typer.Argument(
+            help="GitHub or Hugging Face URL / handle (github:octo, hf:octo), or a Claude / ChatGPT export "
+            "(conversations.json or the export .zip)"
+        ),
+    ],
     private: Annotated[
         bool, typer.Option("--private", help="Prompt for a read-only token (stored in the keychain)")
     ] = False,
@@ -101,6 +107,9 @@ def import_(
     from lighthouse_gc import sources
     from lighthouse_gc.jobs.sync import import_source
 
+    path = Path(url).expanduser()
+    if path.suffix.lower() in (".json", ".zip") and path.is_file():
+        return _import_chats(path, workspace)
     try:
         ws = find_workspace(workspace)
         kind = sources.detect(url)
@@ -124,6 +133,20 @@ def import_(
     typer.secho(report.line(), fg=typer.colors.GREEN if not report.errors else typer.colors.YELLOW)
     if report.candidates_added:
         typer.echo("Review new candidates in the Inbox: lighthouse-gc up")
+
+
+def _import_chats(path: Path, workspace: Path | None) -> None:
+    from lighthouse_gc.jobs.chats import import_chats
+    from lighthouse_gc.sources.chat_export import ExportError, read_export
+
+    try:
+        ws = find_workspace(workspace)
+        report = import_chats(ws, read_export(path), path.name)
+    except (WorkspaceError, ExportError) as exc:
+        raise _fail(str(exc)) from exc
+    typer.secho(report.line(), fg=typer.colors.GREEN)
+    if report.candidates_added:
+        typer.echo("Review them in the Inbox: lighthouse-gc up")
 
 
 @app.command()

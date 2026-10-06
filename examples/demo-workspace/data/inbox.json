@@ -2,7 +2,8 @@
   "schema_version": 1,
   "candidates": [
     {
-      "id": "cand_05c020884b2b",
+      "id": "cand_596fcfe27763",
+      "kind": "evidence",
       "fingerprint": "paper:arxiv:2502.01234:scholarly_articles",
       "source": "github:arivera-demo",
       "item_id": "github:arivera-demo/fastgrad",
@@ -14,16 +15,20 @@
       "raw_url": "https://arxiv.org/abs/2502.01234",
       "signals": [],
       "facts": {},
-      "created_at": "2026-10-06T18:34:00Z",
+      "created_at": "2026-10-06T19:18:02Z",
       "stage": "preprint",
       "claim_ids": [
-        "clm_8ed3c3842495"
+        "clm_571111eb9b0e"
       ],
+      "attachment": null,
+      "source_tier": null,
+      "proposal": {},
       "status": "pending",
       "snoozed_until": null
     },
     {
-      "id": "cand_4ebe2b425f25",
+      "id": "cand_2855319abfad",
+      "kind": "evidence",
       "fingerprint": "github:arivera-demo/tinyserve:original_contributions",
       "source": "github:arivera-demo",
       "item_id": "github:arivera-demo/tinyserve",
@@ -42,20 +47,24 @@
         "topics": "",
         "created": "2024-02-11"
       },
-      "created_at": "2026-10-06T18:34:00Z",
+      "created_at": "2026-10-06T19:18:02Z",
       "stage": null,
       "claim_ids": [
-        "clm_f9c14c55b708",
-        "clm_10b1663ead69",
-        "clm_c9d9e30930bb",
-        "clm_1a3daad4326e",
-        "clm_f0904b5f0019"
+        "clm_788cc093f528",
+        "clm_26802660007d",
+        "clm_4140c74f7fed",
+        "clm_60a03fb6ace7",
+        "clm_09c18ae5fc01"
       ],
+      "attachment": null,
+      "source_tier": null,
+      "proposal": {},
       "status": "pending",
       "snoozed_until": null
     },
     {
-      "id": "cand_9141ad39c334",
+      "id": "cand_d1aaffc109b9",
+      "kind": "evidence",
       "fingerprint": "huggingface:arivera-demo/tiny-vlm:original_contributions",
       "source": "huggingface:arivera-demo",
       "item_id": "huggingface:arivera-demo/tiny-vlm",
@@ -75,18 +84,22 @@
         "downloads_30d": 15400,
         "downloads_all_time": 118000
       },
-      "created_at": "2026-10-06T18:34:00Z",
+      "created_at": "2026-10-06T19:18:02Z",
       "stage": null,
       "claim_ids": [
-        "clm_23e277fc60f3",
-        "clm_9d2f4883ad48",
-        "clm_76a6eb8ff880"
+        "clm_c4b3f60e11b2",
+        "clm_1386f60190f0",
+        "clm_661b51e61c10"
       ],
+      "attachment": null,
+      "source_tier": null,
+      "proposal": {},
       "status": "pending",
       "snoozed_until": null
     },
     {
-      "id": "cand_665722e02d0d",
+      "id": "cand_09405b34b647",
+      "kind": "evidence",
       "fingerprint": "paper:arxiv:2509.04321:scholarly_articles",
       "source": "huggingface:arivera-demo",
       "item_id": "huggingface:arivera-demo/tiny-vlm",
@@ -100,17 +113,21 @@
       "facts": {
         "hf_upvotes": 42
       },
-      "created_at": "2026-10-06T18:34:00Z",
+      "created_at": "2026-10-06T19:18:02Z",
       "stage": "preprint",
       "claim_ids": [
-        "clm_1302b9dbd864",
-        "clm_93812034999b"
+        "clm_c5cf4e86f46a",
+        "clm_2a2806a3fce8"
       ],
+      "attachment": null,
+      "source_tier": null,
+      "proposal": {},
       "status": "pending",
       "snoozed_until": null
     },
     {
-      "id": "cand_73c70fe2766a",
+      "id": "cand_e77a74b92c30",
+      "kind": "evidence",
       "fingerprint": "huggingface:datasets/arivera-demo/robo-grasp-10k:original_contributions",
       "source": "huggingface:arivera-demo",
       "item_id": "huggingface:datasets/arivera-demo/robo-grasp-10k",
@@ -128,18 +145,22 @@
         "downloads_30d": 2300,
         "downloads_all_time": 14800
       },
-      "created_at": "2026-10-06T18:34:00Z",
+      "created_at": "2026-10-06T19:18:02Z",
       "stage": null,
       "claim_ids": [
-        "clm_6b80a584dedb",
-        "clm_ff1972ec1ecd",
-        "clm_6b35f52740a5"
+        "clm_a2745da54fc0",
+        "clm_8ac7bcff434c",
+        "clm_654b6cde7ba8"
       ],
+      "attachment": null,
+      "source_tier": null,
+      "proposal": {},
       "status": "pending",
       "snoozed_until": null
     },
     {
-      "id": "cand_46d7d495e5fd",
+      "id": "cand_95e057c3e0a6",
+      "kind": "evidence",
       "fingerprint": "huggingface:spaces/arivera-demo/tiny-vlm-demo:original_contributions",
       "source": "huggingface:arivera-demo",
       "item_id": "huggingface:spaces/arivera-demo/tiny-vlm-demo",
@@ -153,12 +174,225 @@
       "facts": {
         "likes": 12
       },
-      "created_at": "2026-10-06T18:34:00Z",
+      "created_at": "2026-10-06T19:18:02Z",
       "stage": null,
       "claim_ids": [
-        "clm_9b0492e516bc"
+        "clm_0f22f8f6723a"
       ],
+      "attachment": null,
+      "source_tier": null,
+      "proposal": {},
       "status": "rejected",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_caaeddb56fac",
+      "kind": "pipeline",
+      "fingerprint": "chat:pipeline:ieee-senior-member-program",
+      "source": "chat:claude",
+      "item_id": null,
+      "evidence_type": "self_report",
+      "proposed_criterion": "",
+      "title": "Applied: IEEE Senior Member program",
+      "summary": "From your Claude chat \"O-1 planning\" (2026-09-10): \"I applied to the IEEE Senior Member program last week.\"",
+      "confidence": 0.35,
+      "raw_url": null,
+      "signals": [],
+      "facts": {},
+      "created_at": "2026-10-06T19:18:02Z",
+      "stage": "applied",
+      "claim_ids": [
+        "clm_b55306db1a1e"
+      ],
+      "attachment": null,
+      "source_tier": "self_reported",
+      "proposal": {
+        "title": "Applied: IEEE Senior Member program",
+        "stage": "applied",
+        "criterion": null,
+        "notes": "From your own chat history (self-reported). Not evidence."
+      },
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_144018cf259e",
+      "kind": "deadline",
+      "fingerprint": "chat:deadline:the-neurips-workshop-reviews-are-due-oct:2026-10-14",
+      "source": "chat:claude",
+      "item_id": null,
+      "evidence_type": "self_report",
+      "proposed_criterion": "",
+      "title": "The NeurIPS workshop reviews are due Oct 14, 2026",
+      "summary": "From your Claude chat \"O-1 planning\" (2026-09-10): \"The NeurIPS workshop reviews are due Oct 14, 2026.\"",
+      "confidence": 0.35,
+      "raw_url": null,
+      "signals": [],
+      "facts": {},
+      "created_at": "2026-10-06T19:18:02Z",
+      "stage": null,
+      "claim_ids": [
+        "clm_3abda19cfa7e"
+      ],
+      "attachment": null,
+      "source_tier": "self_reported",
+      "proposal": {
+        "title": "The NeurIPS workshop reviews are due Oct 14, 2026",
+        "due": "2026-10-14",
+        "kind": "submission",
+        "human_only": true
+      },
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_6c01af2ae73b",
+      "kind": "letter",
+      "fingerprint": "chat:letter:dr-priya-natarajan",
+      "source": "chat:claude",
+      "item_id": null,
+      "evidence_type": "self_report",
+      "proposed_criterion": "",
+      "title": "Letter writer: Dr. Priya Natarajan (asked)",
+      "summary": "From your Claude chat \"O-1 planning\" (2026-09-10): \"I asked Dr. Priya Natarajan for a recommendation letter.\"",
+      "confidence": 0.35,
+      "raw_url": null,
+      "signals": [],
+      "facts": {},
+      "created_at": "2026-10-06T19:18:02Z",
+      "stage": null,
+      "claim_ids": [
+        "clm_00b5b87c6ec5"
+      ],
+      "attachment": null,
+      "source_tier": "self_reported",
+      "proposal": {
+        "name": "Dr. Priya Natarajan",
+        "relationship": "independent",
+        "status": "asked",
+        "last_contact": "2026-09-10"
+      },
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_c7580e8bfaa6",
+      "kind": "pipeline",
+      "fingerprint": "chat:pipeline:mlh-fall-hackathon",
+      "source": "chat:claude",
+      "item_id": null,
+      "evidence_type": "self_report",
+      "proposed_criterion": "",
+      "title": "Invited: MLH Fall Hackathon",
+      "summary": "From your Claude chat \"O-1 planning\" (2026-09-10): \"I was invited to judge the MLH Fall Hackathon.\"",
+      "confidence": 0.35,
+      "raw_url": null,
+      "signals": [],
+      "facts": {},
+      "created_at": "2026-10-06T19:18:02Z",
+      "stage": "invited",
+      "claim_ids": [
+        "clm_e60b29118fad"
+      ],
+      "attachment": null,
+      "source_tier": "self_reported",
+      "proposal": {
+        "title": "Invited: MLH Fall Hackathon",
+        "stage": "waiting",
+        "criterion": "judging",
+        "notes": "From your own chat history (self-reported). Not evidence."
+      },
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_933bad0eedca",
+      "kind": "letter",
+      "fingerprint": "chat:letter:marcus-webb",
+      "source": "chat:claude",
+      "item_id": null,
+      "evidence_type": "self_report",
+      "proposed_criterion": "",
+      "title": "Letter writer: Marcus Webb (drafting)",
+      "summary": "From your Claude chat \"Letters update\" (2026-09-28): \"Marcus Webb agreed to write my letter, he's my manager at Fernhill.\"",
+      "confidence": 0.35,
+      "raw_url": null,
+      "signals": [],
+      "facts": {},
+      "created_at": "2026-10-06T19:18:02Z",
+      "stage": null,
+      "claim_ids": [
+        "clm_d207cd6f1bd1"
+      ],
+      "attachment": null,
+      "source_tier": "self_reported",
+      "proposal": {
+        "name": "Marcus Webb",
+        "relationship": "employer",
+        "status": "drafting",
+        "last_contact": "2026-09-28"
+      },
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_df706f75fca3",
+      "kind": "pipeline",
+      "fingerprint": "chat:pipeline:hackmit-2026",
+      "source": "chat:claude",
+      "item_id": null,
+      "evidence_type": "self_report",
+      "proposed_criterion": "",
+      "title": "Done: HackMIT 2026",
+      "summary": "From your Claude chat \"Letters update\" (2026-09-28): \"I judged HackMIT 2026 in March and it went great!\"",
+      "confidence": 0.35,
+      "raw_url": null,
+      "signals": [],
+      "facts": {},
+      "created_at": "2026-10-06T19:18:02Z",
+      "stage": "completed",
+      "claim_ids": [
+        "clm_4ab4efbcefcb"
+      ],
+      "attachment": null,
+      "source_tier": "self_reported",
+      "proposal": {
+        "title": "Done: HackMIT 2026",
+        "stage": "done",
+        "criterion": "judging",
+        "notes": "From your own chat history (self-reported). Not evidence."
+      },
+      "status": "pending",
+      "snoozed_until": null
+    },
+    {
+      "id": "cand_1dfc2780a65b",
+      "kind": "deadline",
+      "fingerprint": "chat:deadline:the-ieee-application-deadline-is-novembe:2026-11-01",
+      "source": "chat:claude",
+      "item_id": null,
+      "evidence_type": "self_report",
+      "proposed_criterion": "",
+      "title": "The IEEE application deadline is November 1",
+      "summary": "From your Claude chat \"Letters update\" (2026-09-28): \"Remind me: the IEEE application deadline is November 1.\"",
+      "confidence": 0.35,
+      "raw_url": null,
+      "signals": [],
+      "facts": {},
+      "created_at": "2026-10-06T19:18:02Z",
+      "stage": null,
+      "claim_ids": [
+        "clm_12ff90a8cc9e"
+      ],
+      "attachment": null,
+      "source_tier": "self_reported",
+      "proposal": {
+        "title": "The IEEE application deadline is November 1",
+        "due": "2026-11-01",
+        "kind": "application",
+        "human_only": true
+      },
+      "status": "pending",
       "snoozed_until": null
     }
   ]

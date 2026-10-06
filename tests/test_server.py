@@ -20,7 +20,7 @@ def test_overview(client):
     assert data["person"]["name"] == "Alex Rivera"
     board = data["scoreboard"]
     assert board["profile"] == "o1a" and board["banked"] == 2 and board["threshold"] == 3
-    assert data["inbox_pending"] == 5
+    assert data["inbox_pending"] == 12  # 5 evidence + 7 self-reported trackers from the demo chat export
     assert {p["id"] for p in data["profiles"]} >= {"o1a", "eb1a"}
     assert data["sparklines"] and data["sparklines"][0]["points"]
     assert len(data["deadlines"]) <= 3
@@ -45,14 +45,14 @@ def test_foreign_host_rejected(demo_ws):
 
 
 def test_inbox_accept_flow(client, demo_ws):
-    pending = client.get("/api/inbox").json()
+    pending = [c for c in client.get("/api/inbox").json() if c["kind"] == "evidence"]
     assert len(pending) == 5 and pending[0]["confidence"] >= pending[-1]["confidence"]
     target = next(c for c in pending if c["evidence_type"] == "ml_model")
     r = client.post(f"/api/inbox/{target['id']}/accept", json={"date": "2026-10-06"}, headers=W)
     assert r.status_code == 200, r.text
     exhibit = r.json()
     assert (demo_ws.root / exhibit["file"]).exists()
-    assert len(client.get("/api/inbox").json()) == 4
+    assert len([c for c in client.get("/api/inbox").json() if c["kind"] == "evidence"]) == 4
     row = next(
         c for c in client.get("/api/scoreboard").json()["criteria"] if c["id"] == "original_contributions"
     )
@@ -68,7 +68,7 @@ def test_inbox_edit_reject_snooze(client):
     assert (
         client.post(f"/api/inbox/{ids[2]}/snooze", json={"until": "2099-01-01"}, headers=W).status_code == 200
     )
-    assert len(client.get("/api/inbox").json()) == 3
+    assert len(client.get("/api/inbox").json()) == 12 - 2  # edit keeps it, reject + snooze hide two
     assert client.post("/api/inbox/cand_missing/reject", headers=W).status_code == 404
 
 

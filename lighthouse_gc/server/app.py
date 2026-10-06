@@ -178,6 +178,21 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
             out.append(cand.model_dump(mode="json"))
         return out
 
+    @app.post("/api/imports/chats")
+    async def import_chat_export(file: UploadFile = File(...)) -> dict[str, Any]:
+        """Claude / ChatGPT export (conversations.json or .zip) -> snapshots + self-reported tracker candidates."""
+        from lighthouse_gc.jobs.chats import import_chats
+        from lighthouse_gc.sources.chat_export import MAX_EXPORT_BYTES, ExportError
+
+        data = await file.read(MAX_EXPORT_BYTES + 1)
+        if len(data) > MAX_EXPORT_BYTES:
+            raise HTTPException(413, "export is larger than 512 MB")
+        try:
+            report = import_chats(ws, data, file.filename or "conversations.json")
+        except ExportError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return {**report.__dict__, "summary": report.line()}
+
     @app.get("/api/attachments/{obs_id}")
     def get_attachment(obs_id: str) -> FileResponse:
         """Preview an uploaded file before it's filed (only files staged via upload)."""

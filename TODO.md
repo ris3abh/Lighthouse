@@ -46,7 +46,15 @@ Running checklist against [SPEC.md](SPEC.md) section 11. Product-first ordering 
 - [x] `lighthouse-gc mcp`: read-only MCP server (get_scoreboard, list_gaps, query_claims, get_provenance,
       what_changed); tested in-process and over real stdio, plus a no-writes digest test
 - [x] Evidence page drag-and-drop upload → Inbox → exhibit (tested via API + real drag events in Chrome)
-- [ ] Claude / ChatGPT export import → snapshots + self-reported tracker candidates (never count)
+- [x] Claude / ChatGPT export import → snapshots + self-reported tracker candidates (never count;
+      `tests/test_chat_import.py::test_self_reported_items_can_never_count_toward_a_criterion`)
+
+Phase 1a notes / follow-ups:
+- Extraction is rule-based (English phrasing, user messages only); an LLM pass via the agent engine can
+  propose more later, through the same self-reported tier.
+- Pipeline / letters entries from chats have no dedicated pages yet (Pipeline kanban and Letters pages are
+  Phase 1 / 2); deadlines already show on the Overview and in DASHBOARD.md.
+- A browser tab left open across an app upgrade keeps the old JS until reloaded.
 
 ## Later in Phase 1
 

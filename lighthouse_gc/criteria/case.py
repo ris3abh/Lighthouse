@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel
 
 from lighthouse_gc.core.workspace import DATA_FILES as CORE_DATA_FILES
 from lighthouse_gc.core.workspace import NotFound, Workspace, WorkspaceError
 from lighthouse_gc.criteria import engine
-from lighthouse_gc.criteria.models import DEFAULT_PROFILE, Letters, Person, Profile, Scoreboard
+from lighthouse_gc.criteria.models import DEFAULT_PROFILE, Letter, Letters, Person, Profile, Scoreboard
 
 DATA_FILES: dict[str, type[BaseModel]] = {
     "person.json": Person,
@@ -100,6 +102,18 @@ class Case(Workspace):
         board = self.recompute()
         write_dashboard(self, board)
         return board
+
+    def apply_tracker(self, kind: str, proposal: dict[str, Any]) -> BaseModel:
+        if kind != "letter":
+            return super().apply_tracker(kind, proposal)
+        try:
+            letter = Letter.model_validate(proposal)
+        except ValueError as exc:
+            raise WorkspaceError(f"invalid letter entry: {exc}") from exc
+        letters = self.letters()
+        letters.letters.append(letter)
+        self._save("letters.json", letters)
+        return letter
 
     def classify_upload(self, filename: str) -> tuple[str, str, str | None]:
         from lighthouse_gc.criteria.classify import classify

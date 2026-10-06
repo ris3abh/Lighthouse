@@ -266,6 +266,15 @@ export const api = {
     if (criterion) form.append("criterion", criterion);
     return request<Candidate[]>("POST", "/inbox/upload", form);
   },
+  importChats: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ provider: string; conversations: number; snapshots_new: number; candidates_added: Record<string, number>; summary: string }>(
+      "POST",
+      "/imports/chats",
+      form,
+    );
+  },
   attachmentUrl: (obsId: string) => `./api/attachments/${enc(obsId)}`,
   reject: (id: string) => request<Candidate>("POST", `/inbox/${enc(id)}/reject`),
   snooze: (id: string, until?: string) => request<Candidate>("POST", `/inbox/${enc(id)}/snooze`, { until }),

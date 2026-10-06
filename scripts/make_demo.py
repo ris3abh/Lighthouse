@@ -31,6 +31,7 @@ from lighthouse_gc.core.models import (  # noqa: E402
 )
 from lighthouse_gc.core.workspace import _atomic_write, dump_model  # noqa: E402
 from lighthouse_gc.criteria.models import FilingTarget, Letter, Letters, Person, Petitioner  # noqa: E402
+from lighthouse_gc.jobs.chats import import_chats  # noqa: E402
 from lighthouse_gc.jobs.sync import import_source  # noqa: E402
 from lighthouse_gc.scaffold import create_workspace  # noqa: E402
 
@@ -101,6 +102,9 @@ def main() -> None:
     # Show the GitHub source as public: there is no real token behind the demo.
     for src in ws.sources().sources:
         ws.update_source(src.id, auth="none", secret_ref=None)
+
+    # ---- a (fictional) Claude chat export: snapshots + self-reported tracker candidates
+    import_chats(ws, (ROOT / "tests" / "fixtures" / "chats" / "claude_conversations.json").read_bytes())
 
     # ---- the user's decisions in the Inbox (approve / reject records claims' review state)
     pending = {c.title: c for c in ws.pending_candidates()}

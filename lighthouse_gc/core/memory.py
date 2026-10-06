@@ -63,6 +63,7 @@ class Memory:
         self.root = root
         self.index_path = cache_dir / "memory.db"
         self.lock = threading.RLock()
+        self._obs_cache: tuple[tuple[int, int], dict[str, Observation]] | None = None
 
     # ------------------------------------------------------------------ raw io
 
@@ -219,9 +220,9 @@ class Memory:
     ) -> Observation:
         sha = hashlib.sha256(data).hexdigest()
         obs_id = f"obs_{sha[:16]}"
-        for existing in self._read("observations", Observation):
-            if existing.id == obs_id:
-                return existing
+        known = self._observation_index()
+        if obs_id in known:
+            return known[obs_id]
         rel = f"memory/sources/{sha}.{ext}"
         path = self.root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -237,10 +238,26 @@ class Memory:
             filename=filename,
         )
         self._append("observations", [obs])
+        known[obs_id] = obs
+        self._obs_cache = (self._stamp("observations"), known)
         return obs
 
+    def _stamp(self, name: str) -> tuple[int, int]:
+        path = self._path(name)
+        if not path.exists():
+            return (0, 0)
+        st = path.stat()
+        return (st.st_size, st.st_mtime_ns)
+
+    def _observation_index(self) -> dict[str, Observation]:
+        """id -> observation, cached until observations.jsonl changes on disk (e.g. another process)."""
+        stamp = self._stamp("observations")
+        if self._obs_cache is None or self._obs_cache[0] != stamp:
+            self._obs_cache = (stamp, {o.id: o for o in self._read("observations", Observation)})
+        return self._obs_cache[1]
+
     def observation(self, obs_id: str) -> Observation | None:
-        return next((o for o in self._read("observations", Observation) if o.id == obs_id), None)
+        return self._observation_index().get(obs_id)
 
     def _current_claims(self) -> dict[tuple[str, str], Claim]:
         """Latest claim per (subject, predicate): the ones nothing has superseded."""

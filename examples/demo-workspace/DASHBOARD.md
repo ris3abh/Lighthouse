@@ -19,7 +19,7 @@ _Generated 2026-10-06 from the files in `data/`. Do not edit by hand — run `li
 
 ## This week (human-only)
 
-- [ ] Review 5 candidate(s) in the Inbox
+- [ ] Review 12 candidate(s) in the Inbox
 - [ ] Send draft letter to Dr. Priya Natarajan — due 2026-10-09
 - [ ] Follow up: MLH Fall hackathon: confirm judging completed — due 2026-10-08
 
@@ -29,8 +29,9 @@ _Generated 2026-10-06 from the files in `data/`. Do not edit by hand — run `li
 - **2026-10-14** (8d) — NeurIPS 2026 workshop reviews due
 - **2026-11-01** (26d) — IEEE Senior Member application
 
-## Inbox — 5 pending
+## Inbox — 12 pending
 
+- : 7
 - Original contributions of major significance: 3
 - Authorship of scholarly articles: 2
 

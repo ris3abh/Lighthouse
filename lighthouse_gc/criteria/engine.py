@@ -9,6 +9,7 @@ The rules are deliberately simple and explainable. For each criterion in the pro
 * ``banked``   — count >= ``bank.min_exhibits`` and distinct signals >= ``bank.min_signals``;
 * ``building`` — at least one counted exhibit, or evidence still at an earlier stage (invited, submitted);
 * ``gap``      — none;
+* exhibits from a self-reported source (e.g. imported chat history) never count;
 * a user override in ``lighthouse.yaml`` (``dropped`` or ``gap``) always wins.
 
 Judgment ("how would a reviewer see this?") is the agent's job and lives in ``reviewer_note``.
@@ -21,7 +22,7 @@ from pathlib import Path
 
 import yaml
 
-from lighthouse_gc.core.models import Exhibit, stage_counts, utcnow
+from lighthouse_gc.core.models import NON_EVIDENTIARY_TIERS, Exhibit, stage_counts, utcnow
 from lighthouse_gc.criteria.models import CriterionScore, Profile, Scoreboard
 from lighthouse_gc.resources import profiles_dir
 
@@ -54,7 +55,11 @@ def score(
     rows: list[CriterionScore] = []
 
     for crit in profile.criteria:
-        filed = [e for e in exhibits if e.criterion == crit.id]
+        # Self-reported material (your own chat history, notes) never counts, however it got here.
+        self_reported = [
+            e for e in exhibits if e.criterion == crit.id and e.source_tier in NON_EVIDENTIARY_TIERS
+        ]
+        filed = [e for e in exhibits if e.criterion == crit.id and e.source_tier not in NON_EVIDENTIARY_TIERS]
         typed = [e for e in filed if e.evidence_type in crit.evidence_types]
         counted = [e for e in typed if stage_counts(e.stage)]
         in_progress = [e for e in typed if not stage_counts(e.stage)]
@@ -89,6 +94,10 @@ def score(
         if in_progress:
             stages = ", ".join(sorted({e.stage or "" for e in in_progress}))
             reason += f" {len(in_progress)} exhibit(s) not counted until completed (stage: {stages})."
+        if self_reported:
+            reason += (
+                f" {len(self_reported)} self-reported exhibit(s) ignored: self-reported items never count."
+            )
         if off_type:
             reason += f" {off_type} exhibit(s) filed here have an evidence type this profile doesn't list."
 

@@ -1,0 +1,71 @@
+[
+  {
+    "uuid": "c0a1-planning",
+    "name": "O-1 planning",
+    "created_at": "2026-09-10T14:00:00Z",
+    "updated_at": "2026-09-10T15:00:00Z",
+    "chat_messages": [
+      {
+        "uuid": "m1",
+        "sender": "human",
+        "created_at": "2026-09-10T14:00:00Z",
+        "text": "I applied to the IEEE Senior Member program last week. The NeurIPS workshop reviews are due Oct 14, 2026. Can you help me plan?",
+        "content": []
+      },
+      {
+        "uuid": "m2",
+        "sender": "assistant",
+        "created_at": "2026-09-10T14:00:30Z",
+        "text": "Sure. I judged the ACM Hackathon in 2025, and you should apply to the ACM Distinguished Member program by December 1. Your I-129 filing deadline is March 1, 2027.",
+        "content": []
+      },
+      {
+        "uuid": "m3",
+        "sender": "human",
+        "created_at": "2026-09-10T14:05:00Z",
+        "text": "",
+        "content": [
+          {
+            "type": "text",
+            "text": "I asked Dr. Priya Natarajan for a recommendation letter. I was invited to judge the MLH Fall Hackathon."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "uuid": "c0a2-letters",
+    "name": "Letters update",
+    "created_at": "2026-09-28T09:00:00Z",
+    "updated_at": "2026-09-28T09:30:00Z",
+    "chat_messages": [
+      {
+        "uuid": "m4",
+        "sender": "human",
+        "created_at": "2026-09-28T09:00:00Z",
+        "text": "Marcus Webb agreed to write my letter, he's my manager at Fernhill. I judged HackMIT 2026 in March and it went great!",
+        "content": []
+      },
+      {
+        "uuid": "m5",
+        "sender": "human",
+        "created_at": "2026-09-28T09:10:00Z",
+        "text": "Remind me: the IEEE application deadline is November 1.",
+        "content": []
+      },
+      {
+        "uuid": "m6",
+        "sender": "assistant",
+        "created_at": "2026-09-28T09:10:10Z",
+        "text": "Noted! I'll keep that in mind.",
+        "content": []
+      }
+    ]
+  },
+  {
+    "uuid": "c0a3-empty",
+    "name": "Untitled",
+    "created_at": "2026-09-29T09:00:00Z",
+    "chat_messages": []
+  }
+]

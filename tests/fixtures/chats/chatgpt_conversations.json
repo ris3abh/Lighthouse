@@ -1,0 +1,116 @@
+[
+  {
+    "title": "Hackathon judging",
+    "create_time": 1789466400.0,
+    "update_time": 1789470000.0,
+    "conversation_id": "gpt-0001",
+    "current_node": "n4",
+    "mapping": {
+      "root": {
+        "id": "root",
+        "parent": null,
+        "children": [
+          "n1"
+        ],
+        "message": null
+      },
+      "n1": {
+        "id": "n1",
+        "parent": "root",
+        "children": [
+          "n2",
+          "n2b"
+        ],
+        "message": {
+          "id": "n1",
+          "author": {
+            "role": "user"
+          },
+          "create_time": 1789466400.0,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "I'm still waiting to hear back from the MLH judging coordinators. I need to submit my TMLR reviewer signup by 2026-10-20."
+            ]
+          }
+        }
+      },
+      "n2": {
+        "id": "n2",
+        "parent": "n1",
+        "children": [
+          "n3"
+        ],
+        "message": {
+          "id": "n2",
+          "author": {
+            "role": "assistant"
+          },
+          "create_time": 1789466460.0,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "You should apply to the ACM Senior Member program by December 1."
+            ]
+          }
+        }
+      },
+      "n2b": {
+        "id": "n2b",
+        "parent": "n1",
+        "children": [],
+        "message": {
+          "id": "n2b",
+          "author": {
+            "role": "assistant"
+          },
+          "create_time": 1789466470.0,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "(an abandoned regeneration that should be ignored: I applied to Google)"
+            ]
+          }
+        }
+      },
+      "n3": {
+        "id": "n3",
+        "parent": "n2",
+        "children": [
+          "n4"
+        ],
+        "message": {
+          "id": "n3",
+          "author": {
+            "role": "user"
+          },
+          "create_time": 1789469000.0,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "Lena Okafor said no to writing a letter, she's too busy."
+            ]
+          }
+        }
+      },
+      "n4": {
+        "id": "n4",
+        "parent": "n3",
+        "children": [],
+        "message": {
+          "id": "n4",
+          "author": {
+            "role": "assistant"
+          },
+          "create_time": 1789469060.0,
+          "content": {
+            "content_type": "text",
+            "parts": [
+              "Sorry to hear that."
+            ]
+          }
+        }
+      }
+    }
+  }
+]

@@ -21,7 +21,8 @@ in a **private workspace directory** on your machine (its own Git repo); this re
 
 | Works today | Coming next (Phase 1+) |
 |---|---|
-| Drag-and-drop evidence into the Inbox; read-only MCP server for agents | Claude / ChatGPT export import |
+| Drag-and-drop evidence into the Inbox; read-only MCP server for agents | Pipeline and Letters pages |
+| Claude / ChatGPT export import → deadline, pipeline and letter-writer suggestions | LLM-assisted extraction |
 | `init`, `import`, `run sync / metrics-snapshot / dashboard`, `up`, `validate` | scheduler, notifications |
 | GitHub (public + fine-grained PAT, incl. 14-day traffic history) | Website, Semantic Scholar, OpenAlex, ORCID, arXiv |
 | Hugging Face (models, datasets, Spaces, linked Papers) | Gmail triage, opportunity scans |
@@ -89,6 +90,12 @@ repositories**:
    profiles re-scores the same evidence.
 5. `DASHBOARD.md` and the web dashboard show where you stand.
 
+**Your AI chats, organized.** Drop a Claude or ChatGPT data export on the Sources page, or run
+`lighthouse-gc import ~/Downloads/export.zip`. Every conversation is saved as a private snapshot in your
+workspace. Lighthouse reads only *your* messages (never the assistant's) and suggests deadlines, pipeline items
+and letter writers ("I asked Dr. … for a letter", "reviews are due Oct 14"). These are **self-reported**: they
+keep your trackers current, but they can never count toward a criterion. For that, upload the real document.
+
 All workspace data is plain JSON / JSONL / CSV / Markdown with JSON Schemas (`lighthouse_gc/core/schemas/`), so
 you, the dashboard, and any agent all read the same files. The core (`lighthouse_gc/core/`) knows nothing
 about immigration. Profiles and scoring live in a separate layer, so other domains can reuse it.
@@ -99,6 +106,7 @@ about immigration. Profiles and scoring live in a separate layer, so other domai
 |---|---|
 | `lighthouse-gc init <dir>` | create a private workspace (git repo + gitleaks pre-commit hook) |
 | `lighthouse-gc import <url>` | add a source; auto-detects GitHub / Hugging Face (`--private` for a token) |
+| `lighthouse-gc import <export>` | import a Claude / ChatGPT export (`conversations.json` or the `.zip`) |
 | `lighthouse-gc run sync` | refresh all sources, push new candidates to the Inbox |
 | `lighthouse-gc run metrics-snapshot` | append today's metrics (and GitHub's 14-day traffic) to `metrics.csv` |
 | `lighthouse-gc run dashboard` | re-score and regenerate `DASHBOARD.md` |

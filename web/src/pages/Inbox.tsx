@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api, type Candidate, type Profile } from "../api";
 import { useRefresh } from "../App";
 import ClaimsPanel, { StageChip } from "../components/Claims";
+import TrackerCard, { TRACKER_LABEL } from "../components/TrackerCard";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { today, useLoad } from "../hooks";
 
@@ -13,8 +14,13 @@ export default function Inbox() {
   const [candidates, profile] = inbox.data;
 
   const labels: Record<string, string> = { "": "Needs a criterion", ...Object.fromEntries(profile.criteria.map((c) => [c.id, c.label])) };
+  const evidence = candidates.filter((c) => c.kind === "evidence");
+  const trackers = candidates.filter((c) => c.kind !== "evidence");
   const groups = new Map<string, Candidate[]>();
-  for (const c of candidates) groups.set(c.proposed_criterion, [...(groups.get(c.proposed_criterion) ?? []), c]);
+  for (const c of evidence) groups.set(c.proposed_criterion, [...(groups.get(c.proposed_criterion) ?? []), c]);
+  const trackerGroups = (["deadline", "pipeline", "letter"] as const)
+    .map((k) => [k, trackers.filter((c) => c.kind === k)] as const)
+    .filter(([, list]) => list.length);
   const order = [...groups.keys()].sort(
     (a, b) => profile.criteria.findIndex((c) => c.id === a) - profile.criteria.findIndex((c) => c.id === b),
   );
@@ -33,6 +39,27 @@ export default function Inbox() {
         </Card>
       ) : (
         <div className="flex flex-col gap-5">
+          {trackerGroups.length > 0 && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3 dark:border-sky-900 dark:bg-sky-950/20">
+              <p className="mb-3 text-xs text-sky-900 dark:text-sky-200">
+                <strong>From your chats (self-reported).</strong> Adding these updates your trackers. They never count
+                toward a criterion. For evidence, upload the underlying document on the Evidence page.
+              </p>
+              {trackerGroups.map(([kind, list]) => (
+                <section key={kind} className="mb-3 last:mb-0">
+                  <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                    {TRACKER_LABEL[kind]}
+                    <span className="rounded-full bg-zinc-200 px-1.5 text-xs tabular-nums dark:bg-zinc-800">{list.length}</span>
+                  </h2>
+                  <div className="flex flex-col gap-2">
+                    {list.map((c) => (
+                      <TrackerCard key={c.id} c={c} onDone={bump} />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
           {order.map((crit) => (
             <section key={crit}>
               <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">

@@ -20,6 +20,7 @@ import tempfile
 import threading
 from collections.abc import Iterable
 from datetime import date, timedelta
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Self, TypeVar
 
@@ -30,7 +31,9 @@ from lighthouse_gc.core.memory import Memory
 from lighthouse_gc.core.models import (
     EXHIBIT_NAME_RE,
     METRICS_COLUMNS,
+    NON_EVIDENTIARY_TIERS,
     Candidate,
+    Deadline,
     Deadlines,
     Exhibit,
     Exhibits,
@@ -38,6 +41,7 @@ from lighthouse_gc.core.models import (
     MetricRow,
     Opportunities,
     Pipeline,
+    PipelineItem,
     Slug,
     SourceRecord,
     SourcesFile,
@@ -114,7 +118,7 @@ class Workspace:
     def metrics_path(self) -> Path:
         return self.data_dir / "metrics.csv"
 
-    @property
+    @cached_property
     def memory(self) -> Memory:
         return Memory(self.root, self.cache_dir)
 
@@ -290,7 +294,8 @@ class Workspace:
         "summary",
         "signals",
         "stage",
-    )
+        "proposal",
+    )  # kind and source_tier are deliberately not editable
 
     def edit_candidate(self, candidate_id: str, **changes: Any) -> Candidate:
         with self.lock:
@@ -326,13 +331,21 @@ class Workspace:
             self.after_change()
             return cand
 
-    def accept_candidate(self, candidate_id: str, **edits: Any) -> Exhibit:
-        """Turn a candidate into an exhibit: write a capture file, log it, re-score."""
+    def accept_candidate(self, candidate_id: str, **edits: Any) -> Any:
+        """Accept a candidate. Evidence becomes an exhibit (capture file or uploaded bytes, logged, re-scored);
+        a tracker candidate (pipeline / deadline / letter) becomes a tracker entry and never an exhibit."""
         with self.lock:
             inbox = self.inbox()
             cand = self._candidate(inbox, candidate_id)
             if cand.status == "rejected":
                 raise WorkspaceError("candidate was rejected; edit it back to pending first")
+            if cand.kind != "evidence":
+                return self._accept_tracker(inbox, cand)
+            if cand.source_tier in NON_EVIDENTIARY_TIERS:
+                # Self-reported material (e.g. your own chat history) can organize work, never prove it.
+                raise WorkspaceError(
+                    "self-reported items can't become exhibits; upload the underlying document instead"
+                )
             exhibit_date = edits.pop("date", None) or date.today()
             for key, value in edits.items():
                 if key not in self.EDITABLE_CANDIDATE_FIELDS:
@@ -382,6 +395,34 @@ class Workspace:
             self.save_inbox(inbox)
             self.after_change()
             return exhibit
+
+    def _accept_tracker(self, inbox: Inbox, cand: Candidate) -> BaseModel:
+        record = self.apply_tracker(cand.kind, dict(cand.proposal))
+        if cand.claim_ids:
+            self.memory.decide(cand.claim_ids, "approved", rationale=f"added to {cand.kind} tracker")
+        inbox.candidates = [c for c in inbox.candidates if c.id != cand.id]
+        self.save_inbox(inbox)
+        self.after_change()
+        return record
+
+    def apply_tracker(self, kind: str, proposal: dict[str, Any]) -> BaseModel:
+        """Add a tracker entry. The domain layer adds kinds it owns (letters)."""
+        try:
+            if kind == "deadline":
+                deadline = Deadline.model_validate(proposal)
+                dl = self.deadlines()
+                dl.deadlines.append(deadline)
+                self._save("deadlines.json", dl)
+                return deadline
+            if kind == "pipeline":
+                item = PipelineItem.model_validate(proposal)
+                pl = self.pipeline()
+                pl.items.append(item)
+                self._save("pipeline.json", pl)
+                return item
+        except ValueError as exc:
+            raise WorkspaceError(f"invalid {kind} entry: {exc}") from exc
+        raise WorkspaceError(f"unknown tracker kind {kind!r}")
 
     # ------------------------------------------------------------------ uploads
 

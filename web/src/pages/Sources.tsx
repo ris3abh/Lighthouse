@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, type Source } from "../api";
 import { useRefresh } from "../App";
+import DropZone from "../components/DropZone";
 import { Button, Card, Chip, Empty, ErrorBox, Loading, Modal, PageHeader, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 
@@ -101,6 +102,30 @@ export default function Sources() {
             </label>
           )}
         </form>
+      </Card>
+
+      <Card className="mb-4" title="Import your Claude or ChatGPT history">
+        <div className="p-4">
+          <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+            Export your data (Claude: Settings → Privacy → Export data; ChatGPT: Settings → Data controls → Export), then drop the{" "}
+            <code>.zip</code> or <code>conversations.json</code> here. Every conversation is saved as a private snapshot in your
+            workspace. Lighthouse reads <strong>only your own messages</strong> and proposes deadlines, pipeline items and letter
+            writers. These are self-reported: they keep you organized but never count toward a criterion.
+          </p>
+          <DropZone
+            busy={busy === "chats"}
+            onFiles={(files) =>
+              run("chats", async () => {
+                const r = await api.importChats(files[0]);
+                window.location.hash = "#/inbox";
+                return r.summary;
+              })
+            }
+          >
+            <p className="text-sm font-medium">{busy === "chats" ? "Importing…" : "Drop your export here, or click to choose"}</p>
+            <p className="text-xs text-zinc-500">conversations.json or the export .zip · stays on this machine</p>
+          </DropZone>
+        </div>
       </Card>
 
       {sources.data.length === 0 ? (

@@ -17,6 +17,14 @@ All notable changes to this project are documented here. The format follows
   the original bytes as `evidence/<crit>/<crit>_<date>_<slug>.<ext>`. Uploads can be previewed before
   filing; duplicates are detected by content hash.
 - Source tiers on observations, candidates and exhibits (`platform`, `user`, `self_reported`, `tier1-3`).
+- Claude / ChatGPT export import (`lighthouse-gc import <conversations.json|export.zip>` or the Sources
+  page): every conversation becomes a transcript snapshot in `memory/` (tier `self_reported`) plus an
+  import manifest with the export's sha256. A rule-based pass reads only the user's own messages and
+  proposes deadline, pipeline and letter-writer candidates, each with a low-confidence claim quoting the
+  exact sentence. Accepting adds them to `deadlines.json` / `pipeline.json` / `letters.json`.
+- Self-reported material can never count toward a criterion: the Inbox refuses to make it an exhibit,
+  candidate kind and tier aren't editable, and the criteria engine ignores self-reported exhibits.
+- The demo workspace includes a fictional Claude export.
 - Phase 0 core: workspace store, JSON Schemas for every file, `lighthouse-gc init / import / run / up / validate`.
 - GitHub (public + fine-grained PAT, incl. 14-day traffic history) and Hugging Face connectors.
 - O-1A and EB-1A profiles with a rule-based criteria engine; criterion overrides (gap / dropped).
