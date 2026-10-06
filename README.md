@@ -32,7 +32,7 @@ in a **private workspace directory** on your machine (its own Git repo); this re
 Lighthouse isn't on PyPI yet. From a checkout:
 
 ```sh
-git clone https://github.com/rishabhsharma/lighthouse && cd lighthouse
+git clone https://github.com/ris3abh/Lighthouse && cd Lighthouse
 pipx install -e .                 # or: uv tool install -e .  /  pip install -e .
 npm --prefix web install && npm --prefix web run build   # builds the dashboard into the package
 

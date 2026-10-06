@@ -46,7 +46,7 @@ dev = [
 lighthouse-gc = "lighthouse_gc.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/rishabhsharma/lighthouse"
+Homepage = "https://github.com/ris3abh/Lighthouse"
 
 [tool.hatch.build.targets.wheel]
 packages = ["lighthouse_gc"]

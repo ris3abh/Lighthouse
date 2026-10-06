@@ -14,7 +14,7 @@ import httpx
 
 from lighthouse_gc import __version__
 
-USER_AGENT = f"lighthouse-gc/{__version__} (+https://github.com/rishabhsharma/lighthouse)"
+USER_AGENT = f"lighthouse-gc/{__version__} (+https://github.com/ris3abh/Lighthouse)"
 MAX_WAIT_SECONDS = 60.0
 
 

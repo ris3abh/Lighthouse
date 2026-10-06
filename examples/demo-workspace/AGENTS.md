@@ -1,7 +1,7 @@
 # Agent guide for this Lighthouse workspace
 
 This directory is a private immigration-case workspace managed by
-[Lighthouse](https://github.com/rishabhsharma/lighthouse) (`lighthouse-gc`). It is the single source of
+[Lighthouse](https://github.com/ris3abh/Lighthouse) (`lighthouse-gc`). It is the single source of
 truth for the case. Read this before changing anything.
 
 ## Rules
