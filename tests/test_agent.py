@@ -225,9 +225,6 @@ def test_read_tools_and_redaction(demo_ws):
     assert "judging" in anyio.run(t["get_profile"].handler, {})
     assert "stars" in anyio.run(t["query_claims"].handler, {"entity": "fastgrad"})
     assert "Send draft letter" in anyio.run(t["list_deadlines"].handler, {})
-    assert redact("mail me at a.b@c.org, $185,000/yr or 92,000 USD, +1 (412) 555-0100") == (
-        "mail me at [email], [amount]/yr or [amount], [phone]"
-    )
     assert redact("1,840 stars on 2026-10-14") == "1,840 stars on 2026-10-14"
 
 

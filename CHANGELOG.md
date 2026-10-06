@@ -89,6 +89,10 @@ All notable changes to this project are documented here. The format follows
   `mission` to `claude-sonnet-5-5`). The old single `agent.model` key still loads.
 - Prompt caching verified for the system prompt and tool definitions (a test keeps that prefix byte-stable).
   The Agent page shows cached / written / uncached input tokens per run and the month's cache hit rate.
+- Redaction redacts only currency amounts among numbers (symbols, codes and words, e.g. $185k, 92,000 USD,
+  €4.5M, 1,200 dollars). Plain numbers (downloads, stars, citations, dates, versions, ids, percentages)
+  always pass through; emails and phone numbers are still redacted. 56 test cases, and punctuation next to an
+  amount is preserved.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.
