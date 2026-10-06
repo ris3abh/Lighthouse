@@ -6,6 +6,7 @@ import Evidence from "./pages/Evidence";
 import Inbox from "./pages/Inbox";
 import Metrics from "./pages/Metrics";
 import OverviewPage from "./pages/Overview";
+import Settings from "./pages/Settings";
 import Sources from "./pages/Sources";
 
 /** Bumping `version` makes every page and the shell re-fetch after a write. */
@@ -18,6 +19,7 @@ const NAV = [
   { id: "evidence", label: "Evidence", icon: "▤" },
   { id: "metrics", label: "Metrics", icon: "∿" },
   { id: "sources", label: "Sources", icon: "⛁" },
+  { id: "settings", label: "Settings", icon: "⚙" },
 ] as const;
 
 export default function App() {
@@ -67,6 +69,9 @@ function Shell() {
       break;
     case "sources":
       content = <Sources />;
+      break;
+    case "settings":
+      content = <Settings />;
       break;
     default:
       content = <OverviewPage data={ov} error={overview.error} retry={overview.reload} />;

@@ -8,13 +8,44 @@ server:
   port: 7777
 schedules:
   sync: 0 8 * * *
-  metrics-snapshot: 0 9 * * mon/2
+  metrics-snapshot: 0 9 * * mon
   deadline-check: 0 7 * * *
   digest: 0 17 * * fri
 connectors:
   include_forks: false
   min_stars_for_candidate: 5
   min_downloads_for_candidate: 100
+notifications:
+  channels:
+    desktop:
+      kind: desktop
+      enabled: true
+      detail: full
+      secret_ref: null
+      host: null
+      port: 587
+      starttls: true
+      username: null
+      from_addr: null
+      to_addr: null
+      server: https://ntfy.sh
+      topic: null
+  routes:
+    deadline:
+    - desktop
+    digest:
+    - desktop
+    new_candidates:
+    - desktop
+    sync_error:
+    - desktop
+    test:
+    - desktop
+  deadline_alert_days:
+  - 14
+  - 3
+  - 1
+  - 0
 privacy:
   redact_before_llm: true
 overrides:

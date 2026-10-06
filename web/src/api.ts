@@ -213,6 +213,30 @@ export interface SyncReport {
   errors: string[];
 }
 
+export interface ChannelView {
+  name: string;
+  kind: string;
+  enabled: boolean;
+  detail: "full" | "minimal";
+  secret_ref: string | null;
+  secret_stored: boolean;
+  server?: string;
+  topic?: string | null;
+  host?: string | null;
+  to_addr?: string | null;
+}
+
+export interface SettingsView {
+  profile: string;
+  engine: string;
+  privacy: { redact_before_llm: boolean };
+  channels: ChannelView[];
+  routes: Record<string, string[]>;
+  deadline_alert_days: number[];
+  schedules: Record<string, string>;
+  recent_notifications: { at: string; event: string; title: string; ok: boolean; results: { channel: string; ok: boolean; error: string | null }[] }[];
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -289,6 +313,9 @@ export const api = {
   metrics: () => request<{ series: Series[] }>("GET", "/metrics"),
   snapshot: () => request<{ reports: SyncReport[] }>("POST", "/metrics/snapshot"),
   exportUrl: "./api/metrics/export.csv",
+
+  settings: () => request<SettingsView>("GET", "/settings"),
+  notifyTest: (channel?: string) => request<{ ok: boolean; summary: string }>("POST", "/notify/test", { channel: channel ?? null }),
 
   sources: () => request<Source[]>("GET", "/sources"),
   addSource: (input: string, token?: string) => request<SyncReport>("POST", "/sources", { input, token }),

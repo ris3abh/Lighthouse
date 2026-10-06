@@ -25,6 +25,15 @@ All notable changes to this project are documented here. The format follows
 - Self-reported material can never count toward a criterion: the Inbox refuses to make it an exhibit,
   candidate kind and tier aren't editable, and the criteria engine ignores self-reported exhibits.
 - The demo workspace includes a fictional Claude export.
+- Notifications: desktop (macOS / Linux / Windows), email (SMTP + STARTTLS), Slack and Discord webhooks,
+  ntfy push. Named channels and per-event routes in `lighthouse.yaml`; secrets in the keychain
+  (`lighthouse-gc secret set <ref>`). Channels can send `detail: minimal` (counts only). Webhooks only post
+  to their real hosts, Discord can't @mention, and every send is logged locally for de-duplication.
+  `lighthouse-gc notify test` and a Settings page.
+
+### Fixed
+- `metrics-snapshot` default schedule: cron can't express "biweekly" (`mon/2` meant something else);
+  it now runs weekly on Mondays and the job skips unless 13+ days have passed.
 - Phase 0 core: workspace store, JSON Schemas for every file, `lighthouse-gc init / import / run / up / validate`.
 - GitHub (public + fine-grained PAT, incl. 14-day traffic history) and Hugging Face connectors.
 - O-1A and EB-1A profiles with a rule-based criteria engine; criterion overrides (gap / dropped).

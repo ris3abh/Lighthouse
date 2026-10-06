@@ -1,5 +1,132 @@
 {
   "$defs": {
+    "ChannelConfig": {
+      "additionalProperties": false,
+      "description": "One notification channel. Secrets (webhook URLs, SMTP password, ntfy token) live in the keychain\nunder ``secret_ref``; this file only names the entry.",
+      "properties": {
+        "detail": {
+          "default": "full",
+          "description": "minimal sends counts only (no titles), for channels that leave this machine.",
+          "enum": [
+            "full",
+            "minimal"
+          ],
+          "title": "Detail",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "from_addr": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "From Addr"
+        },
+        "host": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Host"
+        },
+        "kind": {
+          "enum": [
+            "desktop",
+            "email",
+            "slack",
+            "discord",
+            "ntfy"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "port": {
+          "default": 587,
+          "maximum": 65535,
+          "minimum": 1,
+          "title": "Port",
+          "type": "integer"
+        },
+        "secret_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Keychain entry: webhook URL, SMTP password or ntfy token.",
+          "title": "Secret Ref"
+        },
+        "server": {
+          "default": "https://ntfy.sh",
+          "title": "Server",
+          "type": "string"
+        },
+        "starttls": {
+          "default": true,
+          "title": "Starttls",
+          "type": "boolean"
+        },
+        "to_addr": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Addr"
+        },
+        "topic": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Topic"
+        },
+        "username": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Username"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "ChannelConfig",
+      "type": "object"
+    },
     "ConnectorConfig": {
       "additionalProperties": false,
       "properties": {
@@ -22,6 +149,49 @@
         }
       },
       "title": "ConnectorConfig",
+      "type": "object"
+    },
+    "NotificationsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "channels": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ChannelConfig"
+          },
+          "description": "Named channels. Desktop is on by default; add email / slack / discord / ntfy as needed.",
+          "title": "Channels",
+          "type": "object"
+        },
+        "deadline_alert_days": {
+          "description": "Alert when a deadline is this many days away.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Deadline Alert Days",
+          "type": "array"
+        },
+        "routes": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "description": "Which channels each event goes to.",
+          "propertyNames": {
+            "enum": [
+              "deadline",
+              "digest",
+              "new_candidates",
+              "sync_error",
+              "test"
+            ]
+          },
+          "title": "Routes",
+          "type": "object"
+        }
+      },
+      "title": "NotificationsConfig",
       "type": "object"
     },
     "PrivacyConfig": {
@@ -73,6 +243,9 @@
       ],
       "title": "Engine",
       "type": "string"
+    },
+    "notifications": {
+      "$ref": "#/$defs/NotificationsConfig"
     },
     "overrides": {
       "additionalProperties": {

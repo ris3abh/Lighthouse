@@ -112,7 +112,29 @@ about immigration. Profiles and scoring live in a separate layer, so other domai
 | `lighthouse-gc run dashboard` | re-score and regenerate `DASHBOARD.md` |
 | `lighthouse-gc up [--demo]` | serve the dashboard on `127.0.0.1:7777` |
 | `lighthouse-gc validate` | check every workspace file against its schema and naming rules |
+| `lighthouse-gc notify test` | send a test notification to every routed channel |
+| `lighthouse-gc secret set <ref>` | store a token / webhook URL / SMTP password in the OS keychain |
 | `lighthouse-gc mcp` | read-only MCP server over stdio for Claude Code, Codex or any MCP client |
+
+### Notifications
+
+Desktop notifications work out of the box. To add email, Slack, Discord or ntfy, add a channel under
+`notifications.channels` in `lighthouse.yaml` and route events to it:
+
+```yaml
+notifications:
+  channels:
+    desktop: {kind: desktop}
+    slack: {kind: slack, secret_ref: notify:slack}   # detail defaults to full; use minimal for counts only
+    phone: {kind: ntfy, topic: pick-an-unguessable-topic, detail: minimal}
+  routes:
+    deadline: [desktop, phone]
+    digest: [slack]
+```
+
+Store secrets in the keychain, never in the file: `lighthouse-gc secret set notify:slack`. Then run
+`lighthouse-gc notify test`. Anything sent to Slack, Discord, email or ntfy leaves your machine, so
+`detail: minimal` sends only counts ("2 deadlines this week"), never titles.
 
 ### Use it from Claude Code (or any MCP client)
 

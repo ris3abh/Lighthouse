@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import tempfile
@@ -210,6 +211,65 @@ def up(
     if open_browser:
         webbrowser.open(url)
     uvicorn.run(create_app(ws), host="127.0.0.1", port=port, log_level="warning")
+
+
+notify_app = typer.Typer(help="Notifications (desktop, email, Slack, Discord, ntfy).", no_args_is_help=True)
+secret_app = typer.Typer(help="Store or remove a secret (token, webhook URL, SMTP password) in the keychain.",
+                         no_args_is_help=True)  # fmt: skip
+app.add_typer(notify_app, name="notify")
+app.add_typer(secret_app, name="secret")
+
+
+@notify_app.command("test")
+def notify_test(
+    channel: Annotated[
+        str | None, typer.Option(help="Only this channel (default: every channel routed for `test`)")
+    ] = None,
+    workspace: WorkspaceOpt = None,
+) -> None:
+    """Send a test notification."""
+    from lighthouse_gc.notify import Notification, send
+
+    try:
+        ws = find_workspace(workspace)
+    except WorkspaceError as exc:
+        raise _fail(str(exc)) from exc
+    report = send(ws, Notification("test", "Lighthouse test", "Notifications are working.",
+                                   minimal_body="Notifications are working."), only=channel)  # fmt: skip
+    typer.secho(report.line(), fg=typer.colors.GREEN if report.ok else typer.colors.RED)
+    if not report.ok:
+        raise typer.Exit(1)
+
+
+@secret_app.command("set")
+def secret_set(
+    ref: Annotated[
+        str, typer.Argument(help="Keychain entry name, e.g. notify:slack (the channel's secret_ref)")
+    ],
+    workspace: WorkspaceOpt = None,
+) -> None:
+    """Prompt for a secret (hidden) and store it in the OS keychain."""
+    from lighthouse_gc.core.secrets import set_secret
+
+    ws_root = None
+    with contextlib.suppress(WorkspaceError):  # keychain-only is fine outside a workspace
+        ws_root = find_workspace(workspace).root
+    value = typer.prompt(f"Value for {ref}", hide_input=True)
+    where = set_secret(ref, value.strip(), ws_root)
+    typer.secho(f"Stored {ref} in the {where}.", fg=typer.colors.GREEN)
+
+
+@secret_app.command("delete")
+def secret_delete(ref: Annotated[str, typer.Argument()], workspace: WorkspaceOpt = None) -> None:
+    """Remove a secret from the keychain (and the workspace .env fallback)."""
+    from lighthouse_gc.core.secrets import delete_secret
+
+    try:
+        root = find_workspace(workspace).root
+    except WorkspaceError:
+        root = None
+    delete_secret(ref, root)
+    typer.echo(f"Removed {ref}.")
 
 
 @app.command()

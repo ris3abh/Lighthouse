@@ -409,6 +409,42 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
             raise NotFound(f"no source {source_id!r}")
         return record
 
+    # ------------------------------------------------------------------ settings + notifications
+
+    @app.get("/api/settings")
+    def get_settings() -> dict[str, Any]:
+        from lighthouse_gc.core.secrets import get_secret
+        from lighthouse_gc.notify import history
+
+        cfg = ws.config()
+        channels = []
+        for name, ch in cfg.notifications.channels.items():
+            data = ch.model_dump()
+            channels.append({"name": name, **data,
+                             "secret_stored": bool(ch.secret_ref and get_secret(ch.secret_ref, ws.root))})  # fmt: skip
+        return {
+            "profile": ws.profile_id(),
+            "engine": cfg.engine,
+            "privacy": cfg.privacy.model_dump(),
+            "channels": channels,
+            "routes": cfg.notifications.routes,
+            "deadline_alert_days": cfg.notifications.deadline_alert_days,
+            "schedules": cfg.schedules,
+            "recent_notifications": history(ws, limit=20)[::-1],
+        }
+
+    class NotifyTestBody(BaseModel):
+        channel: str | None = None
+
+    @app.post("/api/notify/test")
+    def notify_test(body: NotifyTestBody | None = None) -> dict[str, Any]:
+        from lighthouse_gc.notify import Notification, send
+
+        report = send(ws, Notification("test", "Lighthouse test", "Notifications are working.",
+                                       minimal_body="Notifications are working."),
+                      only=body.channel if body else None)  # fmt: skip
+        return {"ok": report.ok, "summary": report.line(), "results": [r.__dict__ for r in report.results]}
+
     # ------------------------------------------------------------------ web UI
 
     @app.get("/api/{rest:path}")

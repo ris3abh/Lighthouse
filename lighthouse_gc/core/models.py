@@ -286,6 +286,51 @@ class ConnectorConfig(_Model):
     min_downloads_for_candidate: int = Field(100, ge=0)
 
 
+class ChannelConfig(_Model):
+    """One notification channel. Secrets (webhook URLs, SMTP password, ntfy token) live in the keychain
+    under ``secret_ref``; this file only names the entry."""
+
+    kind: Literal["desktop", "email", "slack", "discord", "ntfy"]
+    enabled: bool = True
+    detail: Literal["full", "minimal"] = Field(
+        "full", description="minimal sends counts only (no titles), for channels that leave this machine."
+    )
+    secret_ref: str | None = Field(
+        None, description="Keychain entry: webhook URL, SMTP password or ntfy token."
+    )
+    # email
+    host: str | None = None
+    port: int = Field(587, ge=1, le=65535)
+    starttls: bool = True
+    username: str | None = None
+    from_addr: str | None = None
+    to_addr: str | None = None
+    # ntfy
+    server: str = "https://ntfy.sh"
+    topic: str | None = None
+
+
+NotificationEvent = Literal["deadline", "digest", "new_candidates", "sync_error", "test"]
+
+
+def _default_routes() -> dict[NotificationEvent, list[str]]:
+    return {"deadline": ["desktop"], "digest": ["desktop"], "new_candidates": ["desktop"],
+            "sync_error": ["desktop"], "test": ["desktop"]}  # fmt: skip
+
+
+class NotificationsConfig(_Model):
+    channels: dict[str, ChannelConfig] = Field(
+        default_factory=lambda: {"desktop": ChannelConfig(kind="desktop")},
+        description="Named channels. Desktop is on by default; add email / slack / discord / ntfy as needed.",
+    )
+    routes: dict[NotificationEvent, list[str]] = Field(
+        default_factory=lambda: _default_routes(), description="Which channels each event goes to."
+    )
+    deadline_alert_days: list[int] = Field(
+        default_factory=lambda: [14, 3, 1, 0], description="Alert when a deadline is this many days away."
+    )
+
+
 class WorkspaceConfig(_File):
     workspace_name: str = "my-case"
     profile: str = Field("", description="Active profile id; the domain layer supplies the default.")
@@ -294,13 +339,14 @@ class WorkspaceConfig(_File):
     schedules: dict[str, str] = Field(
         default_factory=lambda: {
             "sync": "0 8 * * *",
-            "metrics-snapshot": "0 9 * * mon/2",
+            "metrics-snapshot": "0 9 * * mon",  # runs weekly; the job itself skips unless 13+ days passed
             "deadline-check": "0 7 * * *",
             "digest": "0 17 * * fri",
         },
         description="Cron expressions per job. Used by the scheduler (Phase 1) and as cron hints.",
     )
     connectors: ConnectorConfig = Field(default_factory=ConnectorConfig)
+    notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)
     privacy: PrivacyConfig = Field(default_factory=PrivacyConfig)
     overrides: dict[str, dict[str, Literal["dropped", "gap"]]] = Field(
         default_factory=dict,

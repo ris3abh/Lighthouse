@@ -56,6 +56,13 @@ Phase 1a notes / follow-ups:
   Phase 1 / 2); deadlines already show on the Overview and in DASHBOARD.md.
 - A browser tab left open across an app upgrade keeps the old JS until reloaded.
 
+## Phase 1b (trackers + alerts)
+
+- [x] Notifications: desktop, email, Slack, Discord, ntfy; routes; keychain secrets; Settings page
+- [ ] Scheduler (APScheduler in `up`) + `run deadline-check` / `run digest`; biweekly metrics snapshot
+- [ ] Deadlines + calendar.ics + Calendar page
+- [ ] Pipeline kanban with staleness + Letters page
+
 ## Later in Phase 1
 
 - Website + scholarly connectors, scheduler, notifications, calendar, pipeline kanban, agent adapters,
