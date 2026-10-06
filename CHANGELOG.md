@@ -61,6 +61,11 @@ All notable changes to this project are documented here. The format follows
   contact and draft link; per-criterion coverage by independent / employer / co-author writers (declined
   excluded). Draft paths must stay inside `drafts/`. API: `/api/letters`, `/api/drafts/{path}`.
 
+### Changed
+- Chat import saves only conversations that produced a suggestion; the rest leave no content behind.
+  `lighthouse-gc import <export> --keep-all` (or the checkbox on the Sources page) keeps every
+  conversation. The import manifest records the total count and which conversations were kept.
+
 ### Fixed
 - `metrics-snapshot` default schedule: cron can't express "biweekly" (`mon/2` meant something else);
   it now runs weekly on Mondays and the job skips unless 13+ days have passed.

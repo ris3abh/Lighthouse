@@ -93,8 +93,8 @@ repositories**:
 5. `DASHBOARD.md` and the web dashboard show where you stand.
 
 **Your AI chats, organized.** Drop a Claude or ChatGPT data export on the Sources page, or run
-`lighthouse-gc import ~/Downloads/export.zip`. Every conversation is saved as a private snapshot in your
-workspace. Lighthouse reads only *your* messages (never the assistant's) and suggests deadlines, pipeline items
+`lighthouse-gc import ~/Downloads/export.zip`. Conversations that produced a suggestion are saved as private
+snapshots in your workspace; the rest are read and discarded (add `--keep-all` to keep everything). Lighthouse reads only *your* messages (never the assistant's) and suggests deadlines, pipeline items
 and letter writers ("I asked Dr. … for a letter", "reviews are due Oct 14"). These are **self-reported**: they
 keep your trackers current, but they can never count toward a criterion. For that, upload the real document.
 

@@ -44,7 +44,7 @@ def _board(ws):
 
 def test_parses_claude_export():
     provider, convs, sha = ce.load_export(CLAUDE)
-    assert provider == "claude" and len(convs) == 2  # the empty conversation is skipped
+    assert provider == "claude" and len(convs) == 3  # the empty conversation is skipped
     assert convs[0].title == "O-1 planning" and convs[0].url == "chat:claude:c0a1-planning"
     assert convs[0].messages[2].text.startswith("I asked Dr. Priya Natarajan")  # text from content[]
     assert len(sha) == 64
@@ -61,7 +61,7 @@ def test_parses_chatgpt_export_along_the_current_branch():
 
 def test_zip_export_is_read_in_memory():
     provider, convs, _ = ce.load_export(_zip(CLAUDE), "data-2026-10-06.zip")
-    assert provider == "claude" and len(convs) == 2
+    assert provider == "claude" and len(convs) == 3
 
 
 @pytest.mark.parametrize(
@@ -120,17 +120,39 @@ def test_dates_and_year_inference():
 # ----------------------------------------------------------------------------- import job
 
 
-def test_import_snapshots_every_conversation(ws):
+def test_only_conversations_with_suggestions_are_saved(ws):
     report = import_chats(ws, CLAUDE, "conversations.json")
-    assert report.provider == "claude" and report.conversations == 2 and report.snapshots_new == 2
+    assert report.provider == "claude" and report.conversations == 3
+    assert report.snapshots_new == 2 and report.skipped == 1
+    assert "1 without suggestions not saved" in report.line()
     obs = ws.memory.observations()
     transcripts = [o for o in obs if o.source_url.startswith("chat:claude:")]
-    manifest = [o for o in obs if o.source_url == "file:conversations.json"]
-    assert len(transcripts) == 2 and len(manifest) == 1
+    assert {o.source_url for o in transcripts} == {"chat:claude:c0a1-planning", "chat:claude:c0a2-letters"}
+    # The poem conversation leaves no content anywhere in the workspace.
+    for path in ws.root.rglob("*"):
+        if path.is_file():
+            assert b"Monongahela" not in path.read_bytes() and b"autumn leaves" not in path.read_bytes(), path
+    [manifest] = [o for o in obs if o.source_url == "file:conversations.json"]
+    payload = json.loads((ws.root / manifest.snapshot).read_text())
+    assert payload["conversations"] == 3 and payload["snapshotted"] == ["c0a1-planning", "c0a2-letters"]
     assert {o.tier for o in obs} == {"self_reported"}
     assert all(o.media_type == "text/markdown" for o in transcripts)
     assert ws.memory.verify() == []  # every claim quotes its transcript verbatim
     assert report.candidates_added == {"deadline": 2, "letter": 2, "pipeline": 3}
+
+
+def test_keep_all_saves_every_conversation(ws):
+    report = import_chats(ws, CLAUDE, keep_all=True)
+    assert report.snapshots_new == 3 and report.skipped == 0
+    assert any(o.source_url == "chat:claude:c0a4-poem" for o in ws.memory.observations())
+
+
+def test_cli_keep_all_flag(ws, tmp_path):
+    export = tmp_path / "conversations.json"
+    export.write_bytes(CLAUDE)
+    result = CliRunner().invoke(app, ["import", str(export), "--keep-all", "-w", str(ws.root)])
+    assert result.exit_code == 0, result.output
+    assert "3 snapshotted" in result.output
 
 
 def test_reimport_adds_nothing(ws):
@@ -238,7 +260,9 @@ def test_api_import(demo_ws):
     r = c.post("/api/imports/chats", files={"file": ("claude-export.zip", _zip(CLAUDE), "application/zip")},
                headers={"X-Lighthouse": "1"})  # fmt: skip
     assert r.status_code == 200, r.text
-    assert r.json()["conversations"] == 2 and "never counts" in r.json()["summary"]
+    assert (
+        r.json()["conversations"] == 3 and r.json()["skipped"] == 1 and "never counts" in r.json()["summary"]
+    )
     tracker = next(x for x in c.get("/api/inbox").json() if x["kind"] == "deadline")
     accepted = c.post(f"/api/inbox/{tracker['id']}/accept", json={}, headers={"X-Lighthouse": "1"})
     assert accepted.status_code == 200 and accepted.json()["due"] in ("2026-10-14", "2026-11-01")

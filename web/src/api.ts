@@ -346,9 +346,10 @@ export const api = {
     if (criterion) form.append("criterion", criterion);
     return request<Candidate[]>("POST", "/inbox/upload", form);
   },
-  importChats: (file: File) => {
+  importChats: (file: File, keepAll = false) => {
     const form = new FormData();
     form.append("file", file);
+    form.append("keep_all", String(keepAll));
     return request<{ provider: string; conversations: number; snapshots_new: number; candidates_added: Record<string, number>; summary: string }>(
       "POST",
       "/imports/chats",

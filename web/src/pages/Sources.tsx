@@ -34,6 +34,7 @@ export default function Sources() {
   const [showToken, setShowToken] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [reauth, setReauth] = useState<Source | null>(null);
+  const [keepAll, setKeepAll] = useState(false);
   const kind = guessKind(input);
 
   const run = async (key: string, fn: () => Promise<string>) => {
@@ -110,13 +111,18 @@ export default function Sources() {
             Export your data (Claude: Settings → Privacy → Export data; ChatGPT: Settings → Data controls → Export), then drop the{" "}
             <code>.zip</code> or <code>conversations.json</code> here. Every conversation is saved as a private snapshot in your
             workspace. Lighthouse reads <strong>only your own messages</strong> and proposes deadlines, pipeline items and letter
-            writers. These are self-reported: they keep you organized but never count toward a criterion.
+            writers. These are self-reported: they keep you organized but never count toward a criterion. Only conversations
+            that produced a suggestion are saved.
           </p>
+          <label className="mb-3 flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+            <input type="checkbox" checked={keepAll} onChange={(e) => setKeepAll(e.target.checked)} />
+            Also save conversations with no suggestions (your whole history goes into the workspace)
+          </label>
           <DropZone
             busy={busy === "chats"}
             onFiles={(files) =>
               run("chats", async () => {
-                const r = await api.importChats(files[0]);
+                const r = await api.importChats(files[0], keepAll);
                 window.location.hash = "#/inbox";
                 return r.summary;
               })

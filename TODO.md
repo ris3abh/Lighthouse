@@ -69,6 +69,13 @@ Phase 1b notes / follow-ups:
 - Letter drafting (letter-draft skill) is Phase 2; the Letters page links existing drafts only.
 - One-way Google Calendar push (OAuth) is still open; Google can't subscribe to a localhost feed.
 
+## Phase 1b gaps
+
+- [x] A1. Chat import saves only conversations with suggestions (`--keep-all` opts in)
+- [ ] A2. Calendar week view; edit deadlines
+- [ ] A3. Letters: editable asks (letter, membership reference) and last-contact date
+- [ ] A4. One service layer for every create / update / move (Pipeline, Letters, Calendar, Inbox), with a guard test
+
 ## Later in Phase 1
 
 - Website + scholarly connectors, scheduler, notifications, calendar, pipeline kanban, agent adapters,

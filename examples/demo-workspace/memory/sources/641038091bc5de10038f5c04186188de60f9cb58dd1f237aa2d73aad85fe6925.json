@@ -1,9 +1,0 @@
-{
-  "conversation_ids": [
-    "c0a1-planning",
-    "c0a2-letters"
-  ],
-  "conversations": 2,
-  "export_sha256": "bcce92755540d5f5e0e58353209a62b1e382fb2acaf215940b7251a18b0c319c",
-  "provider": "claude"
-}

@@ -1,0 +1,10 @@
+{
+  "conversations": 3,
+  "export_sha256": "399df4f1db728fdfd13d8e53e4e4ee25619deeec44e4d1667f942cc39ea44499",
+  "keep_all": false,
+  "provider": "claude",
+  "snapshotted": [
+    "c0a1-planning",
+    "c0a2-letters"
+  ]
+}

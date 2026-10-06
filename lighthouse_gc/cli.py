@@ -102,6 +102,10 @@ def import_(
         str | None, typer.Option(help="Read the token from this environment variable instead")
     ] = None,
     snapshot: Annotated[bool, typer.Option(help="Also take a metrics snapshot now")] = True,
+    keep_all: Annotated[
+        bool,
+        typer.Option("--keep-all", help="Chat exports: also save conversations that produced no suggestions"),
+    ] = False,
     workspace: WorkspaceOpt = None,
 ) -> None:
     """Add a source: auto-detects the connector, discovers items, proposes candidates."""
@@ -110,7 +114,7 @@ def import_(
 
     path = Path(url).expanduser()
     if path.suffix.lower() in (".json", ".zip") and path.is_file():
-        return _import_chats(path, workspace)
+        return _import_chats(path, workspace, keep_all)
     try:
         ws = find_workspace(workspace)
         kind = sources.detect(url)
@@ -136,13 +140,13 @@ def import_(
         typer.echo("Review new candidates in the Inbox: lighthouse-gc up")
 
 
-def _import_chats(path: Path, workspace: Path | None) -> None:
+def _import_chats(path: Path, workspace: Path | None, keep_all: bool = False) -> None:
     from lighthouse_gc.jobs.chats import import_chats
     from lighthouse_gc.sources.chat_export import ExportError, read_export
 
     try:
         ws = find_workspace(workspace)
-        report = import_chats(ws, read_export(path), path.name)
+        report = import_chats(ws, read_export(path), path.name, keep_all=keep_all)
     except (WorkspaceError, ExportError) as exc:
         raise _fail(str(exc)) from exc
     typer.secho(report.line(), fg=typer.colors.GREEN)
