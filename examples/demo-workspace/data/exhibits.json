@@ -2,7 +2,7 @@
   "schema_version": 1,
   "exhibits": [
     {
-      "id": "exh_ad0f0626e793",
+      "id": "exh_201bd26ed331",
       "criterion": "original_contributions",
       "evidence_type": "open_source_project",
       "title": "Open-source project: arivera-demo/fastgrad",
@@ -10,7 +10,7 @@
       "date": "2026-09-01",
       "file": "evidence/original_contributions/original_contributions_2026-09-01_open-source-project-arivera-demo-fastgrad.md",
       "source_url": "https://github.com/arivera-demo/fastgrad",
-      "candidate_id": "cand_eef946b10bd9",
+      "candidate_id": "cand_e3af4ee4cdb8",
       "fingerprint": "github:arivera-demo/fastgrad:original_contributions",
       "signals": [
         "widely_adopted",
@@ -20,17 +20,17 @@
       "source_tier": null,
       "stage": null,
       "claim_ids": [
-        "clm_2e85cf52bcf5",
-        "clm_99f2ed974ea1",
-        "clm_cd8fda49ea56",
-        "clm_58ace0171399",
-        "clm_085ca997bd30"
+        "clm_3cb557cefce6",
+        "clm_4c634fe0328d",
+        "clm_f368630ccc4c",
+        "clm_12461537109d",
+        "clm_c24a07f49402"
       ],
-      "accepted_at": "2026-10-06T22:11:05Z",
+      "accepted_at": "2026-10-06T22:20:19Z",
       "notes": ""
     },
     {
-      "id": "exh_d2f71a6907a0",
+      "id": "exh_65149e456b51",
       "criterion": "judging",
       "evidence_type": "panel_letter",
       "title": "HackMIT 2026 judging completed - organizer confirmation",
@@ -47,11 +47,11 @@
       "source_tier": null,
       "stage": "completed",
       "claim_ids": [],
-      "accepted_at": "2026-10-06T22:11:05Z",
+      "accepted_at": "2026-10-06T22:20:19Z",
       "notes": ""
     },
     {
-      "id": "exh_628d9304a895",
+      "id": "exh_4a9cfcbc06a5",
       "criterion": "judging",
       "evidence_type": "reviewer_record",
       "title": "NeurIPS 2026 workshop reviewer record",
@@ -67,11 +67,11 @@
       "source_tier": null,
       "stage": "completed",
       "claim_ids": [],
-      "accepted_at": "2026-10-06T22:11:05Z",
+      "accepted_at": "2026-10-06T22:20:19Z",
       "notes": ""
     },
     {
-      "id": "exh_41740013810e",
+      "id": "exh_a234f5507536",
       "criterion": "judging",
       "evidence_type": "judge_invite",
       "title": "MLH Fall 2026 judge invitation",
@@ -85,11 +85,11 @@
       "source_tier": null,
       "stage": "invited",
       "claim_ids": [],
-      "accepted_at": "2026-10-06T22:11:05Z",
+      "accepted_at": "2026-10-06T22:20:19Z",
       "notes": ""
     },
     {
-      "id": "exh_f8b1bc1e0b93",
+      "id": "exh_56c18efb85c0",
       "criterion": "scholarly_articles",
       "evidence_type": "conference_paper",
       "title": "Sparse gradient compression at scale (ICML 2025)",
@@ -107,11 +107,11 @@
       "source_tier": null,
       "stage": "published",
       "claim_ids": [],
-      "accepted_at": "2026-10-06T22:11:05Z",
+      "accepted_at": "2026-10-06T22:20:19Z",
       "notes": ""
     },
     {
-      "id": "exh_e8023dc0dca6",
+      "id": "exh_27cfb3ebdf9e",
       "criterion": "scholarly_articles",
       "evidence_type": "preprint",
       "title": "RoboGrasp-10k preprint",
@@ -127,11 +127,11 @@
       "source_tier": null,
       "stage": "preprint",
       "claim_ids": [],
-      "accepted_at": "2026-10-06T22:11:05Z",
+      "accepted_at": "2026-10-06T22:20:19Z",
       "notes": ""
     },
     {
-      "id": "exh_fc5ed5102c95",
+      "id": "exh_ec211560a4e7",
       "criterion": "awards",
       "evidence_type": "hackathon_win",
       "title": "DevFest 2025 hackathon - first place",
@@ -145,11 +145,11 @@
       "source_tier": null,
       "stage": "granted",
       "claim_ids": [],
-      "accepted_at": "2026-10-06T22:11:05Z",
+      "accepted_at": "2026-10-06T22:20:19Z",
       "notes": ""
     },
     {
-      "id": "exh_22f02a52e055",
+      "id": "exh_44fd19a6ae17",
       "criterion": "critical_role",
       "evidence_type": "role_letter",
       "title": "Fernhill Robotics role letter (draft)",
@@ -165,7 +165,7 @@
       "source_tier": null,
       "stage": null,
       "claim_ids": [],
-      "accepted_at": "2026-10-06T22:11:05Z",
+      "accepted_at": "2026-10-06T22:20:19Z",
       "notes": ""
     }
   ]

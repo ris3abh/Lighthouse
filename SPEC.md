@@ -343,7 +343,11 @@ push. Each event type can route to a different channel.
 **Calendar.** calendar.ics is generated from deadlines + pipeline follow-ups and served at a local subscribe
 URL. Optional one-way push to Google Calendar via OAuth.
 
-**Agent engine.** One adapter interface, three implementations: Claude Code (`claude -p` headless), Codex
+**Agent engine.** (Design: `docs/adr/0005-agent-layer.md`.) The harness is locked down to web search
+plus Lighthouse's own tools; agent writes go through the service layer and only *propose* to the Inbox
+(autopilot rules may auto-apply a narrow class of tracker updates with undo); every run is recorded in
+`agent/runs/` with its sources, proposals, changes and cost; per-run and monthly budgets live in
+`lighthouse.yaml`. One adapter interface, three implementations: Claude Code (`claude -p` headless), Codex
 (`codex exec`), or direct Anthropic/OpenAI API. Skills live in `skills/` and are copied into each workspace's
 `.claude/skills/` (and an AGENTS.md for Codex):
 
@@ -463,6 +467,22 @@ against the demo workspace and your own.
 - [ ] Knowledge vault (5a): vault/sources.yaml, fetch + snapshot + local embeddings, TTL registry, vault-watch
       job, Tier-1-first web search fallback
 - [ ] rule-check gate on every agent answer and dashboard rule text; unverified / conflict badges; Knowledge page
+
+### Phase 1c — Agent layer (see ADR 0005)
+
+- [ ] Agent engine: Claude Agent SDK adapter (Codex stubbed behind the same interface), web search on, the MCP
+      read tools attached, plus write tools that call the service layer: they propose to the Inbox, or
+      auto-apply per autopilot rules. Per-run and monthly token budget caps in lighthouse.yaml. Model mocked
+      in tests.
+- [ ] Chat panel docked on every page: streaming, each tool call visible (search, page read, file touched),
+      proposals linked to the Inbox, conversations saved in the workspace.
+- [ ] Agent page: every run (chat, manual, scheduled) with live stream, sources read, changes and proposals
+      made, cost per run.
+- [ ] Autopilot rules: auto-apply with undo for tracker updates, metrics and Tier-1 deadlines; anything that
+      could affect a criterion always needs approval.
+- [ ] Missions on the existing scheduler: weekly opportunity scout, daily what-changed check; results on the
+      Agent page and via notifications.
+- [ ] Overview briefing: agent-written "what changed / 3 things to do", with inline approvals.
 
 ### Phase 2 — Gmail, scans, letters (weekends 3–4)
 

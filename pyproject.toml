@@ -33,6 +33,7 @@ dependencies = [
   "mcp>=2.3,<3",
   "apscheduler>=3.10,<4",
   "tzlocal>=5.0",
+  "claude-agent-sdk>=0.2.163",
 ]
 
 [project.optional-dependencies]

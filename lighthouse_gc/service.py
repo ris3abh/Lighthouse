@@ -129,6 +129,17 @@ class Service:
         return self._record("inbox.upload", "candidate", lambda: self.ws.stage_upload(content, filename, criterion),
                             summary=filename)  # fmt: skip
 
+    def propose_candidate(self, cand: Candidate) -> Candidate | None:
+        """Put a proposal in the Inbox (e.g. from the agent). Returns None if it duplicates an existing one."""
+
+        def add() -> Candidate | None:
+            added = self.ws.add_candidates([cand])
+            if added:
+                self.ws.after_change()
+            return added[0] if added else None
+
+        return self._record("inbox.propose", cand.kind, add, target_id=cand.id, summary=cand.title)
+
     # ------------------------------------------------------------------ evidence + scoring
 
     def add_exhibit_file(self, **kwargs: Any) -> Exhibit:

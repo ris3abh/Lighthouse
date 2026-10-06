@@ -331,6 +331,23 @@ class NotificationsConfig(_Model):
     )
 
 
+class AgentBudget(_Model):
+    """Spend caps. Tokens counted = input + output + cache-creation (cache reads are recorded, not counted)."""
+
+    per_run_tokens: int = Field(300_000, ge=1_000)
+    per_run_usd: float | None = Field(2.0, gt=0)
+    monthly_tokens: int = Field(10_000_000, ge=1_000)
+    monthly_usd: float | None = Field(50.0, gt=0)
+
+
+class AgentConfig(_Model):
+    model: str = "claude-opus-5-5"
+    effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
+    web_search: bool = True
+    max_turns: int = Field(25, ge=1, le=200)
+    budget: AgentBudget = Field(default_factory=AgentBudget)
+
+
 class WorkspaceConfig(_File):
     workspace_name: str = "my-case"
     profile: str = Field("", description="Active profile id; the domain layer supplies the default.")
@@ -347,6 +364,7 @@ class WorkspaceConfig(_File):
     )
     connectors: ConnectorConfig = Field(default_factory=ConnectorConfig)
     notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)
+    agent: AgentConfig = Field(default_factory=AgentConfig)
     privacy: PrivacyConfig = Field(default_factory=PrivacyConfig)
     overrides: dict[str, dict[str, Literal["dropped", "gap"]]] = Field(
         default_factory=dict,
@@ -370,6 +388,76 @@ class Change(_Model):
     summary: str = ""
     before: dict[str, Any] | None = None
     after: dict[str, Any] | None = None
+
+
+# --------------------------------------------------------------------------- agent/ (ADR 0005)
+
+
+class RunUsage(_Model):
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
+
+    @property
+    def counted(self) -> int:
+        return self.input_tokens + self.output_tokens + self.cache_creation_input_tokens
+
+
+class TimelineItem(_Model):
+    """One step of a run, in order: assistant text, a tool call and its result, or an error."""
+
+    type: Literal["text", "tool_call", "error"]
+    at: datetime = Field(default_factory=utcnow)
+    text: str = ""
+    tool: str | None = None
+    tool_id: str | None = None
+    input: dict[str, Any] = Field(default_factory=dict)
+    ok: bool | None = None
+    result: str = Field("", description="Short summary of the tool result (full results aren't kept).")
+
+
+class RunSource(_Model):
+    url: str
+    title: str = ""
+    observation_id: str | None = None
+    at: datetime = Field(default_factory=utcnow)
+
+
+class AgentRun(_File):
+    id: str = Field(default_factory=lambda: new_id("run"))
+    kind: Literal["chat", "manual", "scheduled"]
+    status: Literal["running", "done", "error", "stopped"] = "running"
+    engine: str
+    model: str
+    prompt: str
+    conversation_id: str | None = None
+    started_at: datetime = Field(default_factory=utcnow)
+    finished_at: datetime | None = None
+    text: str = Field("", description="The assistant's final answer.")
+    timeline: list[TimelineItem] = Field(default_factory=list)
+    sources: list[RunSource] = Field(default_factory=list)
+    proposals: list[str] = Field(default_factory=list, description="Inbox candidate ids this run proposed.")
+    changes: list[str] = Field(default_factory=list, description="data/changes.jsonl ids this run made.")
+    usage: RunUsage = Field(default_factory=RunUsage)
+    cost_usd: float | None = None
+    stop_reason: str | None = None
+    error: str | None = None
+
+
+class ConversationMessage(_Model):
+    role: Literal["user", "assistant"]
+    text: str
+    at: datetime = Field(default_factory=utcnow)
+    run_id: str | None = None
+
+
+class Conversation(_File):
+    id: str = Field(default_factory=lambda: new_id("conv"))
+    title: str = ""
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+    messages: list[ConversationMessage] = Field(default_factory=list)
 
 
 # --------------------------------------------------------------------------- memory/ (section 5b)

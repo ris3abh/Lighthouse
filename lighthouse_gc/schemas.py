@@ -36,6 +36,8 @@ MODELS: dict[str, type[BaseModel]] = {
     "memory-edge": core.Edge,
     "memory-decision": core.Decision,
     "change": core.Change,
+    "agent-run": core.AgentRun,
+    "agent-conversation": core.Conversation,
 }
 
 

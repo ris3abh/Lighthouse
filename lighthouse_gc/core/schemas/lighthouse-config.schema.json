@@ -1,5 +1,90 @@
 {
   "$defs": {
+    "AgentBudget": {
+      "additionalProperties": false,
+      "description": "Spend caps. Tokens counted = input + output + cache-creation (cache reads are recorded, not counted).",
+      "properties": {
+        "monthly_tokens": {
+          "default": 10000000,
+          "minimum": 1000,
+          "title": "Monthly Tokens",
+          "type": "integer"
+        },
+        "monthly_usd": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 50.0,
+          "title": "Monthly Usd"
+        },
+        "per_run_tokens": {
+          "default": 300000,
+          "minimum": 1000,
+          "title": "Per Run Tokens",
+          "type": "integer"
+        },
+        "per_run_usd": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 2.0,
+          "title": "Per Run Usd"
+        }
+      },
+      "title": "AgentBudget",
+      "type": "object"
+    },
+    "AgentConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/AgentBudget"
+        },
+        "effort": {
+          "default": "medium",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "title": "Effort",
+          "type": "string"
+        },
+        "max_turns": {
+          "default": 25,
+          "maximum": 200,
+          "minimum": 1,
+          "title": "Max Turns",
+          "type": "integer"
+        },
+        "model": {
+          "default": "claude-opus-5-5",
+          "title": "Model",
+          "type": "string"
+        },
+        "web_search": {
+          "default": true,
+          "title": "Web Search",
+          "type": "boolean"
+        }
+      },
+      "title": "AgentConfig",
+      "type": "object"
+    },
     "ChannelConfig": {
       "additionalProperties": false,
       "description": "One notification channel. Secrets (webhook URLs, SMTP password, ntfy token) live in the keychain\nunder ``secret_ref``; this file only names the entry.",
@@ -231,6 +316,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "agent": {
+      "$ref": "#/$defs/AgentConfig"
+    },
     "connectors": {
       "$ref": "#/$defs/ConnectorConfig"
     },

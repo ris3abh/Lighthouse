@@ -76,6 +76,16 @@ Phase 1b notes / follow-ups:
 - [x] A3. Letters: editable asks (letter, membership reference) and last-contact date
 - [x] A4. One service layer for every create / update / move (Pipeline, Letters, Calendar, Inbox), with a guard test
 
+## Phase 1c (agent layer, ADR 0005)
+
+- [x] 1. Agent engine: Claude Agent SDK adapter + Codex stub, web search, MCP read tools, service-layer
+      propose tools, per-run / monthly budgets, mocked model in tests
+- [ ] 2. Chat panel on every page
+- [ ] 3. Agent page
+- [ ] 4. Autopilot rules (after the user tries chat)
+- [ ] 5. Missions
+- [ ] 6. Overview briefing
+
 ## Later in Phase 1
 
 - Website + scholarly connectors, scheduler, notifications, calendar, pipeline kanban, agent adapters,

@@ -67,6 +67,15 @@ All notable changes to this project are documented here. The format follows
   Letters, Calendar and Evidence pages goes through one place and is recorded in `data/changes.jsonl`
   (actor, action, before / after). A guard test fails if a route writes workspace files outside it, if a
   new write route isn't covered, or if a page sends a write without the API client.
+- Agent engine (ADR 0005): one `Engine` interface with a Claude Agent SDK adapter (`claude-opus-5-5`) and a
+  Codex stub. The harness is locked down to `WebSearch` plus Lighthouse's tools: no shell, no file tools,
+  no user settings, hooks or MCP servers, and no session transcripts on disk. Tools: the MCP read tools,
+  read-only views of the Inbox / deadlines / pipeline / letters, `read_page` (http(s) only, refuses private
+  and local addresses including after redirects, snapshots the page as a memory observation), and
+  `propose_*` write tools that go through the service layer to the Inbox. Evidence proposals must cite a
+  snapshot and a verbatim quote. Tool results are redacted (emails, phones, amounts) before the model
+  sees them. Per-run and monthly token / dollar caps (`agent.budget` in `lighthouse.yaml`). Every run is
+  saved in `agent/runs/`, chat conversations in `agent/conversations/`.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.

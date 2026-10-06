@@ -1,0 +1,304 @@
+{
+  "$defs": {
+    "RunSource": {
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "observation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observation Id"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "title": "RunSource",
+      "type": "object"
+    },
+    "RunUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "cache_creation_input_tokens": {
+          "default": 0,
+          "title": "Cache Creation Input Tokens",
+          "type": "integer"
+        },
+        "cache_read_input_tokens": {
+          "default": 0,
+          "title": "Cache Read Input Tokens",
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "RunUsage",
+      "type": "object"
+    },
+    "TimelineItem": {
+      "additionalProperties": false,
+      "description": "One step of a run, in order: assistant text, a tool call and its result, or an error.",
+      "properties": {
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "input": {
+          "additionalProperties": true,
+          "title": "Input",
+          "type": "object"
+        },
+        "ok": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ok"
+        },
+        "result": {
+          "default": "",
+          "description": "Short summary of the tool result (full results aren't kept).",
+          "title": "Result",
+          "type": "string"
+        },
+        "text": {
+          "default": "",
+          "title": "Text",
+          "type": "string"
+        },
+        "tool": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool"
+        },
+        "tool_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Id"
+        },
+        "type": {
+          "enum": [
+            "text",
+            "tool_call",
+            "error"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "TimelineItem",
+      "type": "object"
+    }
+  },
+  "$id": "https://lighthouse-gc.dev/schemas/v1/agent-run.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "changes": {
+      "description": "data/changes.jsonl ids this run made.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Changes",
+      "type": "array"
+    },
+    "conversation_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Conversation Id"
+    },
+    "cost_usd": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cost Usd"
+    },
+    "engine": {
+      "title": "Engine",
+      "type": "string"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "chat",
+        "manual",
+        "scheduled"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "prompt": {
+      "title": "Prompt",
+      "type": "string"
+    },
+    "proposals": {
+      "description": "Inbox candidate ids this run proposed.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Proposals",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/RunSource"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "status": {
+      "default": "running",
+      "enum": [
+        "running",
+        "done",
+        "error",
+        "stopped"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "stop_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stop Reason"
+    },
+    "text": {
+      "default": "",
+      "description": "The assistant's final answer.",
+      "title": "Text",
+      "type": "string"
+    },
+    "timeline": {
+      "items": {
+        "$ref": "#/$defs/TimelineItem"
+      },
+      "title": "Timeline",
+      "type": "array"
+    },
+    "usage": {
+      "$ref": "#/$defs/RunUsage"
+    }
+  },
+  "required": [
+    "kind",
+    "engine",
+    "model",
+    "prompt"
+  ],
+  "title": "AgentRun",
+  "type": "object"
+}

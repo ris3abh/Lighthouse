@@ -194,6 +194,11 @@ class Memory:
             filename=evidence.filename,
         )
 
+    def snapshot(self, evidence: Evidence) -> Observation:
+        """Store an observation without claims (e.g. a page an agent read) and return it."""
+        with self.lock:
+            return self._observe(evidence, canonical_text(evidence.payload, evidence.media_type))
+
     def record_file(
         self, content: bytes, *, filename: str, media_type: str, connector: str = "upload", tier: str = "user"
     ) -> Observation:
