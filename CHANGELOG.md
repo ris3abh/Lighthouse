@@ -5,6 +5,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-06
+
+First release: the local-first evidence command center (Phases 0, 1a, 1b, 1c). A Zenodo DOI is minted for
+this release.
+
 ### Added
 - Phase 0 core: workspace store, JSON Schemas for every file, `lighthouse-gc init / import / run / up / validate`.
 - GitHub (public + fine-grained PAT, incl. 14-day traffic history) and Hugging Face connectors.
@@ -124,3 +129,6 @@ All notable changes to this project are documented here. The format follows
 - The same text read at two URLs shared one observation and lost the second source. Observations are now keyed
   by source and content (the snapshot file is still shared).
 - The chat panel crashed in browsers where `scrollIntoView()` returns a Promise (an effect returned it).
+
+[Unreleased]: https://github.com/ris3abh/Lighthouse/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ris3abh/Lighthouse/releases/tag/v0.1.0

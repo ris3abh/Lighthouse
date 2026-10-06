@@ -6,7 +6,8 @@ authors:
   - family-names: Sharma
     given-names: Rishabh
 license: Apache-2.0
-version: 0.1.0.dev0
+repository-code: "https://github.com/ris3abh/Lighthouse"
+version: 0.1.0
 date-released: 2026-10-06
 keywords:
   - provenance

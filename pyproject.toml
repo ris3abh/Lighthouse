@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lighthouse-gc"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Local-first command center for building an O-1A / EB-1A extraordinary-ability evidence file."
 readme = "README.md"
 license = "Apache-2.0"
