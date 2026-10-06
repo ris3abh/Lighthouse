@@ -39,9 +39,16 @@ Running checklist against [SPEC.md](SPEC.md) section 11. Product-first ordering 
 - Corroboration is per exact value; "same fact, slightly different number" is a CONTRADICTS question for
   Phase 1/2.
 - Built web UI is gitignored; release CI must build it before the wheel (Phase 3).
-- No CI workflow file yet (lint, mypy, pytest, web build, schema validation): add before the first push.
 
-## Product track next (section 11a, Phase 1)
+## Phase 1a (product track first, SPEC 11a)
 
-- Claude / ChatGPT conversation-export import → Inbox candidates
-- Notifications, scheduler, pipeline / deadlines trackers
+- [x] GitHub Actions CI: repo guard, ruff, mypy, pytest (3.11 + 3.13), validate examples/, web build
+- [ ] `lighthouse-gc mcp`: read-only MCP server (get_scoreboard, list_gaps, query_claims, get_provenance,
+      what_changed)
+- [ ] Evidence page drag-and-drop upload → Inbox → exhibit
+- [ ] Claude / ChatGPT export import → snapshots + self-reported tracker candidates (never count)
+
+## Later in Phase 1
+
+- Website + scholarly connectors, scheduler, notifications, calendar, pipeline kanban, agent adapters,
+  knowledge vault

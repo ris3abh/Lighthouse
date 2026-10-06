@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- GitHub Actions CI: repo guard, ruff (lint + format), mypy, pytest on Python 3.11 and 3.13,
+  `lighthouse-gc validate` on every example workspace, and the web type-check + build.
 - Phase 0 core: workspace store, JSON Schemas for every file, `lighthouse-gc init / import / run / up / validate`.
 - GitHub (public + fine-grained PAT, incl. 14-day traffic history) and Hugging Face connectors.
 - O-1A and EB-1A profiles with a rule-based criteria engine; criterion overrides (gap / dropped).

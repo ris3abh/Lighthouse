@@ -26,6 +26,7 @@ repositories**:
 ```sh
 uv venv && uv pip install -e '.[dev]'
 npm --prefix web install
+git config core.hooksPath .githooks   # once per clone: repo guard + gitleaks on every commit
 .venv/bin/pytest && .venv/bin/ruff check . && .venv/bin/mypy
 npm --prefix web run build
 ```
