@@ -73,6 +73,35 @@ class TokenBody(BaseModel):
     token: str
 
 
+class DeadlineBody(BaseModel):
+    title: str | None = None
+    due: dt.date | None = None
+    kind: str | None = None
+    criterion: str | None = None
+    url: str | None = None
+    human_only: bool | None = None
+    done: bool | None = None
+
+
+class NotifyTestBody(BaseModel):
+    channel: str | None = None
+
+
+STALE_DAYS = 14
+
+
+def pipeline_view(ws: Case) -> list[dict[str, Any]]:
+    now = dt.datetime.now(dt.UTC)
+    return [
+        {
+            **p.model_dump(mode="json"),
+            "days_since_move": (now - p.moved_at).days,
+            "stale": p.stage != "done" and (now - p.moved_at).days >= STALE_DAYS,
+        }  # fmt: skip
+        for p in ws.pipeline().items
+    ]
+
+
 def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
     app = FastAPI(
         title="Lighthouse", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json"
@@ -342,6 +371,41 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
 
         return {"reports": [r.__dict__ for r in snapshot(ws)]}
 
+    # ------------------------------------------------------------------ deadlines + calendar
+
+    @app.get("/api/deadlines")
+    def get_deadlines() -> list[dict[str, Any]]:
+        today = dt.date.today()
+        return [
+            {**d.model_dump(mode="json"), "days_left": (d.due - today).days}
+            for d in sorted(ws.deadlines().deadlines, key=lambda d: d.due)
+        ]
+
+    @app.post("/api/deadlines")
+    def post_deadline(body: DeadlineBody) -> dict[str, Any]:
+        return ws.add_deadline(**body.model_dump(exclude_none=True)).model_dump(mode="json")
+
+    @app.patch("/api/deadlines/{deadline_id}")
+    def patch_deadline(deadline_id: str, body: DeadlineBody) -> dict[str, Any]:
+        return ws.update_deadline(deadline_id, **body.model_dump(exclude_unset=True)).model_dump(mode="json")
+
+    @app.delete("/api/deadlines/{deadline_id}")
+    def remove_deadline(deadline_id: str) -> dict[str, Any]:
+        ws.delete_deadline(deadline_id)
+        return {"removed": deadline_id}
+
+    @app.get("/api/pipeline")
+    def get_pipeline() -> list[dict[str, Any]]:
+        return pipeline_view(ws)
+
+    @app.get("/calendar.ics")
+    def calendar_feed() -> Response:
+        """Subscribe from a calendar app on this machine: webcal://127.0.0.1:<port>/calendar.ics"""
+        from lighthouse_gc.core.calendar import render
+
+        return Response(render(ws), media_type="text/calendar; charset=utf-8",
+                        headers={"Content-Disposition": 'inline; filename="lighthouse.ics"'})  # fmt: skip
+
     # ------------------------------------------------------------------ jobs
 
     @app.get("/api/jobs")
@@ -449,9 +513,6 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
             "schedules": cfg.schedules,
             "recent_notifications": history(ws, limit=20)[::-1],
         }
-
-    class NotifyTestBody(BaseModel):
-        channel: str | None = None
 
     @app.post("/api/notify/test")
     def notify_test(body: NotifyTestBody | None = None) -> dict[str, Any]:

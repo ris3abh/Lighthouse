@@ -237,6 +237,43 @@ export interface SettingsView {
   recent_notifications: { at: string; event: string; title: string; ok: boolean; results: { channel: string; ok: boolean; error: string | null }[] }[];
 }
 
+export interface DeadlineItem {
+  id: string;
+  title: string;
+  due: string;
+  kind: string;
+  criterion: string | null;
+  url: string | null;
+  human_only: boolean;
+  done: boolean;
+  days_left: number;
+}
+
+export interface PipelineCard {
+  id: string;
+  title: string;
+  criterion: string | null;
+  stage: "idea" | "applied" | "waiting" | "done";
+  url: string | null;
+  follow_up: string | null;
+  created_at: string;
+  moved_at: string;
+  notes: string;
+  days_since_move: number;
+  stale: boolean;
+}
+
+export interface JobStatus {
+  name: string;
+  description: string;
+  schedule: string | null;
+  next_run: string | null;
+  error: string | null;
+  last_run?: string;
+  ok?: boolean;
+  summary?: string[];
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -313,6 +350,15 @@ export const api = {
   metrics: () => request<{ series: Series[] }>("GET", "/metrics"),
   snapshot: () => request<{ reports: SyncReport[] }>("POST", "/metrics/snapshot"),
   exportUrl: "./api/metrics/export.csv",
+
+  deadlines: () => request<DeadlineItem[]>("GET", "/deadlines"),
+  addDeadline: (d: { title: string; due: string; kind: string }) => request<DeadlineItem>("POST", "/deadlines", d),
+  updateDeadline: (id: string, d: Partial<DeadlineItem>) => request<DeadlineItem>("PATCH", `/deadlines/${enc(id)}`, d),
+  deleteDeadline: (id: string) => request<{ removed: string }>("DELETE", `/deadlines/${enc(id)}`),
+  pipeline: () => request<PipelineCard[]>("GET", "/pipeline"),
+  jobs: () => request<JobStatus[]>("GET", "/jobs"),
+  runJob: (name: string) => request<JobStatus>("POST", `/jobs/${enc(name)}/run`),
+  calendarUrl: "./calendar.ics",
 
   settings: () => request<SettingsView>("GET", "/settings"),
   notifyTest: (channel?: string) => request<{ ok: boolean; summary: string }>("POST", "/notify/test", { channel: channel ?? null }),

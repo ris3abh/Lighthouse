@@ -136,6 +136,13 @@ Store secrets in the keychain, never in the file: `lighthouse-gc secret set noti
 `lighthouse-gc notify test`. Anything sent to Slack, Discord, email or ntfy leaves your machine, so
 `detail: minimal` sends only counts ("2 deadlines this week"), never titles.
 
+### Calendar
+
+Deadlines and pipeline follow-ups are written to `data/calendar.ics` on every change. To subscribe from
+Apple Calendar, Outlook or Thunderbird on the same machine, use `webcal://127.0.0.1:7777/calendar.ics` while
+`lighthouse-gc up` is running, or import the file. Google Calendar can't reach your laptop's localhost, so
+import the `.ics` there (a one-way Google push is planned).
+
 ### Use it from Claude Code (or any MCP client)
 
 ```sh

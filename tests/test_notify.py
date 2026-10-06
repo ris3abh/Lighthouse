@@ -180,3 +180,16 @@ def test_api_settings_never_leaks_secrets(channels):
 class _Recorder:
     def send(self, note, cfg, secret):
         pass
+
+
+def test_api_notify_test_targets_one_channel(channels, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from lighthouse_gc.server.app import create_app
+
+    monkeypatch.setattr(
+        notify, "CHANNELS", lambda: {k: _Recorder() for k in ("desktop", "slack", "discord", "ntfy", "email")}
+    )
+    c = TestClient(create_app(channels, allowed_hosts=["testserver"]))
+    r = c.post("/api/notify/test", json={"channel": "slack"}, headers={"X-Lighthouse": "1"})
+    assert r.status_code == 200 and [x["channel"] for x in r.json()["results"]] == ["slack"]

@@ -91,10 +91,8 @@ def deadline_check(ws: Case, today: date | None = None) -> list[str]:
 
 
 def _write_calendar(ws: Case) -> None:
-    try:
-        from lighthouse_gc.criteria.calendar import write_calendar
-    except ImportError:  # calendar export arrives with the Calendar page
-        return
+    from lighthouse_gc.core.calendar import write_calendar
+
     write_calendar(ws)
 
 

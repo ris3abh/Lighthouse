@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 import { api } from "./api";
 import { Button, cx, ToastProvider, useToast } from "./components/ui";
 import { useLoad, useRoute, useTheme } from "./hooks";
+import Calendar from "./pages/Calendar";
 import Evidence from "./pages/Evidence";
 import Inbox from "./pages/Inbox";
 import Metrics from "./pages/Metrics";
@@ -18,6 +19,7 @@ const NAV = [
   { id: "inbox", label: "Inbox", icon: "⇣" },
   { id: "evidence", label: "Evidence", icon: "▤" },
   { id: "metrics", label: "Metrics", icon: "∿" },
+  { id: "calendar", label: "Calendar", icon: "▦" },
   { id: "sources", label: "Sources", icon: "⛁" },
   { id: "settings", label: "Settings", icon: "⚙" },
 ] as const;
@@ -69,6 +71,9 @@ function Shell() {
       break;
     case "sources":
       content = <Sources />;
+      break;
+    case "calendar":
+      content = <Calendar />;
       break;
     case "settings":
       content = <Settings />;

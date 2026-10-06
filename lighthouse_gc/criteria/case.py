@@ -97,10 +97,12 @@ class Case(Workspace):
 
     def after_change(self) -> Scoreboard:
         """Recompute the scoreboard and regenerate DASHBOARD.md."""
+        from lighthouse_gc.core.calendar import write_calendar
         from lighthouse_gc.criteria.dashboard import write_dashboard
 
         board = self.recompute()
         write_dashboard(self, board)
+        write_calendar(self)
         return board
 
     def apply_tracker(self, kind: str, proposal: dict[str, Any]) -> BaseModel:

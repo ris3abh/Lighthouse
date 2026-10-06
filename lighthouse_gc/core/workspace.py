@@ -424,6 +424,50 @@ class Workspace:
             raise WorkspaceError(f"invalid {kind} entry: {exc}") from exc
         raise WorkspaceError(f"unknown tracker kind {kind!r}")
 
+    # ------------------------------------------------------------------ deadlines
+
+    DEADLINE_FIELDS = ("title", "due", "kind", "criterion", "url", "human_only", "done")
+
+    def add_deadline(self, **fields: Any) -> Deadline:
+        with self.lock:
+            try:
+                deadline = Deadline.model_validate(fields)
+            except ValueError as exc:
+                raise WorkspaceError(f"invalid deadline: {exc}") from exc
+            dl = self.deadlines()
+            dl.deadlines.append(deadline)
+            self._save("deadlines.json", dl)
+            self.after_change()
+            return deadline
+
+    def update_deadline(self, deadline_id: str, **changes: Any) -> Deadline:
+        with self.lock:
+            dl = self.deadlines()
+            idx = next((i for i, d in enumerate(dl.deadlines) if d.id == deadline_id), None)
+            if idx is None:
+                raise NotFound(f"no deadline {deadline_id!r}")
+            bad = set(changes) - set(self.DEADLINE_FIELDS)
+            if bad:
+                raise WorkspaceError(f"not editable: {', '.join(sorted(bad))}")
+            try:
+                updated = Deadline.model_validate({**dl.deadlines[idx].model_dump(), **changes})
+            except ValueError as exc:
+                raise WorkspaceError(f"invalid deadline: {exc}") from exc
+            dl.deadlines[idx] = updated
+            self._save("deadlines.json", dl)
+            self.after_change()
+            return updated
+
+    def delete_deadline(self, deadline_id: str) -> None:
+        with self.lock:
+            dl = self.deadlines()
+            kept = [d for d in dl.deadlines if d.id != deadline_id]
+            if len(kept) == len(dl.deadlines):
+                raise NotFound(f"no deadline {deadline_id!r}")
+            dl.deadlines = kept
+            self._save("deadlines.json", dl)
+            self.after_change()
+
     # ------------------------------------------------------------------ uploads
 
     MAX_UPLOAD_BYTES = 25 * 1024 * 1024

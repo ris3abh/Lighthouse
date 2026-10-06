@@ -60,7 +60,7 @@ Phase 1a notes / follow-ups:
 
 - [x] Notifications: desktop, email, Slack, Discord, ntfy; routes; keychain secrets; Settings page
 - [x] Scheduler (APScheduler in `up`) + `run deadline-check` / `run digest`; biweekly metrics snapshot
-- [ ] Deadlines + calendar.ics + Calendar page
+- [x] Deadlines + calendar.ics + Calendar page
 - [ ] Pipeline kanban with staleness + Letters page
 
 ## Later in Phase 1

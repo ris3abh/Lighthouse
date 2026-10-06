@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Phase 0 core: workspace store, JSON Schemas for every file, `lighthouse-gc init / import / run / up / validate`.
+- GitHub (public + fine-grained PAT, incl. 14-day traffic history) and Hugging Face connectors.
+- O-1A and EB-1A profiles with a rule-based criteria engine; criterion overrides (gap / dropped).
+- Evidence-aware memory (SPEC 5b): append-only observations, claims with verbatim excerpts and offsets,
+  edges and review decisions; rebuildable SQLite index; bitemporal `as_of` queries.
+- Event stages: only completed / published / granted evidence counts toward a criterion.
+- Core/profile split: `lighthouse_gc.core` is domain-agnostic (enforced by tests).
+- Web dashboard: Overview, Inbox (with claim provenance), Evidence, Metrics, Sources.
+- Fictional "Alex Rivera" demo workspace, generated through the real connectors from recorded fixtures.
+- Repo guard pre-commit hook: required spec sections, two-repo warning, no case workspaces, gitleaks.
 - GitHub Actions CI: repo guard, ruff (lint + format), mypy, pytest on Python 3.11 and 3.13,
   `lighthouse-gc validate` on every example workspace, and the web type-check + build.
 - `lighthouse-gc mcp`: read-only MCP server (stdio) with `get_scoreboard`, `list_gaps`,
@@ -39,17 +49,13 @@ All notable changes to this project are documented here. The format follows
   items (no movement in 14+ days), next actions and the Inbox count.
 - `sync` now notifies about new candidates and sync errors.
 - `lighthouse-gc validate` checks every schedule's cron expression.
+- `data/calendar.ics` (RFC 5545, all-day events with a 1-day reminder) from open deadlines and pipeline
+  follow-ups, regenerated on every change and byte-for-byte deterministic. Served at `/calendar.ics` for
+  calendar apps on this machine (`webcal://127.0.0.1:7777/calendar.ics`).
+- Calendar page: month view, add / mark done / delete deadlines, subscribe link, and the recurring jobs with
+  their next run and a "Run now" button. Deadline API: `GET/POST /api/deadlines`, `PATCH/DELETE /api/deadlines/{id}`.
 
 ### Fixed
 - `metrics-snapshot` default schedule: cron can't express "biweekly" (`mon/2` meant something else);
   it now runs weekly on Mondays and the job skips unless 13+ days have passed.
-- Phase 0 core: workspace store, JSON Schemas for every file, `lighthouse-gc init / import / run / up / validate`.
-- GitHub (public + fine-grained PAT, incl. 14-day traffic history) and Hugging Face connectors.
-- O-1A and EB-1A profiles with a rule-based criteria engine; criterion overrides (gap / dropped).
-- Evidence-aware memory (SPEC 5b): append-only observations, claims with verbatim excerpts and offsets,
-  edges and review decisions; rebuildable SQLite index; bitemporal `as_of` queries.
-- Event stages: only completed / published / granted evidence counts toward a criterion.
-- Core/profile split: `lighthouse_gc.core` is domain-agnostic (enforced by tests).
-- Web dashboard: Overview, Inbox (with claim provenance), Evidence, Metrics, Sources.
-- Fictional "Alex Rivera" demo workspace, generated through the real connectors from recorded fixtures.
-- Repo guard pre-commit hook: required spec sections, two-repo warning, no case workspaces, gitleaks.
+- Request bodies for `/api/notify/test` were read as a query parameter (model defined inside the app factory).
