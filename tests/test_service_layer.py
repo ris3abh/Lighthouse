@@ -31,6 +31,9 @@ SYSTEM_ROUTES = {
     ("PUT", "/api/sources/{source_id:path}/token"), ("DELETE", "/api/sources/{source_id:path}"),
     ("POST", "/api/metrics/snapshot"), ("POST", "/api/jobs/{name}/run"), ("POST", "/api/notify/test"),
     ("POST", "/api/imports/chats"),
+    # Agent runs write their own records (agent/runs, agent/conversations); anything the agent changes in
+    # the workspace goes through Service(actor="agent:<run>"), covered in tests/test_agent.py.
+    ("POST", "/api/agent/chat"), ("POST", "/api/agent/runs"), ("POST", "/api/agent/runs/{run_id}/stop"),
 }  # fmt: skip
 
 

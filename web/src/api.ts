@@ -293,6 +293,62 @@ export interface LettersView {
   criteria: { id: string; label: string }[];
 }
 
+export interface AgentStatus {
+  engine: string;
+  available: boolean;
+  reason: string;
+  model: string;
+  effort: string;
+  web_search: boolean;
+  budget: { per_run_tokens: number; per_run_usd: number | null; monthly_tokens: number; monthly_usd: number | null };
+  month: { tokens: number; usd: number };
+}
+
+export interface TimelineItem {
+  type: "text" | "tool_call" | "error";
+  at: string;
+  text: string;
+  tool: string | null;
+  tool_id: string | null;
+  input: Record<string, unknown>;
+  ok: boolean | null;
+  result: string;
+}
+
+export interface AgentRunView {
+  id: string;
+  kind: "chat" | "manual" | "scheduled";
+  status: "running" | "done" | "error" | "stopped";
+  engine: string;
+  model: string;
+  prompt: string;
+  conversation_id: string | null;
+  started_at: string;
+  finished_at: string | null;
+  text: string;
+  timeline?: TimelineItem[];
+  sources: { url: string; title: string; observation_id: string | null; at: string }[];
+  proposals: string[];
+  changes: string[];
+  usage: { input_tokens: number; output_tokens: number; cache_creation_input_tokens: number; cache_read_input_tokens: number };
+  counted_tokens: number;
+  cost_usd: number | null;
+  stop_reason: string | null;
+  error: string | null;
+  tool_calls?: number;
+}
+
+export interface ConversationView {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  messages: { role: "user" | "assistant"; text: string; at: string; run_id: string | null }[];
+}
+
+/** One event from /api/agent/runs/{id}/stream. */
+export type AgentEvent = { type: string; [key: string]: unknown };
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -387,6 +443,17 @@ export const api = {
   jobs: () => request<JobStatus[]>("GET", "/jobs"),
   runJob: (name: string) => request<JobStatus>("POST", `/jobs/${enc(name)}/run`),
   calendarUrl: "./calendar.ics",
+
+  agentStatus: () => request<AgentStatus>("GET", "/agent/status"),
+  chat: (message: string, conversation_id?: string | null, page?: string) =>
+    request<{ run_id: string; conversation_id: string }>("POST", "/agent/chat", { message, conversation_id: conversation_id ?? null, page }),
+  startRun: (prompt: string) => request<{ run_id: string }>("POST", "/agent/runs", { prompt }),
+  stopRun: (id: string) => request<{ stopping: boolean }>("POST", `/agent/runs/${enc(id)}/stop`),
+  runs: () => request<AgentRunView[]>("GET", "/agent/runs"),
+  run: (id: string) => request<AgentRunView>("GET", `/agent/runs/${enc(id)}`),
+  runStreamUrl: (id: string) => `./api/agent/runs/${enc(id)}/stream`,
+  conversations: () => request<{ id: string; title: string; updated_at: string; messages: number }[]>("GET", "/agent/conversations"),
+  conversation: (id: string) => request<ConversationView>("GET", `/agent/conversations/${enc(id)}`),
 
   settings: () => request<SettingsView>("GET", "/settings"),
   notifyTest: (channel?: string) => request<{ ok: boolean; summary: string }>("POST", "/notify/test", { channel: channel ?? null }),

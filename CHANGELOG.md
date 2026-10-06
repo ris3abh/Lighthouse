@@ -76,6 +76,11 @@ All notable changes to this project are documented here. The format follows
   snapshot and a verbatim quote. Tool results are redacted (emails, phones, amounts) before the model
   sees them. Per-run and monthly token / dollar caps (`agent.budget` in `lighthouse.yaml`). Every run is
   saved in `agent/runs/`, chat conversations in `agent/conversations/`.
+- Chat panel on every page (✦ Ask): streams the agent's answer; shows each tool call as it happens (web
+  searches, pages read with links, files touched, proposals with a link to the Inbox); stop button;
+  conversation picker; month-to-date tokens and cost. Conversations are saved in `agent/conversations/`.
+  API: `POST /api/agent/chat`, `GET /api/agent/runs/{id}/stream` (Server-Sent Events), stop, conversations,
+  status.
 
 ### Changed
 - Chat import saves only conversations that produced a suggestion; the rest leave no content behind.

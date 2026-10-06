@@ -80,7 +80,7 @@ Phase 1b notes / follow-ups:
 
 - [x] 1. Agent engine: Claude Agent SDK adapter + Codex stub, web search, MCP read tools, service-layer
       propose tools, per-run / monthly budgets, mocked model in tests
-- [ ] 2. Chat panel on every page
+- [x] 2. Chat panel on every page (verified live against Claude in the demo workspace)
 - [ ] 3. Agent page
 - [ ] 4. Autopilot rules (after the user tries chat)
 - [ ] 5. Missions

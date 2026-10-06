@@ -174,6 +174,9 @@ class AgentRunner:
         cfg = self.ws.config()
         b = cfg.agent.budget
         ctx = RunContext(self.ws, run, redact=cfg.privacy.redact_before_llm)
+        tools = build_tools(ctx)
+        meta = {t.name: {"read_only": t.read_only, "touches": list(t.touches)} for t in tools}
+        meta["WebSearch"] = meta["web_search"] = {"read_only": True, "touches": []}
         calls: dict[str, TimelineItem] = {}
 
         async def emit(ev: AgentEvent) -> None:
@@ -195,8 +198,14 @@ class AgentRunner:
                     setattr(run.usage, k, getattr(run.usage, k) + int(v))
             elif ev.type == "error":
                 run.timeline.append(TimelineItem(type="error", text=str(ev.data.get("error"))))
-            await self._publish(live, {"type": ev.type, **ev.data, **({"usage": run.usage.model_dump()}
-                                                                        if ev.type == "usage" else {})})  # fmt: skip
+            extra: dict[str, Any] = {}
+            if ev.type == "usage":
+                extra["usage"] = run.usage.model_dump()
+            elif ev.type == "tool_call":
+                extra.update(meta.get(ev.data["name"], {"read_only": True, "touches": []}))
+            elif ev.type == "tool_result" and ev.data["id"] in calls:
+                extra["proposals"] = list(run.proposals)
+            await self._publish(live, {"type": ev.type, **ev.data, **extra})
             if live.stop:
                 raise StopRun(live.stop)
             if run.usage.counted > b.per_run_tokens:
@@ -205,7 +214,7 @@ class AgentRunner:
                 raise StopRun(f"monthly token budget reached ({b.monthly_tokens:,})")
 
         try:
-            result = await self.engine().run(request, build_tools(ctx), emit)
+            result = await self.engine().run(request, tools, emit)
             run.text = result.text
             run.cost_usd = result.cost_usd
             run.stop_reason = result.stop_reason

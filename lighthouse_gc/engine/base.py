@@ -24,6 +24,7 @@ class AgentTool:
     input_schema: dict[str, Any]
     handler: Callable[[dict[str, Any]], Awaitable[str]]
     read_only: bool = True
+    touches: tuple[str, ...] = ()  # workspace paths it reads (or, if not read_only, writes), shown in the UI
 
 
 @dataclass

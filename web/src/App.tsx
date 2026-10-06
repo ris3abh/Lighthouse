@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { api } from "./api";
+import ChatPanel from "./components/ChatPanel";
 import { Button, cx, ToastProvider, useToast } from "./components/ui";
 import { useLoad, useRoute, useTheme } from "./hooks";
 import Calendar from "./pages/Calendar";
@@ -47,6 +48,21 @@ function Shell() {
   const toast = useToast();
   const overview = useLoad(() => api.overview(), [version]);
   const [switching, setSwitching] = useState(false);
+  const [chatOpen, setChatOpen] = useState(() => {
+    try {
+      return localStorage.getItem("lh-chat-open") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleChat = (open: boolean) => {
+    setChatOpen(open);
+    try {
+      localStorage.setItem("lh-chat-open", open ? "1" : "0");
+    } catch {
+      /* storage unavailable */
+    }
+  };
   const ov = overview.data;
 
   const switchProfile = async (id: string) => {
@@ -164,6 +180,9 @@ function Shell() {
                 ))}
               </div>
             )}
+            <Button variant={chatOpen ? "primary" : "secondary"} size="sm" onClick={() => toggleChat(!chatOpen)} aria-pressed={chatOpen} title="Chat with the agent">
+              ✦ Ask
+            </Button>
             <Button variant="ghost" size="sm" onClick={toggle} aria-label="Toggle dark mode" title="Toggle theme">
               {dark ? "☀" : "☾"}
             </Button>
@@ -177,6 +196,7 @@ function Shell() {
           public regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.
         </footer>
       </div>
+      {chatOpen && <ChatPanel page={page} onClose={() => toggleChat(false)} />}
     </div>
   );
 }

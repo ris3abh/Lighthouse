@@ -292,7 +292,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         return _propose(cand)
 
     criteria = [c.id for c in ws.profile().criteria]
-    return [
+    tool_list = [
         AgentTool("get_scoreboard", "Current criteria scoreboard (banked / building / gap / dropped).", _obj({}, []), t_scoreboard),
         AgentTool("list_gaps", "Criteria not yet banked: what's missing, what's in progress, what's in the Inbox.", _obj({}, []), t_gaps),
         AgentTool("get_profile", "The active profile's criteria, accepted evidence types and strength signals.", _obj({}, []), t_profile),
@@ -331,4 +331,17 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                         "credentials": STR, "criteria": {"type": "array", "items": {"type": "string", "enum": criteria}},
                         "why": STR}, ["name", "relationship"]),
                   t_propose_letter, read_only=False),
-    ]  # fmt: skip
+        ]  # fmt: skip
+    touches = {
+        "get_scoreboard": ("data/exhibits.json", "data/criteria.json"), "list_gaps": ("data/exhibits.json", "data/inbox.json"),
+        "get_profile": ("profiles/",), "query_claims": ("memory/claims.jsonl",),
+        "get_provenance": ("memory/claims.jsonl", "memory/sources/"), "what_changed": ("memory/", "data/metrics.csv"),
+        "list_inbox": ("data/inbox.json",), "list_deadlines": ("data/deadlines.json",),
+        "list_pipeline": ("data/pipeline.json",), "list_letters": ("data/letters.json",),
+        "read_page": ("memory/sources/",), "propose_evidence": ("data/inbox.json",),
+        "propose_deadline": ("data/inbox.json",), "propose_pipeline_item": ("data/inbox.json",),
+        "propose_letter_writer": ("data/inbox.json",),
+    }  # fmt: skip
+    for t in tool_list:
+        t.touches = touches.get(t.name, ())
+    return tool_list

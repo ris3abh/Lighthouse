@@ -13,19 +13,23 @@ from __future__ import annotations
 import csv
 import datetime as dt
 import io
+import json
+from collections.abc import AsyncIterator
 from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from lighthouse_gc import __version__
+from lighthouse_gc.agent.runner import AgentRunner, BudgetExceeded
 from lighthouse_gc.core.models import METRICS_COLUMNS
 from lighthouse_gc.core.workspace import NotFound, WorkspaceError
 from lighthouse_gc.criteria import overview as views
 from lighthouse_gc.criteria.case import Case
+from lighthouse_gc.engine.base import Engine, EngineUnavailable
 from lighthouse_gc.resources import web_static_dir
 from lighthouse_gc.service import Service
 from lighthouse_gc.sources.http import SourceError
@@ -104,6 +108,16 @@ class LetterBody(BaseModel):
     last_contact: dt.date | None = None
 
 
+class ChatBody(BaseModel):
+    message: str
+    conversation_id: str | None = None
+    page: str | None = None
+
+
+class RunBody(BaseModel):
+    prompt: str
+
+
 class NotifyTestBody(BaseModel):
     channel: str | None = None
 
@@ -123,11 +137,13 @@ def pipeline_view(ws: Case) -> list[dict[str, Any]]:
     ]
 
 
-def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
+def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine | None = None) -> FastAPI:
     app = FastAPI(
         title="Lighthouse", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json"
     )
     svc = Service(ws)  # every user-initiated write goes through the service layer
+    runner = AgentRunner(ws, engine=engine)
+    app.state.runner = runner
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts or ["127.0.0.1", "localhost"])
 
     @app.middleware("http")
@@ -150,6 +166,14 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
     @app.exception_handler(WorkspaceError)
     async def _bad_request(_: Request, exc: WorkspaceError) -> JSONResponse:
         return JSONResponse({"detail": str(exc)}, status_code=400)
+
+    @app.exception_handler(BudgetExceeded)
+    async def _budget(_: Request, exc: BudgetExceeded) -> JSONResponse:
+        return JSONResponse({"detail": str(exc)}, status_code=429)
+
+    @app.exception_handler(EngineUnavailable)
+    async def _engine(_: Request, exc: EngineUnavailable) -> JSONResponse:
+        return JSONResponse({"detail": str(exc)}, status_code=503)
 
     @app.exception_handler(SourceError)
     async def _source_error(_: Request, exc: SourceError) -> JSONResponse:
@@ -604,6 +628,65 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None) -> FastAPI:
                                        minimal_body="Notifications are working."),
                       only=body.channel if body else None)  # fmt: skip
         return {"ok": report.ok, "summary": report.line(), "results": [r.__dict__ for r in report.results]}
+
+    # ------------------------------------------------------------------ agent (ADR 0005)
+
+    @app.get("/api/agent/status")
+    def agent_status() -> dict[str, Any]:
+        return runner.status()
+
+    @app.post("/api/agent/chat")
+    async def agent_chat(body: ChatBody) -> dict[str, Any]:
+        run = await runner.start("chat", body.message, conversation_id=body.conversation_id, page=body.page)
+        return {"run_id": run.id, "conversation_id": run.conversation_id}
+
+    @app.post("/api/agent/runs")
+    async def agent_manual_run(body: RunBody) -> dict[str, Any]:
+        run = await runner.start("manual", body.prompt)
+        return {"run_id": run.id}
+
+    @app.get("/api/agent/runs")
+    def agent_runs(limit: int = 100) -> list[dict[str, Any]]:
+        return [
+            {
+                **r.model_dump(mode="json", exclude={"timeline"}),
+                "tool_calls": sum(i.type == "tool_call" for i in r.timeline),
+                "counted_tokens": r.usage.counted,
+            }  # fmt: skip
+            for r in runner.runs(limit)
+        ]
+
+    @app.get("/api/agent/runs/{run_id}")
+    def agent_run(run_id: str) -> dict[str, Any]:
+        r = runner.get(run_id)
+        return {**r.model_dump(mode="json"), "counted_tokens": r.usage.counted}
+
+    @app.get("/api/agent/runs/{run_id}/stream")
+    async def agent_stream(run_id: str) -> StreamingResponse:
+        runner.get(run_id)  # 404 if unknown
+
+        async def events() -> AsyncIterator[bytes]:
+            async for event in runner.stream(run_id):
+                # EventSource reserves "error" for connection failures, so agent errors go out as agent_error.
+                name = "agent_error" if event["type"] == "error" else event["type"]
+                yield f"event: {name}\ndata: {json.dumps(event, default=str)}\n\n".encode()
+
+        return StreamingResponse(events(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})  # fmt: skip
+
+    @app.post("/api/agent/runs/{run_id}/stop")
+    def agent_stop(run_id: str) -> dict[str, Any]:
+        runner.get(run_id)
+        return {"stopping": runner.stop(run_id)}
+
+    @app.get("/api/agent/conversations")
+    def agent_conversations() -> list[dict[str, Any]]:
+        return [{"id": c.id, "title": c.title, "updated_at": c.updated_at.isoformat(), "messages": len(c.messages)}
+                for c in runner.conversations()]  # fmt: skip
+
+    @app.get("/api/agent/conversations/{conv_id}")
+    def agent_conversation(conv_id: str) -> dict[str, Any]:
+        return runner.conversation(conv_id).model_dump(mode="json")
 
     # ------------------------------------------------------------------ web UI
 

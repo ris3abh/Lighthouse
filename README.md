@@ -118,6 +118,23 @@ about immigration. Profiles and scoring live in a separate layer, so other domai
 | `lighthouse-gc secret set <ref>` | store a token / webhook URL / SMTP password in the OS keychain |
 | `lighthouse-gc mcp` | read-only MCP server over stdio for Claude Code, Codex or any MCP client |
 
+### Ask the agent
+
+Click **✦ Ask** on any page to open the chat panel. The agent (Claude, through the Claude Agent SDK) reads
+your workspace and the web. Each step is shown as it happens: searches, pages read, which workspace files
+a tool touched. It can't change anything itself. Suggestions land in your **Inbox** and link there, and
+evidence it proposes must quote the page it read, word for word. Conversations are saved in your
+workspace (`agent/conversations/`); nothing is kept in `~/.claude`. You need Claude Code installed and logged
+in (or `ANTHROPIC_API_KEY`). Spend is capped per run and per month in `lighthouse.yaml`:
+
+```yaml
+agent:
+  model: claude-opus-5-5
+  effort: medium
+  web_search: true
+  budget: {per_run_tokens: 300000, per_run_usd: 2.0, monthly_tokens: 10000000, monthly_usd: 50.0}
+```
+
 ### Notifications
 
 Desktop notifications work out of the box. To add email, Slack, Discord or ntfy, add a channel under
