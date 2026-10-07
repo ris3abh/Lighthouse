@@ -27,6 +27,7 @@ from typing import Any, Self, TypeVar
 import yaml
 from pydantic import BaseModel, TypeAdapter
 
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.memory import Memory
 from lighthouse_gc.core.models import (
     EXHIBIT_NAME_RE,
@@ -309,7 +310,7 @@ class Workspace:
             return added
 
     def pending_candidates(self, today: date | None = None) -> list[Candidate]:
-        today = today or date.today()
+        today = today or clock.today()
         out = []
         for c in self.inbox().candidates:
             if c.status == "pending" or (
@@ -366,7 +367,7 @@ class Workspace:
             inbox = self.inbox()
             cand = self._candidate(inbox, candidate_id)
             cand.status = "snoozed"
-            cand.snoozed_until = until or (date.today() + timedelta(days=7))
+            cand.snoozed_until = until or (clock.today() + timedelta(days=7))
             self.save_inbox(inbox)
             self.after_change()
             return cand
@@ -386,7 +387,7 @@ class Workspace:
                 raise WorkspaceError(
                     "self-reported items can't become exhibits; upload the underlying document instead"
                 )
-            exhibit_date = edits.pop("date", None) or date.today()
+            exhibit_date = edits.pop("date", None) or clock.today()
             for key, value in edits.items():
                 if key not in self.EDITABLE_CANDIDATE_FIELDS:
                     raise WorkspaceError(f"field {key!r} is not editable")

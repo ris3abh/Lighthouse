@@ -16,8 +16,8 @@ from typing import Any
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from tzlocal import get_localzone
 
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import utcnow
 from lighthouse_gc.criteria.case import Case
 
@@ -27,7 +27,7 @@ _run_lock = threading.Lock()
 
 def trigger(expr: str) -> CronTrigger:
     try:
-        return CronTrigger.from_crontab(expr, timezone=get_localzone())
+        return CronTrigger.from_crontab(expr, timezone=clock.local_tz())
     except ValueError as exc:
         raise ValueError(f"invalid cron expression {expr!r}: {exc}") from exc
 
@@ -76,7 +76,7 @@ def run_job(ws: Case, name: str, *, scheduled: bool = False) -> dict[str, Any]:
 def jobs_status(ws: Case, now: datetime | None = None) -> list[dict[str, Any]]:
     from lighthouse_gc.jobs import JOBS
 
-    now = now or datetime.now(get_localzone())
+    now = now or clock.now()
     state = load_state(ws)
     out = []
     for name, (desc, _) in JOBS.items():
@@ -96,7 +96,7 @@ def jobs_status(ws: Case, now: datetime | None = None) -> list[dict[str, Any]]:
 
 def missed(ws: Case, now: datetime | None = None) -> list[str]:
     """Jobs whose last scheduled time passed since their last run (e.g. the laptop was asleep)."""
-    now = now or datetime.now(get_localzone())
+    now = now or clock.now()
     state = load_state(ws)
     out = []
     for name, expr in ws.config().schedules.items():
@@ -118,7 +118,7 @@ def missed(ws: Case, now: datetime | None = None) -> list[str]:
 def start(ws: Case) -> BackgroundScheduler:
     from lighthouse_gc.jobs import JOBS
 
-    sched = BackgroundScheduler(timezone=get_localzone(), job_defaults={"coalesce": True, "max_instances": 1,
+    sched = BackgroundScheduler(timezone=clock.local_tz(), job_defaults={"coalesce": True, "max_instances": 1,
                                                                           "misfire_grace_time": 3600})  # fmt: skip
     for name, expr in ws.config().schedules.items():
         if not expr:

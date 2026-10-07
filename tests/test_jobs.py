@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from conftest import mock_github
@@ -11,6 +11,7 @@ from typer.testing import CliRunner
 
 from lighthouse_gc import notify
 from lighthouse_gc.cli import app
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import Deadline, Deadlines, Pipeline, PipelineItem
 from lighthouse_gc.core.workspace import _atomic_write, dump_model
 from lighthouse_gc.jobs import JOBS, alerts, scheduler
@@ -104,7 +105,7 @@ def test_failed_send_is_retried_next_run(ws, monkeypatch):
 
 def test_digest_lists_stale_items_deadlines_and_actions(demo_ws, sent):
     pl = demo_ws.pipeline()
-    pl.items[0].moved_at = datetime(2026, 9, 1, tzinfo=UTC)  # 35 days without movement
+    pl.items[0].moved_at = datetime(2026, 9, 1, 12, tzinfo=clock.local_tz())  # 35 local days without movement
     _atomic_write(demo_ws.data_dir / "pipeline.json", dump_model(pl))
     d = alerts.build_digest(demo_ws, TODAY, since=date(2026, 10, 1))
     text = d["text"]
@@ -170,7 +171,7 @@ def test_scheduler_registers_jobs_from_config(demo_ws):
 
 
 def test_missed_runs_catch_up(ws):
-    tz = scheduler.get_localzone()
+    tz = clock.local_tz()
     now = datetime(2026, 10, 6, 12, 0, tzinfo=tz)
     state = {
         "deadline-check": {"last_run": datetime(2026, 10, 4, 6, 0, tzinfo=tz).isoformat()},  # missed 2 runs

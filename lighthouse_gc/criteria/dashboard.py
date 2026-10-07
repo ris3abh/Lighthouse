@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.workspace import _atomic_write
 from lighthouse_gc.criteria import overview as views
 from lighthouse_gc.criteria.case import Case
@@ -29,7 +30,7 @@ def _delta(v: float | None) -> str:
 
 
 def render(ws: Case, board: Scoreboard | None = None, today: date | None = None) -> str:
-    today = today or date.today()
+    today = today or clock.today()
     board = board or ws.scoreboard()
     person = ws.person()
     profile = ws.profile(board.profile)
@@ -113,7 +114,7 @@ def render(ws: Case, board: Scoreboard | None = None, today: date | None = None)
     sources = ws.sources().sources
     for s in sources:
         tracked = sum(i.tracked for i in s.items)
-        sync = s.last_sync.date().isoformat() if s.last_sync else "never"
+        sync = clock.local_date(s.last_sync).isoformat() if s.last_sync else "never"
         err = f" — ⚠️ {s.last_error}" if s.last_error else ""
         w(f"- `{s.id}` — {tracked} tracked item(s), last sync {sync}{err}")
     if not sources:

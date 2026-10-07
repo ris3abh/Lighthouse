@@ -19,6 +19,7 @@ from typing import Any
 import anyio
 
 from lighthouse_gc.agent.runner import AgentRunner, BudgetExceeded
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import AgentRun
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.engine.base import Engine, EngineUnavailable
@@ -48,7 +49,7 @@ def _scout_prompt(ws: Case, since: date | None) -> str:
 
 
 def _changed_prompt(ws: Case, since: date | None) -> str:
-    since = since or date.today() - timedelta(days=1)
+    since = since or clock.today() - timedelta(days=1)
     return (
         f"Daily check-in. Since {since.isoformat()}:\n"
         f"1. Call what_changed with since={since.isoformat()}, then list_inbox, list_deadlines, list_pipeline and "
@@ -87,16 +88,16 @@ def precheck(ws: Case, runner: AgentRunner, name: str) -> str | None:
         + [c for c in ws.memory.claims() if c.recorded_at > since]
         + [c for c in ws.pending_candidates() if c.created_at > since and c.source != own]
     )
-    soon = [d for d in ws.deadlines().deadlines if not d.done and 0 <= (d.due - date.today()).days <= 3]
+    soon = [d for d in ws.deadlines().deadlines if not d.done and 0 <= (d.due - clock.today()).days <= 3]
     if not (activity or soon):
-        return f"nothing changed since {since.date().isoformat()}"
+        return f"nothing changed since {clock.local_date(since).isoformat()}"
     return None
 
 
 async def start(runner: AgentRunner, name: str) -> AgentRun:
     mission = MISSIONS[name]
     previous = last_run(runner, name)
-    prompt = mission.prompt(runner.ws, previous.started_at.date() if previous else None)
+    prompt = mission.prompt(runner.ws, clock.local_date(previous.started_at) if previous else None)
     return await runner.start("scheduled", prompt, mission=name)
 
 

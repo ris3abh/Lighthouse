@@ -6,7 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Any
 
 import anyio
@@ -15,6 +15,7 @@ import httpx
 from lighthouse_gc.agent import autopilot
 from lighthouse_gc.agent.redact import redact
 from lighthouse_gc.agent.search_policy import SearchPolicy
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import (
     AgentRun,
     Briefing,
@@ -156,7 +157,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                 f"domains ({', '.join(v.manifest.tier1_domains)}), then Tier 2, and read the page with read_page.")  # fmt: skip
         return ctx.out({
             "results": [{"chunk_id": h.chunk_id, "tier": h.tier, "source": h.title, "url": h.url, "fresh": h.fresh,
-                         "checked": h.checked_at.date().isoformat(),
+                         "checked": clock.local_date(h.checked_at).isoformat(),
                          "effective": h.effective_date.isoformat() if h.effective_date else None,
                          "finding": h.source_id.startswith("found-"), "text": h.text} for h in hits],
             "refreshed": refreshed, "note": note,
@@ -203,7 +204,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                                                subject_name=args["title"][:80], subject_url=obs.source_url,
                                                predicate="supports_criterion", value=crit.id,
                                                excerpt=args["quote"], stage=args.get("stage"),
-                                               valid_from=date.today(), confidence="medium")])  # fmt: skip
+                                               valid_from=clock.today(), confidence="medium")])  # fmt: skip
         cand = Candidate(kind="evidence", fingerprint=f"agent:{crit.id}:{key}", source=f"agent:{ctx.run.id}",
                          evidence_type=args["evidence_type"], proposed_criterion=crit.id, title=args["title"][:120],
                          summary=args["summary"][:500], confidence=0.5, raw_url=obs.source_url,
@@ -224,7 +225,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                                           media_type="text/plain", claims=[ClaimDraft(
                                               subject=f"task:{slugify(args['title'], 40)}", subject_kind="event",
                                               subject_name=args["title"][:80], predicate="deadline",
-                                              value=args["due"], excerpt=args["quote"], valid_from=date.today(),
+                                              value=args["due"], excerpt=args["quote"], valid_from=clock.today(),
                                               confidence="high")]))  # fmt: skip
                 ctx.auto_svc.add_deadline(**proposal)
                 return ("Added to deadlines automatically (autopilot: Tier-1 deadlines). The person can undo it "
@@ -302,7 +303,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         shown = {f"{value:g}", f"{value:,.0f}", f"{int(value)}"} if value.is_integer() else {f"{value:g}"}
         if not any(s in args["quote"] for s in shown):
             raise ValueError("the quote must contain the number you're recording")
-        row = MetricRow(date=args.get("date") or date.today(), source=slugify(args.get("source") or "web", 24),
+        row = MetricRow(date=args.get("date") or clock.today(), source=slugify(args.get("source") or "web", 24),
                         item=args["item"][:120], metric=slugify(args["metric"], 40).replace("-", "_"), value=value)  # fmt: skip
         evidence = Evidence(connector="agent", source_url=obs.source_url, payload=text, media_type="text/plain",
                             claims=[ClaimDraft(subject=f"artifact:{row.source}:{row.item}", subject_name=row.item,
@@ -332,7 +333,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         if len(todos) > 3:
             raise ValueError("at most three things to do")
         since = args.get("since")
-        briefing = Briefing(generated_at=datetime.now(UTC), run_id=ctx.run.id,
+        briefing = Briefing(generated_at=clock.utcnow(), run_id=ctx.run.id,
                             since=date.fromisoformat(since) if since else None,
                             changed=[str(c)[:300] for c in args.get("changed") or []][:8], todos=todos)  # fmt: skip
         if ctx.checker is not None:

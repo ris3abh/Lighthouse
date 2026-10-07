@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from lighthouse_gc import notify
 from lighthouse_gc.agent import missions
 from lighthouse_gc.agent.runner import AgentRunner
+from lighthouse_gc.core import clock
 from lighthouse_gc.jobs import JOBS
 from lighthouse_gc.server.app import create_app
 
@@ -94,7 +95,7 @@ def test_what_changed_skips_without_tokens_when_nothing_changed(demo_ws, monkeyp
     assert first[0].startswith("What changed: done")
     assert "Daily check-in" in engine.requests[0].prompt
     second = missions.run_job(demo_ws, "what_changed", scheduled=True, engine=engine)
-    assert second == [f"skipped: nothing changed since {AgentRunner(demo_ws).runs()[0].started_at.date()}; "
+    assert second == [f"skipped: nothing changed since {clock.local_date(AgentRunner(demo_ws).runs()[0].started_at)}; "
                       "no tokens spent"]  # fmt: skip
     assert len(engine.requests) == 1
 

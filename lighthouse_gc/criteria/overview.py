@@ -6,6 +6,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from typing import Any
 
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import MetricRow
 from lighthouse_gc.criteria.case import Case
 
@@ -63,7 +64,7 @@ def headline_series(ws: Case, limit: int = 6) -> list[dict[str, Any]]:
 
 
 def upcoming_deadlines(ws: Case, n: int = 3, today: date | None = None) -> list[dict[str, Any]]:
-    today = today or date.today()
+    today = today or clock.today()
     items = sorted(
         (d for d in ws.deadlines().deadlines if not d.done and d.due >= today), key=lambda d: d.due
     )
@@ -72,7 +73,7 @@ def upcoming_deadlines(ws: Case, n: int = 3, today: date | None = None) -> list[
 
 def human_tasks(ws: Case, today: date | None = None) -> list[dict[str, Any]]:
     """This week's things only the user can do: review the inbox, hit deadlines, follow up."""
-    today = today or date.today()
+    today = today or clock.today()
     week_end = today + timedelta(days=7)
     tasks: list[dict[str, Any]] = []
 

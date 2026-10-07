@@ -21,6 +21,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import Candidate, ClaimDraft, Evidence, slugify
 
 Provider = Literal["claude", "chatgpt"]
@@ -155,7 +156,7 @@ def _parse_chatgpt(item: dict[str, Any]) -> Conversation:
 
 def transcript(conv: Conversation) -> str:
     """Deterministic markdown rendering of a conversation; excerpts index into this text."""
-    when = conv.created.date().isoformat() if conv.created else "unknown date"
+    when = clock.local_date(conv.created).isoformat() if conv.created else "unknown date"
     lines = [f"# {conv.title}", "", f"_{conv.provider} conversation {conv.id}, {when}_", ""]
     for m in conv.messages:
         stamp = m.at.isoformat(timespec="minutes") if m.at else ""
@@ -266,7 +267,7 @@ def extract(conv: Conversation) -> list[Extraction]:
     for msg in conv.messages:
         if msg.role != "user":
             continue
-        ref = (msg.at or conv.created or datetime.now(UTC)).date()
+        ref = clock.local_date(msg.at or conv.created or clock.utcnow())
         for sentence in _sentences(msg.text):
             out += _letters(sentence, ref) + _pipeline(sentence, ref)
             due = find_date(sentence, ref)

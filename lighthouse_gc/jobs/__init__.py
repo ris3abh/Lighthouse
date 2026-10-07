@@ -8,8 +8,9 @@ opportunity-scan arrive in Phase 2.
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import date, timedelta
+from datetime import timedelta
 
+from lighthouse_gc.core import clock
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.criteria.dashboard import write_dashboard
 from lighthouse_gc.jobs import alerts
@@ -51,7 +52,7 @@ def _run_snapshot(ws: Case, scheduled: bool = False) -> list[str]:
     if scheduled:
         dates = [r.date for r in ws.metrics() if r.source in ("github", "huggingface")]
         last = max(dates) if dates else None
-        if last and date.today() - last < timedelta(days=SNAPSHOT_MIN_DAYS):
+        if last and clock.today() - last < timedelta(days=SNAPSHOT_MIN_DAYS):
             return [
                 f"skipped: last snapshot {last.isoformat()} is under {SNAPSHOT_MIN_DAYS} days old (biweekly)"
             ]

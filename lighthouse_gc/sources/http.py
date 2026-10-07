@@ -6,13 +6,13 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import httpx
 
 from lighthouse_gc import __version__
+from lighthouse_gc.core import clock
 
 USER_AGENT = f"lighthouse-gc/{__version__} (+https://github.com/ris3abh/Lighthouse)"
 MAX_WAIT_SECONDS = 60.0
@@ -178,7 +178,7 @@ def _retry_after(resp: httpx.Response, attempt: int) -> float | None:
         return float(resp.headers["retry-after"])
     reset = resp.headers.get("x-ratelimit-reset")
     if rate_limited and reset and reset.isdigit():
-        return max(1.0, int(reset) - datetime.now(UTC).timestamp())
+        return max(1.0, int(reset) - clock.utcnow().timestamp())
     return float(min(MAX_WAIT_SECONDS, 2**attempt))
 
 

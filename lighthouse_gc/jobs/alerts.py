@@ -6,6 +6,7 @@ from collections import Counter
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
+from lighthouse_gc.core import clock
 from lighthouse_gc.criteria import overview as views
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.notify import Notification, Report, already_sent, last_sent, send
@@ -69,7 +70,7 @@ def due_items(ws: Case, today: date) -> list[dict[str, Any]]:
 
 def deadline_check(ws: Case, today: date | None = None) -> list[str]:
     """Alert once per deadline per threshold (14 / 3 / 1 / 0 days, overdue). Regenerates calendar.ics."""
-    today = today or date.today()
+    today = today or clock.today()
     lines = []
     for item in due_items(ws, today):
         if already_sent(ws, item["key"]):
@@ -99,7 +100,7 @@ def _write_calendar(ws: Case) -> None:
 def stale_pipeline(ws: Case, today: date) -> list[dict[str, Any]]:
     cutoff = datetime.combine(today, datetime.min.time(), UTC) - timedelta(days=STALE_DAYS)
     return [
-        {"id": p.id, "title": p.title, "stage": p.stage, "days": (today - p.moved_at.date()).days}
+        {"id": p.id, "title": p.title, "stage": p.stage, "days": (today - clock.local_date(p.moved_at)).days}
         for p in ws.pipeline().items
         if p.stage != "done" and p.moved_at < cutoff
     ]
@@ -108,7 +109,7 @@ def stale_pipeline(ws: Case, today: date) -> list[dict[str, Any]]:
 def build_digest(ws: Case, today: date | None = None, since: date | None = None) -> dict[str, Any]:
     from lighthouse_gc.mcp.tools import what_changed
 
-    today = today or date.today()
+    today = today or clock.today()
     since = since or today - timedelta(days=7)
     changed = what_changed(ws, since.isoformat())
     board = ws.scoreboard()
@@ -144,9 +145,9 @@ def build_digest(ws: Case, today: date | None = None, since: date | None = None)
 
 
 def digest(ws: Case, today: date | None = None) -> list[str]:
-    today = today or date.today()
+    today = today or clock.today()
     previous = last_sent(ws, "digest")
-    since = previous.date() if previous else today - timedelta(days=7)
+    since = clock.local_date(previous) if previous else today - timedelta(days=7)
     d = build_digest(ws, today, since)
     report: Report = send(
         ws,

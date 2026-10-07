@@ -8,6 +8,7 @@ from collections import Counter
 import anyio
 import httpx
 
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.workspace import Workspace
 from lighthouse_gc.vault.models import VaultFetch
 from lighthouse_gc.vault.store import Vault
@@ -51,7 +52,8 @@ def remind_manual(ws: Workspace, vault: Vault) -> str | None:
     port = ws.config().server.port
     knowledge = f"http://127.0.0.1:{port}/#/knowledge"
     lines = [
-        f"· {s.title}: last imported {checked.date().isoformat()}\n  {vault.link(s)}" for s, checked in lapsed
+        f"· {s.title}: last imported {clock.local_date(checked).isoformat()}\n  {vault.link(s)}"
+        for s, checked in lapsed
     ]
     first = lapsed[0][0]
     title = (f"Re-import: {first.title}" if len(lapsed) == 1

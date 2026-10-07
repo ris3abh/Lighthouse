@@ -33,6 +33,7 @@ import httpx
 import yaml
 
 from lighthouse_gc import web
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import utcnow
 from lighthouse_gc.core.workspace import Workspace, _atomic_write
 from lighthouse_gc.resources import vault_manifest_path
@@ -610,7 +611,7 @@ class Vault:
 
 
 def _date_values() -> dict[str, Any]:
-    today = date.today()
+    today = clock.today()
     return {"year": today.year, "month": MONTHS[today.month - 1],
             "fy": today.year + 1 if today.month >= 10 else today.year}  # fmt: skip
 

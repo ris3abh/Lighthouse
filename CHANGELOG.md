@@ -41,6 +41,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 - `as_of` memory queries dropped claims recorded late in the local evening (after midnight UTC).
+- One clock (`lighthouse_gc.core.clock`): "today", day counts and calendar days are the person's local day
+  (the machine's time zone; `TZ` overrides it), never the UTC date. Fixed in deadline days-left, pipeline
+  staleness (now calendar days, matching the digest), the agent's "Today is", the briefing's "nothing changed
+  since", chat-export dates, the Visa Bulletin month and fiscal year, and source "last sync" dates. A test
+  fails if code reads the date anywhere else; frozen-clock tests at 23:59 / 00:01 local and UTC.
 
 ## [0.1.0] - 2026-10-06
 

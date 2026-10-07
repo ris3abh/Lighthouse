@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import Annotated, Any, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator, model_validator
@@ -21,7 +21,9 @@ Confidence = Annotated[float, Field(ge=0.0, le=1.0)]
 
 
 def utcnow() -> datetime:
-    return datetime.now(UTC).replace(microsecond=0)
+    from lighthouse_gc.core import clock
+
+    return clock.utcnow()
 
 
 def new_id(prefix: str) -> str:

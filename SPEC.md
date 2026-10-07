@@ -324,6 +324,10 @@ not a crawler). Users can add custom scans from the UI.
 
 ## 8. Scheduler, notifications, calendar, agent and chat
 
+**Time.** Timestamps are stored in UTC. "Today", deadline days-left, staleness and "as of" dates use the
+person's local calendar day: the machine's time zone, or `TZ` if set. One helper (`core/clock.py`) provides
+all of these.
+
 **Scheduler.** APScheduler runs inside `lighthouse up`. For machines that aren't always on,
 `lighthouse run <job>` is a headless CLI that cron / launchd / GitHub Actions can call. Default schedule (all
 editable in Settings):

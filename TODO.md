@@ -115,6 +115,7 @@ Phase 1d notes:
   against its live text.
 - The hashing embedder is weak on paraphrase; FTS carries exact terms. A dense local model is a follow-up.
   Example: "at least three of the ten criteria" retrieves the Policy Manual chapters ahead of 8 CFR 204.5(h).
+- Dates: everything goes through `core/clock.py` (local day). GitHub traffic keeps GitHub's UTC day buckets.
 - Fees: 8 CFR 106.2 / 106.4 (eCFR) are primary; the USCIS G-1055 page is secondary and reminds when stale.
 - Fixed along the way: `as_of` memory queries compared the UTC date of recorded_at, so late-evening claims
   (after midnight UTC) disappeared from "as of today". They now use the end of the local day.

@@ -10,6 +10,7 @@ from collections.abc import Callable
 from datetime import date
 from typing import Any
 
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import Candidate, ConnectorConfig, Evidence, MetricRow, TrackedItem
 from lighthouse_gc.sources.base import Creds, artifact_id, field_claims, paper_candidate
 from lighthouse_gc.sources.http import HttpClient
@@ -56,7 +57,7 @@ class HuggingFaceSource:
         self,
         http: HttpClient | None = None,
         config: ConnectorConfig | None = None,
-        today: Callable[[], date] = date.today,
+        today: Callable[[], date] = clock.today,
     ):
         self.http = http or HttpClient(API, kind=self.kind)
         self.config = config or ConnectorConfig()

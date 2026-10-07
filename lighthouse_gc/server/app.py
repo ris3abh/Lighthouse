@@ -27,6 +27,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from lighthouse_gc import __version__
 from lighthouse_gc.agent.runner import AgentRunner, BudgetExceeded
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import METRICS_COLUMNS
 from lighthouse_gc.core.workspace import NotFound, WorkspaceError
 from lighthouse_gc.criteria import overview as views
@@ -151,12 +152,12 @@ STALE_DAYS = 14
 
 
 def pipeline_view(ws: Case) -> list[dict[str, Any]]:
-    now = dt.datetime.now(dt.UTC)
+    today = clock.today()
     return [
         {
             **p.model_dump(mode="json"),
-            "days_since_move": (now - p.moved_at).days,
-            "stale": p.stage != "done" and (now - p.moved_at).days >= STALE_DAYS,
+            "days_since_move": (today - clock.local_date(p.moved_at)).days,
+            "stale": p.stage != "done" and (today - clock.local_date(p.moved_at)).days >= STALE_DAYS,
         }  # fmt: skip
         for p in ws.pipeline().items
     ]
@@ -456,7 +457,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
 
     @app.get("/api/deadlines")
     def get_deadlines() -> list[dict[str, Any]]:
-        today = dt.date.today()
+        today = clock.today()
         return [
             {**d.model_dump(mode="json"), "days_left": (d.due - today).days}
             for d in sorted(ws.deadlines().deadlines, key=lambda d: d.due)

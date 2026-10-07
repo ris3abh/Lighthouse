@@ -10,13 +10,14 @@ import asyncio
 import json
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 from lighthouse_gc.agent.prompt import SYSTEM_PROMPT
 from lighthouse_gc.agent.search_policy import SearchPolicy
 from lighthouse_gc.agent.tools import RunContext, build_tools
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import AgentRun, Conversation, ConversationMessage, TimelineItem, utcnow
 from lighthouse_gc.core.workspace import NotFound, WorkspaceError, _atomic_write, dump_model
 from lighthouse_gc.criteria.case import Case
@@ -109,7 +110,7 @@ class AgentRunner:
     # ------------------------------------------------------------------ budgets
 
     def month_usage(self, today: date | None = None) -> dict[str, float | None]:
-        today = today or date.today()
+        today = today or clock.today()
         tokens, usd, cached, written, uncached = 0, 0.0, 0, 0, 0
         for run in self.runs(limit=100_000):
             if run.started_at.year == today.year and run.started_at.month == today.month:
@@ -326,7 +327,7 @@ class AgentRunner:
 
 
 def _render_turn(prompt: str, history: list[ConversationMessage], ws: Case, page: str | None) -> str:
-    lines = [f"Today is {datetime.now(UTC).date().isoformat()}. Active profile: {ws.profile_id()}."]
+    lines = [f"Today is {clock.today().isoformat()}. Active profile: {ws.profile_id()}."]
     if page:
         lines.append(f"The person is on the {page} page of the dashboard.")
     if history:

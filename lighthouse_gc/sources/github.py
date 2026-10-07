@@ -13,6 +13,7 @@ from datetime import date, datetime
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import Candidate, ClaimDraft, ConnectorConfig, Evidence, MetricRow, TrackedItem
 from lighthouse_gc.sources.base import Creds, artifact_id, field_claims, paper_candidate
 from lighthouse_gc.sources.http import HttpClient
@@ -42,7 +43,7 @@ class GitHubSource:
         self,
         http: HttpClient | None = None,
         config: ConnectorConfig | None = None,
-        today: Callable[[], date] = date.today,
+        today: Callable[[], date] = clock.today,
     ):
         self.http = http or HttpClient(API, kind=self.kind, headers=HEADERS)
         self.config = config or ConnectorConfig()
@@ -192,6 +193,7 @@ class GitHubSource:
                     ),
                 )  # fmt: skip
                 for point in resp.data.get(kind, []):
+                    # GitHub buckets traffic by UTC day; keep its day, not the local one.
                     on = datetime.fromisoformat(point["timestamp"].replace("Z", "+00:00")).date()
                     rows.append(row(kind, point["count"], on).with_evidence(traffic))
                     rows.append(row(f"{kind}_unique", point["uniques"], on).with_evidence(traffic))
