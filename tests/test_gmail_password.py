@@ -86,3 +86,25 @@ def test_no_network_means_a_plain_error(c, monkeypatch):
 def test_a_bad_address_is_refused_before_any_login(c, monkeypatch):
     gmail = FakeGmail().install(monkeypatch)
     assert _put(c, email='alex"@gmail.com').status_code == 400 and not gmail.commands
+
+
+def test_the_calendar_works_without_the_oauth_client(demo_ws):
+    """The client is optional (Advanced: also sync Google Calendar): deadlines stay in calendar.ics."""
+    from areao1.google import calendar
+
+    assert "isn't connected" in calendar.sync(demo_ws)[0]
+    with TestClient(create_app(demo_ws, allowed_hosts=["testserver"])) as client:
+        ics = client.get("/calendar.ics").text
+    open_deadlines = [d for d in demo_ws.deadlines().deadlines if not d.done]
+    assert ics.count("BEGIN:VEVENT") >= len(open_deadlines) > 0
+
+
+def test_settings_puts_gmail_first_and_the_client_under_advanced():
+    from pathlib import Path
+
+    web = Path(__file__).parents[1] / "web" / "src"
+    settings = (web / "pages" / "Settings.tsx").read_text()
+    assert settings.index("<GmailConnect />") < settings.index("<GoogleConnect />")
+    google = (web / "components" / "GoogleConnect.tsx").read_text()
+    assert "<details" in google and "Advanced: also sync Google Calendar" in google
+    assert "Gmail API" not in google  # email needs no Google Cloud project

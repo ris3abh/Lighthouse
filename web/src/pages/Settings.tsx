@@ -84,6 +84,7 @@ export default function Settings() {
 
       <Card title="Google" className="mb-8">
         <div className="border-b border-line p-6">
+          <h3 className="eyebrow mb-3">Connect Gmail</h3>
           <GmailConnect />
         </div>
         <GoogleConnect />

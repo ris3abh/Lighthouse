@@ -86,8 +86,9 @@ days) is too much to ask before email works. So email signs in the way mail apps
   Area O1's code (the rules above, enforced by tests), not Google's scopes; you can revoke the password at any
   time at the same page, and Disconnect forgets it here (Google has no API to revoke it for you).
 - **The OAuth client is optional**: *Advanced: also sync Google Calendar*. Without it, deadlines still live in
-  Area O1's own calendar and `calendar.ics`, which any calendar app (Google Calendar included, via
-  *Subscribe link*) can follow one way. A Gmail sign-in made through OAuth before this amendment keeps working;
+  Area O1's Calendar page and `calendar.ics`, which calendar apps on this computer (Apple Calendar, Outlook) can
+  follow one way with the *Subscribe link*. Google Calendar fetches subscriptions from Google's servers, which
+  can't reach `127.0.0.1`, so following deadlines there needs the optional client. A Gmail sign-in made through OAuth before this amendment keeps working;
   when both exist, the app password is used for mail.
 
 ## Consequences
