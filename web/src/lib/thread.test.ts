@@ -36,7 +36,7 @@ test("the thread starts with the PDF ask and keeps every earlier step above the 
 test("the optional Gmail step comes after the chats, with your choice as the reply", () => {
   const mail = buildThread(view("mail", { transcript: [opening] }));
   assert.deepEqual(mail.slice(-2).map((m) => [m.text, m.widget]), [[CHATS_ASK, "chats"], [MAIL_ASK, "mail"]]);
-  assert.ok(MAIL_ASK.includes("app password") && MAIL_ASK.includes("Approve & send") && !MAIL_ASK.includes("Cloud project"));
+  assert.ok(MAIL_ASK.includes("app password") && MAIL_ASK.includes("Approve & send") && !/Cloud|OAuth|Calendar/.test(MAIL_ASK));
   assert.equal(buildThread(view("tour", { transcript: [opening], mail: "connected" })).at(-1)?.text, "Connected my Gmail.");
   assert.equal(buildThread(view("tour", { transcript: [opening], mail: "skipped" })).at(-1)?.text, "Later.");
 });

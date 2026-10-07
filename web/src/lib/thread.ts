@@ -27,7 +27,7 @@ export const CHATS_ASK =
   "computer first, show you what looks related to your case and why, and bring in only what you tick.";
 export const MAIL_ASK =
   "Last one, and optional: connect Gmail so I can keep up with your letter writers and organizers and draft follow-ups. " +
-  "No Google Cloud setup, just an app password. I read only the headers of threads with people in your contacts (who, " +
+  "All it takes is your address and an app password. I read only the headers of threads with people in your contacts (who, " +
   "when, the subject), and I send nothing until you press Approve & send.";
 const MAIL_REPLY = { pending: "", connected: "Connected my Gmail.", skipped: "Later." };
 
