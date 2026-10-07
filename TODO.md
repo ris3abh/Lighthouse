@@ -51,6 +51,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       rules
 - [x] C9. A full closing moment ("That's it. I'm one click away, and at your service."), then Ask docks
 - [ ] CHECKPOINT 2b: all three personas re-run; opening, one question, to-dos on Overview, finish
+      Reported 2026-10-07 (0de9c1c, bbdb583, 78e20bb, d9acdbc, e3e2239); then S2–S5, then Part D
 
 ### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request
 - [x] S1. `lighthouse-gc` with no arguments: creates ~/Lighthouse on first run, remembers it, serves it and
