@@ -49,7 +49,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       never evidence
 - [x] C8. Lookups for those items too (official announcement, program-committee page), Yes first, namesake
       rules
-- [ ] C9. A full closing moment ("That's it. I'm one click away, and at your service."), then Ask docks
+- [x] C9. A full closing moment ("That's it. I'm one click away, and at your service."), then Ask docks
 - [ ] CHECKPOINT 2b: all three personas re-run; opening, one question, to-dos on Overview, finish
 
 ### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request

@@ -20,6 +20,7 @@ import {
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { api, type OnboardingView } from "./api";
 import ChatPanel from "./components/ChatPanel";
+import Finale from "./components/Finale";
 import Tour from "./components/Tour";
 import { Button, cx, Segmented, ToastProvider, useToast } from "./components/ui";
 import { useLoad, useRoute, useTheme, type ThemeMode } from "./hooks";
@@ -89,7 +90,13 @@ function Shell() {
   });
   useEffect(() => setMenuOpen(false), [page]);
   const [onboarding, setOnboarding] = useState<OnboardingView | null>(null);
-  const [finished, setFinished] = useState(false);
+  const [finished, setFinished] = useState(false); // the closing moment is showing
+  const [docked, setDocked] = useState(false); // the Ask button just landed in the header
+  useEffect(() => {
+    if (!docked) return;
+    const t = setTimeout(() => setDocked(false), 2600);
+    return () => clearTimeout(t);
+  }, [docked]);
   useEffect(() => {
     api
       .onboarding()
@@ -267,12 +274,13 @@ function Shell() {
               variant={chatOpen ? "primary" : "secondary"}
               size="sm"
               onClick={() => {
-                setFinished(false);
+                setDocked(false);
                 toggleChat(!chatOpen);
               }}
               aria-pressed={chatOpen}
               title="Chat with the agent"
-              className={cx(finished && "outline-2 outline-offset-4 outline-ink")}
+              data-ask-anchor
+              className={cx("transition-[outline-offset] duration-300", docked && "outline-2 outline-offset-4 outline-ink")}
             >
               <Sparkles strokeWidth={1.5} />
               Ask
@@ -290,15 +298,15 @@ function Shell() {
       </div>
       {chatOpen && <ChatPanel page={page} onClose={() => toggleChat(false)} />}
       {touring && <Tour overview={ov} onDone={endTour} />}
-      {finished && !chatOpen && (
-        <div role="status" className="fixed top-16 right-4 z-40 w-[320px] animate-rise border border-ink bg-surface lg:top-20">
-          <div className="flex items-start gap-3 px-5 py-4">
-            <p className="display flex-1 text-2xl">That's it. I'm one click away, and at your service.</p>
-            <Button size="sm" variant="ghost" className="px-2" aria-label="Dismiss" onClick={() => setFinished(false)}>
-              <X />
-            </Button>
-          </div>
-        </div>
+      {finished && (
+        <Finale
+          name={(ov?.person.name ?? "").split(" ")[0]}
+          todos={(ov?.tasks ?? []).filter((t) => t.kind === "todo").length}
+          onDone={() => {
+            setFinished(false);
+            setDocked(true);
+          }}
+        />
       )}
     </div>
   );
