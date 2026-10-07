@@ -243,6 +243,9 @@ def refresh(check: RuleCheck | None, vault: Vault) -> RuleCheck | None:
             src = vault.manifest.source(c.source_id)
             checked = st.get("checked_at")
             c.secondary_to = src.secondary_to if src else None
+            # The tier comes from the manifest now, not from when it was checked: a source demoted to Tier 3
+            # (or turned into an unreviewed finding) stops verifying.
+            c.tier = 3 if src is None or src.finding else src.tier
             c.fresh = bool(
                 src and checked and st.get("sha") == c.sha256 and vault.is_fresh(src, _dt(checked))
             )

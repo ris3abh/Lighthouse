@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from lighthouse_gc.core.models import new_id, utcnow
 
@@ -71,8 +71,25 @@ class VaultManifest(_Model):
                 raise ValueError(f"{s.id}: secondary_to {s.secondary_to!r} isn't a source in the manifest")
         return v
 
+    @model_validator(mode="after")
+    def _tiers_match_domains(self) -> VaultManifest:
+        """Only official domains can hold Tier 1/2 sources: Tier 1 on the Tier 1 domains, Tier 2 on either list.
+        Anything else (Wikipedia, blogs, law-firm pages) is Tier 3 and can never verify a rule."""
+        if not self.tier1_domains:  # a partial override file; checked again after the merge
+            return self
+        for s in self.sources:
+            allowed = self.tier_of(s.url)
+            if s.tier < 3 and (allowed is None or s.tier < allowed):
+                raise ValueError(
+                    f"{s.id}: Tier {s.tier} needs an official domain "
+                    f"({'tier1_domains' if s.tier == 1 else 'tier1_domains or tier2_domains'}); "
+                    f"{s.url.split('/')[2]} can only be Tier 3"
+                )
+        return self
+
     def tier_of(self, url: str) -> int | None:
-        """1 or 2 when the URL is on an official domain listed in the manifest."""
+        """1 or 2 when the URL is on an official domain listed in the manifest (the best tier a page there can
+        have); None means Tier 3 only."""
         from urllib.parse import urlparse
 
         host = (urlparse(url).hostname or "").lower()

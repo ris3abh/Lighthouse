@@ -324,6 +324,10 @@ class Vault:
         try:
             url, hint = await self._resolve(source, client, cache)
             page = await web.get(url, client, max_bytes=MAX_VAULT_BYTES)
+            allowed = self.manifest.tier_of(page.url)
+            if source.tier < 3 and (allowed is None or source.tier < allowed):
+                raise ValueError(f"redirected off the official domains to {page.url}; not stored as a Tier "
+                                 f"{source.tier} source")  # fmt: skip
             title, text = await anyio.to_thread.run_sync(
                 to_text, page.content, page.content_type, source.format
             )

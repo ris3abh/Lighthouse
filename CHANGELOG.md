@@ -36,6 +36,9 @@ All notable changes to this project are documented here. The format follows
 - rule-check backup: sentences mentioning a CFR section, USCIS, a fee, a form number, a day count or a
   criteria count are always checked, even if the judge's extraction misses them or calls them "not a rule"
   (one retry, then unverified with the reason).
+- Tier 3 (Wikipedia, any non-official domain) can never verify a rule. Tier 1/2 sources must be on the
+  manifest's official domains (workspace overrides included). A source redirected off them isn't stored.
+  Re-checks use each source's current tier.
 - Manual-import sources (`manual: true`: uscis.gov, travel.state.gov) send a reminder with the page link when
   an imported copy passes its freshness window (once per lapse). The Knowledge page marks them.
 

@@ -497,3 +497,128 @@ def test_recheck_endpoints(vault_ws, monkeypatch):
     r = c.post(f"/api/rulecheck/runs/{run.id}", headers=W)
     assert r.status_code == 200 and r.json()["claims"][0]["status"] == "verified"
     assert c.post("/api/rulecheck/briefing", headers=W).status_code == 400  # no briefing yet
+
+
+# ----------------------------------------------------------------------------- Tier 3 never verifies
+
+WIKI_RULE = "O-1 petitions must include a $5,000 compliance bond."
+WIKI_PAGE = ("<html><head><title>O-1 visa - Wikipedia</title></head><body><main><h1>O-1 visa</h1>"
+             + "<p>Under the program, O-1 petitions must include a $5,000 compliance bond, refundable on departure. "
+             "The visa is for individuals with extraordinary ability.</p>" * 3
+             + "</main></body></html>").encode()  # fmt: skip
+
+
+@pytest.fixture
+def wiki_ws(ws, http_mock, public_dns):  # noqa: F811
+    pages = Pages(http_mock)
+    pages.page("wikipedia-o-1", WIKI_PAGE)  # only Wikipedia states this "rule"
+    pages.install()
+    anyio.run(lambda: Vault(ws).sync())
+    return ws
+
+
+def test_wikipedia_is_never_offered_to_the_judge_and_never_verifies(wiki_ws, http_mock):
+    vault = Vault(wiki_ws)
+    assert vault.manifest.source("wikipedia-o-1").tier == 3
+    assert any(h.source_id == "wikipedia-o-1" for h in vault.search(WIKI_RULE, k=5))  # it's in the vault...
+    judge = FakeJudge(rules=[("bond", "must include a $5,000 compliance bond", "entails", None)])
+    [claim] = _check(wiki_ws, WIKI_RULE, judge).claims
+    assert "Wikipedia" not in "".join(judge.calls) and "compliance bond, refundable" not in "".join(
+        judge.calls
+    )
+    assert claim.status == "unverified" and claim.citations == []  # ...but never shown to the judge
+
+    # Even a judge that cites the Wikipedia chunk directly (by its id) can't get it counted.
+    wiki = next(h for h in vault.search(WIKI_RULE, k=5) if h.source_id == "wikipedia-o-1")
+    raw = FakeJudge(raw=json.dumps({"claims": [{"candidate": "c1", "is_rule": True, "claim": WIKI_RULE, "evidence": [
+        {"chunk": wiki.chunk_id, "verdict": "entails", "quote": "must include a $5,000 compliance bond"},
+        {"chunk": "k99", "verdict": "entails", "quote": "must include a $5,000 compliance bond"}]}]}))  # fmt: skip
+    [claim] = _check(wiki_ws, WIKI_RULE, raw).claims
+    assert claim.status == "unverified" and claim.citations == []
+
+    # And the gate refuses it in petition-facing text.
+    http_mock.get("https://scholar.example/alex").respond(
+        200, text="<html><body><p>Sparse gradient compression at scale. Cited by 71 papers.</p></body></html>",
+        headers={"content-type": "text/html"})  # fmt: skip
+    ctx, t = _tools(wiki_ws, judge)
+    out = anyio.run(t["read_page"].handler, {"url": "https://scholar.example/alex"})
+    obs = re.search(r'"observation_id": "(obs_[0-9a-f]+)"', out).group(1)
+    crit = next(c for c in wiki_ws.profile().criteria)
+    with pytest.raises(ValueError, match="doesn't confirm"):
+        anyio.run(t["propose_evidence"].handler, {"criterion": crit.id, "evidence_type": crit.evidence_types[0],
+                                                  "title": "ICML paper", "observation_id": obs,
+                                                  "quote": "Cited by 71 papers.", "summary": f"Cited 71 times. {WIKI_RULE}"})  # fmt: skip
+
+
+def test_decide_ignores_tier3_support_and_tier3_contradictions():
+    assert decide([_cite("wikipedia-o-1", "entails", tier=3)]) == (
+        "unverified",
+        "only a secondary source says this",
+    )
+    assert (
+        decide([_cite("wikipedia-o-1", "entails", tier=3), _cite("en-blog", "entails", tier=3)])[0]
+        == "unverified"
+    )
+    # A Tier 3 page disagreeing with a Tier 1 source is not a conflict.
+    assert decide([_cite("ecfr-8cfr-204-5-h", "entails"), _cite("wikipedia-eb-1", "contradicts", tier=3)]) == (
+        "verified", "")  # fmt: skip
+    # Stale Tier 3 support isn't "stale" (that would suggest a re-check could verify it).
+    assert decide([_cite("wikipedia-o-1", "entails", tier=3, fresh=False)])[0] == "unverified"
+
+
+def test_a_source_demoted_to_tier3_stops_verifying_on_refresh(vault_ws):
+    judge = FakeJudge(rules=[("three of the ten", QUOTE, "entails", "Volume 6")])
+    check = _check(vault_ws, RULE, judge)
+    assert check.claims[0].status == "verified"
+    # The person moves the Policy Manual page to Tier 3 in their workspace manifest... (only possible by also
+    # pointing it off the official domains: Tier 1/2 is tied to the domain lists).
+    (vault_ws.root / "vault").mkdir(exist_ok=True)
+    (vault_ws.root / "vault" / "sources.yaml").write_text(
+        "version: 1\nsources:\n  - {id: uscis-pm-6-f-2, title: 'Policy Manual (mirror)', "
+        "url: 'https://mirror.example/pm-6-f-2', tier: 3, kind: policy}\n"
+    )
+    again = refresh(check, Vault(vault_ws))
+    assert again.claims[0].citations[0].tier == 3 and again.claims[0].status == "unverified"
+
+
+def test_tier1_and_tier2_are_tied_to_official_domains(ws):
+    from lighthouse_gc.vault import load_manifest
+    from lighthouse_gc.vault.models import VaultManifest
+
+    m = load_manifest()
+    assert {s.id for s in m.sources if s.tier == 3} >= {"wikipedia-o-1", "wikipedia-eb-1"}
+    assert m.tier_of("https://en.wikipedia.org/wiki/O-1_visa") is None
+    assert all(m.tier_of(s.url) is not None and m.tier_of(s.url) <= s.tier for s in m.sources if s.tier < 3)
+    data = m.model_dump()
+    for sid, tier in (("wikipedia-o-1", 1), ("wikipedia-o-1", 2)):
+        bad = {**data, "sources": [{**s, "tier": tier} if s["id"] == sid else s for s in data["sources"]]}
+        with pytest.raises(ValueError, match="can only be Tier 3"):
+            VaultManifest.model_validate(bad)
+    # Tier 1 on a Tier 2 domain isn't allowed either (courtlistener can hold Tier 2, not Tier 1).
+    bad = {**data, "sources": [*data["sources"], {"id": "cl", "title": "x", "url": "https://www.courtlistener.com/x",
+                                                    "tier": 1, "kind": "case_law"}]}  # fmt: skip
+    with pytest.raises(ValueError, match="Tier 1 needs an official domain"):
+        VaultManifest.model_validate(bad)
+    # A workspace override can't promote Wikipedia either.
+    (ws.root / "vault").mkdir()
+    (ws.root / "vault" / "sources.yaml").write_text(
+        "version: 1\nsources:\n  - {id: wikipedia-o-1, title: 'O-1', url: 'https://en.wikipedia.org/wiki/O-1_visa', "
+        "tier: 1, kind: secondary}\n"
+    )
+    with pytest.raises(ValueError, match="can only be Tier 3"):
+        load_manifest(ws.root / "vault" / "sources.yaml")
+
+
+def test_a_tier1_source_redirected_off_official_domains_isnt_stored(ws, http_mock, public_dns):  # noqa: F811
+    pages = Pages(http_mock)
+    pages.page("uscis-o1", b"", status=302)
+    pages.install()
+    http_mock.routes.clear()
+    http_mock.get(url__regex=r"https://www\.uscis\.gov/working-in-the-united-states/temporary-workers/.*").respond(
+        302, headers={"location": "https://en.wikipedia.org/wiki/O-1_visa"})  # fmt: skip
+    http_mock.get("https://en.wikipedia.org/wiki/O-1_visa").respond(200, content=WIKI_PAGE,
+                                                                     headers={"content-type": "text/html"})  # fmt: skip
+    vault = Vault(ws)
+    [r] = anyio.run(lambda: vault.sync(ids=["uscis-o1"]))
+    assert r.status == "error" and "redirected off the official domains" in r.error
+    assert vault.search(WIKI_RULE, k=5) == []

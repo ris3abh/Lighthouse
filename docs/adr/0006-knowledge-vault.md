@@ -61,7 +61,15 @@ claims against, with exact text and dates; item 3 needs the agent to search it f
 - **Deciding the status:** code, not the judge, decides it:
   - the quote must be found in the excerpt (exact, or the same words with different whitespace);
   - the excerpt must be the source's current snapshot and inside its freshness window;
-  - Tier 3 never verifies.
+  - Tier 3 never verifies, enforced at every step (tests in `test_rulecheck.py`):
+    - Tier 1/2 are tied to the domain lists. A Tier 1 source must be on `tier1_domains`, and a Tier 2 source on
+      either list. Anything else, such as Wikipedia, can only be Tier 3, and a workspace override can't change
+      that.
+    - A source redirected off the official domains isn't stored.
+    - The judge is only shown Tier 1/2 excerpts, and citations of chunks it wasn't shown are dropped.
+    - Tier 3 support never counts as verified or stale, and a Tier 3 contradiction is never a conflict.
+    - `refresh()` re-reads each citation's tier from the current manifest, so a source that is demoted (or is
+      an unreviewed finding) stops verifying.
 - **Statuses:**
   - verified: a fresh Tier 1 or 2 source entails it, and no fresh Tier 1 source contradicts it;
   - conflict: Tier 1 sources disagree, which also sends a notification;
