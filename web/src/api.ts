@@ -223,6 +223,7 @@ export interface TrackedItem {
   title: string;
   private: boolean;
   tracked: boolean;
+  unreadable: string | null;
 }
 
 export interface Source {

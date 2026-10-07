@@ -27,8 +27,9 @@ def test_detect_routes_to_connector(text, kind):
 
 
 def test_detect_unknown():
+    assert sources.detect("https://linkedin.com/in/someone") == "website"  # links go through the website connector
     with pytest.raises(ValueError, match="No connector"):
-        sources.detect("https://linkedin.com/in/someone")
+        sources.detect("linkedin.com/in/someone")
 
 
 def test_import_github_public(ws, http_mock):
@@ -141,7 +142,7 @@ def test_cli_init_import_run(tmp_path, http_mock):
 
 
 def test_cli_import_unknown_url(ws):
-    result = CliRunner().invoke(app, ["import", "https://example.com/me", "-w", str(ws.root)])
+    result = CliRunner().invoke(app, ["import", "example.com/me", "-w", str(ws.root)])
     assert result.exit_code == 1 and "No connector" in result.output
 
 

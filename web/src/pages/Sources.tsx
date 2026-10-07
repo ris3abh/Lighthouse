@@ -18,6 +18,7 @@ function guessKind(input: string) {
   if (/openalex\.org\/(authors\/)?a\d|^openalex:/i.test(input)) return "openalex";
   if (/arxiv\.org\/a\/|^arxiv:[a-z]/i.test(input)) return "arxiv";
   if (/orcid\.org\/|^(orcid:)?\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/i.test(input.trim())) return "orcid";
+  if (/^https?:\/\/\S+$/i.test(input.trim())) return "website";
   return null;
 }
 
@@ -75,8 +76,8 @@ export default function Sources() {
         <form onSubmit={add} className="flex flex-col gap-3 p-4">
           <label>
             <span className="label">
-              Add a source — paste a GitHub or Hugging Face profile, org or repo URL, or a scholarly profile (Semantic
-              Scholar, OpenAlex, arXiv author page, ORCID)
+              Add a source — paste a GitHub or Hugging Face profile, org or repo URL, a scholarly profile (Semantic
+              Scholar, OpenAlex, arXiv author page, ORCID), or any web page or sitemap (press, award pages)
             </span>
             <div className="flex gap-2">
               <input
@@ -208,7 +209,14 @@ export default function Sources() {
                       {i.name}
                     </a>
                     {i.private && <Chip tone="amber">private</Chip>}
-                    <span className="min-w-0 flex-1 truncate text-xs text-zinc-500">{i.title}</span>
+                    {i.unreadable && (
+                      <span title={`${i.unreadable}. Save the page from your browser and drop it on the Evidence page.`}>
+                        <Chip tone="red">unreadable</Chip>
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-xs text-zinc-500">
+                      {i.unreadable ? `${i.unreadable} — save the page from your browser and drop it on the Evidence page` : i.title}
+                    </span>
                     <a href={`#/metrics?item=${encodeURIComponent(i.name)}`} className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white">
                       metrics →
                     </a>

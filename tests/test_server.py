@@ -128,7 +128,7 @@ def test_sources_add_and_remove(client, http_mock):
     assert r.status_code == 200, r.text
     ids = [s["id"] for s in client.get("/api/sources").json()]
     assert "github:arivera-demo/fastgrad" in ids
-    assert client.post("/api/sources", json={"input": "https://example.com"}, headers=W).status_code == 400
+    assert client.post("/api/sources", json={"input": "example.com"}, headers=W).status_code == 400
     assert client.delete("/api/sources/github:arivera-demo/fastgrad", headers=W).status_code == 200
     assert "github:arivera-demo/fastgrad" not in [s["id"] for s in client.get("/api/sources").json()]
 

@@ -127,6 +127,19 @@
           "title": "Tracked",
           "type": "boolean"
         },
+        "unreadable": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Why the page couldn't be read automatically (bot protection, login wall, maintenance).",
+          "title": "Unreadable"
+        },
         "url": {
           "title": "Url",
           "type": "string"

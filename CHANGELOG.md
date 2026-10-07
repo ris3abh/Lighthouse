@@ -48,6 +48,14 @@ All notable changes to this project are documented here. The format follows
   - A paper found by several connectors, or linked from GitHub or Hugging Face, is proposed once (by arXiv id,
     then DOI).
   - Free APIs, no keys; no contact email is sent.
+- Website connector: any public page or sitemap (same-site pages, up to 25).
+  - Pages are read readability-style: the article or main content, without navigation, headers, footers or
+    asides, plus title, date, author and site from Open Graph / JSON-LD.
+  - A page that mentions you (or your aliases) is proposed as press (an article about you or a passing
+    mention), or as an award notice when it says you won. The proposal quotes the sentences that mention you.
+  - Bot-protection pages (also when served with HTTP 200), login walls, maintenance pages and JavaScript-only
+    pages are marked unreadable on the Sources page instead of being stored.
+  - Same private-network guard as the agent's page reader: public hosts only, re-checked on every redirect.
 - Manual-import sources (`manual: true`: uscis.gov, travel.state.gov) send a reminder with the page link when
   an imported copy passes its freshness window (once per lapse). The Knowledge page marks them.
 

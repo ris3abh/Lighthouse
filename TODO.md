@@ -104,7 +104,8 @@ Phase 1c notes:
       import a saved page, promote agent findings to sources
 - [x] 5. Scholarly connectors: Semantic Scholar, OpenAlex, arXiv author pages, ORCID; papers proposed once
       across connectors (arXiv id, then DOI); citations and h-index in metrics
-- [ ] 6. Website connector (next)
+- [x] 6. Website connector: any page or sitemap, readability extraction, mentions of you proposed as press
+      or an award notice, bot-blocked / JavaScript-only pages marked unreadable, shared private-network guard
 - The demo workspace has no vault content (fetched pages live in the cache, which isn't shipped), so its
   Knowledge page lists the sources as never fetched.
 

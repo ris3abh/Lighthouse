@@ -82,6 +82,10 @@ class TrackedItem(_Model):
     private: bool = False
     tracked: bool = True
     discovered_at: datetime = Field(default_factory=utcnow)
+    unreadable: str | None = Field(
+        None,
+        description="Why the page couldn't be read automatically (bot protection, login wall, maintenance).",
+    )
 
 
 class SourceRecord(_Model):

@@ -92,8 +92,12 @@ def test_detect_and_parse(text, kind, handle):
     ],
 )
 def test_rejects(text):
-    with pytest.raises(ValueError, match="No connector"):
-        sources.detect(text)
+    """Not an author profile: handles are refused, and other URLs are left to the website connector."""
+    if text.startswith("https://"):
+        assert sources.detect(text) == "website"
+    else:
+        with pytest.raises(ValueError, match="No connector"):
+            sources.detect(text)
 
 
 # ----------------------------------------------------------------------------- discover + snapshot
