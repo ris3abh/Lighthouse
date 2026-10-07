@@ -74,3 +74,71 @@ def import_chats(
         candidates_added=dict(Counter(c.kind for c in added)),
         export_sha256=sha,
     )
+
+
+@dataclass
+class PickedImport:
+    picked: int
+    conversations: int
+    projects: int
+    candidates_added: dict[str, int] = field(default_factory=dict)
+    extracted_by: str = "rules"
+    cost_usd: float = 0.0
+    note: str = ""
+
+    def line(self) -> str:
+        added = sum(self.candidates_added.values())
+        what = plural(self.picked, "item")
+        tail = (f" Read by {self.extracted_by} (${self.cost_usd:.2f})." if self.extracted_by != "rules"
+                else " Read with local rules only." + (f" {self.note}" if self.note else ""))  # fmt: skip
+        return (f"Imported {what}: {plural(added, 'suggestion')} in your Inbox, each quoting your own words. "
+                f"Self-reported: never counts toward a criterion.{tail}")  # fmt: skip
+
+
+async def import_picked(
+    ws: Workspace, intake: object, ids: set[str], judge: object = None, model: str = ""
+) -> PickedImport:
+    """Import only what the person ticked: each picked conversation or project is snapshotted (tier
+    self_reported), read by the local rules, and, when a model is available, by the mundane-tier extractor.
+    Anything not ticked leaves nothing in the workspace."""
+    from lighthouse_gc.sources import chat_extract, chat_relevance
+    from lighthouse_gc.sources.chat_intake import Intake
+
+    assert isinstance(intake, Intake)
+    convs, projects = chat_relevance.pick(intake, ids)
+    proposals = []
+    cost, used_model, note = 0.0, False, ""
+    snapshots: list[tuple[object, Evidence, str]] = []
+    for conv in convs:
+        snapshot, cands = chat_export.candidates(conv)
+        proposals += cands
+        snapshots.append((conv, snapshot, {"claude": "Claude", "chatgpt": "ChatGPT"}[conv.provider]))
+    for p in projects:
+        snapshots.append((p, Evidence(connector=f"{p.provider}_export", source_url=p.url, payload=p.text(),
+                                      media_type="text/markdown", tier=chat_export.TIER, filename="projects.json"),
+                          "Claude"))  # fmt: skip
+    if judge is not None:
+        for source, snapshot, noun in snapshots:
+            try:
+                items, spent = await chat_extract.extract(judge, model, source)
+            except Exception as exc:  # the model failing never loses the rule-based suggestions
+                note = f"The model couldn't read some of it ({str(exc)[:120]})."
+                continue
+            cost += spent
+            used_model = True
+            proposals += chat_extract.candidates(source, items, snapshot, noun)
+    else:
+        note = "Connect your AI for people, asks, decisions and metrics too."
+    with ws.lock:
+        for _, snapshot, _ in snapshots:
+            ws.memory.record(snapshot)
+        ws.memory.record(Evidence(connector="chat_import", source_url="file:picked", tier=chat_export.TIER,
+                                  payload={"formats": intake.formats, "files": intake.files,
+                                           "offered": len(intake.conversations) + len(intake.projects),
+                                           "picked": sorted(ids)},
+                                  filename="picker"))  # fmt: skip
+        added = ws.add_candidates(proposals)
+    ws.after_change()
+    return PickedImport(picked=len(convs) + len(projects), conversations=len(convs), projects=len(projects),
+                        candidates_added=dict(Counter(c.kind for c in added)),
+                        extracted_by=model if used_model else "rules", cost_usd=round(cost, 4), note=note)  # fmt: skip

@@ -516,6 +516,26 @@ export interface Refusal {
 // ---------------------------------------------------------------- onboarding (ADR 0008)
 
 export type FieldStatus = "pending" | "confirmed" | "fixed" | "skipped";
+export interface ChatMatch {
+  id: string;
+  kind: "conversation" | "project";
+  provider: string;
+  title: string;
+  date: string | null;
+  messages: number;
+  score: number;
+  reasons: string[];
+  ticked: boolean;
+}
+export interface ChatScan {
+  id: string;
+  summary: string;
+  formats: string[];
+  unread: { file: string; why: string }[];
+  skipped: number;
+  items: ChatMatch[];
+}
+
 export interface OnboardingQuestion {
   id: string;
   text: string;
@@ -609,6 +629,18 @@ export const api = {
   onboardingLookup: (id: string, accept: boolean) => request<OnboardingView>("POST", `/onboarding/lookups/${id}`, { accept }),
   onboardingGoto: (step: string, question?: string | null) => request<OnboardingView>("POST", "/onboarding/goto", { step, question }),
   onboardingRestart: () => request<OnboardingView>("POST", "/onboarding/restart"),
+  scanChats: (files: File[], paths: (f: File) => string) => {
+    const form = new FormData();
+    for (const f of files) form.append("files", f, paths(f));
+    return request<ChatScan>("POST", "/imports/chats/scan", form);
+  },
+  importScan: (id: string, ids: string[]) =>
+    request<{ picked: number; candidates_added: Record<string, number>; extracted_by: string; cost_usd: number; summary: string }>(
+      "POST",
+      `/imports/chats/${enc(id)}/import`,
+      { ids },
+    ),
+  discardScan: (id: string) => request<unknown>("DELETE", `/imports/chats/${enc(id)}`),
   importChats: (file: File, keepAll = false) => {
     const form = new FormData();
     form.append("file", file);

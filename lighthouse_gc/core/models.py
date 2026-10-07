@@ -451,6 +451,8 @@ class AgentModels(_Model):
     task: str = "claude-opus-5-5"
     mission: str = "claude-sonnet-5-5"
     check: str = Field("claude-sonnet-5-5", description="Rule-check judge (one short call per checked text).")
+    mundane: str = Field("claude-haiku-4-5-20251001", description="Bulk, simple reading (chat-history extraction). "
+                         "Part D's router sends more work here.")  # fmt: skip
 
 
 RUN_TYPE = {"chat": "chat", "manual": "task", "scheduled": "mission"}

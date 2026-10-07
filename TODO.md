@@ -61,9 +61,10 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 - [x] C12. Chip input for lists in onboarding (one shared, keyboard-accessible component)
 - [x] C13. Chat as a centered modal over a blurred dashboard; changed panels un-blur and highlight; pin to
       dock; Cmd/Ctrl+K, Esc; full-screen sheet on phones
-- [ ] C14. Chat-history import for real exports: format-agnostic intake with adapters, local relevance filter,
-      picker step, extraction on picked items (mundane tier), longest-range advice (needs the owner's redacted
-      Claude export sample)
+- [~] C14. Chat-history import for real exports: format-agnostic intake with adapters, local relevance filter,
+      picker step, extraction on picked items (mundane tier), longest-range advice. Shipped on synthetic
+      fixtures; the adapter for the owner's Claude export (manifest + dated files) and a ChatGPT sample fixture
+      wait for the redacted samples
 - [ ] CHECKPOINT 2c: chip input, picker with real match reasons, modal with a highlighted change, both themes
 
 ### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request

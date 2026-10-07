@@ -84,6 +84,10 @@ class TokenBody(BaseModel):
     token: str
 
 
+class PickBody(BaseModel):
+    ids: list[str]
+
+
 class TodoBody(BaseModel):
     status: Literal["open", "done", "dismissed"]
 
@@ -314,6 +318,70 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         except ExportError as exc:
             raise HTTPException(400, str(exc)) from exc
         return {**report.__dict__, "summary": report.line()}
+
+    staged: dict[
+        str, tuple[float, Any]
+    ] = {}  # chat imports waiting for the picker; memory only, never on disk
+
+    @app.post("/api/imports/chats/scan")
+    async def scan_chats(files: list[UploadFile] = File(...)) -> dict[str, Any]:
+        """Read whatever was dropped (an export .zip, several .json files or a folder) and score each conversation
+        and project for case signals, locally. Nothing is written: the picker decides what's imported."""
+        import time
+
+        from lighthouse_gc.core.models import new_id
+        from lighthouse_gc.sources import chat_intake, chat_relevance
+        from lighthouse_gc.sources.chat_export import MAX_EXPORT_BYTES, ExportError
+
+        dropped = []
+        for f in files:
+            data = await f.read(MAX_EXPORT_BYTES + 1)
+            if len(data) > MAX_EXPORT_BYTES:
+                raise HTTPException(413, f"{f.filename} is larger than 512 MB")
+            dropped.append((f.filename or "file", data))
+        try:
+            intake = chat_intake.read(dropped)
+        except ExportError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        person = ws.person()
+        fields = {f.key: f.value for f in ws.onboarding().fields if f.status in ("confirmed", "fixed")}
+        if person.field:
+            fields.setdefault("headline", person.field)
+        matches = chat_relevance.score(intake, [person.name, *person.aliases], fields)
+        for key, (at, _) in list(staged.items()):  # keep a few recent scans for an hour at most
+            if time.time() - at > 3600 or len(staged) > 3:
+                staged.pop(key, None)
+        scan_id = new_id("scan")
+        staged[scan_id] = (time.time(), intake)
+        return {"id": scan_id, "summary": intake.summary(), "formats": intake.formats,
+                "unread": [{"file": p, "why": why} for p, why in intake.unread], "skipped": len(intake.skipped),
+                "items": [m.as_dict() for m in matches]}  # fmt: skip
+
+    @app.post("/api/imports/chats/{scan_id}/import")
+    async def import_picked_chats(scan_id: str, body: PickBody) -> dict[str, Any]:
+        """Import only the ticked conversations and projects; the rest of the scan is discarded."""
+        from lighthouse_gc.core.models import AgentRun
+        from lighthouse_gc.jobs.chats import import_picked
+
+        if scan_id not in staged:
+            raise HTTPException(404, "that scan has expired; drop the export again")
+        _, intake = staged.pop(scan_id)
+        ok, _ = runner.engine().available()
+        model = ws.config().agent.models.mundane
+        report = await import_picked(ws, intake, set(body.ids), runner.judge() if ok else None, model)
+        if (
+            report.extracted_by != "rules"
+        ):  # the model's cost shows on the Agent page and counts toward the month
+            run = AgentRun(kind="manual", engine=runner.engine().name, model=model, status="done",
+                           prompt=f"Chat-history extraction ({report.picked} picked)", text=report.line(),
+                           cost_usd=report.cost_usd, finished_at=clock.utcnow())  # fmt: skip
+            runner.save(run)
+        return {**report.__dict__, "summary": report.line()}
+
+    @app.delete("/api/imports/chats/{scan_id}")
+    def discard_scan(scan_id: str) -> dict[str, Any]:
+        staged.pop(scan_id, None)
+        return {"discarded": scan_id}
 
     @app.get("/api/attachments/{obs_id}")
     def get_attachment(obs_id: str) -> FileResponse:

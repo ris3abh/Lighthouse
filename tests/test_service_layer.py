@@ -32,7 +32,8 @@ SYSTEM_ROUTES = {
     ("POST", "/api/sources"), ("POST", "/api/sources/{source_id:path}/sync"),
     ("PUT", "/api/sources/{source_id:path}/token"), ("DELETE", "/api/sources/{source_id:path}"),
     ("POST", "/api/metrics/snapshot"), ("POST", "/api/jobs/{name}/run"), ("POST", "/api/notify/test"),
-    ("POST", "/api/imports/chats"),
+    ("POST", "/api/imports/chats"), ("POST", "/api/imports/chats/scan"), ("POST", "/api/imports/chats/{scan_id}/import"),
+    ("DELETE", "/api/imports/chats/{scan_id}"),
     # Agent runs write their own records (agent/runs, agent/conversations); anything the agent changes in
     # the workspace goes through Service(actor="agent:<run>"), covered in tests/test_agent.py.
     ("POST", "/api/agent/chat"), ("POST", "/api/agent/runs"), ("POST", "/api/agent/runs/{run_id}/stop"),

@@ -1,8 +1,8 @@
-import { ArrowRight, KeyRound, TriangleAlert, Upload } from "lucide-react";
+import { ArrowRight, KeyRound, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { api, type Source } from "../api";
 import { useRefresh } from "../App";
-import DropZone from "../components/DropZone";
+import ChatImport from "../components/ChatImport";
 import { Button, Card, Chip, Empty, ErrorBox, Loading, Modal, PageHeader, plural, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 
@@ -40,7 +40,6 @@ export default function Sources() {
   const [showToken, setShowToken] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [reauth, setReauth] = useState<Source | null>(null);
-  const [keepAll, setKeepAll] = useState(false);
   const kind = guessKind(input);
 
   const run = async (key: string, fn: () => Promise<string>) => {
@@ -123,30 +122,17 @@ export default function Sources() {
       <Card className="mb-8" title="Import your Claude or ChatGPT history">
         <div className="p-6">
           <p className="mb-4 max-w-3xl text-sm leading-relaxed text-ink-2">
-            Export your data (Claude: Settings, Privacy, Export data. ChatGPT: Settings, Data controls, Export), then drop the{" "}
-            <code>.zip</code> or <code>conversations.json</code> here. Every conversation is saved as a private snapshot in your
-            workspace. Lighthouse reads <strong>only your own messages</strong> and proposes deadlines, pipeline items and letter
-            writers. These are self-reported: they keep you organized but never count toward a criterion. Only conversations
-            that produced a suggestion are saved.
+            Export your data (Claude: Settings, Privacy, Export data. ChatGPT: Settings, Data controls, Export). Lighthouse reads it on this
+            computer, shows what looks related to your case and why, and imports only what you tick. From those it proposes deadlines,
+            opportunities, people, asks and decisions, each quoting your own words. Self-reported: they keep you organized but never count
+            toward a criterion.
           </p>
-          <label className="mb-5 flex items-center gap-2.5 text-sm text-ink-2">
-            <input type="checkbox" className="size-4 accent-[var(--ink)]" checked={keepAll} onChange={(e) => setKeepAll(e.target.checked)} />
-            Also save conversations with no suggestions (your whole history goes into the workspace)
-          </label>
-          <DropZone
-            busy={busy === "chats"}
-            onFiles={(files) =>
-              run("chats", async () => {
-                const r = await api.importChats(files[0], keepAll);
-                window.location.hash = "#/inbox";
-                return r.summary;
-              })
-            }
-          >
-            <Upload className="size-6" strokeWidth={1.5} aria-hidden />
-            <p className="display text-3xl">{busy === "chats" ? "Importing…" : "Drop your export here"}</p>
-            <p className="font-mono text-[11px] text-muted uppercase">conversations.json or the export .zip · stays on this machine</p>
-          </DropZone>
+          <ChatImport
+            onDone={(summary) => {
+              toast(summary);
+              window.location.hash = "#/inbox";
+            }}
+          />
         </div>
       </Card>
 

@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, Check, FileText, MessageSquare, Pencil, RotateCw, Search, SkipForward, Upload } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type OnboardingLookup, type OnboardingQuestion, type OnboardingView } from "../api";
+import ChatImport from "../components/ChatImport";
 import ChipInput from "../components/ChipInput";
 import DropZone from "../components/DropZone";
 import { Button, Chip, cx, plural, Segmented, useToast } from "../components/ui";
@@ -401,20 +402,6 @@ function LookupCard({ l, busy, run }: { l: OnboardingLookup; busy: boolean; run:
 
 function ChatsStep({ busy, run }: { busy: boolean; run: Run }) {
   const toast = useToast();
-  const [importing, setImporting] = useState(false);
-  const drop = async (files: File[]) => {
-    if (!files[0]) return;
-    setImporting(true);
-    try {
-      const r = await api.importChats(files[0]);
-      toast(r.summary);
-      await run(() => api.onboardingStep("chats_done"));
-    } catch (e) {
-      toast((e as Error).message, "error");
-    } finally {
-      setImporting(false);
-    }
-  };
   return (
     <div className="mx-auto max-w-3xl animate-rise">
       <p className="eyebrow">Step 4 · Chat history</p>
@@ -423,12 +410,12 @@ function ChatsStep({ busy, run }: { busy: boolean; run: Run }) {
         Quick story: the person who built me kept his context spread across Claude and ChatGPT. If you're like him, drop those exports here and
         I'll pick up where they left off.
       </p>
-      <div className="mt-8 grid gap-px border border-frame bg-line sm:grid-cols-2">
+      <div className="mt-8 mb-8 grid gap-px border border-frame bg-line sm:grid-cols-2">
         <div className="bg-surface p-5">
           <p className="flex items-center gap-2 text-[15px] font-medium">
             <MessageSquare className="size-4" strokeWidth={1.5} aria-hidden /> Claude
           </p>
-          <p className="mt-2 text-sm text-ink-2">Settings &gt; Privacy &gt; Export data, then drop the .zip from the email.</p>
+          <p className="mt-2 text-sm text-ink-2">Settings &gt; Privacy &gt; Export data, then drop the .zip (or its folder) from the email.</p>
         </div>
         <div className="bg-surface p-5">
           <p className="flex items-center gap-2 text-[15px] font-medium">
@@ -437,15 +424,15 @@ function ChatsStep({ busy, run }: { busy: boolean; run: Run }) {
           <p className="mt-2 text-sm text-ink-2">Settings &gt; Data controls &gt; Export, then drop the .zip from the email.</p>
         </div>
       </div>
-      <div className="mt-6">
-        <DropZone busy={busy || importing} label="Upload a chat export" onFiles={drop}>
-          <Upload className="size-6" strokeWidth={1.5} aria-hidden />
-          <p className="display text-3xl">{importing ? "Reading your chats…" : "Drop an export here"}</p>
-          <p className="font-mono text-[11px] text-muted uppercase">conversations.json or the export .zip · stays on this computer · never counts as evidence</p>
-        </DropZone>
-      </div>
+      <ChatImport
+        compact
+        onDone={(summary) => {
+          toast(summary);
+          run(() => api.onboardingStep("chats_done"));
+        }}
+      />
       <div className="flex justify-end">
-        <Button variant="ghost" disabled={busy || importing} onClick={() => run(() => api.onboardingStep("chats_skip"))}>
+        <Button variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingStep("chats_skip"))}>
           <SkipForward /> Skip for now
         </Button>
       </div>

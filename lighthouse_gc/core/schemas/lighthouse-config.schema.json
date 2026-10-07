@@ -109,6 +109,12 @@
           "title": "Mission",
           "type": "string"
         },
+        "mundane": {
+          "default": "claude-haiku-4-5-20251001",
+          "description": "Bulk, simple reading (chat-history extraction). Part D's router sends more work here.",
+          "title": "Mundane",
+          "type": "string"
+        },
         "task": {
           "default": "claude-opus-5-5",
           "title": "Task",
