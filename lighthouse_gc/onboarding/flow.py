@@ -51,7 +51,7 @@ def read_pdf(pdf: bytes) -> tuple[str, int, dict[str, dict[str, Any]]]:
 
 def fields_from(parsed: dict[str, dict[str, Any]]) -> list[ProfileField]:
     return [
-        ProfileField(key=k, label=LABELS[k], value=v["value"], quote=v["quote"])
+        ProfileField(key=k, label=LABELS[k], value=v["value"], quote=v["quote"], original=v["value"])
         for k, v in parsed.items()
         if k in LABELS
     ]
@@ -159,62 +159,95 @@ def _list(value: str | list[str]) -> list[str]:
     return value if isinstance(value, list) else [value] if value else []
 
 
+STEPS = ("linkedin", "questions", "lookups", "chats", "tour", "done")
+
+
+def question_ids(state: OnboardingState) -> list[str]:
+    """Every question this onboarding has, in the order they're asked."""
+    ids = []
+    for key in ORDER:
+        if key == "role":
+            if state.field("employer") or state.field("role"):
+                ids.append("role")
+        elif state.field(key):
+            ids.append(key)
+    return [*ids, "target", "when"]
+
+
+def answered(state: OnboardingState, qid: str) -> bool:
+    if qid == "target":
+        return state.target_profile is not None
+    if qid == "when":
+        return state.target_date is not None
+    keys = ["employer", "role"] if qid == "role" else [qid]
+    present = [f for k in keys if (f := state.field(k))]
+    return bool(present) and all(f.status != "pending" for f in present)
+
+
+def build_question(state: OnboardingState, qid: str, hi: str = "") -> Question:
+    """The question for ``qid``, worded from the PDF (or the earlier answer, when the person went back)."""
+
+    def shown(f: ProfileField) -> str | list[str]:
+        return f.original if f.status == "skipped" and f.original else f.value
+
+    if qid == "target":
+        return Question(id="target", kind="choice", keys=["target"], text=hi + "Which petition are you working toward?",
+                        options=[{"value": k, "label": v} for k, v in PROFILES.items()] + [{"value": "unsure", "label": "Not sure yet"}])  # fmt: skip
+    if qid == "when":
+        return Question(id="when", kind="month", keys=["when"], text="When do you hope to file? A rough month is fine.",
+                        values={"when": state.target_date if state.target_date not in (None, "skipped") else ""})  # fmt: skip
+    if qid == "role":
+        emp, role = state.field("employer"), state.field("role")
+        present = [f for f in (emp, role) if f]
+        if emp and role:
+            text = f"Looks like you're at {shown(emp)} working as {shown(role)}. Is that right?"
+        elif emp:
+            text = f"Looks like you work at {shown(emp)}. Is that right?"
+        else:
+            assert role is not None
+            text = f"Looks like your role is {shown(role)}. Is that right?"
+        return Question(id="role", text=hi + text, keys=[f.key for f in present], values={f.key: shown(f) for f in present},
+                        quote=" / ".join(f.quote for f in present))  # fmt: skip
+    f = state.field(qid)
+    if f is None:
+        raise ValueError(f"no question {qid!r}")
+    value = shown(f)
+    items = _list(value)
+    text = {
+        "name": f"Let's start with your name as it should appear on your case: {value}. Is that right?",
+        "location": f"You're based in {value}?",
+        "headline": f"For your field, I'd use your headline: “{value}”. Does that describe your work?",
+        "education": f"Your education: {'; '.join(items)}. Is that right?",
+        "awards": f"You list {plural(len(items), 'award')}: {'; '.join(items)}. Is that right?",
+        "publications": f"You mentioned {plural(len(items), 'paper')}: {'; '.join(items)}. Is that right?",
+        "judging": f"You mention judging or reviewing: {'; '.join(items)}. Is that right?",
+        "memberships": f"You're {_and([_member(m) for m in items])}. Is that right?",
+        "certifications": f"You list {plural(len(items), 'certification')}: {'; '.join(items)}. Is that right?",
+        "links": f"Your profile links to {', '.join(items)}. {'Is this yours' if len(items) == 1 else 'Are these yours'}?",
+    }[qid]
+    return Question(
+        id=qid, text=(hi + text) if qid != "name" else text, keys=[qid], values={qid: value}, quote=f.quote
+    )
+
+
 def next_question(state: OnboardingState) -> Question | None:
-    """The next unanswered question, built from the PDF and earlier answers; None when all are answered."""
+    """The question to ask now: the one the person went back to, else the next unanswered one; None when done."""
+    if state.revisit:
+        return build_question(state, state.revisit)
     # Thank them once, on the question right after they confirm their name.
     answered_after_name = any(f.status != "pending" for f in state.fields if f.key != "name")
     hi = f"Thanks, {_first(state)}. " if _first(state) and not answered_after_name else ""
-    for key in ORDER:
-        if key == "role":
-            emp, role = state.field("employer"), state.field("role")
-            pending = [f for f in (emp, role) if f and f.status == "pending"]
-            if not pending:
-                continue
-            if emp and role:
-                text = f"Looks like you're at {emp.value} working as {role.value}. Is that right?"
-            else:
-                only = emp or role
-                assert only is not None
-                text = (
-                    f"Looks like you work at {only.value}. Is that right?"
-                    if emp
-                    else f"Looks like your role is {only.value}. Is that right?"
-                )
-            keys = [f.key for f in (emp, role) if f]
-            present = [f for f in (emp, role) if f]
-            return Question(id="role", text=hi + text, keys=keys, values={f.key: f.value for f in present},
-                            quote=" / ".join(f.quote for f in present))  # fmt: skip
-        f = state.field(key)
-        if not f or f.status != "pending":
-            continue
-        items = _list(f.value)
-        text = {
-            "name": f"Let's start with your name as it should appear on your case: {f.value}. Is that right?",
-            "location": f"You're based in {f.value}?",
-            "headline": f"For your field, I'd use your headline: “{f.value}”. Does that describe your work?",
-            "education": f"Your education: {'; '.join(items)}. Is that right?",
-            "awards": f"You list {plural(len(items), 'award')}: {'; '.join(items)}. Is that right?",
-            "publications": f"You mentioned {plural(len(items), 'paper')}: {'; '.join(items)}. Is that right?",
-            "judging": f"You mention judging or reviewing: {'; '.join(items)}. Is that right?",
-            "memberships": f"You're {_and([_member(m) for m in items])}. Is that right?",
-            "certifications": f"You list {plural(len(items), 'certification')}: {'; '.join(items)}. Is that right?",
-            "links": f"Your profile links to {', '.join(items)}. {'Is this yours' if len(items) == 1 else 'Are these yours'}?",
-        }[key]
-        return Question(
-            id=key,
-            text=(hi + text) if key != "name" else text,
-            keys=[key],
-            values={key: f.value},
-            quote=f.quote,
-        )
-    if state.target_profile is None:
-        return Question(id="target", kind="choice", keys=["target"], text=hi + "Which petition are you working toward?",
-                        options=[{"value": k, "label": v} for k, v in PROFILES.items()] + [{"value": "unsure", "label": "Not sure yet"}])  # fmt: skip
-    if state.target_date is None:
-        return Question(
-            id="when", kind="month", keys=["when"], text="When do you hope to file? A rough month is fine."
-        )
+    for qid in question_ids(state):
+        if not answered(state, qid):
+            return build_question(state, qid, hi)
     return None
+
+
+def previous_question(state: OnboardingState, current: str | None) -> str | None:
+    """The answered question before ``current`` (the last one when ``current`` is None), for Back."""
+    ids = question_ids(state)
+    end = ids.index(current) if current in ids else len(ids)
+    return next((q for q in reversed(ids[:end]) if answered(state, q)), None)
 
 
 def answer(state: OnboardingState, qid: str, action: str, value: Any = None) -> dict[str, Any]:
@@ -222,6 +255,9 @@ def answer(state: OnboardingState, qid: str, action: str, value: Any = None) -> 
     writes: dict[str, Any] = {"person": {}, "profile": None}
     if action not in ("yes", "fix", "skip"):
         raise ValueError("answer must be yes, fix or skip")
+    q = next_question(state)  # the question being answered (a revisit, or the next unanswered one)
+    if state.revisit == qid:
+        state.revisit = None
     if qid == "when":
         if action == "skip" or not value:
             state.target_date = "skipped"
@@ -240,7 +276,6 @@ def answer(state: OnboardingState, qid: str, action: str, value: Any = None) -> 
             state.target_profile = str(value)
             writes["profile"] = value
         return writes
-    q = next_question(state)
     keys = ["employer", "role"] if qid == "role" else [qid]
     targets = [f for k in keys if (f := state.field(k))]
     if not targets:
@@ -268,6 +303,8 @@ def answer(state: OnboardingState, qid: str, action: str, value: Any = None) -> 
             )
             f.status = "confirmed" if f.value == before else "fixed"  # unchanged in the form: just confirmed
         else:
+            if f.status == "skipped" and f.original:  # going back to a skipped answer and saying Yes
+                f.value = f.original
             f.status = "confirmed"
         if f.key == "name":
             writes["person"]["name"] = f.value

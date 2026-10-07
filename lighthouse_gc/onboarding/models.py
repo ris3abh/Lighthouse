@@ -19,6 +19,9 @@ class ProfileField(_Model):
     value: str | list[str] = ""
     quote: str = Field("", description="The words in the (redacted) PDF text the value was read from.")
     status: FieldStatus = "pending"
+    original: str | list[str] = Field(
+        "", description="What the PDF said, so a skipped answer can be revisited."
+    )
 
 
 class LinkedInSource(_Model):
@@ -61,6 +64,12 @@ class OnboardingState(_File):
     target_date: str | None = Field(None, description="YYYY-MM the person hopes to file, or 'skipped'.")
     lookups: list[Lookup] = Field(default_factory=list)
     transcript: list[Turn] = Field(default_factory=list)
+    revisit: str | None = Field(
+        None, description="A question the person went back to; asked again until answered."
+    )
+    reached: Step = Field(
+        "linkedin", description="The furthest step reached, so the step bar can go back to it."
+    )
     chats: Literal["pending", "imported", "skipped"] = "pending"
     tour: Literal["pending", "seen", "skipped"] = "pending"
     started_at: datetime | None = None

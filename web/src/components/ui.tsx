@@ -1,6 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Minus, X } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { CriterionStatus } from "../api";
+import { useBackToClose } from "../hooks";
 import { CountUp, useInView, useReducedMotion } from "../lib/motion";
 
 /** Brutalism 2.0 primitives (ADR 0007). Pages use these and the semantic tokens, never raw palette colors. */
@@ -252,6 +253,7 @@ export function Segmented<T extends string>({
 }
 
 export function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+  useBackToClose(true, onClose); // the browser's Back closes the dialog, not the page
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);

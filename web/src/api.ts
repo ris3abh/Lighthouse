@@ -546,6 +546,7 @@ export interface OnboardingView {
     chats: string;
   };
   question: OnboardingQuestion | null;
+  nav: { back: { step: string; question?: string | null } | null; reached: string; steps: { id: string; reachable: boolean }[] };
   panel: { key: string; label: string; value: string | string[]; status: FieldStatus; quote?: string }[];
   person: { name: string; field: string; location: string };
 }
@@ -605,6 +606,7 @@ export const api = {
     request<OnboardingView>("POST", "/onboarding/answer", { id, action, value }),
   onboardingStep: (step: string) => request<OnboardingView>("POST", "/onboarding/step", { step }),
   onboardingLookup: (id: string, accept: boolean) => request<OnboardingView>("POST", `/onboarding/lookups/${id}`, { accept }),
+  onboardingGoto: (step: string, question?: string | null) => request<OnboardingView>("POST", "/onboarding/goto", { step, question }),
   onboardingRestart: () => request<OnboardingView>("POST", "/onboarding/restart"),
   importChats: (file: File, keepAll = false) => {
     const form = new FormData();

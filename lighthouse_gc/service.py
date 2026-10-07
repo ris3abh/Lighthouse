@@ -443,7 +443,8 @@ class Service:
     # ------------------------------------------------------------------ onboarding (ADR 0008)
 
     def onboarding_save(self, state: Any, action: str, summary: str = "", person: dict[str, Any] | None = None,
-                        evidence: Evidence | None = None, todos: list[Any] | None = None) -> Any:  # fmt: skip
+                        evidence: Evidence | None = None, todos: list[Any] | None = None,
+                        dismiss: list[str] | None = None) -> Any:  # fmt: skip
         """Save onboarding progress, plus the person fields an answer confirmed, the PDF observation and the
         self-reported to-dos the answers produced."""
         before = self.ws.onboarding()
@@ -462,6 +463,8 @@ class Service:
                 self.ws.save_person(p)
             if todos:
                 self.ws.add_todos(todos)
+            for todo_id in dismiss or []:
+                self.ws.update_todo(todo_id, status="dismissed", closed=clock.today())
             self.ws.save_onboarding(state)
             return state
 

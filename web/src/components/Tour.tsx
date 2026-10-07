@@ -35,12 +35,26 @@ const STEPS: Step[] = [
   { page: "agent", title: "The agent's work, in the open", text: () => "Every run, what it read, what it proposed and what it cost. Ask it anything from any page." },
 ];
 
-export default function Tour({ overview, onDone }: { overview: Overview | null; onDone: (skipped: boolean) => void }) {
-  const [i, setI] = useState(0);
+/** Each tour step has its own URL (#/inbox?tour=2), so the browser's back and forward move through it too. */
+function tourIndex(): number {
+  const n = Number(new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("tour"));
+  return Number.isInteger(n) && n >= 1 && n <= STEPS.length ? n - 1 : 0;
+}
+
+export default function Tour({ overview, onDone, onBack }: { overview: Overview | null; onDone: (skipped: boolean) => void; onBack?: () => void }) {
+  const [i, setI] = useState(tourIndex);
   const step = STEPS[i];
   useEffect(() => {
-    window.location.hash = `#/${step.page}`;
-  }, [step.page]);
+    const want = `#/${step.page}?tour=${i + 1}`;
+    if (window.location.hash !== want) window.location.hash = want;
+  }, [step.page, i]);
+  useEffect(() => {
+    const onHash = () => {
+      if (/[?&]tour=\d/.test(window.location.hash)) setI(tourIndex());
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   return (
     <div role="dialog" aria-label="Guided tour" className="fixed right-4 bottom-4 left-4 z-50 animate-rise border border-ink bg-surface sm:left-auto sm:w-[400px]">
       <div className="flex items-center justify-between border-b border-line px-5 py-3">
@@ -56,7 +70,7 @@ export default function Tour({ overview, onDone }: { overview: Overview | null; 
         <p className="mt-3 text-[15px] leading-relaxed text-ink-2">{step.text(overview)}</p>
       </div>
       <div className="flex items-center justify-between border-t border-line px-5 py-3">
-        <Button size="sm" variant="ghost" disabled={i === 0} onClick={() => setI(i - 1)}>
+        <Button size="sm" variant="ghost" disabled={i === 0 && !onBack} onClick={() => (i === 0 ? onBack?.() : setI(i - 1))}>
           <ArrowLeft /> Back
         </Button>
         {i < STEPS.length - 1 ? (

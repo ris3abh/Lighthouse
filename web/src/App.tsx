@@ -17,13 +17,14 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type OnboardingView } from "./api";
 import ChatPanel from "./components/ChatPanel";
 import Finale from "./components/Finale";
+import { onboardingHash, parseOnboardingHash, samePlace, type OnboardingPlace } from "./lib/nav";
 import Tour from "./components/Tour";
 import { Button, cx, Segmented, ToastProvider, useToast } from "./components/ui";
-import { useLoad, useRoute, useTheme, type ThemeMode } from "./hooks";
+import { useBackToClose, useLoad, useRoute, useTheme, type ThemeMode } from "./hooks";
 import Agent from "./pages/Agent";
 import Calendar from "./pages/Calendar";
 import Evidence from "./pages/Evidence";
@@ -61,6 +62,10 @@ const THEMES: { value: ThemeMode; label: ReactNode; title: string }[] = [
   { value: "dark", label: <Moon aria-label="Dark" />, title: "Theme: dark" },
 ];
 
+function placeOf(v: OnboardingView): OnboardingPlace {
+  return { step: v.state.step, question: v.state.step === "questions" ? (v.question?.id ?? null) : null };
+}
+
 export default function App() {
   const [version, setVersion] = useState(0);
   const bump = useCallback(() => setVersion((v) => v + 1), []);
@@ -89,6 +94,7 @@ function Shell() {
     }
   });
   useEffect(() => setMenuOpen(false), [page]);
+  useBackToClose(menuOpen, () => setMenuOpen(false));
   const [onboarding, setOnboarding] = useState<OnboardingView | null>(null);
   const [finished, setFinished] = useState(false); // the closing moment is showing
   const [docked, setDocked] = useState(false); // the Ask button just landed in the header
@@ -103,6 +109,34 @@ function Shell() {
       .then(setOnboarding)
       .catch(() => setOnboarding(null));
   }, [version]);
+  // Onboarding has a URL per step and question (#/welcome/questions/role), so back / forward move through it.
+  useEffect(() => {
+    if (!onboarding) return;
+    const here = parseOnboardingHash(window.location.hash);
+    if (!onboarding.needed) {
+      if (here) window.history.replaceState(null, "", "#/overview");
+      return;
+    }
+    if (onboarding.state.step === "tour") return; // the tour keeps its own URLs
+    const want = placeOf(onboarding);
+    if (samePlace(here, want)) return;
+    if (here) window.location.hash = onboardingHash(want);
+    else window.history.replaceState(window.history.state, "", onboardingHash(want)); // first load: no extra entry
+  }, [onboarding]);
+  const onboardingNow = useRef(onboarding);
+  onboardingNow.current = onboarding;
+  useEffect(() => {
+    const onHash = () => {
+      const place = parseOnboardingHash(window.location.hash);
+      const current = onboardingNow.current;
+      if (!place || !current?.needed || samePlace(place, placeOf(current))) return;
+      api.onboardingGoto(place.step, place.question).then(setOnboarding, () => {
+        window.history.replaceState(window.history.state, "", onboardingHash(placeOf(current))); // not reached yet
+      });
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   const toggleChat = (open: boolean) => {
     setChatOpen(open);
     try {
@@ -297,7 +331,7 @@ function Shell() {
         </main>
       </div>
       {chatOpen && <ChatPanel page={page} onClose={() => toggleChat(false)} />}
-      {touring && <Tour overview={ov} onDone={endTour} />}
+      {touring && <Tour overview={ov} onDone={endTour} onBack={() => api.onboardingGoto("chats").then(setOnboarding, (e) => toast((e as Error).message, "error"))} />}
       {finished && (
         <Finale
           name={(ov?.person.name ?? "").split(" ")[0]}

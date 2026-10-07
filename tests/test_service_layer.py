@@ -119,7 +119,7 @@ def _onboarding(ws) -> str:
     """Put onboarding at a question so the answer route has one to answer."""
     from lighthouse_gc.onboarding.models import OnboardingState, ProfileField
 
-    ws.save_onboarding(OnboardingState(status="in_progress", step="questions", target_profile="o1a", fields=[
+    ws.save_onboarding(OnboardingState(status="in_progress", step="questions", reached="questions", target_profile="o1a", fields=[
         ProfileField(key="location", label="Based in", value="Pittsburgh, PA", quote="Pittsburgh, PA")]))  # fmt: skip
     return "location"
 
@@ -198,6 +198,7 @@ SAMPLES = {
                                         "onboarding.answer"),
     ("POST", "/api/onboarding/step"): ("/api/onboarding/step", {"json": {"step": "skip_all"}}, "onboarding.step"),
     ("POST", "/api/onboarding/restart"): ("/api/onboarding/restart", {}, "onboarding.restart"),
+    ("POST", "/api/onboarding/goto"): ("/api/onboarding/goto", {"json": {"step": "questions"}}, "onboarding.goto"),
     ("PATCH", "/api/todos/{todo_id}"): ("/api/todos/{todo}", {"json": {"status": "done"}}, "todo.update"),
 }  # fmt: skip
 

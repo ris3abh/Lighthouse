@@ -35,6 +35,33 @@ class LookupBody(BaseModel):
     accept: bool
 
 
+class GotoBody(BaseModel):
+    step: str
+    question: str | None = None
+
+
+def nav(state: OnboardingState) -> dict[str, Any]:
+    """Where Back goes from here, and which steps the step bar can jump to (any step already reached)."""
+    reached = flow.STEPS.index(state.reached) if state.reached in flow.STEPS else 0
+    back: dict[str, Any] | None = None
+    if state.step == "questions":
+        current = flow.next_question(state)
+        prev = flow.previous_question(state, current.id if current else None)
+        back = {"step": "questions", "question": prev} if prev else {"step": "linkedin"}
+    elif state.step == "lookups":
+        back = {"step": "questions", "question": flow.previous_question(state, None)}
+    elif state.step == "chats":
+        back = (
+            {"step": "lookups"}
+            if state.lookups
+            else {"step": "questions", "question": flow.previous_question(state, None)}
+        )
+    elif state.step == "tour":
+        back = {"step": "chats"}
+    return {"back": back, "reached": state.reached,
+            "steps": [{"id": s, "reachable": i <= reached} for i, s in enumerate(flow.STEPS[:-1])]}  # fmt: skip
+
+
 def view(ws: Case, runner: Any = None) -> dict[str, Any]:
     state = ws.onboarding()
     if runner is not None:
@@ -57,7 +84,7 @@ def view(ws: Case, runner: Any = None) -> dict[str, Any]:
         panel.append({"key": "target", "label": "Petition", "status": "confirmed" if state.target_profile != "unsure" else "skipped",
                       "value": flow.PROFILES.get(state.target_profile, "")})  # fmt: skip
     return {"needed": ws.needs_onboarding(), "state": state.model_dump(mode="json"), "question": q.as_dict() if q else None,
-            "panel": panel, "person": ws.person().model_dump(mode="json")}  # fmt: skip
+            "panel": panel, "person": ws.person().model_dump(mode="json"), "nav": nav(state)}  # fmt: skip
 
 
 RETRYABLE = ("nothing_found", "unreachable", "blocked", "failed")
@@ -120,12 +147,21 @@ def todos_for(ws: Case, state: OnboardingState) -> list[Any]:
 def _advance(state: OnboardingState, ws: Case | None = None) -> None:
     """Move to the next step once the current one has nothing left to ask."""
     if state.step == "questions" and flow.next_question(state) is None:
-        state.lookups = flow.offer_lookups(state, todos_for(ws, state) if ws is not None else None)
+        fresh = flow.offer_lookups(state, todos_for(ws, state) if ws is not None else None)
+        old = {lk.id: lk for lk in state.lookups}
+        # Going back and changing an answer re-offers only the lookups it affects; the rest keep their outcome.
+        state.lookups = [
+            old[lk.id] if lk.id in old and old[lk.id].targets == lk.targets else lk for lk in fresh
+        ]
         state.step = "lookups" if state.lookups else "chats"
     # Stay on the lookups so every outcome (and Retry) stays visible; Continue moves on at any time. Only a step
     # where every lookup was declined moves on by itself.
     if state.step == "lookups" and all(lk.status == "declined" for lk in state.lookups):
         state.step = "chats"
+    if flow.STEPS.index(state.step) > flow.STEPS.index(
+        state.reached if state.reached in flow.STEPS else "linkedin"
+    ):
+        state.reached = state.step
 
 
 def _start(state: OnboardingState) -> None:
@@ -214,12 +250,14 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
                 update["profile"] = writes["profile"]
             person["filing_target"] = ws.person().filing_target.model_copy(update=update)
         todos = None
+        stale: list[str] = []
         if was_asking and state.step != "questions":  # the last answer: what was confirmed becomes next steps
-            todos = flow.todos_from(
-                state, {c.id for c in ws.profile(writes["profile"] or None).criteria}, clock.today()
-            )
+            todos = todos_for(ws, state)
+            keep = {td.id for td in todos}  # an answer changed on the way back: its old to-do goes away
+            stale = [td.id for td in ws.todos().todos
+                     if td.source == "onboarding" and td.status == "open" and td.id not in keep]  # fmt: skip
         svc.onboarding_save(state, "onboarding.answer", summary=f"{body.id}: {body.action}", person=person or None,
-                            todos=todos)  # fmt: skip
+                            todos=todos, dismiss=stale)  # fmt: skip
         if writes["profile"] and writes["profile"] != ws.profile_id():
             svc.set_profile(writes["profile"])
         return view_now()
@@ -256,6 +294,37 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
             raise HTTPException(409, f"can't {s} from the {state.step} step")
         _advance(state)
         svc.onboarding_save(state, "onboarding.step", summary=s)
+        return view_now()
+
+    @app.post("/api/onboarding/goto")
+    def goto(body: GotoBody) -> dict[str, Any]:
+        """Back, the step bar and the browser's back / forward: go to a step already reached, or to a question
+        already answered. Every answer is kept; changing one updates the profile and re-offers what it affects."""
+        state = ws.onboarding()
+        if state.status not in ("new", "in_progress"):
+            raise HTTPException(409, "onboarding isn't running")
+        if body.step not in flow.STEPS[:-1]:
+            raise HTTPException(400, f"unknown step {body.step!r}")
+        if flow.STEPS.index(body.step) > flow.STEPS.index(state.reached):
+            raise HTTPException(409, f"you haven't reached {body.step} yet")
+        state.revisit = None
+        if body.step == "questions":
+            ids = flow.question_ids(state)
+            qid = body.question
+            if qid is not None and qid not in ids:
+                raise HTTPException(404, f"no question {qid!r}")
+            if qid is not None and not flow.answered(state, qid):
+                pending = flow.next_question(state)
+                if pending is None or pending.id != qid:
+                    raise HTTPException(409, "answer the questions before it first")
+            elif qid is not None:
+                state.revisit = qid
+            elif flow.next_question(state) is None:
+                state.revisit = flow.previous_question(state, None)  # all answered: reopen the last one
+        elif body.step == "lookups" and not state.lookups:
+            raise HTTPException(409, "there were no lookups to offer")
+        state.step = body.step  # type: ignore[assignment]
+        svc.onboarding_save(state, "onboarding.goto", summary=f"{body.step} {body.question or ''}".strip())
         return view_now()
 
     @app.post("/api/onboarding/restart")

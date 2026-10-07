@@ -1,4 +1,4 @@
-import { Check, FileText, MessageSquare, Pencil, RotateCw, Search, SkipForward, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FileText, MessageSquare, Pencil, RotateCw, Search, SkipForward, Upload } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type OnboardingLookup, type OnboardingQuestion, type OnboardingView } from "../api";
 import DropZone from "../components/DropZone";
@@ -45,12 +45,26 @@ export default function Welcome({ view, onChange }: { view: OnboardingView; onCh
       <header className="flex h-14 shrink-0 items-center gap-4 border-b border-frame bg-surface px-4 lg:h-16 lg:px-8">
         <span className="display text-2xl uppercase lg:text-[28px]">Lighthouse</span>
         <ol className="ml-4 hidden items-center gap-1.5 md:flex" aria-label="Setup steps">
-          {STEPS.map((s, i) => (
-            <li key={s.id} className="flex items-center gap-1.5" aria-current={i === stepIndex ? "step" : undefined}>
-              <span className={cx("h-1.5 w-8 border border-ink transition-colors duration-300", i < stepIndex ? "bg-ink" : i === stepIndex ? "bg-ink-2" : "bg-transparent")} />
-              <span className={cx("font-mono text-[10.5px] tracking-[0.08em] uppercase", i === stepIndex ? "text-ink" : "text-muted")}>{s.label}</span>
-            </li>
-          ))}
+          {STEPS.map((s, i) => {
+            const reachable = !!view.nav?.steps.find((x) => x.id === s.id)?.reachable && i !== stepIndex;
+            const inner = (
+              <>
+                <span className={cx("h-1.5 w-8 border border-ink transition-colors duration-300", i < stepIndex ? "bg-ink" : i === stepIndex ? "bg-ink-2" : "bg-transparent")} />
+                <span className={cx("font-mono text-[10.5px] tracking-[0.08em] uppercase", i === stepIndex ? "text-ink" : "text-muted", reachable && "group-hover:text-ink")}>{s.label}</span>
+              </>
+            );
+            return (
+              <li key={s.id} aria-current={i === stepIndex ? "step" : undefined}>
+                {reachable ? (
+                  <button type="button" className="group flex items-center gap-1.5" disabled={busy} onClick={() => run(() => api.onboardingGoto(s.id))} title={`Back to ${s.label}`}>
+                    {inner}
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-1.5">{inner}</span>
+                )}
+              </li>
+            );
+          })}
         </ol>
         <div className="ml-auto flex items-center gap-3">
           <span className="hidden sm:block">
@@ -62,8 +76,15 @@ export default function Welcome({ view, onChange }: { view: OnboardingView; onCh
         </div>
       </header>
 
-      <main className="@container mx-auto w-full max-w-[1280px] flex-1 px-4 py-10 md:px-10 md:py-16">
-        {step === "linkedin" && <LinkedInStep busy={busy} run={run} />}
+      <main className="@container mx-auto w-full max-w-[1280px] flex-1 px-4 py-6 md:px-10 md:py-10">
+        <div className="mb-6 h-8">
+          {view.nav?.back && (
+            <Button size="sm" variant="ghost" className="-ml-3" disabled={busy} onClick={() => run(() => api.onboardingGoto(view.nav.back!.step, view.nav.back!.question))}>
+              <ArrowLeft /> Back
+            </Button>
+          )}
+        </div>
+        {step === "linkedin" && <LinkedInStep busy={busy} run={run} hasAnswers={view.panel.some((l) => l.status !== "pending")} />}
         {step === "questions" && <QuestionStep view={view} busy={busy} run={run} />}
         {step === "lookups" && <LookupStep view={view} busy={busy} run={run} onChange={onChange} />}
         {step === "chats" && <ChatsStep busy={busy} run={run} />}
@@ -74,7 +95,7 @@ export default function Welcome({ view, onChange }: { view: OnboardingView; onCh
 
 type Run = (fn: () => Promise<OnboardingView>) => Promise<void>;
 
-function LinkedInStep({ busy, run }: { busy: boolean; run: Run }) {
+function LinkedInStep({ busy, run, hasAnswers }: { busy: boolean; run: Run; hasAnswers: boolean }) {
   return (
     <div className="mx-auto max-w-3xl animate-rise">
       <p className="eyebrow">Step 1 · LinkedIn</p>
@@ -93,9 +114,15 @@ function LinkedInStep({ busy, run }: { busy: boolean; run: Run }) {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-[15px] text-ink-2">On LinkedIn: Profile &gt; More &gt; Save to PDF.</p>
-        <Button variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingStep("skip_linkedin"))}>
-          <SkipForward /> Skip
-        </Button>
+        {hasAnswers ? (
+          <Button variant="primary" disabled={busy} onClick={() => run(() => api.onboardingGoto("questions"))}>
+            Keep my answers and continue <ArrowRight />
+          </Button>
+        ) : (
+          <Button variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingStep("skip_linkedin"))}>
+            <SkipForward /> Skip
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { bindBackToClose } from "./lib/nav";
 
 /** Load data on mount; `reload()` re-fetches without clearing what's on screen. */
 export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []) {
@@ -85,4 +86,15 @@ export function today(offsetDays = 0) {
   d.setDate(d.getDate() + offsetDays);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+
+/** While ``open``, the browser's Back closes the dialog (and stays on the page). */
+export function useBackToClose(open: boolean, onClose: () => void) {
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    if (!open) return;
+    return bindBackToClose(window.history, window, () => close.current());
+  }, [open]);
 }

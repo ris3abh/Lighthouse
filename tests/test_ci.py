@@ -38,6 +38,7 @@ def test_web_job_builds_with_lockfile():
     job = _workflow()["jobs"]["web"]
     cmds = _commands(job)
     assert "npm --prefix web ci" in cmds and "npm --prefix web run build" in cmds
+    assert "npm --prefix web test" in cmds  # the navigation unit tests (back / forward) run in CI
     assert (ROOT / "web" / "package-lock.json").exists()
     assert "tsc -b" in (ROOT / "web" / "package.json").read_text()  # the build type-checks
 

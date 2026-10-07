@@ -555,3 +555,104 @@ def test_web_lookups_without_ai_say_so_and_search_nothing(fresh, http_mock):
     lk = next(x for x in view["state"]["lookups"] if x["id"] == lk["id"])
     assert lk["status"] == "failed" and lk["result"].startswith("This one needs your AI connected")
     assert not http_mock.calls and fresh.pending_candidates() == []
+
+
+# ----------------------------------------------------------------------------- back and forth (C11)
+
+
+def _goto(c, step, question=None):
+    r = c.post("/api/onboarding/goto", headers=W, json={"step": step, "question": question})
+    return r
+
+
+def test_back_walks_through_every_question_and_keeps_the_answers(fresh):
+    c = client_for(fresh)
+    view = upload(c, "maya")
+    assert view["nav"]["back"] == {"step": "linkedin"}  # the first question goes back to the PDF step
+    view = c.post("/api/onboarding/answer", headers=W, json={"id": "name", "action": "yes"}).json()
+    assert view["question"]["id"] == "role" and view["nav"]["back"] == {
+        "step": "questions",
+        "question": "name",
+    }
+    view = _goto(c, "questions", "name").json()
+    assert (
+        view["question"]["id"] == "name" and "Maya Chen" in view["question"]["text"]
+    )  # the earlier answer, again
+    assert {line["key"]: line["status"] for line in view["panel"]}["name"] == "confirmed"  # still answered
+    view = c.post(
+        "/api/onboarding/answer", headers=W, json={"id": "name", "action": "fix", "value": "Maya L. Chen"}
+    ).json()
+    assert view["question"]["id"] == "role"  # back to where it left off
+    assert {line["key"]: line["value"] for line in view["panel"]}["name"] == "Maya L. Chen"
+    assert fresh.person().name == "Maya L. Chen"
+
+
+def test_changing_an_answer_on_the_way_back_reoffers_only_what_it_affects(fresh, http_mock):
+    c = client_for(fresh)
+    view, _ = answer_all(c, upload(c, "maya"))
+    assert view["state"]["step"] == "lookups" and view["nav"]["back"] == {
+        "step": "questions",
+        "question": "when",
+    }
+    http_mock.get("https://api.github.com/users/mayachen-example").respond(
+        json={"login": "mayachen-example", "type": "User"}
+    )
+    http_mock.get("https://api.github.com/users/mayachen-example/repos").respond(json=[])
+    c.post("/api/onboarding/lookups/github", headers=W, json={"accept": True})
+    judging = next(
+        x
+        for x in c.get("/api/onboarding").json()["state"]["lookups"]
+        if x["targets"] == ["Judge, HackSeattle 2025"]
+    )
+    c.post(f"/api/onboarding/lookups/{judging['id']}", headers=W, json={"accept": False})
+    before = {x["id"]: x["status"] for x in c.get("/api/onboarding").json()["state"]["lookups"]}
+
+    view = _goto(c, "questions", "judging").json()
+    assert view["question"]["id"] == "judging"
+    view = c.post("/api/onboarding/answer", headers=W, json={"id": "judging", "action": "fix",
+                                                             "value": "Judge, HackSeattle 2026"}).json()  # fmt: skip
+    assert view["state"]["step"] == "lookups"
+    after = {x["targets"][0]: x for x in view["state"]["lookups"]}
+    assert after["Judge, HackSeattle 2026"]["status"] == "offered"  # the changed answer is offered again
+    assert "Judge, HackSeattle 2025" not in after
+    assert after["https://github.com/mayachen-example"]["status"] == before["github"]  # unchanged: kept
+    titles = {t.title: t.status for t in fresh.todos().todos}
+    assert titles["Upload proof of HackSeattle 2026 judging"] == "open"
+    assert (
+        titles["Upload proof of HackSeattle 2025 judging"] == "dismissed"
+    )  # the old answer's to-do goes away
+
+
+def test_a_skipped_answer_can_be_revisited_with_what_the_pdf_said(fresh):
+    c = client_for(fresh)
+    view = upload(c, "lena")
+    c.post("/api/onboarding/answer", headers=W, json={"id": "name", "action": "yes"})
+    c.post("/api/onboarding/answer", headers=W, json={"id": "role", "action": "skip"})
+    assert {line["key"]: line["status"] for line in c.get("/api/onboarding").json()["panel"]}[
+        "role"
+    ] == "skipped"
+    view = _goto(c, "questions", "role").json()
+    assert "Brightline Retail" in view["question"]["text"]  # the PDF's words come back, not a blank
+    view = c.post("/api/onboarding/answer", headers=W, json={"id": "role", "action": "yes"}).json()
+    panel = {line["key"]: line for line in view["panel"]}
+    assert panel["employer"]["value"] == "Brightline Retail" and panel["employer"]["status"] == "confirmed"
+
+
+def test_the_step_bar_only_goes_to_steps_already_reached(fresh):
+    c = client_for(fresh)
+    view = upload(c, "maya")
+    assert [s["reachable"] for s in view["nav"]["steps"]] == [True, True, False, False, False]
+    assert _goto(c, "chats").status_code == 409
+    assert _goto(c, "questions", "awards").status_code == 409  # can't skip ahead to an unanswered question
+    view, _ = answer_all(c, view)
+    view = c.post("/api/onboarding/step", headers=W, json={"step": "lookups_done"}).json()
+    assert view["state"]["step"] == "chats" and view["nav"]["back"] == {"step": "lookups"}
+    view = _goto(c, "linkedin").json()  # all the way back; nothing is lost
+    assert (
+        view["state"]["step"] == "linkedin"
+        and len([x for x in view["panel"] if x["status"] != "pending"]) > 5
+    )
+    view = _goto(c, "chats").json()  # and forward again
+    assert view["state"]["step"] == "chats"
+    view = _goto(c, "questions").json()  # all answered: reopens the last question
+    assert view["question"]["id"] == "when"
