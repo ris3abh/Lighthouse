@@ -446,10 +446,24 @@ def test_skipped_items_make_no_todos_and_rerunning_adds_none_twice(fresh):
 # ----------------------------------------------------------------------------- web lookups for those items (C8)
 
 
+_open_clients: list = []
+
+
+@pytest.fixture(autouse=True)
+def _close_clients():
+    yield
+    while _open_clients:
+        _open_clients.pop().__exit__(None, None, None)
+
+
 def _finish_questions(ws, pid, engine):
+    """A client held open for the whole test: a web search runs as a task on the server's event loop, and a client
+    that isn't entered gives each request a loop of its own that closes (cancelling the search) when it returns.
+    On a slow machine that cancelled the search before it read anything (seen on CI)."""
     from fastapi.testclient import TestClient as TC
 
-    c = TC(create_app(ws, allowed_hosts=["testserver"], engine=engine))
+    c = TC(create_app(ws, allowed_hosts=["testserver"], engine=engine)).__enter__()
+    _open_clients.append(c)
     view, _ = answer_all(c, upload(c, pid))
     return c, view
 
@@ -538,10 +552,7 @@ def test_a_page_that_doesnt_name_you_is_flagged_as_a_possible_namesake(fresh, ht
     c.post(f"/api/onboarding/lookups/{lk['id']}", headers=W, json={"accept": True})
     done = _wait(c, lk["id"])
     found = [x for x in fresh.pending_candidates() if x.proposed_criterion == "judging"]
-    assert len(found) == 1, (
-        done,
-        engine.tool_outputs,
-    )  # says why, if this ever fails again (seen once on CI)
+    assert len(found) == 1, (done["status"], done["result"], engine.tool_outputs)
     [cand] = found
     assert cand.facts["namesake_check"] == "possible namesake" and cand.confidence == 0.2
     assert "Possible namesake" in cand.summary
