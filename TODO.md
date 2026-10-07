@@ -78,8 +78,10 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       opens onboarding; later runs reopen it
 - [ ] S2. The wheel is the product: release workflow builds the UI, attaches the wheel to the GitHub release
       (PyPI via trusted publishing once configured); CI installs the wheel in a clean venv and smoke-tests it
-- [ ] S3. "Connect your AI" in onboarding and Settings: existing Claude login, or an Anthropic key in the
-      keychain checked with a free request; cost note; bundled CLI counts as available; skippable
+- [x] S3. "Connect your AI" in onboarding and Settings: existing Claude login, or an Anthropic key in the
+      keychain checked with a free request; cost note; bundled CLI counts as available; skippable. A new
+      onboarding step ("Your AI") between the questions and the lookups, asked once; the key goes to the CLI
+      process only. Lighthouse never reads the Claude Code login itself
 - [ ] S4. One-line installers (install.sh, install.ps1): uv if missing, install, run; CI runs them
 - [ ] S5. Landing page (docs/site, GitHub Pages) and a README that opens with the one line
       (reported with Checkpoint 3: a clean-machine install walkthrough)

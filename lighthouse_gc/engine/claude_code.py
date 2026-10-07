@@ -7,7 +7,6 @@ disk. ``query`` is injectable so tests never call a model.
 
 from __future__ import annotations
 
-import shutil
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 
@@ -20,6 +19,7 @@ from lighthouse_gc.engine.base import (
     EngineUnavailable,
     StopRun,
 )
+from lighthouse_gc.engine.connect import find_cli, stored_key
 
 SERVER = "lighthouse"
 BLOCKED_BUILTINS = ["Bash", "BashOutput", "KillShell", "Read", "Write", "Edit", "MultiEdit", "NotebookEdit",
@@ -45,10 +45,10 @@ class ClaudeAgentEngine:
             import claude_agent_sdk  # noqa: F401
         except ImportError:
             return False, "claude-agent-sdk isn't installed (pip install claude-agent-sdk)"
-        if self._query is None and shutil.which("claude") is None:
+        if self._query is None and find_cli()[0] is None:
             return (
                 False,
-                "The `claude` CLI isn't on PATH. Install Claude Code and log in (or set ANTHROPIC_API_KEY).",
+                "No Claude Code found. Connect your AI in Settings > Agent (an Anthropic API key works).",
             )
         return True, "ready"
 
@@ -64,7 +64,9 @@ class ClaudeAgentEngine:
             )  # fmt: skip
         server = create_sdk_mcp_server(SERVER, tools=sdk_tools)
         builtins = ["WebSearch"] if request.web_search else []
+        key = stored_key()  # a key from Settings goes to the CLI process only, never into the workspace
         return ClaudeAgentOptions(
+            env={"ANTHROPIC_API_KEY": key} if key else {},
             system_prompt=request.system_prompt,
             model=request.model,
             effort=request.effort,  # type: ignore[arg-type]

@@ -2,13 +2,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { OnboardingView } from "../api";
-import { buildThread, CHATS_ASK, initiallySeen, LINKEDIN_ASK, LOOKUPS_ASK, typingIndex } from "./thread.ts";
+import { AI_ASK, buildThread, CHATS_ASK, initiallySeen, LINKEDIN_ASK, LOOKUPS_ASK, typingIndex } from "./thread.ts";
 
 function view(step: OnboardingView["state"]["step"], extra: Partial<OnboardingView["state"]> = {}, question: OnboardingView["question"] = null) {
   return {
     needed: true,
     state: { status: "in_progress", step, source: { filename: "profile.pdf", chars: 900, redactions: 1, parser: "rules" }, lookups: [],
-      transcript: [], target_profile: null, tour: "pending", chats: "pending", ...extra },
+      transcript: [], target_profile: null, tour: "pending", chats: "pending", ai: "skipped", ...extra },
     question,
     nav: { back: null, reached: step, steps: [] },
     panel: [],
@@ -21,7 +21,11 @@ const opening = { who: "lighthouse" as const, text: "Nice to meet you, Maya!" };
 test("the thread starts with the PDF ask and keeps every earlier step above the current one", () => {
   assert.deepEqual(buildThread(view("linkedin")).map((m) => [m.who, m.text, m.widget]), [["lighthouse", LINKEDIN_ASK, "linkedin"]]);
   const chats = buildThread(view("chats", { transcript: [opening], lookups: [{ id: "a", kind: "papers", prompt: "", targets: [], status: "declined", result: "" }] }));
-  assert.deepEqual(chats.map((m) => m.text), [LINKEDIN_ASK, "Here's my profile: profile.pdf", opening.text, LOOKUPS_ASK, "That's all for now.", CHATS_ASK]);
+  assert.deepEqual(chats.map((m) => m.text), [LINKEDIN_ASK, "Here's my profile: profile.pdf", opening.text, AI_ASK, "Later.", LOOKUPS_ASK, "That's all for now.", CHATS_ASK]);
+  // the AI step: asked after the questions, with your choice as the reply
+  const ai = buildThread(view("ai", { transcript: [opening], ai: "pending" }));
+  assert.deepEqual(ai.slice(-1).map((m) => [m.text, m.widget]), [[AI_ASK, "ai"]]);
+  assert.equal(buildThread(view("lookups", { transcript: [opening], ai: "login" })).find((m) => m.who === "you" && m.text.includes("login"))?.text, "Use my Claude Code login.");
   // no lookups offered: that step leaves nothing in the thread
   assert.ok(!buildThread(view("chats", { transcript: [opening] })).some((m) => m.text === LOOKUPS_ASK));
   // skipped the PDF

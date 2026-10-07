@@ -4,14 +4,19 @@
 
 import type { OnboardingView } from "../api";
 
-export type Widget = "linkedin" | "lookups" | "chats";
+export type Widget = "linkedin" | "ai" | "lookups" | "chats";
 export type Msg = { key: string; who: "lighthouse" | "you"; text: string; quote?: string; widget?: Widget };
 
-const ORDER = ["linkedin", "questions", "lookups", "chats", "tour"];
+const ORDER = ["linkedin", "questions", "ai", "lookups", "chats", "tour"];
 
 export const LINKEDIN_ASK =
   "Hi, I'm Lighthouse. I'll help you build your case, one piece at a time. Let's start with your LinkedIn profile as a PDF " +
   "(on LinkedIn: Profile > More > Save to PDF). I read it on this computer and remove emails and phone numbers first.";
+export const AI_ASK =
+  "One more thing before I look anything up: connect your AI. Chat and web lookups need it; everything else works " +
+  "without one. Use the Claude Code login on this computer, or paste an Anthropic API key. A key stays in this " +
+  "computer's keychain, never in your workspace.";
+const AI_REPLY = { login: "Use my Claude Code login.", key: "Use my API key.", skipped: "Later.", pending: "" };
 export const LOOKUPS_ASK =
   "Want me to look these up? Only what you confirmed. Anything I find goes to your Inbox for you to check first, and finds " +
   "that may belong to someone with the same name are marked. Web searches use your AI, usually a few cents each.";
@@ -34,11 +39,15 @@ export function buildThread(view: OnboardingView): Msg[] {
       raw.push({ who: "lighthouse", text: q.text, quote: q.quote && !q.text.includes(q.quote) ? q.quote : undefined });
     }
   }
-  if (at >= 2 && s.lookups.length) {
-    raw.push({ who: "lighthouse", text: LOOKUPS_ASK, widget: "lookups" });
-    if (at > 2) raw.push({ who: "you", text: "That's all for now." });
+  if (at >= 2) {
+    raw.push({ who: "lighthouse", text: AI_ASK, widget: "ai" });
+    if (at > 2 && AI_REPLY[s.ai ?? "pending"]) raw.push({ who: "you", text: AI_REPLY[s.ai] });
   }
-  if (at >= 3) raw.push({ who: "lighthouse", text: CHATS_ASK, widget: "chats" });
+  if (at >= 3 && s.lookups.length) {
+    raw.push({ who: "lighthouse", text: LOOKUPS_ASK, widget: "lookups" });
+    if (at > 3) raw.push({ who: "you", text: "That's all for now." });
+  }
+  if (at >= 4) raw.push({ who: "lighthouse", text: CHATS_ASK, widget: "chats" });
   const seen = new Map<string, number>();
   return raw.map((m) => {
     const base = `${m.who}:${m.text}`;

@@ -21,3 +21,6 @@ lighthouse_gc/_data/
 *.db
 .lighthouse/cache/
 .DS_Store
+
+# local Claude Code worktrees and settings
+.claude/

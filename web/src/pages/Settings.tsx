@@ -2,6 +2,7 @@ import { KeyRound, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api";
 import { useRefresh } from "../App";
+import ConnectAI from "../components/ConnectAI";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 
@@ -69,6 +70,12 @@ export default function Settings() {
           >
             <RotateCcw /> Run onboarding again
           </Button>
+        </div>
+      </Card>
+
+      <Card title="Your AI" className="mb-8">
+        <div className="p-6">
+          <ConnectAI />
         </div>
       </Card>
 

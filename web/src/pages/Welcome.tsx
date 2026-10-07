@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useReducer, useRef, useState, type ReactNod
 import { api, type OnboardingLookup, type OnboardingQuestion, type OnboardingView } from "../api";
 import ChatImport from "../components/ChatImport";
 import ChipInput from "../components/ChipInput";
+import ConnectAI from "../components/ConnectAI";
 import DropZone from "../components/DropZone";
 import { Button, Chip, cx, Segmented, useToast } from "../components/ui";
 import { useTheme, type ThemeMode } from "../hooks";
@@ -18,6 +19,7 @@ import { DOTS_MS, typeDuration, typedPrefix } from "../lib/typing";
 const STEPS = [
   { id: "linkedin", label: "LinkedIn" },
   { id: "questions", label: "Your profile" },
+  { id: "ai", label: "Your AI" },
   { id: "lookups", label: "Find your work" },
   { id: "chats", label: "Chat history" },
   { id: "tour", label: "Tour" },
@@ -115,6 +117,11 @@ export default function Welcome({ view, onChange }: { view: OnboardingView; onCh
                 }}
               >
                 {m.widget === "linkedin" && step === "linkedin" && <LinkedInDrop busy={busy} run={run} />}
+                {m.widget === "ai" && step === "ai" && (
+                  <div className="mt-4 border border-line bg-paper p-4">
+                    <ConnectAI busy={busy} onChoose={(choice) => run(() => api.onboardingAi(choice))} />
+                  </div>
+                )}
                 {m.widget === "lookups" && (
                   <div className="mt-4 flex flex-col gap-2">
                     {view.state.lookups.map((l) => (
@@ -347,6 +354,14 @@ function Composer({ view, busy, run }: { view: OnboardingView; busy: boolean; ru
   }
   if (step === "questions")
     return view.question ? <Answer key={view.question.id} q={view.question} busy={busy} run={run} labels={labels(view)} /> : null;
+  if (step === "ai")
+    return (
+      <div className="flex justify-end">
+        <Button variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingAi("skip"))}>
+          <SkipForward /> Later, in Settings
+        </Button>
+      </div>
+    );
   if (step === "lookups") {
     const open = view.state.lookups.some((l) => l.status === "offered");
     const searching = view.state.lookups.some((l) => l.status === "searching" || l.status === "accepted");

@@ -44,7 +44,7 @@ def upload(c: TestClient, pid: str) -> dict:
 
 
 def answer_all(
-    c: TestClient, view: dict, target: str = "o1a", when: str = "2027-03"
+    c: TestClient, view: dict, target: str = "o1a", when: str = "2027-03", ai: str | None = "skip"
 ) -> tuple[dict, list[str]]:
     asked = []
     while view["question"]:
@@ -54,6 +54,8 @@ def answer_all(
         r = c.post("/api/onboarding/answer", headers=W, json={"id": q["id"], "action": "yes", "value": value})
         assert r.status_code == 200, r.text
         view = r.json()
+    if view["state"]["step"] == "ai" and ai:  # Connect your AI comes next; most tests choose "later"
+        view = c.post("/api/onboarding/ai", headers=W, json={"choice": ai}).json()
     return view, asked
 
 
@@ -214,7 +216,9 @@ def test_skip_everything(fresh, http_mock):
     view = c.post("/api/onboarding/answer", headers=W, json={"id": "target", "action": "skip"}).json()
     assert view["question"]["id"] == "when" and view["question"]["kind"] == "month"
     view = c.post("/api/onboarding/answer", headers=W, json={"id": "when", "action": "skip"}).json()
-    assert view["state"]["step"] == "chats" and view["state"]["lookups"] == []
+    assert view["state"]["step"] == "ai" and view["state"]["lookups"] == []
+    view = c.post("/api/onboarding/ai", headers=W, json={"choice": "skip"}).json()
+    assert view["state"]["step"] == "chats" and view["state"]["ai"] == "skipped"
     assert fresh.person().filing_target.target_date is None
     view = c.post("/api/onboarding/step", headers=W, json={"step": "chats_skip"}).json()
     view = c.post("/api/onboarding/step", headers=W, json={"step": "tour_skip"}).json()
@@ -606,10 +610,7 @@ def test_back_walks_through_every_question_and_keeps_the_answers(fresh):
 def test_changing_an_answer_on_the_way_back_reoffers_only_what_it_affects(fresh, http_mock):
     c = client_for(fresh)
     view, _ = answer_all(c, upload(c, "maya"))
-    assert view["state"]["step"] == "lookups" and view["nav"]["back"] == {
-        "step": "questions",
-        "question": "when",
-    }
+    assert view["state"]["step"] == "lookups" and view["nav"]["back"] == {"step": "ai"}
     http_mock.get("https://api.github.com/users/mayachen-example").respond(
         json={"login": "mayachen-example", "type": "User"}
     )
@@ -657,7 +658,7 @@ def test_a_skipped_answer_can_be_revisited_with_what_the_pdf_said(fresh):
 def test_the_step_bar_only_goes_to_steps_already_reached(fresh):
     c = client_for(fresh)
     view = upload(c, "maya")
-    assert [s["reachable"] for s in view["nav"]["steps"]] == [True, True, False, False, False]
+    assert [s["reachable"] for s in view["nav"]["steps"]] == [True, True, False, False, False, False]
     assert _goto(c, "chats").status_code == 409
     assert _goto(c, "questions", "awards").status_code == 409  # can't skip ahead to an unanswered question
     view, _ = answer_all(c, view)

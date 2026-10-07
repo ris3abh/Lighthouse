@@ -22,7 +22,7 @@ import anyio
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from lighthouse_gc import __version__
@@ -120,6 +120,10 @@ class LetterBody(BaseModel):
     status: str | None = None
     draft_path: str | None = None
     last_contact: dt.date | None = None
+
+
+class KeyBody(BaseModel):
+    key: str = Field(min_length=1, max_length=400)
 
 
 class ChatBody(BaseModel):
@@ -779,6 +783,35 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     @app.get("/api/agent/status")
     def agent_status() -> dict[str, Any]:
         return runner.status()
+
+    @app.get("/api/ai")
+    def ai_status() -> dict[str, Any]:
+        from lighthouse_gc.engine import connect
+
+        return connect.status()
+
+    @app.put("/api/ai/key")
+    def ai_key(body: KeyBody) -> dict[str, Any]:
+        """Check an Anthropic key with the free model-list request, then keep it in the OS keychain only."""
+        from lighthouse_gc.engine import connect
+
+        ok, why = connect.check_key(body.key)
+        if not ok:
+            raise HTTPException(400, why)
+        try:
+            connect.save_key(body.key)
+        except Exception as exc:  # no usable keychain: never fall back to a workspace file
+            raise HTTPException(
+                500, f"The key works, but there's no keychain to keep it in ({exc})."
+            ) from exc
+        return connect.status()
+
+    @app.delete("/api/ai/key")
+    def ai_key_forget() -> dict[str, Any]:
+        from lighthouse_gc.engine import connect
+
+        connect.forget_key()
+        return connect.status()
 
     @app.post("/api/agent/chat")
     async def agent_chat(body: ChatBody) -> dict[str, Any]:

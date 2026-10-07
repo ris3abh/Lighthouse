@@ -34,6 +34,8 @@ SYSTEM_ROUTES = {
     ("POST", "/api/metrics/snapshot"), ("POST", "/api/jobs/{name}/run"), ("POST", "/api/notify/test"),
     ("POST", "/api/imports/chats"), ("POST", "/api/imports/chats/scan"), ("POST", "/api/imports/chats/{scan_id}/import"),
     ("DELETE", "/api/imports/chats/{scan_id}"),
+    # The Anthropic key lives in the OS keychain, never in the workspace (like source tokens).
+    ("PUT", "/api/ai/key"), ("DELETE", "/api/ai/key"),
     # Agent runs write their own records (agent/runs, agent/conversations); anything the agent changes in
     # the workspace goes through Service(actor="agent:<run>"), covered in tests/test_agent.py.
     ("POST", "/api/agent/chat"), ("POST", "/api/agent/runs"), ("POST", "/api/agent/runs/{run_id}/stop"),
@@ -201,7 +203,15 @@ SAMPLES = {
     ("POST", "/api/onboarding/restart"): ("/api/onboarding/restart", {}, "onboarding.restart"),
     ("POST", "/api/onboarding/goto"): ("/api/onboarding/goto", {"json": {"step": "questions"}}, "onboarding.goto"),
     ("PATCH", "/api/todos/{todo_id}"): ("/api/todos/{todo}", {"json": {"status": "done"}}, "todo.update"),
+    ("POST", "/api/onboarding/ai"): ("/api/onboarding/ai", {"json": {"choice": "skip"}}, "onboarding.ai", "_at_ai"),
 }  # fmt: skip
+
+
+def _at_ai(ws) -> None:
+    """Put onboarding at Connect your AI."""
+    from lighthouse_gc.onboarding.models import OnboardingState
+
+    ws.save_onboarding(OnboardingState(status="in_progress", step="ai", reached="ai"))
 
 
 def _mutating_routes(app) -> set[tuple[str, str]]:
@@ -226,8 +236,10 @@ def test_every_page_write_route_is_covered(demo_ws):
 @pytest.mark.parametrize("route", sorted(SAMPLES), ids=lambda r: f"{r[0]} {r[1]}")
 def test_page_writes_only_happen_inside_the_service_layer(route, demo_ws, writes):
     client = TestClient(create_app(demo_ws, allowed_hosts=["testserver"]))
-    path, kwargs, action = SAMPLES[route]
+    path, kwargs, action, *setup = SAMPLES[route]
     ids = _ids(demo_ws)
+    for name in setup:  # a route that needs a particular state first
+        globals()[name](demo_ws)
     path = path.format(**ids)
     if "json" in kwargs and isinstance(kwargs["json"].get("id"), str):
         kwargs = {**kwargs, "json": {**kwargs["json"], "id": kwargs["json"]["id"].format(**ids)}}

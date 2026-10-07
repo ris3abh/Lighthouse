@@ -9,7 +9,7 @@ from pydantic import Field
 
 from lighthouse_gc.core.models import _File, _Model
 
-Step = Literal["linkedin", "questions", "lookups", "chats", "tour", "done"]
+Step = Literal["linkedin", "questions", "ai", "lookups", "chats", "tour", "done"]
 FieldStatus = Literal["pending", "confirmed", "fixed", "skipped"]
 
 
@@ -71,6 +71,10 @@ class OnboardingState(_File):
     )
     reached: Step = Field(
         "linkedin", description="The furthest step reached, so the step bar can go back to it."
+    )
+    ai: Literal["pending", "login", "key", "skipped"] = Field(
+        "pending",
+        description="Connect your AI: the Claude Code login, an API key (in the keychain), or later.",
     )
     chats: Literal["pending", "imported", "skipped"] = "pending"
     tour: Literal["pending", "seen", "skipped"] = "pending"

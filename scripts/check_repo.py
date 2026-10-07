@@ -29,7 +29,7 @@ REQUIRED = {
 ALLOWED_WORKSPACES = {
     p.parent for p in (ROOT / "tests" / "fixtures" / "workspaces").glob("*/lighthouse.yaml")
 }
-SKIP_DIRS = {".git", ".venv", "node_modules", "dist", "build"}
+SKIP_DIRS = {".git", ".venv", "node_modules", "dist", "build", ".claude"}  # .claude: local agent worktrees
 
 
 def problems() -> list[str]:

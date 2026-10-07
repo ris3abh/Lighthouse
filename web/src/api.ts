@@ -554,17 +554,25 @@ export interface OnboardingLookup {
   result: string;
   resolved?: Record<string, string>;
 }
+export interface AiStatus {
+  cli: "installed" | "bundled" | "missing";
+  key: "keychain" | "environment" | null;
+  ready: boolean;
+  how: string;
+  cost: string;
+}
 export interface OnboardingView {
   needed: boolean;
   state: {
     status: "new" | "in_progress" | "done" | "skipped";
-    step: "linkedin" | "questions" | "lookups" | "chats" | "tour" | "done";
+    step: "linkedin" | "questions" | "ai" | "lookups" | "chats" | "tour" | "done";
     source: { filename: string; chars: number; redactions: number; parser: string } | null;
     lookups: OnboardingLookup[];
     transcript: { who: "lighthouse" | "you"; text: string }[];
     target_profile: string | null;
     tour: string;
     chats: string;
+    ai: "pending" | "login" | "key" | "skipped";
   };
   question: OnboardingQuestion | null;
   nav: { back: { step: string; question?: string | null } | null; reached: string; steps: { id: string; reachable: boolean }[] };
@@ -629,6 +637,10 @@ export const api = {
   onboardingLookup: (id: string, accept: boolean) => request<OnboardingView>("POST", `/onboarding/lookups/${id}`, { accept }),
   onboardingGoto: (step: string, question?: string | null) => request<OnboardingView>("POST", "/onboarding/goto", { step, question }),
   onboardingRestart: () => request<OnboardingView>("POST", "/onboarding/restart"),
+  onboardingAi: (choice: "login" | "key" | "skip") => request<OnboardingView>("POST", "/onboarding/ai", { choice }),
+  aiStatus: () => request<AiStatus>("GET", "/ai"),
+  saveAiKey: (key: string) => request<AiStatus>("PUT", "/ai/key", { key }),
+  forgetAiKey: () => request<AiStatus>("DELETE", "/ai/key"),
   scanChats: (files: File[], paths: (f: File) => string) => {
     const form = new FormData();
     for (const f of files) form.append("files", f, paths(f));

@@ -4,7 +4,7 @@ approved (system routes, like adding a source), and their status is saved throug
 from __future__ import annotations
 
 import hashlib
-from typing import Any
+from typing import Any, Literal
 
 import anyio
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from lighthouse_gc.core import clock
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.onboarding import flow
-from lighthouse_gc.onboarding.models import LinkedInSource, OnboardingState, Turn
+from lighthouse_gc.onboarding.models import LinkedInSource, OnboardingState, Step, Turn
 from lighthouse_gc.service import Service
 
 MAX_PDF_BYTES = 10_000_000
@@ -29,6 +29,10 @@ class Answer(BaseModel):
 
 class StepBody(BaseModel):
     step: str
+
+
+class AiBody(BaseModel):
+    choice: Literal["login", "key", "skip"]
 
 
 class LookupBody(BaseModel):
@@ -48,14 +52,12 @@ def nav(state: OnboardingState) -> dict[str, Any]:
         current = flow.next_question(state)
         prev = flow.previous_question(state, current.id if current else None)
         back = {"step": "questions", "question": prev} if prev else {"step": "linkedin"}
-    elif state.step == "lookups":
+    elif state.step == "ai":
         back = {"step": "questions", "question": flow.previous_question(state, None)}
+    elif state.step == "lookups":
+        back = {"step": "ai"}
     elif state.step == "chats":
-        back = (
-            {"step": "lookups"}
-            if state.lookups
-            else {"step": "questions", "question": flow.previous_question(state, None)}
-        )
+        back = {"step": "lookups"} if state.lookups else {"step": "ai"}
     elif state.step == "tour":
         back = {"step": "chats"}
     return {"back": back, "reached": state.reached,
@@ -153,7 +155,8 @@ def _advance(state: OnboardingState, ws: Case | None = None) -> None:
         state.lookups = [
             old[lk.id] if lk.id in old and old[lk.id].targets == lk.targets else lk for lk in fresh
         ]
-        state.step = "lookups" if state.lookups else "chats"
+        # Connect your AI comes before the lookups (web searches need it); once chosen, it isn't asked again.
+        state.step = "ai" if state.ai == "pending" else after_ai(state)
     # Stay on the lookups so every outcome (and Retry) stays visible; Continue moves on at any time. Only a step
     # where every lookup was declined moves on by itself.
     if state.step == "lookups" and all(lk.status == "declined" for lk in state.lookups):
@@ -162,6 +165,10 @@ def _advance(state: OnboardingState, ws: Case | None = None) -> None:
         state.reached if state.reached in flow.STEPS else "linkedin"
     ):
         state.reached = state.step
+
+
+def after_ai(state: OnboardingState) -> Step:
+    return "lookups" if state.lookups else "chats"
 
 
 def _start(state: OnboardingState) -> None:
@@ -325,6 +332,24 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
             raise HTTPException(409, "there were no lookups to offer")
         state.step = body.step  # type: ignore[assignment]
         svc.onboarding_save(state, "onboarding.goto", summary=f"{body.step} {body.question or ''}".strip())
+        return view_now()
+
+    @app.post("/api/onboarding/ai")
+    def choose_ai(body: AiBody) -> dict[str, Any]:
+        """Connect your AI: the Claude Code login on this computer, the API key just saved, or later."""
+        from lighthouse_gc.engine import connect
+
+        state = ws.onboarding()
+        if state.step != "ai":
+            raise HTTPException(409, "this isn't the AI step")
+        if body.choice == "key" and not connect.key_source():
+            raise HTTPException(409, "save a key first")
+        if body.choice == "login" and connect.find_cli()[0] is None:
+            raise HTTPException(409, "there's no Claude Code on this computer; add an API key instead")
+        state.ai = {"login": "login", "key": "key", "skip": "skipped"}[body.choice]  # type: ignore[assignment]
+        state.step = after_ai(state)
+        _advance(state)
+        svc.onboarding_save(state, "onboarding.ai", summary=state.ai)
         return view_now()
 
     @app.post("/api/onboarding/restart")
