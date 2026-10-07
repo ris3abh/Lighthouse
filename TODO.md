@@ -105,6 +105,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       (guardrails applied, cost recorded, shown at the top of the chat); a failed summary never blocks the chat;
       cheap mode in the chat header and Settings
 - [ ] CHECKPOINT 3 (agent): chat actions, routing + cost per run on the Agent page, cheap mode
+      Reported 2026-10-07 with Part S (clean-install walkthrough); one live run ($0.10); waiting for approval
 
 ### Part E: Google, CRM, outreach (ADR 0010)
 - [ ] E1. Google sign-in with the user's own OAuth client, narrowest scopes, production-mode docs, keychain
