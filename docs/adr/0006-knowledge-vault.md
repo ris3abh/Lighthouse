@@ -82,6 +82,22 @@ reviewed sources, so rule-check never cites them and vault-watch doesn't re-fetc
 to a source is a person's decision (Knowledge page). Autopilot's "Tier 1 deadline" check now uses the same
 manifest domains.
 
+### 9. Primary and secondary sources; manual-import reminders
+
+- **Fees come from the regulation.** 8 CFR 106.2 (fees by form) and 106.4 (premium processing), read through
+  the eCFR API, are the primary Tier 1 fee sources. The USCIS fee page (G-1055) is `secondary_to:
+  ecfr-8cfr-106-2`.
+- **The primary governs.** A secondary copy never outvotes its primary. When the two disagree, the primary
+  decides and the claim says so. While the primary is fresh in the vault, a secondary page can't verify a
+  claim on its own. Independent Tier 1 primaries that disagree are still a conflict.
+- **Exact figures are retrieved by value.** For a sentence with a dollar amount, rule-check also offers the
+  best paragraph containing that amount, and always offers the primary whenever a secondary copy is offered.
+  Vault search ranks each exact identifier (amounts, form numbers, section numbers) as its own list.
+- **Manual-import sources.** `manual: true` marks sites that refuse automated clients (uscis.gov,
+  travel.state.gov). Automatic fetches are still tried. Once an imported copy passes its freshness window and
+  the automatic attempt fails, vault-watch sends one reminder per lapse, with the page link. Sources never
+  imported don't send reminders; the Knowledge page shows them as never fetched.
+
 ## Consequences
 
 - Outbound requests now include the public sources in the manifest (documented in the README).

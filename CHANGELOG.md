@@ -30,6 +30,12 @@ All notable changes to this project are documented here. The format follows
 - Bot-protection and maintenance pages are recognized even when served with HTTP 200, and recorded as
   unreadable. Pages from sites that block automated reading can be imported from a saved copy.
 
+- Fees come from the regulation: eCFR 8 CFR 106.2 and 106.4 are the primary Tier 1 fee sources and the USCIS
+  fee page is secondary (`secondary_to`). The primary governs; while it is fresh, a secondary page can't verify
+  a fee on its own. rule-check always shows the judge the paragraph containing a claimed amount.
+- Manual-import sources (`manual: true`: uscis.gov, travel.state.gov) send a reminder with the page link when
+  an imported copy passes its freshness window (once per lapse). The Knowledge page marks them.
+
 ### Fixed
 - `as_of` memory queries dropped claims recorded late in the local evening (after midnight UTC).
 

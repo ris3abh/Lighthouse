@@ -192,10 +192,12 @@ function SourceRow({ s, busy, enabled, onSync, onDone }: { s: VaultSourceStatus;
     <li className="px-4 py-3 text-sm">
       <div className="flex flex-wrap items-start gap-2">
         <div className="min-w-0 flex-1">
-          <a href={s.url} target="_blank" rel="noreferrer" className="font-medium hover:underline">
+          <a href={s.link || s.url} target="_blank" rel="noreferrer" className="font-medium hover:underline">
             {s.title}
           </a>
           <p className="mt-0.5 text-xs text-zinc-500">
+            {s.manual && "manual import · "}
+            {s.secondary_to && `secondary to ${s.secondary_to} · `}
             {s.kind.replace("_", " ")} · fresh for {s.ttl === "monthly" ? "the month" : `${s.ttl} days`}
             {s.checked_at && ` · checked ${when(s.checked_at)}`}
             {s.expires_at && ` · ${s.fresh ? "until" : "expired"} ${day(s.expires_at)}`}
@@ -204,18 +206,18 @@ function SourceRow({ s, busy, enabled, onSync, onDone }: { s: VaultSourceStatus;
             {s.last_changed && ` · changed ${day(s.last_changed)}`}
           </p>
           {s.error && <p className="mt-0.5 text-xs text-red-600">{s.error}</p>}
-          {blocked && (
+          {(blocked || (s.manual && !s.checked_at)) && (
             <p className="mt-0.5 text-xs text-zinc-500">
               This site can't be read automatically right now. Open the link, save the page from your browser (HTML or PDF) and import it here.
             </p>
           )}
-          {s.notes && !blocked && <p className="mt-0.5 text-xs text-zinc-400">{s.notes}</p>}
+          {s.notes && !blocked && !(s.manual && !s.checked_at) && <p className="mt-0.5 text-xs text-zinc-400">{s.notes}</p>}
         </div>
         <Chip tone={f.tone}>{f.label}</Chip>
         <Button size="sm" variant="ghost" disabled={!enabled || busy !== null} onClick={onSync}>
           {busy === s.id ? "Fetching…" : "Re-fetch"}
         </Button>
-        <Button size="sm" variant={blocked || s.status === "error" ? "secondary" : "ghost"} onClick={() => file.current?.click()}>
+        <Button size="sm" variant={blocked || s.status === "error" || (s.manual && !s.fresh) ? "secondary" : "ghost"} onClick={() => file.current?.click()}>
           Import saved page
         </Button>
         <input

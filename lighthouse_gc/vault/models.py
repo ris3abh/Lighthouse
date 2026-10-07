@@ -37,6 +37,16 @@ class VaultSource(_Model):
     finding: bool = Field(
         False, description="An official page the agent read; an observation, not yet a reviewed source."
     )
+    manual: bool = Field(
+        False,
+        description="The site usually blocks automated reading: import a saved copy. A reminder (with the page "
+        "link) is sent when the imported copy passes its freshness window.",
+    )
+    secondary_to: str | None = Field(
+        None,
+        description="Id of the primary source for the same facts (e.g. the fee regulation for a fee page). When "
+        "they disagree, the primary governs.",
+    )
 
 
 class VaultManifest(_Model):
@@ -56,6 +66,9 @@ class VaultManifest(_Model):
         dupes = sorted({i for i in ids if ids.count(i) > 1})
         if dupes:
             raise ValueError(f"duplicate source ids: {dupes}")
+        for s in v:
+            if s.secondary_to and s.secondary_to not in ids:
+                raise ValueError(f"{s.id}: secondary_to {s.secondary_to!r} isn't a source in the manifest")
         return v
 
     def tier_of(self, url: str) -> int | None:

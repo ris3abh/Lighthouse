@@ -16,12 +16,13 @@ from test_vault import Pages, _at, public_dns  # noqa: F401  (fixture)
 from lighthouse_gc import notify
 from lighthouse_gc.agent.runner import AgentRunner
 from lighthouse_gc.agent.tools import RunContext, build_tools
-from lighthouse_gc.core.models import AgentRun
+from lighthouse_gc.core.models import AgentRun, RuleCitation, utcnow
+from lighthouse_gc.core.models import RuleCheck as RuleCheckModel
 from lighthouse_gc.core.workspace import WorkspaceError
 from lighthouse_gc.server.app import create_app
 from lighthouse_gc.service import Service
 from lighthouse_gc.vault import Vault
-from lighthouse_gc.vault.rulecheck import JudgeReply, RuleChecker, candidates, engine_judge, refresh
+from lighthouse_gc.vault.rulecheck import JudgeReply, RuleChecker, candidates, decide, engine_judge, refresh
 
 W = {"X-Lighthouse": "1"}
 RULE = "EB-1A requires evidence of at least three of the ten criteria."
@@ -149,6 +150,74 @@ def test_tier1_disagreement_is_a_conflict(vault_ws):
     [claim] = _check(vault_ws, RULE, judge).claims
     assert claim.status == "conflict" and {c.verdict for c in claim.citations} == {"entails", "contradicts"}
     assert {c.source_id for c in claim.citations} == {"uscis-pm-6-f-2", "uscis-pm-2-m-4"}
+
+
+FEE = "The Form I-129 filing fee for an O-1 petition is $1,055."
+REG_QUOTE = "Petition for O Nonimmigrant Worker with 1 to 25 named beneficiaries: $1,055"
+STALE_PAGE = ("<html><head><title>G-1055 Fee Schedule</title></head><body><main><h1>Fee schedule</h1>"
+              + "<p>Form I-129, Petition for a Nonimmigrant Worker, O petitions: $1,000 filing fee. "
+              "Fees are subject to change; check the current fee before you file.</p>" * 3
+              + "</main></body></html>").encode()  # fmt: skip
+
+
+@pytest.fixture
+def fee_ws(ws, http_mock, public_dns):  # noqa: F811
+    pages = Pages(http_mock)
+    pages.page("uscis-g-1055", STALE_PAGE)  # the USCIS page lags behind the regulation
+    pages.install()
+    anyio.run(lambda: Vault(ws).sync())
+    return ws
+
+
+def test_the_fee_regulation_governs_over_the_uscis_fee_page(fee_ws):
+    judge = FakeJudge(rules=[("$1,055", REG_QUOTE, "entails", "8 CFR 106.2"),
+                             ("$1,055", "O petitions: $1,000 filing fee", "contradicts", "G-1055")])  # fmt: skip
+    [claim] = _check(fee_ws, FEE, judge).claims
+    assert "8 CFR 106.2" in judge.calls[0]  # the primary is always put in front of the judge
+    by_source = {c.source_id: c for c in claim.citations}
+    assert (
+        by_source["ecfr-8cfr-106-2"].verdict == "entails"
+        and by_source["ecfr-8cfr-106-2"].secondary_to is None
+    )
+    assert by_source["uscis-g-1055"].verdict == "contradicts"
+    assert by_source["uscis-g-1055"].secondary_to == "ecfr-8cfr-106-2"
+    assert (
+        claim.status == "verified"
+        and claim.reason == "a secondary page disagrees; the primary source governs"
+    )
+    assert refresh(RuleCheckModel(claims=[claim]), Vault(fee_ws)).claims[0].status == "verified"
+
+    # The stale page alone can't verify a fee while the regulation is fresh in the vault.
+    judge = FakeJudge(rules=[("$1,000", "O petitions: $1,000 filing fee", "entails", "G-1055")])
+    [claim] = _check(fee_ws, "The Form I-129 filing fee for an O-1 petition is $1,000.", judge).claims
+    assert [c.source_id for c in claim.citations] == ["uscis-g-1055"]
+    assert claim.status == "unverified"
+    assert (
+        claim.reason
+        == "only a secondary page says this; the primary source (ecfr-8cfr-106-2) doesn't confirm it"
+    )
+    assert refresh(RuleCheckModel(claims=[claim]), Vault(fee_ws)).claims[0].status == "unverified"
+
+
+def _cite(source_id, verdict, secondary_to=None, tier=1, fresh=True):
+    return RuleCitation(chunk_id="vc_x", source_id=source_id, title=source_id, tier=tier, url="https://x.gov",
+                        quote="quoted words", start=0, end=12, sha256="0" * 64, checked_at=utcnow(),
+                        verdict=verdict, fresh=fresh, secondary_to=secondary_to)  # fmt: skip
+
+
+def test_decide_primary_and_secondary_sources():
+    reg, page = "ecfr-8cfr-106-2", "uscis-g-1055"
+    assert decide([_cite(reg, "entails"), _cite(page, "contradicts", reg)]) == (
+        "verified", "a secondary page disagrees; the primary source governs")  # fmt: skip
+    status, reason = decide([_cite(page, "entails", reg), _cite(reg, "contradicts")])
+    assert status == "unverified" and reason == (
+        "contradicted by a Tier 1 source (a secondary page agrees, but the primary source governs)"
+    )
+    # Secondary alone: verifies only while the primary isn't available fresh.
+    assert decide([_cite(page, "entails", reg)], set())[0] == "verified"
+    assert decide([_cite(page, "entails", reg)], {reg})[0] == "unverified"
+    # Two independent Tier 1 primaries disagreeing is still a conflict.
+    assert decide([_cite(reg, "entails"), _cite("uscis-pm-2-m-4", "contradicts")])[0] == "conflict"
 
 
 def test_contradicted_by_tier1_alone_is_unverified(vault_ws):

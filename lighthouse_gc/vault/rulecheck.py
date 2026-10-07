@@ -10,6 +10,9 @@ chunk that entails it.
    source's current snapshot and fresh; Tier 3 never verifies on its own.
    verified = a fresh Tier 1/2 excerpt entails it and no fresh Tier 1 excerpt contradicts it;
    conflict = Tier 1 sources disagree; stale = only stale excerpts support it; otherwise unverified.
+   A secondary source (``secondary_to`` in the manifest, e.g. the USCIS fee page under the fee regulation)
+   never outvotes its primary: when they disagree, the primary decides, and while the primary is fresh in the
+   vault a secondary copy can't verify a claim on its own.
 
 Statuses are re-evaluated whenever a check is shown or used (:func:`refresh`), so a claim goes stale when its
 source changes or its freshness window passes.
@@ -147,17 +150,39 @@ def find_quote(quote: str, text: str) -> tuple[int, int] | None:
     return (m.start(), m.end()) if m else None
 
 
-def decide(citations: list[RuleCitation]) -> tuple[str, str]:
+def decide(citations: list[RuleCitation], fresh_sources: set[str] | None = None) -> tuple[str, str]:
+    """``fresh_sources``: ids of sources whose current snapshot is fresh (a secondary copy can't verify alone
+    while its primary is one of them)."""
     fresh = [c for c in citations if c.fresh]
     entails = [c for c in fresh if c.verdict == "entails" and c.tier in (1, 2)]
     t1_yes = {c.source_id for c in fresh if c.verdict == "entails" and c.tier == 1}
     t1_no = {c.source_id for c in fresh if c.verdict == "contradicts" and c.tier == 1}
+    primary_yes = {
+        c.source_id for c in fresh if c.verdict == "entails" and c.tier == 1 and not c.secondary_to
+    }
+    primary_no = {
+        c.source_id for c in fresh if c.verdict == "contradicts" and c.tier == 1 and not c.secondary_to
+    }
+    overruled = False
+    if primary_yes or primary_no:  # a secondary copy never outvotes the primary source
+        t1_yes, t1_no = primary_yes, primary_no
+        want = "contradicts" if primary_yes else "entails"
+        overruled = any(c.secondary_to and c.verdict == want for c in fresh)
+    else:
+        unconfirmed = [c for c in entails if c.secondary_to and c.secondary_to in (fresh_sources or set())]
+        if unconfirmed and len(unconfirmed) == len(entails):
+            return (
+                "unverified",
+                f"only a secondary page says this; the primary source ({unconfirmed[0].secondary_to}) doesn't confirm it",
+            )
     if t1_yes and t1_no and (t1_yes - t1_no or t1_no - t1_yes):
         return "conflict", "Tier 1 sources disagree"
     if t1_no:
-        return "unverified", "contradicted by a Tier 1 source"
+        return "unverified", "contradicted by a Tier 1 source" + (
+            " (a secondary page agrees, but the primary source governs)" if overruled else ""
+        )
     if entails:
-        return "verified", ""
+        return "verified", "a secondary page disagrees; the primary source governs" if overruled else ""
     if any(c.verdict == "entails" and c.tier in (1, 2) for c in citations):
         return "stale", "its sources are past their freshness window or changed since; re-check"
     if any(c.verdict == "entails" for c in citations):
@@ -178,11 +203,22 @@ def refresh(check: RuleCheck | None, vault: Vault) -> RuleCheck | None:
             st = state.get(c.source_id) or {}
             src = vault.manifest.source(c.source_id)
             checked = st.get("checked_at")
+            c.secondary_to = src.secondary_to if src else None
             c.fresh = bool(
                 src and checked and st.get("sha") == c.sha256 and vault.is_fresh(src, _dt(checked))
             )
         if claim.status != "unverified" or claim.reason != "rule-check couldn't run":
-            claim.status, claim.reason = decide(claim.citations)  # type: ignore[assignment]
+            claim.status, claim.reason = decide(claim.citations, fresh_ids(vault, state))  # type: ignore[assignment]
+    return out
+
+
+def fresh_ids(vault: Vault, state: dict[str, dict[str, Any]] | None = None) -> set[str]:
+    state = vault.state() if state is None else state
+    out = set()
+    for s in vault.manifest.sources:
+        checked = (state.get(s.id) or {}).get("checked_at")
+        if checked and (state.get(s.id) or {}).get("sha") and vault.is_fresh(s, _dt(checked)):
+            out.add(s.id)
     return out
 
 
@@ -213,14 +249,14 @@ class RuleChecker:
         per: dict[str, list[str]] = {}
         for cand in found:
             per[cand.id] = []
-            for hit in _diverse(
+            for hit in self._with_primaries(cand.text, _diverse(
                 self.vault.search(cand.text, k=CHUNKS_PER_CANDIDATE * 4, tiers={1, 2}, findings=False)
-            ):
+            ) + self._by_amount(cand.text)):  # fmt: skip
                 key = next((k for k, h in chunks.items() if h.chunk_id == hit.chunk_id), None)
                 if key is None and len(chunks) < MAX_CHUNKS:
                     key = f"k{len(chunks) + 1}"
                     chunks[key] = hit
-                if key:
+                if key and key not in per[cand.id]:
                     per[cand.id].append(key)
         if not chunks:
             return self._unchecked(found, "the knowledge vault is empty; run `lighthouse-gc vault sync`")
@@ -236,6 +272,7 @@ class RuleChecker:
         except Exception as exc:  # judge unavailable or unparseable: nothing is verified
             return self._unchecked(found, f"rule-check couldn't run: {type(exc).__name__}: {exc}"[:300])
         claims = []
+        fresh = fresh_ids(self.vault)
         by_id = {c.id: c for c in found}
         for v in verdicts:
             match = by_id.get(str(v.get("candidate")))
@@ -258,8 +295,8 @@ class RuleChecker:
                                               tier=excerpt.tier, url=excerpt.url, quote=excerpt.text[span[0]:span[1]],
                                               start=excerpt.start + span[0], end=excerpt.start + span[1],
                                               sha256=excerpt.sha256, checked_at=excerpt.checked_at, verdict=verdict,
-                                              fresh=excerpt.fresh))  # fmt: skip
-            status, reason = decide(citations)
+                                              fresh=excerpt.fresh, secondary_to=self._secondary_to(excerpt.source_id)))  # fmt: skip
+            status, reason = decide(citations, fresh)
             claims.append(
                 RuleClaim(
                     text=str(v.get("claim") or match.text)[:400],
@@ -274,6 +311,34 @@ class RuleChecker:
             )  # type: ignore[arg-type]
         return RuleCheck(model=self.model, claims=claims, cost_usd=reply.cost_usd,
                          note=None if claims else "no rule statements")  # fmt: skip
+
+    def _secondary_to(self, source_id: str) -> str | None:
+        src = self.vault.manifest.source(source_id)
+        return src.secondary_to if src else None
+
+    def _by_amount(self, sentence: str) -> list[VaultHit]:
+        """The best paragraph stating each dollar amount in the sentence: a fee claim stands or falls on the
+        paragraph with that figure, which plain relevance can rank below many paragraphs about fees."""
+        out: list[VaultHit] = []
+        for amount in dict.fromkeys(re.findall(r"\$\s?\d[\d,]*(?:\.\d+)?", sentence)):
+            figure = amount.lstrip("$ ").rstrip(".,")
+            out += [
+                h for h in self.vault.search(figure, k=3, tiers={1, 2}, findings=False) if figure in h.text
+            ][:1]
+        return out
+
+    def _with_primaries(self, query: str, hits: list[VaultHit]) -> list[VaultHit]:
+        """When a secondary copy (e.g. the USCIS fee page) is among the excerpts, add the best excerpt of its
+        primary source (the fee regulation) so the judge can compare them."""
+        have = {h.source_id for h in hits}
+        out = list(hits)
+        for h in hits:
+            src = self.vault.manifest.source(h.source_id)
+            primary = src.secondary_to if src else None
+            if primary and primary not in have:
+                out += self.vault.search(query, k=1, sources={primary}, findings=False)
+                have.add(primary)
+        return out
 
     def _unchecked(self, found: list[Candidate], why: str) -> RuleCheck:
         return RuleCheck(model=None, note=why, claims=[

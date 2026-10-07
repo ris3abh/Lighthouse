@@ -59,6 +59,8 @@ class Pages:
         served = {
             "ecfr-8cfr-214-2-o": (200, fixture("ecfr-214.2.xml"), "text/xml"),
             "ecfr-8cfr-204-5-h": (200, fixture("ecfr-204.5.xml"), "text/xml"),
+            "ecfr-8cfr-106-2": (200, fixture("ecfr-106.2.xml"), "text/xml"),
+            "ecfr-8cfr-106-4": (200, fixture("ecfr-106.4.xml"), "text/xml"),
             "ina-101-a-15-o": (503, b"Service Unavailable", "text/plain"),
             "ina-203-b-1-a": (503, b"Service Unavailable", "text/plain"),
             "uscis-pm-2-m-4": (200, fixture("uscis-pm-o1.html"), HTML["content-type"]),
@@ -317,6 +319,98 @@ def test_vault_watch_notifies_only_on_tier1_changes_and_keeps_old_snapshots(ws, 
     # A forced Tier 3 change is recorded but never notified.
     forced = _sync(vault, ids=["wikipedia-o-1"], force=True)
     assert forced[0].status == "changed" and len(rec.sent) == 1
+
+
+def test_watch_reminds_to_reimport_manual_sources_when_their_window_lapses(ws, pages, monkeypatch):
+    rec = _Recorder()
+    monkeypatch.setattr(notify, "CHANNELS", lambda: {"desktop": rec})
+    m = load_manifest()
+    manual = {s.id for s in m.sources if s.manual}
+    assert {
+        "uscis-i-129",
+        "uscis-g-1055",
+        "uscis-pm-6-f-2",
+        "visa-bulletin",
+        "uscis-processing-times",
+    } <= manual
+    assert not any(s.manual for s in m.sources if "ecfr.gov" in s.url or s.tier == 3)
+
+    # uscis.gov refuses the client; the person imports a saved copy of the I-129 page.
+    pages.page("uscis-i-129", fixture("cloudflare-403.html"), status=403)
+    pages.router.routes.clear()
+    pages.install()
+    vault = Vault(ws)
+    vault.import_file("uscis-i-129", fixture("uscis-i-129.html"), "Form I-129.html")
+    run_watch(ws)
+    # Never-imported manual sources (the visa bulletin, processing times) don't nag; the fresh import doesn't either.
+    assert not any(n.title.startswith("Re-import") for n in rec.sent)
+    assert vault.lapsed_manual() == []
+
+    # Eight days later (forms: 7-day window) the automatic attempt is still blocked: one reminder, with the link.
+    _at(monkeypatch, timedelta(days=8))
+    lines = run_watch(ws)
+    [note] = [n for n in rec.sent if n.title.startswith("Re-import")]
+    assert (
+        note.title
+        == "Re-import: Form I-129, Petition for a Nonimmigrant Worker (edition, instructions, where to file)"
+    )
+    assert note.url == "https://www.uscis.gov/i-129" and "https://www.uscis.gov/i-129" in note.body
+    assert "#/knowledge" in note.body and "last imported" in note.body and note.event == "vault"
+    assert any("uscis-i-129: unreadable" in line for line in lines)
+    # The next day's run doesn't repeat it (same lapse).
+    _at(monkeypatch, timedelta(days=9))
+    run_watch(ws)
+    assert len([n for n in rec.sent if n.title.startswith("Re-import")]) == 1
+    # Re-importing clears it.
+    vault.import_file("uscis-i-129", fixture("uscis-i-129.html"), "Form I-129.html")
+    assert vault.lapsed_manual() == []
+
+
+def test_manual_source_links_resolve_this_months_url(ws):
+    vault = Vault(ws)
+    bulletin = vault.manifest.source("visa-bulletin")
+    link = vault.link(bulletin)
+    assert "{" not in link and link.startswith("https://travel.state.gov/") and link.endswith(".html")
+    assert vault.link(vault.manifest.source("uscis-i-129")) == "https://www.uscis.gov/i-129"
+
+
+def test_fee_regulation_is_the_primary_fee_source(ws, pages):
+    m = load_manifest()
+    primary, page = m.source("ecfr-8cfr-106-2"), m.source("uscis-g-1055")
+    assert primary.tier == 1 and primary.kind == "fees" and not primary.manual
+    assert m.source("ecfr-8cfr-106-4").kind == "fees"
+    assert page.secondary_to == "ecfr-8cfr-106-2" and page.manual
+    with pytest.raises(ValueError, match="secondary_to"):
+        type(m).model_validate({"sources": [{**page.model_dump(), "secondary_to": "no-such-source"}]})
+
+    vault = Vault(ws)
+    results = {r.source_id: r for r in _sync(vault)}
+    assert results["ecfr-8cfr-106-2"].status == "new" and results["ecfr-8cfr-106-2"].effective_date == date(
+        2026, 10, 5
+    )
+    text = vault.snapshot_text(results["ecfr-8cfr-106-2"].sha256)
+    assert text.startswith("§ 106.2 USCIS fees.")
+    assert "Petition for O Nonimmigrant Worker with 1 to 25 named beneficiaries: $1,055." in text
+    assert "Immigrant Petition for Alien Worker, Form I-140." in text and "$715." in text
+    premium = vault.snapshot_text(results["ecfr-8cfr-106-4"].sha256)
+    assert "section 101(a)(15)(O)(i) or (ii) of the INA—$2,965." in premium
+    hits = vault.search("Form I-129 O petition filing fee", k=5, kinds={"fees"})
+    assert hits[0].source_id == "ecfr-8cfr-106-2"
+    status = {s["id"]: s for s in vault.status()}
+    assert (
+        status["uscis-g-1055"]["secondary_to"] == "ecfr-8cfr-106-2"
+        and status["uscis-g-1055"]["manual"] is True
+    )
+    # A workspace override may point a source of its own at a bundled primary.
+    (ws.root / "vault").mkdir(exist_ok=True)
+    (ws.root / "vault" / "sources.yaml").write_text(
+        "version: 1\nsources:\n  - {id: my-fee-page, title: My fee page, url: 'https://www.uscis.gov/fees', "
+        "tier: 1, kind: fees, manual: true, secondary_to: ecfr-8cfr-106-2}\n"
+    )
+    assert (
+        load_manifest(ws.root / "vault" / "sources.yaml").source("my-fee-page").secondary_to
+        == "ecfr-8cfr-106-2"
+    )
 
 
 def test_watch_respects_the_off_switch(ws, http_mock):

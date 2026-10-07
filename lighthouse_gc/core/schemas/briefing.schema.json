@@ -131,6 +131,19 @@
           "title": "Quote",
           "type": "string"
         },
+        "secondary_to": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Set for a secondary copy: the primary source's id. The primary governs.",
+          "title": "Secondary To"
+        },
         "sha256": {
           "description": "The snapshot the quote is from.",
           "title": "Sha256",

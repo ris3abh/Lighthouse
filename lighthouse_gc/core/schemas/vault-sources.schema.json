@@ -63,10 +63,29 @@
           "title": "Kind",
           "type": "string"
         },
+        "manual": {
+          "default": false,
+          "description": "The site usually blocks automated reading: import a saved copy. A reminder (with the page link) is sent when the imported copy passes its freshness window.",
+          "title": "Manual",
+          "type": "boolean"
+        },
         "notes": {
           "default": "",
           "title": "Notes",
           "type": "string"
+        },
+        "secondary_to": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Id of the primary source for the same facts (e.g. the fee regulation for a fee page). When they disagree, the primary governs.",
+          "title": "Secondary To"
         },
         "start": {
           "anyOf": [

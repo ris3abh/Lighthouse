@@ -314,6 +314,9 @@ export interface VaultSourceStatus {
   snapshots: number;
   last_changed: string | null;
   finding: boolean;
+  manual: boolean;
+  secondary_to: string | null;
+  link: string;
 }
 
 export interface VaultFetch {

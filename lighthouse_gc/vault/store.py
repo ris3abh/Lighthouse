@@ -50,6 +50,10 @@ ECFR_TITLES = "https://www.ecfr.gov/api/versioner/v1/titles.json"
 MONTHS = ("january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
           "november", "december")  # fmt: skip
 
+# Exact figures and identifiers in a query: amounts with thousands separators, form-style numbers (I-129, G-1055),
+# dotted section numbers (214.2, 204.5).
+EXACT = re.compile(r"\$?\d{1,3}(?:,\d{3})+(?:\.\d+)?|\b[A-Z]{1,2}-\d{2,5}[A-Z]{0,2}\b|\b\d+(?:\.\d+)+\b")
+
 SCHEMA = """
 create table if not exists state(
   source_id text primary key, url text, title text, sha text, checked_at text, fetched_at text,
@@ -71,7 +75,10 @@ def load_manifest(override: Path | None = None) -> VaultManifest:
     base = VaultManifest.model_validate(yaml.safe_load(vault_manifest_path().read_text(encoding="utf-8")))
     if override is None or not override.exists():
         return base
-    extra = VaultManifest.model_validate(yaml.safe_load(override.read_text(encoding="utf-8")) or {})
+    data = yaml.safe_load(override.read_text(encoding="utf-8")) or {}
+    # The override's sources may point at bundled ones (secondary_to); that's checked after the merge.
+    extra = VaultManifest.model_validate({**data, "sources": []})
+    extra.sources = [VaultSource.model_validate(s) for s in data.get("sources") or []]
     by_id = {s.id: s for s in base.sources}
     by_id.update({s.id: s for s in extra.sources})
     return VaultManifest(
@@ -247,9 +254,7 @@ class Vault:
     async def _resolve(
         self, source: VaultSource, client: httpx.AsyncClient, cache: dict[str, Any]
     ) -> tuple[str, date | None]:
-        today = date.today()
-        values: dict[str, Any] = {"year": today.year, "month": MONTHS[today.month - 1],
-                                  "fy": today.year + 1 if today.month >= 10 else today.year}  # fmt: skip
+        values = _date_values()
         hint = None
         if "{ecfr_date}" in source.url:
             if "ecfr" not in cache:
@@ -444,23 +449,29 @@ class Vault:
     # ------------------------------------------------------------------ search
 
     def search(self, query: str, k: int = 8, *, tiers: set[int] | None = None, topics: set[str] | None = None,
-               kinds: set[str] | None = None, fresh_only: bool = False,
-               findings: bool = True) -> list[VaultHit]:  # fmt: skip
+               kinds: set[str] | None = None, fresh_only: bool = False, findings: bool = True,
+               sources: set[str] | None = None) -> list[VaultHit]:  # fmt: skip
         """Hybrid search over the current snapshot of each source: FTS5 (bm25) + embeddings, fused by rank."""
         allowed = {s.id: s for s in self.manifest.sources
                    if (not tiers or s.tier in tiers) and (not kinds or s.kind in kinds) and (findings or not s.finding)
+                   and (not sources or s.id in sources)
                    and (not topics or not s.topics or set(s.topics) & topics)}  # fmt: skip
         if not allowed:
             return []
         terms = list(dict.fromkeys(tokens(query)))[:24]
+        exact = list(dict.fromkeys(m.group(0).lstrip("$") for m in EXACT.finditer(query)))[:8]
         marks = ",".join("?" * len(allowed))
         ranks: dict[int, float] = {}
         rows: dict[int, sqlite3.Row] = {}
         with self.db() as con:
             base = (f"select c.*, s.checked_at, s.effective_date as eff from chunks c join state s "
                     f"on s.source_id=c.source_id and s.sha=c.sha where c.source_id in ({marks})")  # fmt: skip
-            if terms:
-                fts = " OR ".join('"' + t.replace('"', "") + '"' for t in terms)
+            # Words, then each exact figure or identifier ("$1,055", "I-129", "214.2") as its own ranked list:
+            # among many paragraphs about fees and forms, the one with the amount or section is the one that counts.
+            for group in (terms, *([e] for e in exact)):
+                if not group:
+                    continue
+                fts = " OR ".join('"' + t.replace('"', "") + '"' for t in group)
                 order = [row[0] for row in con.execute(
                     "select rowid from chunks_fts where chunks_fts match ? order by bm25(chunks_fts) limit 200",
                     (fts,))]  # fmt: skip
@@ -498,6 +509,23 @@ class Vault:
             if len(hits) >= k:
                 break
         return hits
+
+    def link(self, source: VaultSource) -> str:
+        """The page to open for a source: this month's URL for date templates, else the last URL fetched."""
+        if "{" in source.url and "{ecfr_date}" not in source.url:
+            return source.url.format(**_date_values())
+        return self.state_url(source)
+
+    def lapsed_manual(self, now: datetime | None = None) -> list[tuple[VaultSource, datetime]]:
+        """Manual-import sources whose imported copy has passed its freshness window: (source, checked_at).
+        Sources never imported aren't listed (the Knowledge page shows them as never fetched)."""
+        state = self.state()
+        out = []
+        for s in self.manifest.sources:
+            checked = _dt((state.get(s.id) or {}).get("checked_at"))
+            if s.manual and s.enabled and checked and not self.is_fresh(s, checked, now):
+                out.append((s, checked))
+        return out
 
     def state_url(self, source: VaultSource) -> str:
         with self.db() as con:
@@ -575,9 +603,16 @@ class Vault:
                 "checked_at": _iso(checked), "expires_at": _iso(expires),
                 "fresh": bool(expires and now < expires), "effective_date": st.get("effective_date"),
                 "snapshots": counts.get(s.id, 0), "last_changed": _iso(changed.get(s.id)), "sha256": st.get("sha"),
-                "finding": s.finding,
+                "finding": s.finding, "manual": s.manual, "secondary_to": s.secondary_to,
+                "link": self.link(s),
             })  # fmt: skip
         return out
+
+
+def _date_values() -> dict[str, Any]:
+    today = date.today()
+    return {"year": today.year, "month": MONTHS[today.month - 1],
+            "fy": today.year + 1 if today.month >= 10 else today.year}  # fmt: skip
 
 
 def _iso_date(d: date | None) -> str | None:

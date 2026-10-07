@@ -9,6 +9,12 @@
 # url placeholders: {ecfr_date} (latest eCFR issue date for ecfr_title), {year}, {month} (e.g. october),
 # {fy} (US federal fiscal year of the current month). start / end are regexes (multiline) that cut the
 # extracted text to the part that matters, e.g. one paragraph of a long regulation section.
+#
+# manual: true marks sites that usually block automated reading (uscis.gov, travel.state.gov). They're still
+# tried, but expect to import a saved copy (Knowledge page or `lighthouse-gc vault import`); vault-watch sends a
+# reminder with the page link when an imported copy passes its freshness window.
+# secondary_to: the primary source for the same facts. When the two disagree, the primary governs (e.g. the fee
+# regulation, 8 CFR part 106, over the USCIS fee page).
 version: 1
 
 # Freshness registry: how long a fetched fact stays usable before it must be re-fetched. Volatile facts
@@ -86,17 +92,35 @@ sources:
     start: '\(A\) Aliens with extraordinary ability'
     end: '\(B\) Outstanding professors and researchers'
 
+  # --------------------------------------------------------------------------- Tier 1: fees (primary: 8 CFR part 106)
+  - id: ecfr-8cfr-106-2
+    title: "8 CFR 106.2: USCIS fees (by form, incl. Form I-129, Form I-140 and the Asylum Program Fee)"
+    url: "https://www.ecfr.gov/api/versioner/v1/full/{ecfr_date}/title-8.xml?part=106&section=106.2"
+    ecfr_title: 8
+    tier: 1
+    kind: fees
+    topics: [o1a, eb1a]
+  - id: ecfr-8cfr-106-4
+    title: "8 CFR 106.4: premium processing fees and timeframes"
+    url: "https://www.ecfr.gov/api/versioner/v1/full/{ecfr_date}/title-8.xml?part=106&section=106.4"
+    ecfr_title: 8
+    tier: 1
+    kind: fees
+    topics: [o1a, eb1a]
+
   # --------------------------------------------------------------------------- Tier 1: USCIS Policy Manual
   - id: uscis-pm-2-m-4
     title: "USCIS Policy Manual, Volume 2, Part M, Chapter 4: O-1 beneficiaries"
     url: "https://www.uscis.gov/policy-manual/volume-2-part-m-chapter-4"
     tier: 1
+    manual: true
     kind: policy
     topics: [o1a]
   - id: uscis-pm-6-f-2
     title: "USCIS Policy Manual, Volume 6, Part F, Chapter 2: extraordinary ability"
     url: "https://www.uscis.gov/policy-manual/volume-6-part-f-chapter-2"
     tier: 1
+    manual: true
     kind: policy
     topics: [eb1a]
 
@@ -105,42 +129,50 @@ sources:
     title: "USCIS: O-1 visa, individuals with extraordinary ability or achievement"
     url: "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
     tier: 1
+    manual: true
     kind: guidance
     topics: [o1a]
   - id: uscis-eb1
     title: "USCIS: employment-based immigration, first preference EB-1"
     url: "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
     tier: 1
+    manual: true
     kind: guidance
     topics: [eb1a]
   - id: uscis-i-129
     title: "Form I-129, Petition for a Nonimmigrant Worker (edition, instructions, where to file)"
     url: "https://www.uscis.gov/i-129"
     tier: 1
+    manual: true
     kind: form
     topics: [o1a]
   - id: uscis-i-140
     title: "Form I-140, Immigrant Petition for Alien Workers (edition, instructions, where to file)"
     url: "https://www.uscis.gov/i-140"
     tier: 1
+    manual: true
     kind: form
     topics: [eb1a]
   - id: uscis-g-1055
     title: "USCIS fee schedule, Form G-1055 (PDF)"
     url: "https://www.uscis.gov/sites/default/files/document/forms/g-1055.pdf"
     tier: 1
+    manual: true
     kind: fees
     topics: [o1a, eb1a]
+    secondary_to: ecfr-8cfr-106-2
   - id: uscis-premium-processing
     title: "USCIS: how do I request premium processing?"
     url: "https://www.uscis.gov/forms/all-forms/how-do-i-request-premium-processing"
     tier: 1
+    manual: true
     kind: processing_times
     topics: [o1a, eb1a]
   - id: uscis-processing-times
     title: "USCIS case processing times"
     url: "https://egov.uscis.gov/processing-times/"
     tier: 1
+    manual: true
     kind: processing_times
     topics: [o1a, eb1a]
     notes: "A JavaScript app behind bot protection; usually unreadable automatically. Check it by hand."
@@ -150,6 +182,7 @@ sources:
     title: "Visa Bulletin (current month)"
     url: "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/{fy}/visa-bulletin-for-{month}-{year}.html"
     tier: 1
+    manual: true
     kind: visa_bulletin
     topics: [eb1a]
     notes: "travel.state.gov often blocks automated reading; if so, check the bulletin by hand."
@@ -177,6 +210,7 @@ sources:
     title: "AAO non-precedent decisions (index)"
     url: "https://www.uscis.gov/administrative-appeals/aao-decisions/aao-non-precedent-decisions"
     tier: 2
+    manual: true
     kind: decisions
     topics: [eb1a, o1a]
 

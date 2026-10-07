@@ -150,7 +150,7 @@ What's in the vault (source tiers):
 
 | Tier | Sources | Used for |
 |---|---|---|
-| 1 — Primary law & agency | 8 CFR 214.2(o), 8 CFR 204.5(h), INA 101(a)(15)(O) and 203(b)(1)(A) via eCFR; USCIS Policy Manual (O-1 and EB-1 chapters); I-129 / O supplement and I-140 instructions + current form editions; USCIS fee schedule; premium processing page; State Dept Visa Bulletin; Federal Register notices | criteria text, evidence rules, fees, forms, timelines, priority dates |
+| 1 — Primary law & agency | 8 CFR 214.2(o), 8 CFR 204.5(h), INA 101(a)(15)(O) and 203(b)(1)(A) via eCFR; USCIS Policy Manual (O-1 and EB-1 chapters); I-129 / O supplement and I-140 instructions + current form editions; fees from 8 CFR 106.2 / 106.4 via eCFR (primary) and the USCIS fee schedule (secondary); premium processing page; State Dept Visa Bulletin; Federal Register notices | criteria text, evidence rules, fees, forms, timelines, priority dates |
 | 2 — Adjudication | Kazarian v. USCIS (two-step final-merits review), Matter of Chawathe (preponderance of evidence), AAO non-precedent decisions on O-1A / EB-1A | how criteria are applied, what fails |
 | 3 — Secondary | attorney blogs, forums, practitioner guides | context only; never the sole source for a claim |
 

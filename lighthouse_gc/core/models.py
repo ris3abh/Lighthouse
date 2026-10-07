@@ -271,6 +271,9 @@ class RuleCitation(_Model):
     checked_at: datetime
     verdict: Literal["entails", "contradicts"]
     fresh: bool = True
+    secondary_to: str | None = Field(
+        None, description="Set for a secondary copy: the primary source's id. The primary governs."
+    )
 
 
 class RuleClaim(_Model):
