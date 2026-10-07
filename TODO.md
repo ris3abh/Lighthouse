@@ -95,8 +95,11 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       tracker auto-apply with undo; criterion-affecting -> Inbox; outreach needs approval); coverage test.
       agent/actions.py maps each page action to a tool or gives the reason it's yours; direct tools only in runs
       you started (missions keep the Inbox); Undo in the chat reply; deletes, letter writers and to-dos undoable
-- [ ] D2. Three tiers from .env (hard = claude-opus-5-5, mid = claude-sonnet-5-5, mundane = small OpenAI
-      model), rule-based router by task type, redaction + guardrails on every provider, .env.example
+- [x] D2. Three tiers from .env (hard = claude-opus-5-5, mid = claude-sonnet-5-5, mundane = small OpenAI
+      model), rule-based router by task type, redaction + guardrails on every provider, .env.example.
+      agent/routing.py (a lighthouse.yaml model that differs from the default still wins); OpenAI only for
+      tool-less mundane reading, redacted, capped and costed (gpt-5-mini by default; prices in openai_chat.py);
+      without an OpenAI key the mundane tier is Claude Haiku. Runs record task, tier and provider
 - [ ] D3. Long chats: older turns summarized (summary saved, original kept); "cheap mode" toggle (mid tier)
 - [ ] CHECKPOINT 3 (agent): chat actions, routing + cost per run on the Agent page, cheap mode
 

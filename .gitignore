@@ -24,3 +24,4 @@ lighthouse_gc/_data/
 
 # local Claude Code worktrees and settings
 /.claude/
+!.env.example

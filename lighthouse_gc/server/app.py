@@ -370,13 +370,16 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         if scan_id not in staged:
             raise HTTPException(404, "that scan has expired; drop the export again")
         _, intake = staged.pop(scan_id)
-        ok, _ = runner.engine().available()
-        model = ws.config().agent.models.mundane
-        report = await import_picked(ws, intake, set(body.ids), runner.judge() if ok else None, model)
+        try:
+            judge, how = runner.mundane("chat_extract")
+        except BudgetExceeded:
+            judge, how = None, runner.route("chat_extract")  # over the cap: the local rules still read them
+        report = await import_picked(ws, intake, set(body.ids), judge, how.model)
         if (
             report.extracted_by != "rules"
         ):  # the model's cost shows on the Agent page and counts toward the month
-            run = AgentRun(kind="manual", engine=runner.engine().name, model=model, status="done",
+            run = AgentRun(kind="manual", engine=how.provider if how.provider == "openai" else runner.engine().name,
+                           model=how.model, task=how.task, tier=how.tier, provider=how.provider, status="done",
                            prompt=f"Chat-history extraction ({report.picked} picked)", text=report.line(),
                            cost_usd=report.cost_usd, finished_at=clock.utcnow())  # fmt: skip
             runner.save(run)

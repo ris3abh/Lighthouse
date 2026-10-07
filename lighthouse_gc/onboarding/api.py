@@ -206,7 +206,8 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
             from lighthouse_gc.onboarding.linkedin import extract_with_model
 
             try:
-                parsed = await extract_with_model(text, model_judge, ws.config().agent.models.check)
+                model = runner.route("pdf").model if runner is not None else ws.config().agent.models.check
+                parsed = await extract_with_model(text, model_judge, model)
                 parser = "model" if parsed else "none"
             except Exception:
                 parsed = {}

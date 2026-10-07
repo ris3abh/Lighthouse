@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type AgentRunView, type Candidate } from "../api";
+import { api, type AgentRunView, type AgentStatus, type Candidate } from "../api";
 import { useRefresh } from "../App";
 import Markdown from "../components/Markdown";
 import RuleCheckView from "../components/RuleCheck";
@@ -103,7 +103,7 @@ export default function Agent({ focus }: { focus: string | null }) {
           </div>
           <p className={cx("mt-4 font-mono text-[11px] leading-relaxed uppercase", status.available ? "text-muted" : "text-alert")}>
             {status.available
-              ? `chat ${status.models.chat} · tasks ${status.models.task} · missions ${status.models.mission} · effort ${status.effort} · web search ${status.web_search ? "on" : "off"}`
+              ? `${tiers(status)} · effort ${status.effort} · web search ${status.web_search ? "on" : "off"}${status.cheap_mode ? " · cheap mode" : ""}`
               : `Unavailable: ${status.reason}`}
           </p>
         </form>
@@ -228,6 +228,7 @@ export default function Agent({ focus }: { focus: string | null }) {
                     <p className="num mt-1 text-[10.5px] text-muted">
                       {r.tool_calls ?? 0} tool call{r.tool_calls === 1 ? "" : "s"} · {r.sources.length} source{r.sources.length === 1 ? "" : "s"} ·{" "}
                       {r.proposals.length} proposal{r.proposals.length === 1 ? "" : "s"} · {fmtTokens(r.counted_tokens)} · {fmtPct(cacheRate(r.usage))} cached ·{" "}
+                      {r.tier ? `${r.tier} · ${r.model} · ` : ""}
                       {fmtUsd(r.cost_usd)}
                     </p>
                   </button>
@@ -311,7 +312,9 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
             </div>
           </dl>
           <p className="mt-4 font-mono text-[10.5px] text-muted uppercase">
-            {run.engine} · {run.model}
+            {run.provider ?? run.engine} · {run.tier ? `${run.tier} tier · ` : ""}
+            {run.model}
+            {run.task && run.task !== run.kind && ` · ${run.task.replace(/_/g, " ")}`}
             {run.stop_reason && ` · ${run.stop_reason}`}
             {run.conversation_id && " · from chat"}
           </p>
@@ -435,4 +438,16 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
       </div>
     </div>
   );
+}
+
+/** "hard claude-opus-5-5 · mid claude-sonnet-5-5 · mundane gpt-5-mini (OpenAI)": the three tiers (ADR 0009). */
+function tiers(status: AgentStatus): string {
+  const by = (tier: string) => status.routes.find((r) => r.tier === tier);
+  return (["hard", "mid", "mundane"] as const)
+    .map((tier) => {
+      const r = by(tier);
+      return r ? `${tier} ${r.model}${r.provider === "openai" ? " (OpenAI)" : ""}` : "";
+    })
+    .filter(Boolean)
+    .join(" · ");
 }

@@ -441,6 +441,8 @@ export interface AgentStatus {
   reason: string;
   model: string;
   models: { chat: string; task: string; mission: string };
+  cheap_mode: boolean;
+  routes: { task: string; tier: "hard" | "mid" | "mundane"; provider: "anthropic" | "openai"; model: string }[];
   effort: string;
   web_search: boolean;
   budget: { per_run_tokens: number; per_run_usd: number | null; monthly_tokens: number; monthly_usd: number | null };
@@ -466,6 +468,9 @@ export interface AgentRunView {
   status: "running" | "done" | "error" | "stopped";
   engine: string;
   model: string;
+  task?: string | null;
+  tier?: "hard" | "mid" | "mundane" | null;
+  provider?: "anthropic" | "openai" | null;
   prompt: string;
   conversation_id: string | null;
   started_at: string;

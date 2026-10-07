@@ -17,6 +17,7 @@ from typing import Any
 
 from lighthouse_gc.agent.guardrails import guard_answer, log_refusal
 from lighthouse_gc.agent.prompt import SYSTEM_PROMPT
+from lighthouse_gc.agent.routing import Route, openai_key, route, table
 from lighthouse_gc.agent.search_policy import SearchPolicy
 from lighthouse_gc.agent.tools import RunContext, build_tools
 from lighthouse_gc.core import clock
@@ -25,6 +26,7 @@ from lighthouse_gc.core.workspace import NotFound, WorkspaceError, _atomic_write
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.engine import get_engine
 from lighthouse_gc.engine.base import AgentEvent, Engine, EngineRequest, EngineUnavailable, StopRun
+from lighthouse_gc.engine.openai_chat import openai_judge
 from lighthouse_gc.vault import Vault
 from lighthouse_gc.vault.rulecheck import Judge, RuleChecker, engine_judge, notify_conflicts
 
@@ -73,7 +75,28 @@ class AgentRunner:
         return self._judge
 
     def checker(self) -> RuleChecker:
-        return RuleChecker(Vault(self.ws), self.judge(), self.ws.config().agent.models.check)
+        return RuleChecker(Vault(self.ws), self.judge(), self.route("check").model)
+
+    def route(self, task: str) -> Route:
+        cfg = self.ws.config()
+        return route(task, cfg.agent.models, self.ws.root, cheap=cfg.agent.cheap_mode)
+
+    def mundane(self, task: str = "chat_extract") -> tuple[Judge | None, Route]:
+        """The judge for bulk, simple reading: OpenAI when its key is set, else Claude Haiku on the engine. None when
+        neither is available. Refuses once the monthly cap is reached, like any run."""
+        how = self.route(task)
+        b, month = self.ws.config().agent.budget, self.month_usage()
+        if b.monthly_usd is not None and float(month["usd"] or 0.0) >= b.monthly_usd:
+            raise BudgetExceeded(
+                f"monthly budget reached (${float(month['usd'] or 0):.2f} of ${b.monthly_usd:.2f})"
+            )
+        if how.provider == "openai":
+            key = openai_key(self.ws.root)
+            return (
+                openai_judge(key, redact_input=self.ws.config().privacy.redact_before_llm) if key else None
+            ), how
+        ok, _ = self.engine().available()
+        return (self.judge() if ok else None), how
 
     def save(self, run: AgentRun) -> None:
         _atomic_write(self.runs_dir / f"{run.id}.json", dump_model(run))
@@ -133,8 +156,9 @@ class AgentRunner:
         except EngineUnavailable as exc:
             ok, why = False, str(exc)
         b = cfg.agent.budget
-        return {"engine": cfg.engine, "available": ok, "reason": why, "model": cfg.agent.models.chat,
-                "models": cfg.agent.models.model_dump(),
+        return {"engine": cfg.engine, "available": ok, "reason": why, "model": self.route("chat").model,
+                "models": cfg.agent.models.model_dump(), "cheap_mode": cfg.agent.cheap_mode,
+                "routes": [r.__dict__ for r in table(cfg.agent.models, self.ws.root, cfg.agent.cheap_mode)],
                 "effort": cfg.agent.effort, "web_search": cfg.agent.web_search,
                 "budget": b.model_dump(), "month": self.month_usage()}  # fmt: skip
 
@@ -168,9 +192,11 @@ class AgentRunner:
         conv = None
         if kind == "chat":
             conv = self.conversation(conversation_id) if conversation_id else Conversation(title=prompt[:60])
-        model = cfg.agent.model_for(kind)
+        how = self.route(kind)
+        model = how.model
         run = AgentRun(kind=kind, engine=engine.name, model=model, prompt=prompt, mission=mission,  # type: ignore[arg-type]
-                       conversation_id=conv.id if conv else None)  # fmt: skip
+                       conversation_id=conv.id if conv else None, task=how.task, tier=how.tier,
+                       provider=how.provider)  # fmt: skip
         if conv is not None:
             history = list(conv.messages)
             conv.messages.append(ConversationMessage(role="user", text=prompt, run_id=run.id))

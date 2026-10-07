@@ -484,6 +484,9 @@ class AgentConfig(_Model):
         return data
 
     effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
+    cheap_mode: bool = Field(
+        False, description="Run chat on the mid tier instead of the hard one (ADR 0009 §3)."
+    )
     web_search: bool = True
     max_turns: int = Field(25, ge=1, le=200)
     budget: AgentBudget = Field(default_factory=AgentBudget)
@@ -596,6 +599,11 @@ class AgentRun(_File):
     status: Literal["running", "done", "error", "stopped"] = "running"
     engine: str
     model: str
+    task: str | None = Field(
+        None, description="What the run was for (ADR 0009 routing), e.g. chat, chat_extract."
+    )
+    tier: Literal["hard", "mid", "mundane"] | None = None
+    provider: Literal["anthropic", "openai"] | None = None
     prompt: str
     conversation_id: str | None = None
     started_at: datetime = Field(default_factory=utcnow)

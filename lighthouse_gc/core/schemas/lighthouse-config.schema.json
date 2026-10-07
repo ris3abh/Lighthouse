@@ -55,6 +55,12 @@
         "budget": {
           "$ref": "#/$defs/AgentBudget"
         },
+        "cheap_mode": {
+          "default": false,
+          "description": "Run chat on the mid tier instead of the hard one (ADR 0009 \u00a73).",
+          "title": "Cheap Mode",
+          "type": "boolean"
+        },
         "effort": {
           "default": "medium",
           "enum": [

@@ -459,6 +459,22 @@
       "title": "Proposals",
       "type": "array"
     },
+    "provider": {
+      "anyOf": [
+        {
+          "enum": [
+            "anthropic",
+            "openai"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Provider"
+    },
     "rule_check": {
       "anyOf": [
         {
@@ -512,11 +528,41 @@
       "default": null,
       "title": "Stop Reason"
     },
+    "task": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "What the run was for (ADR 0009 routing), e.g. chat, chat_extract.",
+      "title": "Task"
+    },
     "text": {
       "default": "",
       "description": "The assistant's final answer.",
       "title": "Text",
       "type": "string"
+    },
+    "tier": {
+      "anyOf": [
+        {
+          "enum": [
+            "hard",
+            "mid",
+            "mundane"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tier"
     },
     "timeline": {
       "items": {
