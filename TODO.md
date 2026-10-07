@@ -114,7 +114,8 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       (chat-history extraction) now record tokens too, and lib/usage.ts shows the cost alone when tokens are unknown
 - [x] F3. The chat modal blurs the whole background evenly: the content area blurs as one, and a changed panel
       stays blurred with a crisp outline and label drawn on top (no more un-blurring; checked in Chrome)
-- [ ] F4. Test: no chat request can move a criterion claim from invited to completed
+- [x] F4. Test: no chat request can move a criterion claim from invited to completed (tests/test_no_stage_upgrades.py:
+      five phrasings, every write tool aimed at the MLH invitation; only the pipeline item moves; negative control)
 - [ ] F5. Status of items 7-11; finish what isn't done
 - [ ] F6. Rename to Area O1 (ADR 0010): names in one place, migration from Lighthouse-era workspaces,
       deprecated lighthouse-gc alias, banter copy with tested rules
