@@ -22,6 +22,16 @@ All notable changes to this project are documented here. The format follows
 - MCP `propose_context` (C3): Claude Code, Claude desktop and other MCP tools can send important context to your
   Inbox. It's self-reported: kept as a note when you accept it, and never counts toward a criterion. Setup guide in
   `docs/mcp.md`.
+- Agent personality and guardrails (C4). The voice starts warm, then mirrors your tone and length. Code-level
+  checks back the prompt:
+  - An invitation can't be proposed as completed, published or granted.
+  - The agent can't mark a letter sent or signed, and has no tool to send or sign anything.
+  - Eligibility verdicts and guarantees are replaced in answers.
+  - Web page text is wrapped as data, and pages that address an AI are flagged.
+  - People-search and personal social sites are refused.
+  - A `decline` tool covers off-topic requests.
+  - Every refusal, including from the rule-check gate and the search policy, is listed under "Declined" on the
+    Agent page.
 - No demo data (ADR 0008): `--demo` and `examples/demo-workspace` are gone. The fictional Alex Rivera case is a
   test fixture, and three onboarding personas (Maya, Ravi, Lena) with LinkedIn-style PDFs live in
   `tests/fixtures/personas`.

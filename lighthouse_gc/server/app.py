@@ -880,6 +880,13 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         svc.set_rule_check(candidate_id, check)
         return checked(check)
 
+    @app.get("/api/agent/refusals")
+    def agent_refusals() -> list[dict[str, Any]]:
+        """Everything the agent or a guardrail declined, newest first (ADR 0008, C4)."""
+        from lighthouse_gc.agent.guardrails import refusals
+
+        return refusals(ws)
+
     @app.get("/api/agent/missions")
     def agent_missions() -> list[dict[str, Any]]:
         from lighthouse_gc.agent.missions import missions_status

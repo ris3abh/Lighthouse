@@ -499,6 +499,15 @@ export class ApiError extends Error {
 }
 
 
+export interface Refusal {
+  at: string;
+  run_id: string | null;
+  rule: string;
+  message: string;
+  alternative: string;
+  detail: string;
+}
+
 // ---------------------------------------------------------------- onboarding (ADR 0008)
 
 export type FieldStatus = "pending" | "confirmed" | "fixed" | "skipped";
@@ -579,6 +588,7 @@ export const api = {
     if (criterion) form.append("criterion", criterion);
     return request<Candidate[]>("POST", "/inbox/upload", form);
   },
+  refusals: () => request<Refusal[]>("GET", "/agent/refusals"),
   onboarding: () => request<OnboardingView>("GET", "/onboarding"),
   onboardingLinkedin: (file: File) => {
     const form = new FormData();

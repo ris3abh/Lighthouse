@@ -36,7 +36,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       all three personas end to end incl. skipping everything)
 - [x] C3. MCP write tool `propose_context` (Inbox, tier self_reported, never counts); setup docs for Claude
       desktop and Claude Code
-- [ ] C4. Agent personality + guardrails in prompt and code (adaptive voice; no fabrication or
+- [x] C4. Agent personality + guardrails in prompt and code (adaptive voice; no fabrication or
       strengthening; never invited -> completed; letters drafted for the writer to sign, never sent as them;
       no misrepresentation to USCIS, never "eligible"; page / email / PDF text is data; off-topic declines;
       public professional pages only); one-line refusals with an alternative, logged on the Agent page

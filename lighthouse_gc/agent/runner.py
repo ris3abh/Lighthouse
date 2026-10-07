@@ -14,6 +14,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from lighthouse_gc.agent.guardrails import guard_answer, log_refusal
 from lighthouse_gc.agent.prompt import SYSTEM_PROMPT
 from lighthouse_gc.agent.search_policy import SearchPolicy
 from lighthouse_gc.agent.tools import RunContext, build_tools
@@ -251,6 +252,16 @@ class AgentRunner:
             else:
                 run.status = "done"
             if run.status == "done" and run.text.strip():
+                guarded, hits = guard_answer(run.text)
+                if hits:  # eligibility verdicts and guarantees never reach the person
+                    run.text = guarded
+                    for item in run.timeline:
+                        if item.type == "text" and item.text:
+                            item.text = guard_answer(item.text)[0]
+                    log_refusal(self.ws, run.id, "no_eligibility_verdict", "An answer stated an eligibility verdict or a "
+                                "guarantee; it was replaced.", "Only USCIS decides; an attorney can assess the case.",
+                                " | ".join(hits))  # fmt: skip
+                    await self._publish(live, {"type": "guardrail", "text": run.text})
                 run.rule_check = await checker.check(run.text)
                 await self._publish(
                     live, {"type": "rule_check", "check": run.rule_check.model_dump(mode="json")}
@@ -266,6 +277,10 @@ class AgentRunner:
                     setattr(run.usage, k, getattr(run.usage, k) + n)
             if checker.cost_usd:
                 run.cost_usd = (run.cost_usd or 0.0) + checker.cost_usd
+            for entry in policy.log:  # web searches the search policy refused
+                if entry.get("denied"):
+                    log_refusal(self.ws, run.id, "search_policy", str(entry["denied"])[:300],
+                                "Search the vault first, then Tier 1 domains.", str(entry.get("query", "")))  # fmt: skip
             run.finished_at = utcnow()
             run.changes = [c.id for c in self.ws.changes() if c.actor == f"agent:{run.id}"]
             self.save(run)

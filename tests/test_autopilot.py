@@ -175,9 +175,11 @@ def test_undo_refuses_when_the_record_changed_since(demo_ws):
     _, t = _tools(demo_ws)
     letter = demo_ws.letters().letters[0]
     anyio.run(t["propose_tracker_update"].handler,
-              {"target_type": "letter", "target_id": letter.id, "changes": {"status": "sent"}})  # fmt: skip
+              {"target_type": "letter", "target_id": letter.id, "changes": {"status": "drafting"}})  # fmt: skip
     auto = demo_ws.changes()[-1]
-    Service(demo_ws).update_letter(letter.id, status="signed")  # the user moved on
+    Service(demo_ws).update_letter(
+        letter.id, status="signed"
+    )  # the user moved on (only a person marks signed)
     with pytest.raises(WorkspaceError, match="changed again"):
         Service(demo_ws).undo(auto.id)
     assert demo_ws.letters().letters[0].status == "signed"
@@ -246,7 +248,7 @@ def test_criteria_never_move_without_approval_even_with_everything_on(demo_ws, m
         ("tool", "propose_tracker_update", {"target_type": "pipeline_item", "target_id": item.id,
                                             "changes": {"stage": "done"}}),
         ("tool", "propose_tracker_update", {"target_type": "letter", "target_id": letter.id,
-                                            "changes": {"status": "signed"}}),
+                                            "changes": {"status": "drafting"}}),
         ("tool", "propose_tracker_update", {"target_type": "deadline", "target_id": deadline.id,
                                             "changes": {"done": True}}),
         ("tool", "propose_pipeline_item", {"title": "Apply: ACM Senior Member", "criterion": "membership"}),
@@ -267,8 +269,7 @@ def test_criteria_never_move_without_approval_even_with_everything_on(demo_ws, m
                                           "observation_id": obs[USCIS], "quote": "takes effect on November 30, 2026"}),
             ("tool", "propose_evidence", {"criterion": "scholarly_articles", "evidence_type": "conference_paper",
                                           "title": "ICML paper citations", "summary": "71 citations",
-                                          "observation_id": obs[SCHOLAR], "quote": "Cited by 71 papers.",
-                                          "stage": "published"}),
+                                          "observation_id": obs[SCHOLAR], "quote": "Cited by 71 papers."}),
             ("text", "done"),
         ]  # fmt: skip
         await runner.wait((await runner.start("scheduled", "and the rest")).id)

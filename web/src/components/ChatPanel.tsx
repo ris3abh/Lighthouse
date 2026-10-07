@@ -45,7 +45,8 @@ export default function ChatPanel({ page, onClose }: { page: string; onClose: ()
   const live = useRunStream(runId, (run: AgentRunView) => {
     setTurns((t) => [
       ...t,
-      { role: "assistant", text: run.text, runId: run.id, items: undefined, meta: meta(run), check: run.rule_check },
+      // The finished run's timeline is the record: it carries any guardrail rewrite of the streamed text.
+      { role: "assistant", text: run.text, runId: run.id, items: itemsFromTimeline(run.timeline), meta: meta(run), check: run.rule_check },
     ]);
     setRunId(null);
     bump(); // proposals may have changed the Inbox badge

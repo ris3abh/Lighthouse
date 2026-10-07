@@ -26,7 +26,7 @@ function duration(r: AgentRunView) {
 export default function Agent({ focus }: { focus: string | null }) {
   const { version, bump } = useRefresh();
   const toast = useToast();
-  const data = useLoad(() => Promise.all([api.runs(), api.agentStatus(), api.missions()]), [version]);
+  const data = useLoad(() => Promise.all([api.runs(), api.agentStatus(), api.missions(), api.refusals()]), [version]);
   const [kind, setKind] = useState<"all" | "chat" | "manual" | "scheduled">("all");
   const [selected, setSelected] = useState<string | null>(focus);
   const [prompt, setPrompt] = useState("");
@@ -38,7 +38,7 @@ export default function Agent({ focus }: { focus: string | null }) {
 
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
   if (!data.data) return <Loading />;
-  const [runs, status, missionList] = data.data;
+  const [runs, status, missionList, refused] = data.data;
   const runMission = async (name: string) => {
     try {
       const r = await api.runMission(name);
@@ -157,6 +157,41 @@ export default function Agent({ focus }: { focus: string | null }) {
             </li>
           ))}
         </ul>
+      </Card>
+
+      <Card
+        title={
+          <span className="flex items-center gap-3">
+            Declined <span className="num text-ink-2">{refused.length}</span>
+          </span>
+        }
+        className="mb-8"
+        actions={<span className="font-mono text-[10.5px] text-muted uppercase">What the agent and its guardrails refused</span>}
+      >
+        {refused.length ? (
+          <ul className="max-h-80 overflow-y-auto">
+            {refused.slice(0, 50).map((r, i) => (
+              <li key={i} className="grid gap-1 border-b border-line px-5 py-3 last:border-b-0 @3xl:grid-cols-[180px_minmax(0,1fr)] @3xl:gap-6">
+                <div className="font-mono text-[10.5px] text-muted uppercase">
+                  <p className="text-alert">{r.rule.replace(/_/g, " ")}</p>
+                  <p>{new Date(r.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                </div>
+                <div className="min-w-0 text-sm">
+                  <p className="text-ink">{r.message}</p>
+                  {r.alternative && <p className="mt-0.5 text-ink-2">{r.alternative}</p>}
+                  {r.detail && <p className="mt-1 truncate font-mono text-[11px] text-muted" title={r.detail}>{r.detail}</p>}
+                  {r.run_id && (
+                    <a className="link mt-1 inline-block font-mono text-[10.5px] uppercase" href={`#/agent?run=${r.run_id}`}>
+                      Run details
+                    </a>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Empty>Nothing declined yet.</Empty>
+        )}
       </Card>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @5xl:grid-cols-[400px_minmax(0,1fr)]">
