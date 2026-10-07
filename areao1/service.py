@@ -302,6 +302,48 @@ class Service:
         self._record("contact.delete", "contact", lambda: self.ws.delete_contact(contact_id),
                      target_id=contact_id, before=before, summary=before.name)  # fmt: skip
 
+    # ------------------------------------------------------------------ outreach (ADR 0014 §5)
+
+    def _draft(self, draft_id: str) -> Any:
+        return self._find(self.ws.outreach().drafts, draft_id, "email draft")
+
+    def save_draft(self, draft: Any) -> Any:
+        return self._record("outreach.draft", "outreach", lambda: self.ws.put_draft(draft),
+                            summary=f"to {draft.to}: {draft.subject}")  # fmt: skip
+
+    def edit_draft(self, draft_id: str, **changes: Any) -> Any:
+        before = self._draft(draft_id)
+        if before.status != "draft":
+            raise WorkspaceError(f"this email is already {before.status}")
+        bad = set(changes) - {"subject", "body"}
+        if bad:
+            raise WorkspaceError(f"not editable: {', '.join(sorted(bad))}")
+        updated = before.model_copy(update={k: str(v) for k, v in changes.items()})
+        type(before).model_validate(updated.model_dump())
+        return self._record("outreach.edit", "outreach", lambda: self.ws.put_draft(updated), before=before,
+                            summary=f"to {before.to}: {updated.subject}")  # fmt: skip
+
+    def reject_draft(self, draft_id: str) -> Any:
+        before = self._draft(draft_id)
+        if before.status != "draft":
+            raise WorkspaceError(f"this email is already {before.status}")
+        return self._record("outreach.reject", "outreach",
+                            lambda: self.ws.put_draft(before.model_copy(update={"status": "rejected"})),
+                            before=before, summary=f"to {before.to}: {before.subject}")  # fmt: skip
+
+    def send_draft(self, draft_id: str, client: Any = None) -> Any:
+        """Your approval: send it from your Gmail, then record it as sent. Agents and autopilot can't."""
+        if self.auto or self.actor != "user":
+            raise WorkspaceError("only you can approve and send an email")
+        from areao1.google import outreach
+
+        before = self._draft(draft_id)
+        sent = outreach.send(self.ws, before, client)
+        after = before.model_copy(update={"status": "sent", "sent_at": clock.utcnow(), "gmail_id": sent.get("id"),
+                                          "thread_id": sent.get("threadId") or before.thread_id})  # fmt: skip
+        return self._record("outreach.send", "outreach", lambda: self.ws.put_draft(after), before=before,
+                            summary=f"to {before.to}: {before.subject}")  # fmt: skip
+
     # ------------------------------------------------------------------ trackers (generic) + metrics
 
     def update_tracker(self, target_type: str, target_id: str, **changes: Any) -> Any:

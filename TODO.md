@@ -132,8 +132,9 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 - [x] E4. CRM page: people, relationship, threads, asks, last touch, next follow-up; linked to Letters/Pipeline
       (Contacts page; data/contacts.json via the service layer, undoable; letter writers appear until added;
       chat tools list/add/update/delete_contact)
-- [ ] E5. Outreach: agent drafts, user approves / edits / rejects, sends from Gmail; proactive follow-ups
-      after 7 quiet days (same approval); daily send limits; case contacts only
+- [x] E5. Outreach: agent drafts, user approves / edits / rejects, sends from Gmail; proactive follow-ups
+      after 7 quiet days (same approval); daily send limits; case contacts only (draft_email tool; approval on
+      the Contacts page; only the person can send, gmail.send; follow-ups are a short template to edit)
 - [ ] CHECKPOINT 4 (Google): OAuth client instructions first; sign-in, calendar sync both ways, one draft
 
 ### Part F: daily opportunity job

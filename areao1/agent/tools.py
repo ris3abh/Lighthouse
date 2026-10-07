@@ -465,6 +465,16 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         ctx.svc.delete_contact(c.id)
         return _done("Removed the contact", c.name)
 
+    async def t_draft_email(args: S) -> str:
+        from areao1.google import outreach
+
+        await _gate(args["body"])  # petition-facing words in your name: the same rule check
+        draft = outreach.compose(ws, args["contact_id"], args["subject"], args["body"], args.get("purpose", "other"),
+                                 drafted_by=f"agent:{ctx.run.id}")  # fmt: skip
+        ctx.svc.save_draft(draft)
+        return (f"Drafted an email to {draft.to}: \"{draft.subject}\". It is NOT sent: it waits on the Contacts page "
+                "for the person to approve, edit or reject.")  # fmt: skip
+
     async def t_todos(args: S) -> str:
         return ctx.out([t.model_dump(mode="json") for t in ws.todos().todos if t.status == "open"])
 
@@ -680,6 +690,26 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
             read_only=False,
         ),
         AgentTool(
+            "draft_email",
+            "Draft an email to one of the person's contacts (list_contacts for the id): an ask, a thank-you, a "
+            "follow-up. It never sends: the person approves, edits or rejects it. Write in their voice, briefly, and "
+            "never claim eligibility or results.",
+            _obj(
+                {
+                    "contact_id": STR,
+                    "subject": STR,
+                    "body": STR,
+                    "purpose": {
+                        "type": "string",
+                        "enum": ["ask", "thank_you", "follow_up", "update", "other"],
+                    },
+                },
+                ["contact_id", "subject", "body"],
+            ),  # fmt: skip
+            t_draft_email,
+            read_only=False,
+        ),
+        AgentTool(
             "list_todos",
             "Open to-dos (things only the person can do, e.g. upload proof).",
             _obj({}, []),
@@ -801,7 +831,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         "delete_letter_writer": ("data/letters.json",), "list_todos": ("data/todos.json",),
         "update_todo": ("data/todos.json",), "list_contacts": ("data/contacts.json", "data/threads.json"),
         "add_contact": ("data/contacts.json",), "update_contact": ("data/contacts.json",),
-        "delete_contact": ("data/contacts.json",),
+        "delete_contact": ("data/contacts.json",), "draft_email": ("data/outreach.json",),
         "undo_change": ("data/pipeline.json", "data/letters.json", "data/deadlines.json", "data/todos.json"),
     }  # fmt: skip
     for t in tool_list:

@@ -77,9 +77,10 @@ def test_an_invitation_is_never_upgraded_to_completed(demo_ws, web):
 
 def test_letters_are_drafted_for_the_writer_never_signed_or_sent(demo_ws):
     ctx, t = _tools(demo_ws)
-    assert not any(
-        re_word in name for name in t for re_word in ("send", "email", "sign")
-    )  # no tool to send or sign
+    assert not any(re_word in name for name in t for re_word in ("send", "sign"))  # no tool to send or sign
+    assert [name for name in t if "email" in name] == [
+        "draft_email"
+    ]  # drafts only; sending is the person's (ADR 0014)
     letter = demo_ws.letters().letters[0]
     for status in ("signed", "sent"):
         with pytest.raises(ValueError, match="only the writer signs it and only you send it"):

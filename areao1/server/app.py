@@ -120,6 +120,18 @@ class PipelineBody(BaseModel):
     notes: str | None = None
 
 
+class OutreachBody(BaseModel):
+    contact_id: str
+    subject: str = Field(min_length=1, max_length=200)
+    body: str = Field(min_length=1, max_length=8000)
+    purpose: str = "other"
+
+
+class OutreachEdit(BaseModel):
+    subject: str | None = Field(None, min_length=1, max_length=200)
+    body: str | None = Field(None, min_length=1, max_length=8000)
+
+
 class ContactBody(BaseModel):
     name: str | None = None
     emails: list[str] | None = None
@@ -695,6 +707,39 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     def remove_contact(contact_id: str) -> dict[str, Any]:
         svc.delete_contact(contact_id)
         return {"removed": contact_id}
+
+    # ------------------------------------------------------------------ outreach (ADR 0014 §5)
+
+    @app.get("/api/outreach")
+    def get_outreach() -> dict[str, Any]:
+        from areao1.google import auth, outreach
+
+        names = {c.id: c.name for c in ws.contacts().contacts}
+        cfg = ws.config().outreach
+        return {"drafts": [{**d.model_dump(mode="json"), "contact": names.get(d.contact_id, "")}
+                           for d in reversed(ws.outreach().drafts)],
+                "sent_today": outreach.sent_today(ws), "daily_limit": cfg.daily_limit,
+                "can_send": auth.granted("gmail_send")}  # fmt: skip
+
+    @app.post("/api/outreach")
+    def post_outreach(body: OutreachBody) -> dict[str, Any]:
+        from areao1.google import outreach
+
+        draft = outreach.compose(ws, body.contact_id, body.subject, body.body, body.purpose)
+        return svc.save_draft(draft).model_dump(mode="json")
+
+    @app.patch("/api/outreach/{draft_id}")
+    def patch_outreach(draft_id: str, body: OutreachEdit) -> dict[str, Any]:
+        return svc.edit_draft(draft_id, **body.model_dump(exclude_none=True)).model_dump(mode="json")
+
+    @app.post("/api/outreach/{draft_id}/reject")
+    def reject_outreach(draft_id: str) -> dict[str, Any]:
+        return svc.reject_draft(draft_id).model_dump(mode="json")
+
+    @app.post("/api/outreach/{draft_id}/send")
+    def send_outreach(draft_id: str) -> dict[str, Any]:
+        """Your approval: sends it from your Gmail."""
+        return svc.send_draft(draft_id).model_dump(mode="json")
 
     @app.get("/api/drafts/{path:path}")
     def get_draft(path: str) -> FileResponse:

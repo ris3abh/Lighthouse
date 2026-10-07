@@ -590,6 +590,26 @@ export interface ContactView {
   threads: GmailThreadView[];
 }
 export type ContactFields = Partial<Pick<ContactView, "name" | "emails" | "org" | "relationship" | "notes" | "asks" | "next_follow_up" | "last_touch" | "letter_ids" | "pipeline_ids">>;
+export interface OutreachDraftView {
+  id: string;
+  contact_id: string;
+  contact: string;
+  to: string;
+  subject: string;
+  body: string;
+  purpose: string;
+  status: "draft" | "sent" | "rejected";
+  drafted_by: string;
+  thread_id: string | null;
+  created_at: string;
+  sent_at: string | null;
+}
+export interface OutreachView {
+  drafts: OutreachDraftView[];
+  sent_today: number;
+  daily_limit: number;
+  can_send: boolean;
+}
 export interface GoogleStatus {
   client: boolean;
   connected: boolean;
@@ -685,6 +705,11 @@ export const api = {
   addContact: (fields: ContactFields) => request<ContactView>("POST", "/contacts", fields),
   updateContact: (id: string, fields: ContactFields) => request<ContactView>("PATCH", `/contacts/${enc(id)}`, fields),
   deleteContact: (id: string) => request<unknown>("DELETE", `/contacts/${enc(id)}`),
+  outreach: () => request<OutreachView>("GET", "/outreach"),
+  draftEmail: (contact_id: string, subject: string, body: string) => request<OutreachDraftView>("POST", "/outreach", { contact_id, subject, body }),
+  editDraft: (id: string, fields: { subject?: string; body?: string }) => request<OutreachDraftView>("PATCH", `/outreach/${enc(id)}`, fields),
+  rejectDraft: (id: string) => request<OutreachDraftView>("POST", `/outreach/${enc(id)}/reject`),
+  sendDraft: (id: string) => request<OutreachDraftView>("POST", `/outreach/${enc(id)}/send`),
   syncCalendar: () => request<{ lines: string[] }>("POST", "/google/calendar/sync"),
   syncGmail: () => request<{ lines: string[] }>("POST", "/google/gmail/sync"),
   googleStatus: () => request<GoogleStatus>("GET", "/google"),

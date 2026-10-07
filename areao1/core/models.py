@@ -512,21 +512,25 @@ class VaultConfig(_Model):
     enabled: bool = Field(True, description="Fetch the public sources listed in the vault manifest.")
 
 
+class OutreachConfig(_Model):
+    """Emails to your contacts (ADR 0014 §5): drafted, approved by you, then sent from your Gmail."""
+
+    daily_limit: int = Field(10, ge=0, le=100, description="Most emails sent per day; checked at approval.")
+    follow_up_days: int = Field(
+        7, ge=2, le=60, description="Quiet days after your email before a follow-up draft."
+    )
+
+
 class WorkspaceConfig(_File):
     workspace_name: str = "my-case"
     profile: str = Field("", description="Active profile id; the domain layer supplies the default.")
     engine: Literal["claude_code", "codex", "api"] = "claude_code"
     server: ServerConfig = Field(default_factory=ServerConfig)
     vault: VaultConfig = Field(default_factory=VaultConfig)
+    outreach: OutreachConfig = Field(default_factory=OutreachConfig)
     schedules: dict[str, str] = Field(
         default_factory=lambda: dict(DEFAULT_SCHEDULES), description="Cron per job; '' turns a job off."
     )
-
-    @field_validator("schedules")
-    @classmethod
-    def _new_jobs(cls, v: dict[str, str]) -> dict[str, str]:
-        """A job added since the file was written gets its default schedule; '' still turns one off."""
-        return {**{k: s for k, s in DEFAULT_SCHEDULES.items() if k not in v}, **v}
 
     @field_validator("schedules", mode="before")
     @classmethod

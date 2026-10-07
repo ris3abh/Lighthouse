@@ -171,6 +171,29 @@ class GmailThread(_Model):
     messages: int = Field(1, ge=1)
 
 
+class OutreachDraft(_Model):
+    """An email to a contact (ADR 0014 §5). It never sends itself: you approve, edit or reject it."""
+
+    id: str = Field(default_factory=lambda: new_id("out"))
+    contact_id: str
+    to: str
+    subject: str = Field(min_length=1, max_length=200)
+    body: str = Field(min_length=1, max_length=8000)
+    purpose: Literal["ask", "thank_you", "follow_up", "update", "other"] = "other"
+    status: Literal["draft", "sent", "rejected"] = "draft"
+    drafted_by: str = Field(
+        "user", description="'user', 'agent:<run>', or 'follow-up' (the 7-quiet-days job)."
+    )
+    thread_id: str | None = Field(None, description="The Gmail thread a follow-up continues.")
+    created_at: datetime = Field(default_factory=utcnow)
+    sent_at: datetime | None = None
+    gmail_id: str | None = None
+
+
+class Outreach(_File):
+    drafts: list[OutreachDraft] = Field(default_factory=list)
+
+
 class CalendarLink(_Model):
     event_id: str
     pushed: str = Field(

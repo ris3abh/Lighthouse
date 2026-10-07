@@ -23,6 +23,7 @@ TOOL_FOR: dict[str, str] = {
     "contact.add": "add_contact",
     "contact.update": "update_contact",
     "contact.delete": "delete_contact",
+    "outreach.draft": "draft_email",  # a draft only: sending is yours
     "pipeline_item.undo": "undo_change",  # the page's Undo, for any change it can undo
 }
 
@@ -46,6 +47,9 @@ YOURS: dict[str, str] = {
     "inbox.recheck": "It re-runs the automatic check on the agent's own text.",
     "briefing.recheck": "It re-runs the automatic check on the agent's own text.",
     "onboarding.": "Your own answers about yourself.",
+    "outreach.send": "Sending an email in your name needs your approval, every time (ADR 0014 §5).",
+    "outreach.edit": "Your words before they go out in your name.",
+    "outreach.reject": "Your decision on a draft.",
 }
 
 # Where to send the person for an action that's theirs.

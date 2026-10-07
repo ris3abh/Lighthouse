@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from areao1.criteria.models import OutreachDraft
 from areao1.server.app import create_app
 from areao1.service import in_service
 
@@ -25,7 +26,7 @@ PDF = b"%PDF-1.4 fictional\n"
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
                  "/api/settings/missions", "/api/settings/agent", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
-                 "/api/onboarding", "/api/todos", "/api/contacts")  # fmt: skip
+                 "/api/onboarding", "/api/todos", "/api/contacts", "/api/outreach")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -52,6 +53,9 @@ SYSTEM_ROUTES = {
 # Onboarding lookups run connectors the person approved (like adding a source); their status is saved through
 # the service layer (tests/test_onboarding.py checks it).
 ONBOARDING_LOOKUP = ("POST", "/api/onboarding/lookups/{lookup_id}")
+# Sending mail needs Google, so it has no sample here; the send is saved through the service layer and
+# tests/test_outreach.py checks it.
+OUTREACH_SEND = ("POST", "/api/outreach/{draft_id}/send")
 
 
 @pytest.fixture
@@ -110,7 +114,10 @@ def _ids(ws):
         "briefing": _briefing(ws),
         "finding": _finding(ws),
         "onboarding": _onboarding(ws),
-        "contact": ws.add_contact(name="Dr. Sam Ortiz", emails=["sam@uni.example"]).id,
+        "contact": (con := ws.add_contact(name="Dr. Sam Ortiz", emails=["sam@uni.example"])).id,
+        "draft": ws.put_draft(
+            OutreachDraft(contact_id=con.id, to="sam@uni.example", subject="Hi", body="Hello")
+        ).id,
         "todo": _todo(ws),
     }
 
@@ -211,6 +218,10 @@ SAMPLES = {
     ("POST", "/api/onboarding/goto"): ("/api/onboarding/goto", {"json": {"step": "questions"}}, "onboarding.goto"),
     ("PATCH", "/api/todos/{todo_id}"): ("/api/todos/{todo}", {"json": {"status": "done"}}, "todo.update"),
     ("PUT", "/api/settings/agent"): ("/api/settings/agent", {"json": {"cheap_mode": True}}, "settings.agent"),
+    ("POST", "/api/outreach"): ("/api/outreach", {"json": {"contact_id": "{contact}", "subject": "Thank you",
+                                                         "body": "Thanks for judging with me."}}, "outreach.draft"),
+    ("PATCH", "/api/outreach/{draft_id}"): ("/api/outreach/{draft}", {"json": {"body": "Thank you again."}}, "outreach.edit"),
+    ("POST", "/api/outreach/{draft_id}/reject"): ("/api/outreach/{draft}/reject", {}, "outreach.reject"),
     ("POST", "/api/contacts"): ("/api/contacts", {"json": {"name": "Prof. Lee"}}, "contact.add"),
     ("PATCH", "/api/contacts/{contact_id}"): ("/api/contacts/{contact}", {"json": {"notes": "Met at ICML"}}, "contact.update"),
     ("DELETE", "/api/contacts/{contact_id}"): ("/api/contacts/{contact}", {}, "contact.delete"),
@@ -236,11 +247,11 @@ def _mutating_routes(app) -> set[tuple[str, str]]:
 
 def test_every_page_write_route_is_covered(demo_ws):
     routes = _mutating_routes(create_app(demo_ws, allowed_hosts=["testserver"]))
-    page_routes = {r for r in routes if r[1].startswith(PAGE_PREFIXES)} - {ONBOARDING_LOOKUP}
+    page_routes = {r for r in routes if r[1].startswith(PAGE_PREFIXES)} - {ONBOARDING_LOOKUP, OUTREACH_SEND}
     assert page_routes == set(SAMPLES), (
         "a write route was added or removed: cover it in SAMPLES (and route it through the service layer)"
     )
-    unknown = routes - page_routes - SYSTEM_ROUTES - {ONBOARDING_LOOKUP}
+    unknown = routes - page_routes - SYSTEM_ROUTES - {ONBOARDING_LOOKUP, OUTREACH_SEND}
     assert not unknown, f"unclassified write routes: {sorted(unknown)}"
 
 
@@ -252,8 +263,11 @@ def test_page_writes_only_happen_inside_the_service_layer(route, demo_ws, writes
     for name in setup:  # a route that needs a particular state first
         globals()[name](demo_ws)
     path = path.format(**ids)
-    if "json" in kwargs and isinstance(kwargs["json"].get("id"), str):
-        kwargs = {**kwargs, "json": {**kwargs["json"], "id": kwargs["json"]["id"].format(**ids)}}
+    if "json" in kwargs:  # ids in the body too ({contact}, {onboarding})
+        body = {
+            k: v.format(**ids) if isinstance(v, str) and "{" in v else v for k, v in kwargs["json"].items()
+        }
+        kwargs = {**kwargs, "json": body}
     before = len(demo_ws.changes())
     writes.clear()
     resp = client.request(route[0], path, headers=W, **kwargs)
@@ -302,7 +316,7 @@ def test_api_client_writes_map_to_known_routes(demo_ws):
     api_ts = _web_sources()["web/src/api.ts"]
     calls = re.findall(r'request<[^>]*>\(\s*"(POST|PUT|PATCH|DELETE)",\s*[`"]([^`"]+)[`"]', api_ts, re.S)
     assert calls
-    known = set(SAMPLES) | SYSTEM_ROUTES | {ONBOARDING_LOOKUP}
+    known = set(SAMPLES) | SYSTEM_ROUTES | {ONBOARDING_LOOKUP, OUTREACH_SEND}
 
     def matches(method: str, path: str) -> bool:
         concrete = "/api" + re.sub(r"\$\{[^}]+\}", "X", path)

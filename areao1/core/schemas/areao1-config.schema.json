@@ -372,6 +372,30 @@
       "title": "NotificationsConfig",
       "type": "object"
     },
+    "OutreachConfig": {
+      "additionalProperties": false,
+      "description": "Emails to your contacts (ADR 0014 \u00a75): drafted, approved by you, then sent from your Gmail.",
+      "properties": {
+        "daily_limit": {
+          "default": 10,
+          "description": "Most emails sent per day; checked at approval.",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Daily Limit",
+          "type": "integer"
+        },
+        "follow_up_days": {
+          "default": 7,
+          "description": "Quiet days after your email before a follow-up draft.",
+          "maximum": 60,
+          "minimum": 2,
+          "title": "Follow Up Days",
+          "type": "integer"
+        }
+      },
+      "title": "OutreachConfig",
+      "type": "object"
+    },
     "PrivacyConfig": {
       "additionalProperties": false,
       "properties": {
@@ -440,6 +464,9 @@
     },
     "notifications": {
       "$ref": "#/$defs/NotificationsConfig"
+    },
+    "outreach": {
+      "$ref": "#/$defs/OutreachConfig"
     },
     "overrides": {
       "additionalProperties": {

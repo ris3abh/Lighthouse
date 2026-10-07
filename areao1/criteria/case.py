@@ -17,6 +17,8 @@ from areao1.criteria.models import (
     GmailThreads,
     Letter,
     Letters,
+    Outreach,
+    OutreachDraft,
     Person,
     Profile,
     Scoreboard,
@@ -28,7 +30,7 @@ from areao1.onboarding.models import OnboardingState
 # Case files written on first use; validated when present.
 CASE_OPTIONAL_FILES: dict[str, type[BaseModel]] = {"onboarding.json": OnboardingState, "todos.json": Todos,
                                                    "contacts.json": Contacts, "threads.json": GmailThreads,
-                                                   "google-calendar.json": CalendarSync}  # fmt: skip
+                                                   "google-calendar.json": CalendarSync, "outreach.json": Outreach}  # fmt: skip
 
 DATA_FILES: dict[str, type[BaseModel]] = {
     "person.json": Person,
@@ -53,6 +55,19 @@ class Case(Workspace):
         self._save("onboarding.json", v)
 
     # ------------------------------------------------------------------ contacts (ADR 0014 §4)
+
+    def outreach(self) -> Outreach:
+        return self._load("outreach.json", Outreach)
+
+    def put_draft(self, draft: OutreachDraft) -> OutreachDraft:
+        """Add or replace one draft (by id)."""
+        with self.lock:
+            out = self.outreach()
+            out.drafts = [d for d in out.drafts if d.id != draft.id] + [draft]
+            out.drafts.sort(key=lambda d: d.created_at)
+            self._save("outreach.json", out)
+            self.after_change()
+            return draft
 
     def calendar_sync(self) -> CalendarSync:
         return self._load("google-calendar.json", CalendarSync)

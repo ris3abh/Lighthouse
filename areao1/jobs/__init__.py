@@ -90,9 +90,18 @@ def _vault_watch(ws: Case, scheduled: bool = False) -> list[str]:
 
 
 def _google(ws: Case, scheduled: bool = False) -> list[str]:
-    from areao1.google import calendar, gmail
+    from areao1.google import calendar, gmail, outreach
+    from areao1.service import Service
 
-    return gmail.sync(ws) + calendar.sync(ws)
+    lines = gmail.sync(ws) + calendar.sync(ws)
+    drafts = outreach.follow_ups(ws)  # after quiet days: drafts for you to approve, never sent on their own
+    for d in drafts:
+        Service(ws, actor="follow-up").save_draft(d)
+    if drafts:
+        lines.append(
+            f"{len(drafts)} follow-up draft{'s' if len(drafts) != 1 else ''} waiting for your approval"
+        )
+    return lines
 
 
 JOBS: dict[str, tuple[str, Callable[[Case, bool], list[str]]]] = {
