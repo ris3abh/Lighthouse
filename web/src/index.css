@@ -2,7 +2,8 @@
 @import "@fontsource-variable/archivo/standard.css";
 @import "@fontsource-variable/jetbrains-mono/index.css";
 
-/* Brutalism 2.0 (ADR 0007): semantic tokens, one muted red for attention only. */
+/* Brutalism 2.0 (ADR 0007): semantic tokens on monochrome, plus three status colors used only for status:
+   green = banked, amber = building, red = attention (conflicts, overdue, refused actions). */
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -19,6 +20,11 @@
   --alert-soft: #f3dcd6;
   --on-ink: #f3f1eb;
   --on-alert: #ffffff;
+  --banked: #2f6b3a;
+  --banked-soft: #d4ead7;
+  --building: #855600;
+  --building-soft: #f4e6c8;
+  --on-status: #ffffff;
   color-scheme: light;
 }
 
@@ -35,6 +41,11 @@
   --alert-soft: #3a1d18;
   --on-ink: #0d0d0c;
   --on-alert: #0d0d0c;
+  --banked: #6cc07e;
+  --banked-soft: #17301c;
+  --building: #e3a53c;
+  --building-soft: #36280e;
+  --on-status: #0d0d0c;
   color-scheme: dark;
 }
 
@@ -55,6 +66,11 @@
   --color-alert-soft: var(--alert-soft);
   --color-on-ink: var(--on-ink);
   --color-on-alert: var(--on-alert);
+  --color-banked: var(--banked);
+  --color-banked-soft: var(--banked-soft);
+  --color-building: var(--building);
+  --color-building-soft: var(--building-soft);
+  --color-on-status: var(--on-status);
 
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --animate-rise: rise 320ms var(--ease-out-quint) both;

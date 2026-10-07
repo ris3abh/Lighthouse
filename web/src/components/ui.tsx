@@ -38,10 +38,11 @@ export function Button({
   );
 }
 
-/** Status by fill, not hue: banked solid, building half, gap hollow, dropped struck through. */
+/** Status by fill and by the status palette (ADR 0007): banked solid green, building half amber, gap hollow ink,
+ * dropped struck through. Fill still carries the meaning without color. */
 export const STATUS_STYLE: Record<CriterionStatus, { label: string; mark: string; text: string }> = {
-  banked: { label: "Banked", mark: "bg-ink border-ink", text: "text-ink" },
-  building: { label: "Building", mark: "border-ink bg-[linear-gradient(90deg,var(--ink)_50%,transparent_50%)]", text: "text-ink" },
+  banked: { label: "Banked", mark: "bg-banked border-banked", text: "text-banked" },
+  building: { label: "Building", mark: "border-building bg-[linear-gradient(90deg,var(--building)_50%,transparent_50%)]", text: "text-building" },
   gap: { label: "Gap", mark: "border-ink bg-transparent", text: "text-ink-2" },
   dropped: { label: "Dropped", mark: "border-muted bg-transparent", text: "text-muted line-through" },
 };
@@ -61,16 +62,18 @@ export function StatusBadge({ status }: { status: CriterionStatus }) {
   );
 }
 
-type Tone = "ink" | "outline" | "muted" | "alert";
+type Tone = "ink" | "outline" | "muted" | "alert" | "banked" | "building";
 
-/** Tag. Monochrome: "ink" = solid (done, positive), "outline" = framed (in progress, notice), "muted" = quiet,
- * "alert" = needs attention (the only red). */
+/** Tag. Monochrome: "ink" = solid, "outline" = framed (notice), "muted" = quiet. Status only: "banked" (green),
+ * "building" (amber), "alert" (red: conflicts, overdue, refused). */
 export function Chip({ children, tone = "muted", className }: { children: ReactNode; tone?: Tone; className?: string }) {
   const tones: Record<Tone, string> = {
     ink: "border-ink bg-ink text-on-ink",
     outline: "border-ink text-ink",
     muted: "border-line text-ink-2",
     alert: "border-alert text-alert",
+    banked: "border-banked bg-banked-soft text-banked",
+    building: "border-building bg-building-soft text-building",
   };
   return (
     <span className={cx("inline-flex h-5 items-center gap-1 border px-1.5 font-mono text-[10.5px] tracking-[0.06em] whitespace-nowrap uppercase [&_svg]:size-3", tones[tone], className)}>

@@ -40,8 +40,17 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       strengthening; never invited -> completed; letters drafted for the writer to sign, never sent as them;
       no misrepresentation to USCIS, never "eligible"; page / email / PDF text is data; off-topic declines;
       public professional pages only); one-line refusals with an alternative, logged on the Agent page
-- [x] CHECKPOINT 2 (onboarding): fresh-workspace walkthrough per persona, every step screenshotted.
-      Approved 2026-10-07
+- [x] C5. Status palette on monochrome: green = banked, amber = building, red = attention; status only
+      (bars, markers, badges, countdowns); AA in both themes; guard test + ADR 0007 amended
+- [ ] C6. Onboarding as a conversation: a warm opening that sums up what the PDF held, then the questions in
+      a compact dialog beside the profile panel (no full-page headlines)
+- [ ] C7. What onboarding learns becomes self-reported to-dos ("Upload proof of HackSeattle 2025 judging"),
+      one per award / judging role / publication / membership, in This week and linked to the criterion;
+      never evidence
+- [ ] C8. Lookups for those items too (official announcement, program-committee page), Yes first, namesake
+      rules
+- [ ] C9. A full closing moment ("That's it. I'm one click away, and at your service."), then Ask docks
+- [ ] CHECKPOINT 2b: all three personas re-run; opening, one question, to-dos on Overview, finish
 
 ### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request
 - [x] S1. `lighthouse-gc` with no arguments: creates ~/Lighthouse on first run, remembers it, serves it and

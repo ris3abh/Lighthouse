@@ -1,6 +1,6 @@
 # 0007. Design system: "Brutalism 2.0"
 
-- Status: accepted
+- Status: accepted; amended 2026-10-07 (status palette, decision 2)
 - Date: 2026-10-07
 - Phase: build Part B (B1–B4)
 
@@ -29,17 +29,23 @@ attention, and nothing else should compete for it.
    | `muted` | `#67655f` | `#8f8d87` | labels, hints |
    | `line` | `#d6d3ca` | `#2e2d2a` | interior grid lines |
    | `frame` | `#0b0b0a` | `#4a4945` | panel frames |
-   | `alert` | `#a8372b` | `#e2705f` | the one accent |
-   | `on-ink`, `on-alert` | | | text on solid ink / red blocks |
+   | `alert`, `alert-soft` | `#a8372b`, `#f3dcd6` | `#e2705f`, `#3a1d18` | status: attention (red) |
+   | `building`, `building-soft` | `#855600`, `#f4e6c8` | `#e3a53c`, `#36280e` | status: building (amber) |
+   | `banked`, `banked-soft` | `#2f6b3a`, `#d4ead7` | `#6cc07e`, `#17301c` | status: banked (green) |
+   | `on-ink`, `on-alert`, `on-status` | | | text on solid ink / red / green / amber blocks |
 
-   Every text token meets WCAG AA (4.5:1) on paper, surface and sunken in both themes (tested).
+   Every text token meets WCAG AA (4.5:1) on paper, surface and sunken in both themes, and each status color
+   meets it on its soft badge background and under its `on-` text (tested).
 
    Tailwind's `@theme` maps them to utilities (`bg-paper`, `text-ink`, `border-line`, `text-alert`). Pages
    don't use raw palette colors (zinc, amber, emerald, red), and a test enforces it.
-2. **Monochrome plus one muted red, used only for attention**: conflicts, overdue items, refused actions,
-   errors and stale rules. A positive or negative metric delta is not attention, so both stay ink. Status is
-   shown by fill instead of hue. Banked is solid, building is half-filled, gap is hollow, and dropped is
-   struck through.
+2. **Monochrome plus three status colors, used only for status** (amended 2026-10-07; first accepted as
+   monochrome plus one red). Green means banked, amber means building, and red means attention: conflicts,
+   overdue items, refused actions, errors and stale rules. They appear on scoreboard bars, criterion markers,
+   status badges and deadline countdowns, never as decoration, branding or chart color. A positive or
+   negative metric delta is not status, so both stay ink. Fill still carries the meaning without color:
+   banked is solid, building is half-filled, gap is hollow, and dropped is struck through. A test allows
+   exactly these three hues among the tokens and keeps green and amber inside the status components.
 3. **Structure from lines, not shadows.** Panels are square, framed with a 1px border, and have no shadows.
    Interior grid lines (`line`) separate rows and cells. Primary actions are solid ink blocks. Secondary
    actions are outlined, and ghost actions are text.

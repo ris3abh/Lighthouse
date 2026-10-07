@@ -1,5 +1,6 @@
 """Design system guard (ADR 0007): pages use semantic tokens, never raw palette colors, `dark:` overrides or drop
-shadows, and every token is defined for both themes."""
+shadows, and every token is defined for both themes. Monochrome plus exactly three status colors (green banked,
+amber building, red attention), and green / amber appear only in the status components."""
 
 from __future__ import annotations
 
@@ -27,7 +28,28 @@ TOKENS = (
     "alert-soft",
     "on-ink",
     "on-alert",
+    "banked",
+    "banked-soft",
+    "building",
+    "building-soft",
+    "on-status",
 )
+# The only colored tokens; everything else is a neutral ramp.
+STATUS_TOKENS = {
+    "alert",
+    "alert-soft",
+    "on-alert",
+    "banked",
+    "banked-soft",
+    "building",
+    "building-soft",
+    "on-status",
+}
+# Green and amber mean banked and building, nothing else: only these files may use them.
+STATUS_COLOR = re.compile(
+    r"(?<![\w-])(?:[a-z-]+:)*[a-z]+-(?:banked|building)(?:-soft)?(?![\w-])|var\(--(?:banked|building)"
+)
+STATUS_FILES = {"components/ui.tsx", "pages/Overview.tsx"}
 
 
 def _sources():
@@ -58,10 +80,38 @@ def test_every_token_is_defined_for_light_and_dark():
         assert f"--color-{token}: var(--{token})" in css, token
 
 
-def test_one_accent_reduced_motion_and_theme_choice():
+def _hue(hex_color: str) -> str | None:
+    """None for a neutral (near-gray) color, otherwise "red", "amber" or "green"."""
+    import colorsys
+
+    r, g, b = (int(hex_color[i : i + 2], 16) / 255 for i in (1, 3, 5))
+    if max(r, g, b) - min(r, g, b) < 0.06:  # warm grays (paper, line) are neutral
+        return None
+    h, _, _ = colorsys.rgb_to_hls(r, g, b)
+    deg = h * 360
+    return (
+        "red" if deg < 25 or deg > 335 else "amber" if deg < 55 else "green" if 90 <= deg <= 160 else "other"
+    )
+
+
+def test_monochrome_plus_three_status_colors():
     css = (WEB / "index.css").read_text(encoding="utf-8")
-    hexes = set(re.findall(r"#[0-9a-f]{6}", css[: css.index("@theme")]))
-    assert len(hexes) <= 24  # monochrome ramp plus one red in each theme
+    for selector in (":root {", ".dark {"):
+        start = css.index(selector)
+        tokens = dict(re.findall(r"--([\w-]+):\s*(#[0-9a-f]{6})", css[start : css.index("}", start)]))
+        colored = {name: _hue(value) for name, value in tokens.items() if _hue(value)}
+        assert set(colored) <= STATUS_TOKENS, (selector, colored)
+        assert set(colored.values()) == {"red", "amber", "green"}, (selector, colored)
+        assert {colored[n] for n in ("alert", "alert-soft")} == {"red"}
+        assert {colored[n] for n in ("building", "building-soft")} == {"amber"}
+        assert {colored[n] for n in ("banked", "banked-soft")} == {"green"}
+    stray = [f"{p.relative_to(WEB)}: {m.group(0)}" for p in _sources() if str(p.relative_to(WEB)) not in STATUS_FILES
+             for m in STATUS_COLOR.finditer(p.read_text(encoding="utf-8"))]  # fmt: skip
+    assert stray == []  # green / amber are for status only
+
+
+def test_reduced_motion_and_theme_choice():
+    css = (WEB / "index.css").read_text(encoding="utf-8")
     assert "@media (prefers-reduced-motion: reduce)" in css
     hooks = (WEB / "hooks.ts").read_text(encoding="utf-8")
     assert '"system" | "light" | "dark"' in hooks and "prefers-color-scheme: dark" in hooks
@@ -159,3 +209,8 @@ def test_text_tokens_meet_wcag_aa_in_both_themes():
         assert _contrast(tokens["on-ink"], tokens["ink"]) >= 4.5, selector
         assert _contrast(tokens["on-alert"], tokens["alert"]) >= 4.5, selector
         assert _contrast(tokens["alert"], tokens["alert-soft"]) >= 4.5, selector
+        for status in ("banked", "building"):
+            for bg in ("paper", "surface", "sunken"):
+                assert _contrast(tokens[status], tokens[bg]) >= 4.5, (selector, status, bg)  # status text
+            assert _contrast(tokens[status], tokens[f"{status}-soft"]) >= 4.5, (selector, status)  # badges
+            assert _contrast(tokens["on-status"], tokens[status]) >= 4.5, (selector, status)  # filled

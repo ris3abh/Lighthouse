@@ -25,11 +25,12 @@ function ScoreBar({ banked, building, slots, threshold, target }: { banked: numb
     <div ref={ref} className="relative mt-8 flex gap-1.5" role="img" aria-label={`${banked} of ${target} target criteria banked, ${building} building`}>
       {Array.from({ length: slots }, (_, i) => {
         const fill = i < banked ? 100 : i < banked + building ? 50 : 0;
+        const tone = i < banked ? "bg-banked" : "bg-building";
         return (
           <div key={i} className="relative flex-1">
             <div className="h-3 border border-ink">
               <div
-                className="h-full bg-ink transition-[width] duration-[400ms] ease-out"
+                className={cx("h-full transition-[width] duration-[400ms] ease-out", tone)}
                 style={{ width: seen ? `${fill}%` : 0, transitionDelay: `${i * 60}ms` }}
               />
             </div>
@@ -93,7 +94,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
           className="group flex flex-col justify-between gap-3 border-r border-line p-4 hover:bg-sunken md:p-6 @2xl:border-r-0 @2xl:border-b @5xl:border-r @5xl:border-b-0 @5xl:p-8"
         >
           <p className="eyebrow">Inbox</p>
-          <p className="display text-5xl @2xl:text-7xl @5xl:my-6 @5xl:text-8xl">
+          <p className={cx("display text-5xl @2xl:text-7xl @5xl:my-6 @5xl:text-8xl", daysToFiling !== null && daysToFiling < 0 && "text-alert")}>
             <CountUp value={data.inbox_pending} />
           </p>
           <p className="flex items-center justify-between font-mono text-[11px] text-ink-2 uppercase">
