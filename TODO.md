@@ -66,6 +66,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       fixtures; the adapter for the owner's Claude export (manifest + dated files) and a ChatGPT sample fixture
       wait for the redacted samples
 - [ ] CHECKPOINT 2c: chip input, picker with real match reasons, modal with a highlighted change, both themes
+      Reported 2026-10-07 (d4d9ab1, d0d067a, b5a6dfa, 715deb5, 84a179b, 7af2ff3); waiting for approval and the export samples
 
 ### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request
 - [x] S1. `lighthouse-gc` with no arguments: creates ~/Lighthouse on first run, remembers it, serves it and
