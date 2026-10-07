@@ -35,6 +35,31 @@ def user_config(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def no_real_model(monkeypatch):
+    """Tests never call a real model: the real engine reports itself unavailable, whatever this machine has
+    installed or logged in. Tests that need an agent inject the scripted FakeEngine."""
+    from lighthouse_gc.engine.claude_code import ClaudeAgentEngine
+
+    real = ClaudeAgentEngine.available
+
+    def available(self):
+        if self._query is not None:  # a test injected a scripted query function
+            return real(self)
+        return False, "no real model in tests"
+
+    monkeypatch.setattr(ClaudeAgentEngine, "available", available)
+
+    real_run = ClaudeAgentEngine.run
+
+    async def run(self, *a, **k):
+        if self._query is None:
+            raise AssertionError("a test tried to call a real model")
+        return await real_run(self, *a, **k)
+
+    monkeypatch.setattr(ClaudeAgentEngine, "run", run)
+
+
+@pytest.fixture(autouse=True)
 def fake_keyring(monkeypatch):
     import keyring
 
