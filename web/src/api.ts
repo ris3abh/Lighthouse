@@ -610,12 +610,9 @@ export interface OutreachView {
   daily_limit: number;
   can_send: boolean;
 }
-export interface GoogleStatus {
-  mail: { connected: boolean; email: string | null };
-  client: boolean;
+export interface GmailStatus {
   connected: boolean;
   email: string | null;
-  features: { id: "gmail_read" | "gmail_send" | "calendar"; label: string; granted: boolean }[];
 }
 export interface AiStatus {
   cli: "installed" | "bundled" | "missing";
@@ -712,14 +709,10 @@ export const api = {
   editDraft: (id: string, fields: { subject?: string; body?: string }) => request<OutreachDraftView>("PATCH", `/outreach/${enc(id)}`, fields),
   rejectDraft: (id: string) => request<OutreachDraftView>("POST", `/outreach/${enc(id)}/reject`),
   sendDraft: (id: string) => request<OutreachDraftView>("POST", `/outreach/${enc(id)}/send`),
-  syncCalendar: () => request<{ lines: string[] }>("POST", "/google/calendar/sync"),
-  syncGmail: () => request<{ lines: string[] }>("POST", "/google/gmail/sync"),
-  googleStatus: () => request<GoogleStatus>("GET", "/google"),
-  connectGmail: (email: string, password: string) => request<GoogleStatus>("PUT", "/google/mail", { email, password }),
-  disconnectGmail: () => request<GoogleStatus>("DELETE", "/google/mail"),
-  saveGoogleClient: (client_id: string, client_secret: string) => request<GoogleStatus>("PUT", "/google/client", { client_id, client_secret }),
-  connectGoogle: (features: string[]) => request<{ url: string }>("POST", "/google/connect", { features }),
-  disconnectGoogle: () => request<GoogleStatus>("DELETE", "/google"),
+  syncGmail: () => request<{ lines: string[] }>("POST", "/gmail/sync"),
+  gmailStatus: () => request<GmailStatus>("GET", "/gmail"),
+  connectGmail: (email: string, password: string) => request<GmailStatus>("PUT", "/gmail", { email, password }),
+  disconnectGmail: () => request<GmailStatus>("DELETE", "/gmail"),
   setCheapMode: (on: boolean) => request<AgentStatus>("PUT", "/settings/agent", { cheap_mode: on }),
   saveAiKey: (key: string) => request<AiStatus>("PUT", "/ai/key", { key }),
   forgetAiKey: () => request<AiStatus>("DELETE", "/ai/key"),

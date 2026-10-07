@@ -19,13 +19,11 @@ from collections.abc import AsyncIterator
 from typing import Any, Literal
 
 import anyio
-import httpx
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import (
     FileResponse,
     JSONResponse,
     PlainTextResponse,
-    RedirectResponse,
     Response,
     StreamingResponse,
 )
@@ -161,15 +159,6 @@ class GmailPasswordBody(BaseModel):
     password: str = Field(min_length=1, max_length=64)
 
 
-class GoogleClientBody(BaseModel):
-    client_id: str = Field(min_length=1, max_length=300)
-    client_secret: str = Field(min_length=1, max_length=300)
-
-
-class GoogleConnectBody(BaseModel):
-    features: list[str] = Field(min_length=1)
-
-
 class AgentSettingsBody(BaseModel):
     cheap_mode: bool
 
@@ -230,6 +219,9 @@ def pipeline_view(ws: Case) -> list[dict[str, Any]]:
 def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine | None = None) -> FastAPI:
     app = FastAPI(title="Area O1", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json")
     svc = Service(ws)  # every user-initiated write goes through the service layer
+    from areao1.google import forget_oauth
+
+    forget_oauth()  # a Google sign-in from before Gmail-only leaves the keychain (ADR 0014, amendment)
     runner = AgentRunner(ws, engine=engine)
     from areao1.onboarding.api import mount as mount_onboarding
 
@@ -915,96 +907,39 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     def agent_status() -> dict[str, Any]:
         return runner.status()
 
-    # ------------------------------------------------------------------ Google (ADR 0014 §1)
+    # ------------------------------------------------------------------ Gmail (ADR 0014 and its amendment)
 
-    @app.get("/api/google")
-    def google_status() -> dict[str, Any]:
-        from areao1.google import auth
+    @app.get("/api/gmail")
+    def gmail_status() -> dict[str, Any]:
+        from areao1.google import mail
 
-        return auth.status()
+        return mail.status()
 
-    @app.put("/api/google/mail")
+    @app.put("/api/gmail")
     def gmail_connect(body: GmailPasswordBody) -> dict[str, Any]:
-        """Gmail with an app password: one test login, then the keychain only (ADR 0014, amendment)."""
-        from areao1.google import auth, mail
+        """Gmail with an app password: one test login, then the keychain only."""
+        from areao1.google import mail
 
         try:
-            mail.connect(body.email, body.password)
+            return mail.connect(body.email, body.password)
         except mail.MailError as exc:
             raise HTTPException(400, str(exc)) from exc
-        return auth.status()
 
-    @app.delete("/api/google/mail")
+    @app.delete("/api/gmail")
     def gmail_disconnect() -> dict[str, Any]:
-        from areao1.google import auth, mail
+        from areao1.google import mail
 
-        mail.disconnect()
-        return auth.status()
+        return mail.disconnect()
 
-    @app.put("/api/google/client")
-    def google_client(body: GoogleClientBody) -> dict[str, Any]:
-        """Your own Desktop OAuth client; its secret goes to the keychain only."""
-        from areao1.google import auth
-
-        try:
-            auth.save_client(body.client_id, body.client_secret)
-        except auth.GoogleError as exc:
-            raise HTTPException(400, str(exc)) from exc
-        return auth.status()
-
-    @app.post("/api/google/connect")
-    def google_connect(body: GoogleConnectBody, request: Request) -> dict[str, Any]:
-        """The Google sign-in URL for the features you picked (only their scopes)."""
-        from areao1.google import auth
-
-        redirect = f"http://127.0.0.1:{request.url.port or 80}/api/google/callback"
-        try:
-            return {"url": auth.begin(body.features, redirect)}
-        except auth.GoogleError as exc:
-            raise HTTPException(400, str(exc)) from exc
-
-    @app.get("/api/google/callback")
-    def google_callback(state: str = "", code: str = "", error: str = "") -> RedirectResponse:
-        """Google sends the browser back here; the state ties it to a sign-in started on this computer."""
-        from urllib.parse import quote
-
-        from areao1.google import auth
-
-        if error or not code:
-            return RedirectResponse(
-                f"/#/settings?google=error&why={quote(error or 'cancelled')}", status_code=303
-            )
-        try:
-            auth.finish(code, state)
-        except auth.GoogleError as exc:
-            return RedirectResponse(f"/#/settings?google=error&why={quote(str(exc)[:160])}", status_code=303)
-        return RedirectResponse("/#/settings?google=connected", status_code=303)
-
-    @app.post("/api/google/gmail/sync")
-    def google_gmail_sync() -> dict[str, Any]:
+    @app.post("/api/gmail/sync")
+    def gmail_sync() -> dict[str, Any]:
         """Refresh the threads with your contacts now (the google job does it every 15 minutes)."""
-        from areao1.google import auth, gmail, mail
+        from areao1.google import gmail, mail
 
         try:
             return {"lines": gmail.sync(ws)}
-        except (auth.GoogleError, mail.MailError, httpx.HTTPError) as exc:
-            raise HTTPException(502, f"Gmail didn't answer: {exc}") from exc
-
-    @app.post("/api/google/calendar/sync")
-    def google_calendar_sync() -> dict[str, Any]:
-        """Sync deadlines with the Area O1 calendar now (the google job does it every 15 minutes)."""
-        from areao1.google import auth, calendar
-
-        try:
-            return {"lines": calendar.sync(ws)}
-        except (auth.GoogleError, httpx.HTTPError) as exc:
-            raise HTTPException(502, f"Google Calendar didn't answer: {exc}") from exc
-
-    @app.delete("/api/google")
-    def google_disconnect() -> dict[str, Any]:
-        from areao1.google import auth
-
-        return auth.disconnect()
+        except mail.MailError as exc:
+            raise HTTPException(502, str(exc)) from exc
 
     @app.get("/api/ai")
     def ai_status() -> dict[str, Any]:

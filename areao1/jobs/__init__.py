@@ -90,10 +90,10 @@ def _vault_watch(ws: Case, scheduled: bool = False) -> list[str]:
 
 
 def _google(ws: Case, scheduled: bool = False) -> list[str]:
-    from areao1.google import calendar, gmail, outreach
+    from areao1.google import gmail, outreach
     from areao1.service import Service
 
-    lines = gmail.sync(ws) + calendar.sync(ws)
+    lines = gmail.sync(ws)
     drafts = outreach.follow_ups(ws)  # after quiet days: drafts for you to approve, never sent on their own
     for d in drafts:
         Service(ws, actor="follow-up").save_draft(d)
@@ -123,7 +123,7 @@ JOBS: dict[str, tuple[str, Callable[[Case, bool], list[str]]]] = {
         _mission("what_changed"),
     ),
     "google": (
-        "Gmail threads with your contacts, follow-ups and the calendar (skips what isn't connected)",
+        "Gmail threads with your contacts and follow-up drafts (skips until Gmail is connected)",
         _google,
     ),
 }

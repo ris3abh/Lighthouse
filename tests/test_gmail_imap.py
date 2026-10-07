@@ -5,17 +5,14 @@ mail_fakes.py; nothing leaves."""
 
 from __future__ import annotations
 
-import json
-import time
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 from mail_fakes import FakeGmail
 
-from areao1.core.secrets import set_secret
 from areao1.criteria.models import GmailThread, GmailThreads
-from areao1.google import auth, gmail, mail, outreach
+from areao1.google import gmail, mail, outreach
 from areao1.server.app import create_app
 from areao1.service import Service
 
@@ -77,17 +74,6 @@ def test_reads_only_headers_of_threads_with_contacts(ws, people, fake):
     assert fetch[2] == "1,2,3" and "BODY.PEEK[HEADER.FIELDS (FROM TO CC SUBJECT DATE MESSAGE-ID)]" in fetch[3]
     assert "body must never" not in ws.root.joinpath("data", "threads.json").read_text()
     assert {c.id: c.last_touch for c in ws.contacts().contacts}[omar.id] == date(2026, 10, 5)
-
-
-def test_the_app_password_wins_over_an_older_oauth_sign_in(ws, people, fake, http_mock):
-    set_secret(
-        auth.CLIENT_REF, json.dumps({"client_id": "x.apps.googleusercontent.com", "client_secret": "s"})
-    )
-    set_secret(auth.TOKEN_REF, json.dumps({"refresh_token": "r", "access_token": "t", "expires_at": time.time() + 600,
-                                           "scope": auth.SCOPES["gmail_read"]}))  # fmt: skip
-    api = http_mock.route(host="gmail.googleapis.com").respond(200, json={})
-    gmail.sync(ws)
-    assert not api.called and fake.commands
 
 
 def test_nothing_without_a_connection(ws, people):

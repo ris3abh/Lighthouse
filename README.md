@@ -62,7 +62,7 @@ in a **private workspace directory** on your machine (its own Git repo); this re
 | Works today | Coming next (Phase 1+) |
 |---|---|
 | Drag-and-drop evidence into the Inbox; read-only MCP server for agents | Letter drafting (agent) |
-| Notifications, scheduler, deadline alerts, weekly digest | Google Calendar push |
+| Notifications, scheduler, deadline alerts, weekly digest | |
 | Calendar (+ `.ics` feed), Pipeline kanban, Letters roster | |
 | Claude / ChatGPT export import → deadline, pipeline and letter-writer suggestions | LLM-assisted extraction |
 | `init`, `import`, `run <job>`, `up`, `validate`, `notify`, `secret`, `mcp` | `export`, `purge` |
@@ -202,13 +202,13 @@ Store secrets in the keychain, never in the file: `areao1 secret set notify:slac
 
 Deadlines and pipeline follow-ups are written to `data/calendar.ics` on every change. To subscribe from
 Apple Calendar, Outlook or Thunderbird on the same machine, use `webcal://127.0.0.1:7777/calendar.ics` while
-`areao1 up` is running, or import the file. Google Calendar can't reach your laptop's localhost; for it,
-use the optional two-way sync in Settings > Google > Advanced ([docs/google.md](docs/google.md)).
+`areao1 up` is running, or import the file. Google Calendar can't reach your laptop's localhost, so
+import the `.ics` there.
 
 ### Gmail
 
-Connect Gmail with an app password (Settings > Google, no Google Cloud project): Area O1 reads only the headers
-of threads with your contacts and sends only drafts you approve. See [docs/google.md](docs/google.md).
+Connect Gmail with an app password (Settings > Gmail): Area O1 reads only the headers of threads with your
+contacts and sends only drafts you approve. See [docs/gmail.md](docs/gmail.md).
 
 ### Use it from Claude Code (or any MCP client)
 

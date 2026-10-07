@@ -3,31 +3,26 @@ case contact, within the daily limit; follow-ups after quiet days are drafts too
 
 from __future__ import annotations
 
-import base64
-import email
-import json
-import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from agent_fakes import FakeEngine
 from fastapi.testclient import TestClient
+from mail_fakes import FakeGmail
 
-from areao1.core.secrets import set_secret
 from areao1.criteria.models import GmailThread, GmailThreads
-from areao1.google import auth, outreach
+from areao1.google import mail, outreach
 from areao1.server.app import create_app
 from areao1.service import Service
 
 W = {"X-AreaO1": "1"}
 
 
-def _connect(*features):
-    set_secret(
-        auth.CLIENT_REF, json.dumps({"client_id": "x.apps.googleusercontent.com", "client_secret": "s"})
-    )
-    set_secret(auth.TOKEN_REF, json.dumps({"refresh_token": "r", "access_token": "ya29.t", "expires_at": time.time() + 600,
-                                           "scope": " ".join(auth.SCOPES[f] for f in features), "email": "alex@example.com"}))  # fmt: skip
+@pytest.fixture
+def gm(monkeypatch):
+    g = FakeGmail(email="alex@example.com").install(monkeypatch)
+    mail.connect(g.email, g.password)
+    return g
 
 
 @pytest.fixture
@@ -43,9 +38,7 @@ def _draft(c, contact_id, body="Could you confirm my judging at MLH Fall in writ
     return r.json()
 
 
-def test_the_agent_drafts_and_nothing_is_sent(ws, omar, http_mock):
-    _connect("gmail_send")
-    send = http_mock.post(outreach.SEND_URL).respond(json={"id": "m1"})
+def test_the_agent_drafts_and_nothing_is_sent(ws, omar, gm):
     script = [("tool", "draft_email", {"contact_id": omar.id, "subject": "Thank you", "purpose": "thank_you",
                                        "body": "Thanks for having me as a judge at MLH Fall."}), ("text", "Drafted.")]  # fmt: skip
     engine = FakeEngine(script)
@@ -58,19 +51,16 @@ def test_the_agent_drafts_and_nothing_is_sent(ws, omar, http_mock):
                 break
     [d] = ws.outreach().drafts
     assert d.status == "draft" and d.to == "omar@mlh.example" and d.drafted_by.startswith("agent:")
-    assert not send.called
+    assert not gm.sent
     assert not [t for t in engine.tool_names if "send" in t]  # no tool can send
 
 
-def test_your_approval_sends_it_from_your_gmail(ws, omar, http_mock):
-    _connect("gmail_send")
-    send = http_mock.post(outreach.SEND_URL).respond(json={"id": "m1", "threadId": "th1"})
+def test_your_approval_sends_it_from_your_gmail(ws, omar, gm):
     c = TestClient(create_app(ws, allowed_hosts=["testserver"]))
     d = _draft(c, omar.id)
     out = c.post(f"/api/outreach/{d['id']}/send", headers=W).json()
-    assert out["status"] == "sent" and out["gmail_id"] == "m1" and out["thread_id"] == "th1"
-    raw = json.loads(send.calls.last.request.content)["raw"]
-    msg = email.message_from_bytes(base64.urlsafe_b64decode(raw))
+    [msg] = gm.sent
+    assert out["status"] == "sent" and out["gmail_id"] == msg["Message-ID"]
     assert (
         msg["To"] == "omar@mlh.example"
         and msg["Subject"] == "MLH judging"
@@ -83,9 +73,7 @@ def test_your_approval_sends_it_from_your_gmail(ws, omar, http_mock):
     )  # sent: final
 
 
-def test_case_contacts_only(ws, omar, http_mock):
-    _connect("gmail_send")
-    send = http_mock.post(outreach.SEND_URL).respond(json={"id": "m1"})
+def test_case_contacts_only(ws, omar, gm):
     c = TestClient(create_app(ws, allowed_hosts=["testserver"]))
     r = c.post(
         "/api/outreach", headers=W, json={"contact_id": "con_nobody", "subject": "Hi", "body": "Hello"}
@@ -94,23 +82,22 @@ def test_case_contacts_only(ws, omar, http_mock):
     d = _draft(c, omar.id)
     Service(ws).update_contact(omar.id, emails=["omar@new.example"])  # the address changed after drafting
     r = c.post(f"/api/outreach/{d['id']}/send", headers=W)
-    assert r.status_code >= 400 and "case contacts only" in r.json()["detail"] and not send.called
+    assert r.status_code >= 400 and "case contacts only" in r.json()["detail"] and not gm.sent
 
 
-def test_the_daily_limit_and_the_send_permission(ws, omar, http_mock):
+def test_the_daily_limit_and_the_send_permission(ws, omar, monkeypatch):
     c = TestClient(create_app(ws, allowed_hosts=["testserver"]))
     d1, d2 = _draft(c, omar.id), _draft(c, omar.id)
-    _connect("gmail_read")  # reading, but not sending
-    send = http_mock.post(outreach.SEND_URL).respond(json={"id": "m1"})
+    gm = FakeGmail().install(monkeypatch)  # Gmail not connected yet
     r = c.post(f"/api/outreach/{d1['id']}/send", headers=W)
-    assert r.status_code >= 400 and "connect Gmail" in r.json()["detail"] and not send.called
-    _connect("gmail_send")
+    assert r.status_code >= 400 and "connect Gmail" in r.json()["detail"] and not gm.sent
+    mail.connect(gm.email, gm.password)
     cfg = ws.config()
     cfg.outreach.daily_limit = 1
     ws.save_config(cfg)
     assert c.post(f"/api/outreach/{d1['id']}/send", headers=W).status_code == 200
     r = c.post(f"/api/outreach/{d2['id']}/send", headers=W)
-    assert r.status_code >= 400 and "limit of 1" in r.json()["detail"] and send.call_count == 1
+    assert r.status_code >= 400 and "limit of 1" in r.json()["detail"] and len(gm.sent) == 1
 
 
 def test_edit_and_reject_are_yours_and_agents_cant_send(ws, omar):
@@ -128,7 +115,7 @@ def test_edit_and_reject_are_yours_and_agents_cant_send(ws, omar):
     assert c.post(f"/api/outreach/{d['id']}/reject", headers=W).json()["status"] == "rejected"
 
 
-def test_follow_ups_after_quiet_days_are_drafts_once(ws, omar, http_mock):
+def test_follow_ups_after_quiet_days_are_drafts_once(ws, omar):
     priya = ws.add_contact(name="Dr. Priya Natarajan", emails=["priya@lakeshore.example"])
     now = datetime.now(UTC)
     ws.save_threads(GmailThreads(threads=[
@@ -138,14 +125,13 @@ def test_follow_ups_after_quiet_days_are_drafts_once(ws, omar, http_mock):
     ]))  # fmt: skip
     from areao1.jobs import JOBS
 
-    _connect("gmail_send")  # Gmail reading off: the job only drafts from threads already here
-    send = http_mock.post(outreach.SEND_URL).respond(json={"id": "m1"})
+    # Gmail not connected: the job only drafts from threads already here, and can't send anything
     lines = JOBS["google"][1](ws, True)
     [d] = ws.outreach().drafts
     assert (
         d.thread_id == "t_quiet" and d.drafted_by == "follow-up" and d.status == "draft" and "Omar" in d.body
     )
-    assert any("waiting for your approval" in line for line in lines) and not send.called
+    assert any("waiting for your approval" in line for line in lines)
     JOBS["google"][1](ws, True)
     assert len(ws.outreach().drafts) == 1  # once per thread
 

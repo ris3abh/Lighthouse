@@ -331,14 +331,14 @@ class Service:
                             lambda: self.ws.put_draft(before.model_copy(update={"status": "rejected"})),
                             before=before, summary=f"to {before.to}: {before.subject}")  # fmt: skip
 
-    def send_draft(self, draft_id: str, client: Any = None) -> Any:
+    def send_draft(self, draft_id: str) -> Any:
         """Your approval: send it from your Gmail, then record it as sent. Agents and autopilot can't."""
         if self.auto or self.actor != "user":
             raise WorkspaceError("only you can approve and send an email")
         from areao1.google import outreach
 
         before = self._draft(draft_id)
-        sent = outreach.send(self.ws, before, client)
+        sent = outreach.send(self.ws, before)
         after = before.model_copy(update={"status": "sent", "sent_at": clock.utcnow(), "gmail_id": sent.get("id"),
                                           "thread_id": sent.get("threadId") or before.thread_id})  # fmt: skip
         return self._record("outreach.send", "outreach", lambda: self.ws.put_draft(after), before=before,

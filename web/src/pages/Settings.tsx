@@ -4,7 +4,6 @@ import { api } from "../api";
 import { useRefresh } from "../App";
 import ConnectAI from "../components/ConnectAI";
 import GmailConnect from "../components/GmailConnect";
-import GoogleConnect from "../components/GoogleConnect";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 
@@ -82,12 +81,10 @@ export default function Settings() {
         <CheapMode />
       </Card>
 
-      <Card title="Google" className="mb-8">
-        <div className="border-b border-line p-6">
-          <h3 className="eyebrow mb-3">Connect Gmail</h3>
+      <Card title="Gmail" className="mb-8">
+        <div className="p-6">
           <GmailConnect />
         </div>
-        <GoogleConnect />
       </Card>
 
       <Card title="Notification channels" className="mb-8" actions={

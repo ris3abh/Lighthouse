@@ -199,22 +199,6 @@ class Outreach(_File):
     drafts: list[OutreachDraft] = Field(default_factory=list)
 
 
-class CalendarLink(_Model):
-    event_id: str
-    pushed: str = Field(
-        description="What the event held when last synced (title|due), to spot either side's edits."
-    )
-    synced_at: datetime
-
-
-class CalendarSync(_File):
-    """The dedicated Google calendar's sync state (ADR 0014 §3): which event holds which deadline."""
-
-    calendar_id: str | None = None
-    sync_token: str | None = None
-    links: dict[str, CalendarLink] = Field(default_factory=dict, description="deadline id -> its event")
-
-
 class GmailThreads(_File):
     threads: list[GmailThread] = Field(default_factory=list)
     synced_at: datetime | None = None

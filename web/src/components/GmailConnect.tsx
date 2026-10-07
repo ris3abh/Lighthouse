@@ -1,24 +1,24 @@
 import { Check, ExternalLink, LogOut, Mail, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-import { api, type GoogleStatus } from "../api";
+import { api, type GmailStatus } from "../api";
 import { Button, Chip, useToast } from "./ui";
 
 export const APP_PASSWORDS = "https://myaccount.google.com/apppasswords";
 
 /** Connect Gmail with an app password (ADR 0014, amendment): no Google Cloud project. Shared by onboarding (with
- * `onDone`) and Settings > Google. */
+ * `onDone`) and Settings > Gmail. */
 export default function GmailConnect({ onDone, busy }: { onDone?: () => void; busy?: boolean }) {
   const toast = useToast();
-  const [s, setS] = useState<GoogleStatus | null>(null);
+  const [s, setS] = useState<GmailStatus | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
-    api.googleStatus().then(setS, () => setS(null));
+    api.gmailStatus().then(setS, () => setS(null));
   }, []);
   if (!s) return null;
-  const mail = s.mail;
+  const mail = s;
 
   const connect = async () => {
     setSaving(true);
@@ -131,7 +131,7 @@ export default function GmailConnect({ onDone, busy }: { onDone?: () => void; bu
         </p>
       )}
       <p className="font-mono text-[10.5px] leading-relaxed text-muted uppercase">
-        No Google Cloud project · password in your keychain · reads only headers of threads with your case contacts · sends
+        Password in your keychain · reads only headers of threads with your case contacts · sends
         only what you approve, up to 10 a day
       </p>
     </div>

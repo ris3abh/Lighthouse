@@ -123,28 +123,29 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       banter only where listed, rules enforced by tests/test_banter.py and checked in Chrome (d15c9df, d71bfc2)
 
 ### Part E: Google, CRM, outreach (ADR 0014)
-- [x] E1. Google sign-in with the user's own OAuth client, narrowest scopes, production-mode docs, keychain
-      (areao1/google/auth.py: PKCE, loopback redirect, scopes per feature; Settings > Google; docs/google.md)
+- [x] E1. Google sign-in with the user's own OAuth client (built, then removed by the ADR 0014 amendment:
+      Gmail connects with an app password instead; see E6)
 - [x] E2. Gmail read: threads with case contacts linked to the CRM; nothing else stored (headers only,
       one redacted line per thread, last touch follows the newest thread; the google job every 15 minutes)
-- [x] E3. Two-way sync with a dedicated "Area O1" Google calendar (latest edit wins, logged, undoable)
-      (areao1/google/calendar.py with sync tokens; ties to the second go to the edit made here)
+- [x] E3. Two-way sync with a dedicated "Area O1" Google calendar (built, then dropped by the ADR 0014
+      amendment; the local Calendar page and calendar.ics stay)
 - [x] E4. CRM page: people, relationship, threads, asks, last touch, next follow-up; linked to Letters/Pipeline
       (Contacts page; data/contacts.json via the service layer, undoable; letter writers appear until added;
       chat tools list/add/update/delete_contact)
 - [x] E5. Outreach: agent drafts, user approves / edits / rejects, sends from Gmail; proactive follow-ups
       after 7 quiet days (same approval); daily send limits; case contacts only (draft_email tool; approval on
       the Contacts page; only the person can send, gmail.send; follow-ups are a short template to edit)
-- [x] E6. Gmail with an app password by default (ADR 0014 amendment): Connect Gmail with address + 16-letter
-      app password (test login, keychain, plain errors); IMAP headers only / SMTP for approved sends; the OAuth
-      client only under "Advanced: also sync Google Calendar"; optional Email step in onboarding
+- [x] E6. Google is Gmail only, with an app password (ADR 0014 amendment): Settings > Gmail takes the address +
+      16-letter app password (test login, keychain, plain errors); IMAP headers only / SMTP for approved sends;
+      OAuth client flow and Google Calendar sync removed (an old sign-in leaves the keychain on start); optional
+      Email step in onboarding; docs/gmail.md
 - [ ] E6 live check: the owner connects with their own app password; Refresh threads; one approved send to
       their second address
-- [ ] CHECKPOINT 4 (Google): OAuth client instructions first; sign-in, calendar sync both ways, one draft
-      Reported 2026-10-07 (built and tested with mocked Google); the live run waits for the owner's OAuth client
+- [ ] CHECKPOINT 4 (Gmail): connect with an app password, Refresh threads, one approved send
+      Reported 2026-10-07 (built and tested with fake IMAP / SMTP); the live run waits for the owner's app password
 
 ### Part F: daily opportunity job
-- [ ] F1. Off-by-default 24h job over Gmail + the Area O1 calendar (judging / reviewer / call invites)
+- [ ] F1. Off-by-default 24h job over Gmail (IMAP, app password) for judging / reviewer / call invites
 - [ ] F2. Verification: email auth + sender domain matches the org's site; event confirmed on its official
       page (or Devpost / MLH) with matching dates; else a confirmation reply draft (approve-tap), "unconfirmed"
 - [ ] F3. Inbox items at stage "invited" with verified / unconfirmed badge + push; phishing fixtures never

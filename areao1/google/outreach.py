@@ -1,25 +1,19 @@
 """Outreach (ADR 0014 §5): emails to your contacts, drafted by you, the agent or the follow-up job, and sent from
-your Gmail only when you approve them: over SMTP with your app password (the default), or through Gmail's API with
-an OAuth sign-in made before that. Case contacts only, a daily send limit, and the same guardrails as other text
-the agent writes for your case. ``client`` is injectable so tests never reach Google."""
+your Gmail over SMTP with your app password, only when you approve them. Case contacts only, a daily send limit,
+and the same guardrails as other text the agent writes for your case."""
 
 from __future__ import annotations
 
-import base64
 from email.message import EmailMessage
 from email.utils import make_msgid
 from typing import Any
-
-import httpx
 
 from areao1.agent.guardrails import guard_answer
 from areao1.core import clock
 from areao1.core.workspace import WorkspaceError
 from areao1.criteria.case import Case
 from areao1.criteria.models import OutreachDraft
-from areao1.google import auth, mail
-
-SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+from areao1.google import mail
 
 
 def compose(ws: Case, contact_id: str, subject: str, body: str, purpose: str = "other", drafted_by: str = "user",
@@ -45,7 +39,7 @@ def compose(ws: Case, contact_id: str, subject: str, body: str, purpose: str = "
 
 
 def can_send() -> bool:
-    return mail.connected() or auth.granted("gmail_send")
+    return mail.connected()
 
 
 def sent_today(ws: Case) -> int:
@@ -57,8 +51,8 @@ def sent_today(ws: Case) -> int:
     )
 
 
-def send(ws: Case, draft: OutreachDraft, client: httpx.Client | None = None) -> dict[str, Any]:
-    """Send an approved draft from your Gmail. Returns Gmail's message (id, threadId)."""
+def send(ws: Case, draft: OutreachDraft) -> dict[str, Any]:
+    """Send an approved draft from your Gmail over SMTP. Returns its Message-ID and thread."""
     if draft.status != "draft":
         raise WorkspaceError(f"this email is already {draft.status}")
     contact = next((c for c in ws.contacts().contacts if c.id == draft.contact_id), None)
@@ -67,14 +61,13 @@ def send(ws: Case, draft: OutreachDraft, client: httpx.Client | None = None) -> 
             "outreach goes to case contacts only: this address isn't on the contact any more"
         )
     if not can_send():
-        raise WorkspaceError("Sending isn't connected: connect Gmail in Settings > Google")
+        raise WorkspaceError("Sending isn't connected: connect Gmail in Settings > Gmail")
     limit = ws.config().outreach.daily_limit
     if sent_today(ws) >= limit:
         raise WorkspaceError(
             f"today's limit of {limit} emails is reached; it resets tomorrow (Settings: outreach.daily_limit)"
         )
-    by_password = mail.connected()
-    me = mail.address() if by_password else (auth.token() or {}).get("email")
+    me = mail.address()
     msg = EmailMessage()
     msg["To"] = draft.to
     if me:
@@ -88,26 +81,11 @@ def send(ws: Case, draft: OutreachDraft, client: httpx.Client | None = None) -> 
         msg["In-Reply-To"] = thread.last_message_id
         msg["References"] = thread.last_message_id
     msg.set_content(draft.body)
-    if by_password:
-        try:
-            mail.send(msg)
-        except mail.MailError as exc:
-            raise WorkspaceError(f"Gmail didn't send it: {exc} It's still a draft.") from exc
-        return {"id": msg["Message-ID"], "threadId": draft.thread_id}
-    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
-    payload: dict[str, Any] = {"raw": raw}
-    if draft.thread_id:
-        payload["threadId"] = draft.thread_id
-    own = client is None
-    c = client or httpx.Client(timeout=30)
     try:
-        r = c.post(SEND_URL, json=payload, headers={"Authorization": f"Bearer {auth.access_token(c)}"})
-    finally:
-        if own:
-            c.close()
-    if r.status_code != 200:
-        raise WorkspaceError(f"Gmail didn't send it ({r.status_code}); it's still a draft")
-    return dict(r.json())
+        mail.send(msg)
+    except mail.MailError as exc:
+        raise WorkspaceError(f"Gmail didn't send it: {exc} It's still a draft.") from exc
+    return {"id": msg["Message-ID"], "threadId": draft.thread_id}
 
 
 FOLLOW_UP = """Hi {first},

@@ -1,7 +1,7 @@
-# Connecting Google
+# Connecting Gmail
 
-Email needs only an **app password**: no Google Cloud project, no consent screen, no test users (ADR 0014 and
-its amendment). Two-way Google Calendar sync is optional and is the only part that needs your own Google client.
+Area O1 connects to Gmail with an **app password**, the way mail apps do (ADR 0014 and its amendment). Gmail is
+the only Google service it uses.
 
 ## 1. Connect Gmail (about two minutes)
 
@@ -10,7 +10,7 @@ its amendment). Two-way Google Calendar sync is optional and is the only part th
    yet. Google offers app passwords only with it on.
 2. Create an **app password** at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
    Name it "Area O1". Google shows 16 letters, once.
-3. In Area O1: **Settings > Google > Connect Gmail** (or the Email step of onboarding), paste your Gmail address
+3. In Area O1: **Settings > Gmail** (or the Email step of onboarding), paste your Gmail address
    and the app password, and press **Connect Gmail**.
 
 Area O1 checks the password with one sign-in to `imap.gmail.com` and keeps it in your OS keychain, never in your
@@ -43,37 +43,14 @@ limits are Area O1's own rules, each covered by tests:
 
 ## 3. Turning it off
 
-**Settings > Google > Disconnect** forgets the app password on this computer. Google has no way for an app to
+**Settings > Gmail > Disconnect** forgets the app password on this computer. Google has no way for an app to
 revoke an app password, so also remove it at
 [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
 
-## 4. Advanced: also sync Google Calendar
+## 4. Calendars
 
-Without this, your deadlines live on the **Calendar** page and in `data/calendar.ics`. Calendar apps on this
-computer (Apple Calendar, Outlook, Thunderbird) can follow them one way with the **Subscribe link**
-(`webcal://127.0.0.1:<port>/calendar.ics`). Google Calendar fetches subscriptions from Google's servers, which
-can't reach your computer, so to see deadlines there you need two-way sync with your own Google client:
-
-1. Open [console.cloud.google.com](https://console.cloud.google.com/) and create a project, for example
-   "Area O1 (personal)".
-2. **APIs & Services > Library**: enable the **Google Calendar API**.
-3. **OAuth consent screen**: choose **External**, name the app "Area O1 (personal)", use your own email for the
-   support and developer contacts, and add yourself under **Test users**.
-4. **Credentials > Create credentials > OAuth client ID**, application type **Desktop app**. Copy the client ID
-   and the client secret.
-5. In Area O1: **Settings > Google > Advanced: also sync Google Calendar**, paste both, tick the calendar and
-   press **Connect Google Calendar**.
-
-Area O1 asks only for `calendar.app.created`: it creates one calendar named "Area O1" and syncs your deadlines
-with it, both ways. Your other calendars stay invisible to it. The latest edit wins, and every change from Google
-is logged and can be undone.
-
-**Testing vs. production.** While your consent screen is in **Testing**, Google's refresh tokens expire after
-7 days, so you'd connect again every week. To stop that, choose **OAuth consent screen > Publish app >
-In production**. You don't need Google's verification for a client only you use; when you sign in you'll see
-"Google hasn't verified this app", which is expected. Choose **Advanced > Go to Area O1 (personal)**.
-
-**Disconnect** in that section revokes the calendar access with Google and deletes the token from your keychain.
-
-A Gmail connection made through this client before app passwords were the default keeps working. When both
-exist, Area O1 uses the app password for mail.
+Area O1 doesn't sync with Google Calendar. Your deadlines live on the **Calendar** page and in
+`data/calendar.ics`. Calendar apps on this computer (Apple Calendar, Outlook, Thunderbird) can follow them with
+the **Subscribe link** (`webcal://127.0.0.1:<port>/calendar.ics`). Google Calendar can't reach your computer,
+so import the file there instead (Google Calendar > Settings > Import & export); re-import it when deadlines
+change.

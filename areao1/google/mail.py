@@ -137,7 +137,7 @@ def session() -> Iterator[Any]:
     """A logged-in IMAP connection with the saved app password."""
     a = account()
     if a is None:
-        raise MailError("Gmail isn't connected (Settings > Google > Connect Gmail).")
+        raise MailError("Gmail isn't connected (Settings > Gmail).")
     with _imap(a["email"], a["password"]) as conn:
         yield conn
 
@@ -208,7 +208,7 @@ def send(msg: Any) -> None:
     """Send one message you approved, from your Gmail (Gmail files it under Sent)."""
     a = account()
     if a is None:
-        raise MailError("Gmail isn't connected (Settings > Google > Connect Gmail).")
+        raise MailError("Gmail isn't connected (Settings > Gmail).")
     try:
         with SMTP(SMTP_HOST, 465, timeout=TIMEOUT) as conn:
             conn.login(a["email"], a["password"])

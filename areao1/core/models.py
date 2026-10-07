@@ -504,7 +504,7 @@ DEFAULT_SCHEDULES: dict[str, str] = {
     "mission-opportunity-scout": "0 9 * * fri",
     "mission-what-changed": "0 7 * * *",
     "vault-watch": "0 6 * * *",
-    "google": "*/15 * * * *",  # Gmail threads with contacts and the calendar; skips (no network) until connected
+    "google": "*/15 * * * *",  # Gmail threads with contacts and follow-ups; skips (no network) until connected
 }
 
 

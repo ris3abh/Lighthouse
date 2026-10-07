@@ -20,21 +20,21 @@ def c(ws):
 
 
 def _put(c, email="alex@gmail.com", password="abcd efgh ijkl mnop"):
-    return c.put("/api/google/mail", headers=W, json={"email": email, "password": password})
+    return c.put("/api/gmail", headers=W, json={"email": email, "password": password})
 
 
 def test_connect_checks_the_password_and_keeps_it_in_the_keychain_only(c, ws, monkeypatch, fake_keyring):
     gmail = FakeGmail().install(monkeypatch)
     r = _put(c)  # pasted with Google's spaces
     assert r.status_code == 200, r.text
-    assert r.json()["mail"] == {"connected": True, "email": "alex@gmail.com"}
+    assert r.json() == {"connected": True, "email": "alex@gmail.com"}
     assert gmail.commands == [("LOGIN", "alex@gmail.com")]  # one test login, nothing read
     assert mail.account() == {"email": "alex@gmail.com", "password": "abcdefghijklmnop"}
     assert any("abcdefghijklmnop" in v for v in fake_keyring.values())
     for f in ws.root.rglob("*"):  # nowhere in the workspace
         if f.is_file():
             assert b"abcdefghijklmnop" not in f.read_bytes(), f
-    assert c.delete("/api/google/mail", headers=W).json()["mail"]["connected"] is False
+    assert c.delete("/api/gmail", headers=W).json()["connected"] is False
     assert mail.account() is None
 
 
@@ -88,33 +88,51 @@ def test_a_bad_address_is_refused_before_any_login(c, monkeypatch):
     assert _put(c, email='alex"@gmail.com').status_code == 400 and not gmail.commands
 
 
-def test_the_calendar_works_without_the_oauth_client(demo_ws):
-    """The client is optional (Advanced: also sync Google Calendar): deadlines stay in calendar.ics."""
-    from areao1.google import calendar
-
-    assert "isn't connected" in calendar.sync(demo_ws)[0]
-    with TestClient(create_app(demo_ws, allowed_hosts=["testserver"])) as client:
-        ics = client.get("/calendar.ics").text
-    open_deadlines = [d for d in demo_ws.deadlines().deadlines if not d.done]
-    assert ics.count("BEGIN:VEVENT") >= len(open_deadlines) > 0
-
-
-def test_settings_puts_gmail_first_and_the_client_under_advanced():
+def test_google_is_gmail_only(demo_ws):
+    """No OAuth client, no Google Calendar sync (ADR 0014, amendment); the local calendar and calendar.ics stay."""
     from pathlib import Path
 
-    web = Path(__file__).parents[1] / "web" / "src"
-    settings = (web / "pages" / "Settings.tsx").read_text()
-    assert settings.index("<GmailConnect />") < settings.index("<GoogleConnect />")
-    google = (web / "components" / "GoogleConnect.tsx").read_text()
-    assert "<details" in google and "Advanced: also sync Google Calendar" in google
-    assert "Gmail API" not in google  # email needs no Google Cloud project
+    import areao1.google as google
+
+    assert sorted(p.stem for p in Path(google.__file__).parent.glob("*.py")) == [
+        "__init__",
+        "gmail",
+        "mail",
+        "outreach",
+    ]
+    with TestClient(create_app(demo_ws, allowed_hosts=["testserver"])) as client:
+        paths = {r.path for r in client.app.routes}
+        ics = client.get("/calendar.ics").text
+    assert not [p for p in paths if p.startswith("/api/google")]
+    assert ics.count("BEGIN:VEVENT") >= len([d for d in demo_ws.deadlines().deadlines if not d.done]) > 0
+    root = Path(__file__).parents[1]
+    for f in [*(root / "web" / "src").rglob("*.ts*"), root / "docs" / "gmail.md", root / "README.md"]:
+        text = f.read_text()
+        for gone in ("console.cloud.google.com", "OAuth consent", "googleusercontent", "Test users"):
+            assert gone not in text, (f, gone)
+
+
+def test_an_old_google_sign_in_leaves_the_keychain(ws, http_mock):
+    import json
+
+    from areao1.core.secrets import get_secret, set_secret
+
+    set_secret(
+        "google:client", json.dumps({"client_id": "x.apps.googleusercontent.com", "client_secret": "s"})
+    )
+    set_secret("google:token", json.dumps({"refresh_token": "1//r", "access_token": "ya29.t"}))
+    revoke = http_mock.post("https://oauth2.googleapis.com/revoke").respond(200)
+    with TestClient(create_app(ws, allowed_hosts=["testserver"])):
+        pass
+    assert revoke.calls.last.request.url.params["token"] == "1//r"
+    assert get_secret("google:client") is None and get_secret("google:token") is None
 
 
 def test_the_docs_lead_with_the_app_password():
     from pathlib import Path
 
-    doc = (Path(__file__).parents[1] / "docs" / "google.md").read_text()
-    assert doc.index("app password") < doc.index("console.cloud.google.com")
-    assert "Advanced: also sync Google Calendar" in doc and mail.APP_PASSWORDS.removeprefix("https://") in doc
+    doc = (Path(__file__).parents[1] / "docs" / "gmail.md").read_text()
+    assert "app password" in doc
+    assert mail.APP_PASSWORDS.removeprefix("https://") in doc
     for problem in ("normal Google password", "2-Step Verification is off", "IMAP is turned off"):
         assert problem in doc, problem
