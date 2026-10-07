@@ -84,6 +84,7 @@ def test_maya_software_engineer(fresh, http_mock):
         for q in asked
     )
     assert any("Judge, HackSeattle 2025" in q for q in asked)
+    assert sum(q.startswith("Thanks") for q in asked) == 1  # thanked once, right after the name
     p = persona("maya")
     panel = {line["key"]: line["value"] for line in view["panel"]}
     for key in ("name", "headline", "location", "employer", "role", "education", "awards", "skills", "links"):

@@ -10,8 +10,14 @@ const STEPS: Step[] = [
   {
     page: "overview",
     title: "Where your case stands",
-    text: (o) =>
-      o ? `${plural(o.scoreboard.banked, "criterion", "criteria")} banked of the ${o.scoreboard.threshold} needed for ${o.scoreboard.profile_name}. The bars fill as evidence is accepted.` : "Your criteria, tasks and deadlines at a glance.",
+    text: (o) => {
+      if (!o) return "Your criteria, tasks and deadlines at a glance.";
+      const who = o.person.name ? `${o.person.name.split(" ")[0]}, ` : "";
+      const b = o.scoreboard;
+      return b.banked
+        ? `${who}${plural(b.banked, "criterion", "criteria")} banked of the ${b.threshold} needed for ${b.profile_name}. The bars fill as evidence is accepted.`
+        : `${who}nothing is banked yet, which is normal on day one. ${b.profile_name} needs ${b.threshold} criteria; each bar fills as you accept evidence.`;
+    },
   },
   {
     page: "inbox",

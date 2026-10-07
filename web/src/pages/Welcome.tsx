@@ -180,7 +180,8 @@ function QuestionCard({ q, busy, run, source }: { q: OnboardingQuestion; busy: b
         <p className="mt-5 flex items-start gap-2 border-l-2 border-ink pl-3 text-sm text-ink-2">
           <FileText className="mt-0.5 size-4 shrink-0" strokeWidth={1.5} aria-hidden />
           <span>
-            From your PDF{source ? ` (${source})` : ""}: “{q.quote}”
+            From your PDF{source ? ` (${source})` : ""}
+            {q.text.includes(q.quote) ? "" : `: “${q.quote}”`}
           </span>
         </p>
       )}

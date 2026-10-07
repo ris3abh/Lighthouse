@@ -84,7 +84,9 @@ def _list(value: str | list[str]) -> list[str]:
 
 def next_question(state: OnboardingState) -> Question | None:
     """The next unanswered question, built from the PDF and earlier answers; None when all are answered."""
-    hi = f"Thanks, {_first(state)}. " if _first(state) else ""
+    # Thank them once, on the question right after they confirm their name.
+    answered_after_name = any(f.status != "pending" for f in state.fields if f.key != "name")
+    hi = f"Thanks, {_first(state)}. " if _first(state) and not answered_after_name else ""
     for key in ORDER:
         if key == "role":
             emp, role = state.field("employer"), state.field("role")
