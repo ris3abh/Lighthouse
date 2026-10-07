@@ -178,7 +178,7 @@ export default function ChatPanel({
         <span className="display text-2xl uppercase">Ask</span>
         <select
           aria-label="Conversation"
-          className="input ml-auto h-8 w-44 py-0 font-mono text-[11px]"
+          className="input ml-auto h-8 w-28 min-w-0 py-0 font-mono text-[11px] sm:w-44"
           value={convId ?? ""}
           onChange={(e) => {
             const id = e.target.value || null;

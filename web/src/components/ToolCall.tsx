@@ -60,8 +60,12 @@ function describe(t: ToolView): { icon: LucideIcon; text: React.ReactNode } {
   if (direct) {
     const verb = { add: "Added", update: "Changed", delete: "Deleted" }[n.split("_")[0]] ?? "Changed";
     const what = n === "update_todo" ? "to-do" : n.replace(/^(add|update|delete)_/, "").replace(/_/g, " ");
+    const icon = n.includes("deadline") ? CalendarDays : n.includes("letter") ? Mail : ListChecks;
+    // Once it ran, its own words name the record ("Moved MLH Fall hackathon"); before that, what was asked.
+    const said = t.ok && t.summary ? t.summary.split(". It's on the page")[0] : "";
+    if (said) return { icon, text: <>{said}</> };
     const name = str(t.input.title) || str(t.input.name) || str(t.input.id);
-    return { icon: n.includes("deadline") ? CalendarDays : n.includes("letter") ? Mail : ListChecks, text: <>{verb} {what}: {name}</> };
+    return { icon, text: <>{verb} {what}: {name}</> };
   }
   if (/deadline|calendar/.test(n)) return { icon: CalendarDays, text: <>{n.replace(/_/g, " ")}</> };
   if (/inbox|candidate/.test(n)) return { icon: Inbox, text: <>{n.replace(/_/g, " ")}</> };
