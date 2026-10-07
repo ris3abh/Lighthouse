@@ -39,6 +39,15 @@ All notable changes to this project are documented here. The format follows
 - Tier 3 (Wikipedia, any non-official domain) can never verify a rule. Tier 1/2 sources must be on the
   manifest's official domains (workspace overrides included). A source redirected off them isn't stored.
   Re-checks use each source's current tier.
+- Scholarly connectors: Semantic Scholar, OpenAlex, arXiv author pages and ORCID
+  (`lighthouse-gc import <profile URL>` or the Sources page).
+  - Each source tracks the author profile (citations, h-index and paper count where the source has them) and
+    every paper.
+  - Each paper is proposed for scholarly articles with its type (journal, conference, preprint), stage,
+    venue and citations, and asks you to confirm you're an author.
+  - A paper found by several connectors, or linked from GitHub or Hugging Face, is proposed once (by arXiv id,
+    then DOI).
+  - Free APIs, no keys; no contact email is sent.
 - Manual-import sources (`manual: true`: uscis.gov, travel.state.gov) send a reminder with the page link when
   an imported copy passes its freshness window (once per lapse). The Knowledge page marks them.
 

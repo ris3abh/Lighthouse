@@ -50,7 +50,7 @@ def _run_sync(ws: Case, scheduled: bool = False) -> list[str]:
 
 def _run_snapshot(ws: Case, scheduled: bool = False) -> list[str]:
     if scheduled:
-        dates = [r.date for r in ws.metrics() if r.source in ("github", "huggingface")]
+        dates = [r.date for r in ws.metrics() if r.source in _sync.sources.CONNECTORS]
         last = max(dates) if dates else None
         if last and clock.today() - last < timedelta(days=SNAPSHOT_MIN_DAYS):
             return [

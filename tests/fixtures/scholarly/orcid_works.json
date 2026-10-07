@@ -1,0 +1,296 @@
+{
+  "last-modified-date": {
+    "value": 1759700000000
+  },
+  "group": [
+    {
+      "last-modified-date": {
+        "value": 1759700000000
+      },
+      "external-ids": {
+        "external-id": [
+          {
+            "external-id-type": "doi",
+            "external-id-value": "10.5555/tmlr.2026.0042",
+            "external-id-normalized": {
+              "value": "10.5555/tmlr.2026.0042",
+              "transient": true
+            },
+            "external-id-normalized-error": null,
+            "external-id-url": null,
+            "external-id-relationship": "self"
+          },
+          {
+            "external-id-type": "issn",
+            "external-id-value": "2835-8856",
+            "external-id-normalized": {
+              "value": "2835-8856",
+              "transient": true
+            },
+            "external-id-normalized-error": null,
+            "external-id-url": null,
+            "external-id-relationship": "part-of"
+          }
+        ]
+      },
+      "work-summary": [
+        {
+          "put-code": 181000042,
+          "created-date": {
+            "value": 1759600000000
+          },
+          "last-modified-date": {
+            "value": 1759700000000
+          },
+          "source": {
+            "source-orcid": null,
+            "source-client-id": {
+              "uri": "https://orcid.org/client/0000-0002-3054-1567",
+              "path": "0000-0002-3054-1567",
+              "host": "orcid.org"
+            },
+            "source-name": {
+              "value": "Crossref"
+            },
+            "assertion-origin-orcid": null,
+            "assertion-origin-client-id": null,
+            "assertion-origin-name": null
+          },
+          "title": {
+            "title": {
+              "value": "TinyVLM: Vision-Language Models on a Budget"
+            },
+            "subtitle": null,
+            "translated-title": null
+          },
+          "external-ids": {
+            "external-id": [
+              {
+                "external-id-type": "doi",
+                "external-id-value": "10.5555/tmlr.2026.0042",
+                "external-id-normalized": {
+                  "value": "10.5555/tmlr.2026.0042",
+                  "transient": true
+                },
+                "external-id-normalized-error": null,
+                "external-id-url": null,
+                "external-id-relationship": "self"
+              },
+              {
+                "external-id-type": "issn",
+                "external-id-value": "2835-8856",
+                "external-id-normalized": {
+                  "value": "2835-8856",
+                  "transient": true
+                },
+                "external-id-normalized-error": null,
+                "external-id-url": null,
+                "external-id-relationship": "part-of"
+              }
+            ]
+          },
+          "url": null,
+          "type": "journal-article",
+          "publication-date": {
+            "year": {
+              "value": "2026"
+            },
+            "month": null,
+            "day": null
+          },
+          "journal-title": {
+            "value": "Transactions on Machine Learning Research"
+          },
+          "visibility": "public",
+          "path": "/0000-0000-4242-4240/work/181000042",
+          "display-index": "1"
+        }
+      ]
+    },
+    {
+      "last-modified-date": {
+        "value": 1759700000000
+      },
+      "external-ids": {
+        "external-id": [
+          {
+            "external-id-type": "arxiv",
+            "external-id-value": "arXiv:2502.01234",
+            "external-id-normalized": {
+              "value": "arxiv:2502.01234",
+              "transient": true
+            },
+            "external-id-normalized-error": null,
+            "external-id-url": null,
+            "external-id-relationship": "self"
+          }
+        ]
+      },
+      "work-summary": [
+        {
+          "put-code": 181000071,
+          "created-date": {
+            "value": 1759600000000
+          },
+          "last-modified-date": {
+            "value": 1759700000000
+          },
+          "source": {
+            "source-orcid": null,
+            "source-client-id": {
+              "uri": "https://orcid.org/client/0000-0002-3054-1567",
+              "path": "0000-0002-3054-1567",
+              "host": "orcid.org"
+            },
+            "source-name": {
+              "value": "Crossref"
+            },
+            "assertion-origin-orcid": null,
+            "assertion-origin-client-id": null,
+            "assertion-origin-name": null
+          },
+          "title": {
+            "title": {
+              "value": "Sparse Gradient Compression at Scale"
+            },
+            "subtitle": null,
+            "translated-title": null
+          },
+          "external-ids": {
+            "external-id": [
+              {
+                "external-id-type": "arxiv",
+                "external-id-value": "arXiv:2502.01234",
+                "external-id-normalized": {
+                  "value": "arxiv:2502.01234",
+                  "transient": true
+                },
+                "external-id-normalized-error": null,
+                "external-id-url": null,
+                "external-id-relationship": "self"
+              }
+            ]
+          },
+          "url": null,
+          "type": "conference-paper",
+          "publication-date": {
+            "year": {
+              "value": "2025"
+            },
+            "month": null,
+            "day": null
+          },
+          "journal-title": {
+            "value": "Proceedings of the 42nd International Conference on Machine Learning"
+          },
+          "visibility": "public",
+          "path": "/0000-0000-4242-4240/work/181000071",
+          "display-index": "1"
+        }
+      ]
+    },
+    {
+      "last-modified-date": {
+        "value": 1759700000000
+      },
+      "external-ids": {
+        "external-id": [
+          {
+            "external-id-type": "arxiv",
+            "external-id-value": "2509.04321",
+            "external-id-normalized": {
+              "value": "2509.04321",
+              "transient": true
+            },
+            "external-id-normalized-error": null,
+            "external-id-url": null,
+            "external-id-relationship": "self"
+          },
+          {
+            "external-id-type": "doi",
+            "external-id-value": "10.48550/arXiv.2509.04321",
+            "external-id-normalized": {
+              "value": "10.48550/arxiv.2509.04321",
+              "transient": true
+            },
+            "external-id-normalized-error": null,
+            "external-id-url": null,
+            "external-id-relationship": "self"
+          }
+        ]
+      },
+      "work-summary": [
+        {
+          "put-code": 181000099,
+          "created-date": {
+            "value": 1759600000000
+          },
+          "last-modified-date": {
+            "value": 1759700000000
+          },
+          "source": {
+            "source-orcid": null,
+            "source-client-id": {
+              "uri": "https://orcid.org/client/0000-0002-3054-1567",
+              "path": "0000-0002-3054-1567",
+              "host": "orcid.org"
+            },
+            "source-name": {
+              "value": "DataCite"
+            },
+            "assertion-origin-orcid": null,
+            "assertion-origin-client-id": null,
+            "assertion-origin-name": null
+          },
+          "title": {
+            "title": {
+              "value": "RoboGrasp-10k: A Benchmark for Low-Cost Grasping"
+            },
+            "subtitle": null,
+            "translated-title": null
+          },
+          "external-ids": {
+            "external-id": [
+              {
+                "external-id-type": "arxiv",
+                "external-id-value": "2509.04321",
+                "external-id-normalized": {
+                  "value": "2509.04321",
+                  "transient": true
+                },
+                "external-id-normalized-error": null,
+                "external-id-url": null,
+                "external-id-relationship": "self"
+              },
+              {
+                "external-id-type": "doi",
+                "external-id-value": "10.48550/arXiv.2509.04321",
+                "external-id-normalized": {
+                  "value": "10.48550/arxiv.2509.04321",
+                  "transient": true
+                },
+                "external-id-normalized-error": null,
+                "external-id-url": null,
+                "external-id-relationship": "self"
+              }
+            ]
+          },
+          "url": null,
+          "type": "preprint",
+          "publication-date": {
+            "year": {
+              "value": "2026"
+            },
+            "month": null,
+            "day": null
+          },
+          "journal-title": null,
+          "visibility": "public",
+          "path": "/0000-0000-4242-4240/work/181000099",
+          "display-index": "1"
+        }
+      ]
+    }
+  ],
+  "path": "/0000-0000-4242-4240/works"
+}

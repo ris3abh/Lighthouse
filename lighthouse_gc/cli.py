@@ -91,8 +91,8 @@ def import_(
     url: Annotated[
         str,
         typer.Argument(
-            help="GitHub or Hugging Face URL / handle (github:octo, hf:octo), or a Claude / ChatGPT export "
-            "(conversations.json or the export .zip)"
+            help="GitHub or Hugging Face URL / handle (github:octo, hf:octo), a scholarly profile (Semantic Scholar, "
+            "OpenAlex, arxiv.org/a/<id>, ORCID iD), or a Claude / ChatGPT export (conversations.json or the export .zip)"
         ),
     ],
     private: Annotated[

@@ -1,0 +1,249 @@
+{
+  "meta": {
+    "count": 3,
+    "db_response_time_ms": 14,
+    "page": 1,
+    "per_page": 200,
+    "groups_count": null
+  },
+  "results": [
+    {
+      "id": "https://openalex.org/W4411111111",
+      "doi": "https://doi.org/10.48550/arxiv.2509.04321",
+      "display_name": "RoboGrasp-10k: A Benchmark for Low-Cost Grasping",
+      "publication_year": 2026,
+      "publication_date": "2026-09-05",
+      "type": "preprint",
+      "cited_by_count": 10,
+      "primary_location": {
+        "id": null,
+        "is_oa": true,
+        "landing_page_url": "https://arxiv.org/abs/2509.04321",
+        "pdf_url": null,
+        "source": {
+          "id": "https://openalex.org/S4306400194",
+          "display_name": "arXiv (Cornell University)",
+          "issn_l": null,
+          "issn": null,
+          "is_oa": true,
+          "is_in_doaj": false,
+          "is_core": false,
+          "host_organization": null,
+          "host_organization_name": null,
+          "host_organization_lineage": [],
+          "host_organization_lineage_names": [],
+          "type": "repository"
+        },
+        "license": null,
+        "license_id": null,
+        "version": "submittedVersion",
+        "is_accepted": true,
+        "is_published": false,
+        "raw_source_name": "arXiv (Cornell University)",
+        "raw_type": null
+      },
+      "ids": {
+        "openalex": "https://openalex.org/W4411111111",
+        "doi": "https://doi.org/10.48550/arxiv.2509.04321"
+      },
+      "locations": [
+        {
+          "id": null,
+          "is_oa": true,
+          "landing_page_url": "https://arxiv.org/abs/2509.04321",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S4306400194",
+            "display_name": "arXiv (Cornell University)",
+            "issn_l": null,
+            "issn": null,
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": false,
+            "host_organization": null,
+            "host_organization_name": null,
+            "host_organization_lineage": [],
+            "host_organization_lineage_names": [],
+            "type": "repository"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "submittedVersion",
+          "is_accepted": true,
+          "is_published": false,
+          "raw_source_name": "arXiv (Cornell University)",
+          "raw_type": null
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W4400000042",
+      "doi": "https://doi.org/10.5555/tmlr.2026.0042",
+      "display_name": "TinyVLM: Vision-Language Models on a Budget",
+      "publication_year": 2026,
+      "publication_date": "2026-03-02",
+      "type": "article",
+      "cited_by_count": 11,
+      "primary_location": {
+        "id": null,
+        "is_oa": true,
+        "landing_page_url": "https://doi.org/10.5555/tmlr.2026.0042",
+        "pdf_url": null,
+        "source": {
+          "id": "https://openalex.org/S4387289939",
+          "display_name": "Transactions on Machine Learning Research",
+          "issn_l": "2835-8856",
+          "issn": [
+            "2835-8856"
+          ],
+          "is_oa": true,
+          "is_in_doaj": false,
+          "is_core": true,
+          "host_organization": null,
+          "host_organization_name": null,
+          "host_organization_lineage": [],
+          "host_organization_lineage_names": [],
+          "type": "journal"
+        },
+        "license": null,
+        "license_id": null,
+        "version": "publishedVersion",
+        "is_accepted": true,
+        "is_published": true,
+        "raw_source_name": "Transactions on Machine Learning Research",
+        "raw_type": null
+      },
+      "ids": {
+        "openalex": "https://openalex.org/W4400000042",
+        "doi": "https://doi.org/10.5555/tmlr.2026.0042"
+      },
+      "locations": [
+        {
+          "id": null,
+          "is_oa": true,
+          "landing_page_url": "https://doi.org/10.5555/tmlr.2026.0042",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S4387289939",
+            "display_name": "Transactions on Machine Learning Research",
+            "issn_l": "2835-8856",
+            "issn": [
+              "2835-8856"
+            ],
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": true,
+            "host_organization": null,
+            "host_organization_name": null,
+            "host_organization_lineage": [],
+            "host_organization_lineage_names": [],
+            "type": "journal"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "Transactions on Machine Learning Research",
+          "raw_type": null
+        }
+      ]
+    },
+    {
+      "id": "https://openalex.org/W4400000071",
+      "doi": null,
+      "display_name": "Sparse Gradient Compression at Scale",
+      "publication_year": 2025,
+      "publication_date": "2025-07-13",
+      "type": "article",
+      "cited_by_count": 68,
+      "primary_location": {
+        "id": null,
+        "is_oa": true,
+        "landing_page_url": "https://proceedings.mlr.press/v267/rivera25a.html",
+        "pdf_url": null,
+        "source": {
+          "id": "https://openalex.org/S4306419644",
+          "display_name": "International Conference on Machine Learning",
+          "issn_l": null,
+          "issn": null,
+          "is_oa": true,
+          "is_in_doaj": false,
+          "is_core": false,
+          "host_organization": null,
+          "host_organization_name": null,
+          "host_organization_lineage": [],
+          "host_organization_lineage_names": [],
+          "type": "conference"
+        },
+        "license": null,
+        "license_id": null,
+        "version": "publishedVersion",
+        "is_accepted": true,
+        "is_published": true,
+        "raw_source_name": "International Conference on Machine Learning",
+        "raw_type": null
+      },
+      "ids": {
+        "openalex": "https://openalex.org/W4400000071"
+      },
+      "locations": [
+        {
+          "id": null,
+          "is_oa": true,
+          "landing_page_url": "https://proceedings.mlr.press/v267/rivera25a.html",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S4306419644",
+            "display_name": "International Conference on Machine Learning",
+            "issn_l": null,
+            "issn": null,
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": false,
+            "host_organization": null,
+            "host_organization_name": null,
+            "host_organization_lineage": [],
+            "host_organization_lineage_names": [],
+            "type": "conference"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "publishedVersion",
+          "is_accepted": true,
+          "is_published": true,
+          "raw_source_name": "International Conference on Machine Learning",
+          "raw_type": null
+        },
+        {
+          "id": null,
+          "is_oa": true,
+          "landing_page_url": "https://arxiv.org/abs/2502.01234",
+          "pdf_url": null,
+          "source": {
+            "id": "https://openalex.org/S4306400194",
+            "display_name": "arXiv (Cornell University)",
+            "issn_l": null,
+            "issn": null,
+            "is_oa": true,
+            "is_in_doaj": false,
+            "is_core": false,
+            "host_organization": null,
+            "host_organization_name": null,
+            "host_organization_lineage": [],
+            "host_organization_lineage_names": [],
+            "type": "repository"
+          },
+          "license": null,
+          "license_id": null,
+          "version": "submittedVersion",
+          "is_accepted": true,
+          "is_published": false,
+          "raw_source_name": "arXiv (Cornell University)",
+          "raw_type": null
+        }
+      ]
+    }
+  ],
+  "group_by": []
+}

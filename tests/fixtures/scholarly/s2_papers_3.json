@@ -1,0 +1,20 @@
+{
+  "offset": 3,
+  "data": [
+    {
+      "paperId": "d4e5f60718293a4b5c6d7e8f9012345678912a3b",
+      "externalIds": {
+        "CorpusId": 270000001
+      },
+      "publicationVenue": null,
+      "url": "https://www.semanticscholar.org/paper/d4e5f60718293a4b5c6d7e8f9012345678912a3b",
+      "title": "Notes on Gradient Sparsity in Federated Training",
+      "venue": "Workshop on Efficient Systems for Foundation Models",
+      "year": 2024,
+      "citationCount": 0,
+      "publicationTypes": null,
+      "publicationDate": null,
+      "journal": null
+    }
+  ]
+}

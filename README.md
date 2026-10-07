@@ -7,7 +7,7 @@ EB-1A too, more via community profiles) that anyone can install and use out of t
 [W3C PROV](https://www.w3.org/TR/prov-overview/) model; Lighthouse makes no performance claims beyond what its
 evaluation harness measures (coming in a later phase).
 
-Point Lighthouse at your work — GitHub, Hugging Face (more connectors coming) — and it turns it into a living
+Point Lighthouse at your work — GitHub, Hugging Face, Semantic Scholar, OpenAlex, arXiv, ORCID — and it turns it into a living
 evidence file: a criteria scoreboard, a metrics trend, an evidence inbox, and a web dashboard. Your case lives
 in a **private workspace directory** on your machine (its own Git repo); this repo only holds the app.
 
@@ -26,8 +26,9 @@ in a **private workspace directory** on your machine (its own Git repo); this re
 | Calendar (+ `.ics` feed), Pipeline kanban, Letters roster | |
 | Claude / ChatGPT export import → deadline, pipeline and letter-writer suggestions | LLM-assisted extraction |
 | `init`, `import`, `run <job>`, `up`, `validate`, `notify`, `secret`, `mcp` | `export`, `purge` |
-| GitHub (public + fine-grained PAT, incl. 14-day traffic history) | Website, Semantic Scholar, OpenAlex, ORCID, arXiv |
+| GitHub (public + fine-grained PAT, incl. 14-day traffic history) | Website connector |
 | Hugging Face (models, datasets, Spaces, linked Papers) | Gmail triage, opportunity scans |
+| Semantic Scholar, OpenAlex, arXiv, ORCID (papers, citations, venues, h-index) | |
 | O-1A + EB-1A rubrics, rule-based scoreboard | MCP write tools (through the Inbox), Claude Code / Codex agent, chat |
 | Dashboard: Overview, Inbox, Evidence, Metrics, Pipeline, Letters, Calendar, Sources, Settings | Opportunities, Chat |
 
@@ -107,7 +108,7 @@ about immigration. Profiles and scoring live in a separate layer, so other domai
 | Command | What it does |
 |---|---|
 | `lighthouse-gc init <dir>` | create a private workspace (git repo + gitleaks pre-commit hook) |
-| `lighthouse-gc import <url>` | add a source; auto-detects GitHub / Hugging Face (`--private` for a token) |
+| `lighthouse-gc import <url>` | add a source; auto-detects GitHub / Hugging Face / Semantic Scholar / OpenAlex / arXiv / ORCID (`--private` for a token) |
 | `lighthouse-gc import <export>` | import a Claude / ChatGPT export (`conversations.json` or the `.zip`) |
 | `lighthouse-gc run sync` | refresh all sources, push new candidates to the Inbox |
 | `lighthouse-gc run metrics-snapshot` | append today's metrics (and GitHub's 14-day traffic) to `metrics.csv` |

@@ -1,0 +1,89 @@
+{
+  "offset": 0,
+  "next": 3,
+  "data": [
+    {
+      "paperId": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+      "externalIds": {
+        "ArXiv": "2509.04321",
+        "DOI": "10.48550/arXiv.2509.04321",
+        "CorpusId": 281234567
+      },
+      "publicationVenue": {
+        "id": "1901e811-ee72-4b20-8f7e-de08cd395a10",
+        "name": "arXiv.org",
+        "alternate_names": [
+          "ArXiv"
+        ],
+        "issn": "2331-8422",
+        "url": "https://arxiv.org"
+      },
+      "url": "https://www.semanticscholar.org/paper/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+      "title": "RoboGrasp-10k: A Benchmark for Low-Cost Grasping",
+      "venue": "arXiv.org",
+      "year": 2026,
+      "citationCount": 12,
+      "publicationTypes": null,
+      "publicationDate": "2026-09-05",
+      "journal": null
+    },
+    {
+      "paperId": "b2c3d4e5f60718293a4b5c6d7e8f901234567891",
+      "externalIds": {
+        "ArXiv": "2502.01234",
+        "DBLP": "conf/icml/Rivera25",
+        "CorpusId": 276543210
+      },
+      "publicationVenue": {
+        "id": "fc0a208c-acb7-47dc-a0d4-af8190e21d29",
+        "name": "International Conference on Machine Learning",
+        "type": "conference",
+        "alternate_names": [
+          "ICML"
+        ],
+        "url": "https://icml.cc/"
+      },
+      "url": "https://www.semanticscholar.org/paper/b2c3d4e5f60718293a4b5c6d7e8f901234567891",
+      "title": "Sparse Gradient Compression at Scale",
+      "venue": "International Conference on Machine Learning",
+      "year": 2025,
+      "citationCount": 71,
+      "publicationTypes": [
+        "JournalArticle",
+        "Conference"
+      ],
+      "publicationDate": "2025-07-13",
+      "journal": null
+    },
+    {
+      "paperId": "c3d4e5f60718293a4b5c6d7e8f9012345678912a",
+      "externalIds": {
+        "DOI": "10.5555/tmlr.2026.0042",
+        "CorpusId": 280000042
+      },
+      "publicationVenue": {
+        "id": "0bbb8e0e-49ff-4b52-a26e-1b3c4d5e6f70",
+        "name": "Transactions on Machine Learning Research",
+        "type": "journal",
+        "alternate_names": [
+          "TMLR"
+        ],
+        "issn": "2835-8856"
+      },
+      "url": "https://www.semanticscholar.org/paper/c3d4e5f60718293a4b5c6d7e8f9012345678912a",
+      "title": "TinyVLM: Vision-Language Models on a Budget",
+      "venue": "Transactions on Machine Learning Research",
+      "year": 2026,
+      "citationCount": 9,
+      "publicationTypes": [
+        "JournalArticle"
+      ],
+      "publicationDate": "2026-03-02",
+      "journal": {
+        "volume": "2026",
+        "pages": null,
+        "name": "Transactions on Machine Learning Research"
+      }
+    }
+  ]
+}

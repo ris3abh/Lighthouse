@@ -1,0 +1,23 @@
+{
+  "id": "https://openalex.org/A0000000001",
+  "orcid": "https://orcid.org/0000-0000-4242-4240",
+  "display_name": "Alex Rivera",
+  "display_name_alternatives": [
+    "A. Rivera"
+  ],
+  "works_count": 3,
+  "cited_by_count": 89,
+  "summary_stats": {
+    "2yr_mean_citedness": 12.4,
+    "h_index": 3,
+    "i10_index": 1
+  },
+  "ids": {
+    "openalex": "https://openalex.org/A0000000001",
+    "orcid": "https://orcid.org/0000-0000-4242-4240"
+  },
+  "last_known_institutions": [],
+  "works_api_url": "https://api.openalex.org/works?filter=author.id:A0000000001",
+  "updated_date": "2026-10-05T08:12:44",
+  "created_date": "2023-07-21T00:00:00"
+}

@@ -84,10 +84,12 @@ def field_claims(
     fields: dict[str, str],
     on: date,
 ) -> list[ClaimDraft]:
-    """One claim per ``{predicate: json_key}`` present in ``payload``, quoting ``"key": value`` verbatim."""
+    """One claim per ``{predicate: json_key}`` present in ``payload``, quoting ``"key": value`` verbatim. A key
+    may be a dotted path into nested objects (``"summary_stats.h_index"``); the quote is the innermost pair."""
     out = []
     for predicate, key in fields.items():
-        if payload.get(key) is None:
+        value = dig(payload, key)
+        if value is None or isinstance(value, dict | list):
             continue
         out.append(
             ClaimDraft(
@@ -95,9 +97,18 @@ def field_claims(
                 subject_name=subject_name,
                 subject_url=subject_url,
                 predicate=predicate,
-                value=payload[key],
-                excerpt=json_excerpt(key, payload[key]),
+                value=value,
+                excerpt=json_excerpt(key.rsplit(".", 1)[-1], value),
                 valid_from=on,
             )
         )
     return out
+
+
+def dig(payload: Any, path: str) -> Any:
+    """``payload["a"]["b"]`` for ``"a.b"``; None if any step is missing."""
+    for part in path.split("."):
+        if not isinstance(payload, dict) or part not in payload:
+            return None
+        payload = payload[part]
+    return payload

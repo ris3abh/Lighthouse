@@ -1,0 +1,53 @@
+{
+  "last-modified-date": null,
+  "name": {
+    "created-date": {
+      "value": 1690000000000
+    },
+    "last-modified-date": {
+      "value": 1690000000000
+    },
+    "given-names": {
+      "value": "Alex"
+    },
+    "family-name": {
+      "value": "Rivera"
+    },
+    "credit-name": null,
+    "source": null,
+    "visibility": "public",
+    "path": "0000-0000-4242-4240"
+  },
+  "other-names": {
+    "last-modified-date": null,
+    "other-name": [],
+    "path": "/0000-0000-4242-4240/other-names"
+  },
+  "biography": null,
+  "researcher-urls": {
+    "last-modified-date": null,
+    "researcher-url": [],
+    "path": "/0000-0000-4242-4240/researcher-urls"
+  },
+  "emails": {
+    "last-modified-date": null,
+    "email": [],
+    "path": "/0000-0000-4242-4240/email"
+  },
+  "addresses": {
+    "last-modified-date": null,
+    "address": [],
+    "path": "/0000-0000-4242-4240/address"
+  },
+  "keywords": {
+    "last-modified-date": null,
+    "keyword": [],
+    "path": "/0000-0000-4242-4240/keywords"
+  },
+  "external-identifiers": {
+    "last-modified-date": null,
+    "external-identifier": [],
+    "path": "/0000-0000-4242-4240/external-identifiers"
+  },
+  "path": "/0000-0000-4242-4240/person"
+}

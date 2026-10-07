@@ -14,6 +14,10 @@ const TOKEN_PAGES: Record<string, string> = {
 function guessKind(input: string) {
   if (/github\.com|^gh:|^github:/i.test(input)) return "github";
   if (/huggingface\.co|hf\.co|^hf:/i.test(input)) return "huggingface";
+  if (/semanticscholar\.org\/author\/|^s2:/i.test(input)) return "semantic_scholar";
+  if (/openalex\.org\/(authors\/)?a\d|^openalex:/i.test(input)) return "openalex";
+  if (/arxiv\.org\/a\/|^arxiv:[a-z]/i.test(input)) return "arxiv";
+  if (/orcid\.org\/|^(orcid:)?\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/i.test(input.trim())) return "orcid";
   return null;
 }
 
@@ -70,11 +74,14 @@ export default function Sources() {
       <Card className="mb-4">
         <form onSubmit={add} className="flex flex-col gap-3 p-4">
           <label>
-            <span className="label">Add a source — paste a GitHub or Hugging Face profile, org or repo URL</span>
+            <span className="label">
+              Add a source — paste a GitHub or Hugging Face profile, org or repo URL, or a scholarly profile (Semantic
+              Scholar, OpenAlex, arXiv author page, ORCID)
+            </span>
             <div className="flex gap-2">
               <input
                 className="input"
-                placeholder="https://github.com/you  ·  https://huggingface.co/you"
+                placeholder="https://github.com/you  ·  https://huggingface.co/you  ·  https://orcid.org/0000-…"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
               />
@@ -85,11 +92,13 @@ export default function Sources() {
           </label>
           <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
             {kind ? <Chip tone="emerald">detected: {kind}</Chip> : input && <Chip tone="amber">not recognized yet</Chip>}
-            <button type="button" className="link" onClick={() => setShowToken(!showToken)}>
-              {showToken ? "Public only" : "Private repos? Add a read-only token"}
-            </button>
+            {(!kind || kind in TOKEN_PAGES) && (
+              <button type="button" className="link" onClick={() => setShowToken(!showToken)}>
+                {showToken ? "Public only" : "Private repos? Add a read-only token"}
+              </button>
+            )}
           </div>
-          {showToken && (
+          {showToken && (!kind || kind in TOKEN_PAGES) && (
             <label>
               <span className="label">
                 Read-only token — stored in your OS keychain, never in workspace files.{" "}
@@ -136,7 +145,7 @@ export default function Sources() {
 
       {sources.data.length === 0 ? (
         <Card>
-          <Empty>No sources yet. Import your GitHub or Hugging Face account above.</Empty>
+          <Empty>No sources yet. Import your GitHub, Hugging Face or scholarly profile above.</Empty>
         </Card>
       ) : (
         <div className="flex flex-col gap-3">

@@ -463,7 +463,7 @@ against the demo workspace and your own.
 
 ### Phase 1 — Automation (weekend 2)
 
-- [ ] Website + Semantic Scholar / OpenAlex / ORCID / arXiv connectors
+- [ ] Website connector (Semantic Scholar / OpenAlex / ORCID / arXiv: done in Phase 1d)
 - [ ] Scheduler with default jobs; `lighthouse run <job>` headless
 - [ ] Notifications: desktop, email, Slack/Discord, ntfy
 - [ ] Deadlines + calendar.ics + Calendar page; Pipeline kanban with staleness
@@ -499,7 +499,7 @@ against the demo workspace and your own.
 - [x] Agent uses the vault first; web search fallback restricted to Tier 1 domains, then Tier 2; new findings
       enter as observations.
 - [x] Knowledge page: sources, freshness, recent changes, open conflicts.
-- [ ] Scholarly connectors: Semantic Scholar, OpenAlex, arXiv, ORCID.
+- [x] Scholarly connectors: Semantic Scholar, OpenAlex, arXiv, ORCID.
 - [ ] Website connector (readability extraction, bot-blocked pages unreadable, shared private-network guard).
 
 ### Phase 2 — Gmail, scans, letters (weekends 3–4)

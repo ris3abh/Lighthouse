@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Alex Rivera's articles on arXiv</title>
+  <link rel="describes" href=""/>
+  <updated>2026-10-06T00:00:00-04:00</updated>
+  <id>http://arxiv.org/a/rivera_a_1</id>
+  <link href="http://arxiv.org/a/rivera_a_1.atom" rel="self" type="application/atom+xml"/>
+  <link rel="describes" href="http://arxiv.org/a/rivera_a_1"/>
+  <entry>
+    <id>http://arxiv.org/abs/2509.04321v1</id>
+    <updated>2026-09-05T13:02:11-04:00</updated>
+    <published>2026-09-05T13:02:11-04:00</published>
+    <title>RoboGrasp-10k: A Benchmark for Low-Cost
+  Grasping</title>
+    <summary>We release RoboGrasp-10k, ten thousand grasp attempts recorded on a low-cost arm.</summary>
+    <author>
+      <name>Alex Rivera, Sam Okafor</name>
+    </author>
+    <arxiv:doi xmlns:arxiv="http://arxiv.org/schemas/atom">10.48550/arXiv.2509.04321</arxiv:doi>
+    <link href="http://arxiv.org/abs/2509.04321v1" rel="alternate" type="text/html"/>
+    <link title="pdf" href="http://arxiv.org/pdf/2509.04321v1" rel="related" type="application/pdf"/>
+    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="cs.RO" scheme="http://arxiv.org/schemas/atom" label="Robotics (cs.RO)"/>
+    <category term="cs.RO" scheme="http://arxiv.org/schemas/atom" label="Robotics (cs.RO)"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2502.01234v3</id>
+    <updated>2025-06-20T09:30:00-04:00</updated>
+    <published>2025-02-03T11:15:42-05:00</published>
+    <title>Sparse Gradient Compression at Scale</title>
+    <summary>We compress gradients for data-parallel training with a sparse top-k scheme.</summary>
+    <author>
+      <name>Alex Rivera, Priya Natarajan</name>
+    </author>
+    <arxiv:comment xmlns:arxiv="http://arxiv.org/schemas/atom">ICML 2025 camera-ready</arxiv:comment>
+    <arxiv:journal_ref xmlns:arxiv="http://arxiv.org/schemas/atom">Proceedings of the 42nd International Conference on Machine Learning (ICML 2025)</arxiv:journal_ref>
+    <link href="http://arxiv.org/abs/2502.01234v3" rel="alternate" type="text/html"/>
+    <arxiv:primary_category xmlns:arxiv="http://arxiv.org/schemas/atom" term="cs.LG" scheme="http://arxiv.org/schemas/atom" label="Machine Learning (cs.LG)"/>
+  </entry>
+</feed>
