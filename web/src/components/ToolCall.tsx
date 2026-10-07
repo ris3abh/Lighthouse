@@ -1,3 +1,18 @@
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronDown,
+  FilePlus2,
+  FileText,
+  Gauge,
+  Globe,
+  Inbox,
+  ListChecks,
+  Mail,
+  Search,
+  type LucideIcon,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { Chip, cx } from "./ui";
 
@@ -14,13 +29,14 @@ export type ToolView = {
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 
-function describe(t: ToolView): { icon: string; text: React.ReactNode } {
+function describe(t: ToolView): { icon: LucideIcon; text: React.ReactNode } {
   const n = t.name;
-  if (n === "WebSearch" || n === "web_search") return { icon: "🔍", text: <>Searched the web: “{str(t.input.query)}”</> };
+  if (n === "WebSearch" || n === "web_search") return { icon: Search, text: <>Searched the web: “{str(t.input.query)}”</> };
+  if (n === "search_vault") return { icon: BookOpen, text: <>Searched the knowledge vault: “{str(t.input.query)}”</> };
   if (n === "read_page") {
     const url = str(t.input.url);
     return {
-      icon: "🌐",
+      icon: Globe,
       text: (
         <>
           Read page:{" "}
@@ -32,43 +48,65 @@ function describe(t: ToolView): { icon: string; text: React.ReactNode } {
     };
   }
   if (n.startsWith("propose_")) {
-    const what = n.replace("propose_", "").replace("_", " ");
-    return { icon: "✚", text: <>Proposed {what}: {str(t.input.title) || str(t.input.name)}</> };
+    const what = n.replace("propose_", "").replace(/_/g, " ");
+    return { icon: FilePlus2, text: <>Proposed {what}: {str(t.input.title) || str(t.input.name)}</> };
   }
-  return { icon: "📄", text: <>{n.replace(/_/g, " ")}</> };
+  if (/deadline|calendar/.test(n)) return { icon: CalendarDays, text: <>{n.replace(/_/g, " ")}</> };
+  if (/inbox|candidate/.test(n)) return { icon: Inbox, text: <>{n.replace(/_/g, " ")}</> };
+  if (/letter/.test(n)) return { icon: Mail, text: <>{n.replace(/_/g, " ")}</> };
+  if (/scoreboard|gaps|criteria/.test(n)) return { icon: Gauge, text: <>{n.replace(/_/g, " ")}</> };
+  if (/pipeline|tracker/.test(n)) return { icon: ListChecks, text: <>{n.replace(/_/g, " ")}</> };
+  return { icon: FileText, text: <>{n.replace(/_/g, " ")}</> };
 }
 
-/** One tool call, as shown in the chat panel and on the Agent page. */
+/** A checkmark that draws itself in (instant with reduced motion). */
+export function DrawnCheck({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={cx("size-4", className)} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="square" aria-label="Done">
+      <path d="M4 12.5l5 5L20 6.5" pathLength={1} strokeDasharray="1" className="animate-draw" />
+    </svg>
+  );
+}
+
+/** One tool call, as shown in the chat panel and on the Agent page. The icon pulses while it runs; a check draws
+ * in when it succeeds. */
 export default function ToolCall({ t }: { t: ToolView }) {
   const [open, setOpen] = useState(false);
-  const { icon, text } = describe(t);
+  const { icon: Icon, text } = describe(t);
   const running = t.ok === undefined || t.ok === null;
   return (
-    <div className={cx("border px-2 py-1.5 text-xs", t.ok === false ? "border-alert" : "border-line")}>
-      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-start gap-1.5 text-left" aria-expanded={open}>
-        <span aria-hidden>{icon}</span>
-        <span className="min-w-0 flex-1">{text}</span>
-        <span className={cx("shrink-0", running ? "animate-pulse text-muted" : t.ok ? "text-ink" : "text-alert")}>
-          {running ? "…" : t.ok ? "✓" : "✗"}
+    <div className={cx("animate-rise border px-3 py-2 text-xs", t.ok === false ? "border-alert" : "border-line")}>
+      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-start gap-2.5 text-left" aria-expanded={open} aria-busy={running}>
+        <Icon className={cx("mt-px size-4 shrink-0", running ? "animate-tool-pulse text-ink" : "text-ink-2")} strokeWidth={1.5} aria-hidden />
+        <span className="min-w-0 flex-1 leading-relaxed">{text}</span>
+        <span className="flex shrink-0 items-center gap-1.5">
+          {running ? (
+            <span className="font-mono text-[10px] text-muted uppercase">running</span>
+          ) : t.ok ? (
+            <DrawnCheck className="text-ink" />
+          ) : (
+            <X className="size-4 text-alert" aria-label="Failed" />
+          )}
+          <ChevronDown className={cx("size-3.5 text-muted transition-transform duration-200", !open && "-rotate-90")} aria-hidden />
         </span>
       </button>
       {t.touches && t.touches.length > 0 && (
-        <div className="mt-1 flex flex-wrap gap-1 pl-5">
-          <span className="text-[11px] text-muted">{t.read_only === false ? "wrote" : "read"}</span>
+        <div className="mt-2 flex flex-wrap gap-1 pl-6">
+          <span className="font-mono text-[10px] text-muted uppercase">{t.read_only === false ? "wrote" : "read"}</span>
           {t.touches.map((f) => (
             <Chip key={f}>{f}</Chip>
           ))}
         </div>
       )}
       {t.proposals && t.proposals.length > 0 && t.name.startsWith("propose_") && t.ok && (
-        <a href="#/inbox" className="link mt-1 ml-5 inline-block text-[11px]">
-          Review in the Inbox →
+        <a href="#/inbox" className="link mt-2 ml-6 inline-block font-mono text-[10.5px] uppercase">
+          Review in the Inbox
         </a>
       )}
       {open && (
-        <div className="mt-1.5 space-y-1 pl-5">
-          <pre className="max-h-40 overflow-auto bg-sunken p-1.5 text-[11px] whitespace-pre-wrap">{JSON.stringify(t.input, null, 2)}</pre>
-          {t.summary && <p className="text-[11px] whitespace-pre-wrap text-muted">{t.summary}</p>}
+        <div className="mt-2 animate-rise space-y-1.5 pl-6">
+          <pre className="max-h-40 overflow-auto bg-sunken p-2 font-mono text-[11px] whitespace-pre-wrap">{JSON.stringify(t.input, null, 2)}</pre>
+          {t.summary && <p className="text-[11px] whitespace-pre-wrap text-ink-2">{t.summary}</p>}
         </div>
       )}
     </div>

@@ -1,3 +1,4 @@
+import { KeyRound } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api";
 import { useRefresh } from "../App";
@@ -65,7 +66,13 @@ export default function Settings() {
               </span>
               {ch.secret_ref && (
                 <span className={cx("text-xs", ch.secret_stored ? "text-ink" : "text-alert")}>
-                  {ch.secret_stored ? `🔑 ${ch.secret_ref} in keychain` : `missing secret: lighthouse-gc secret set ${ch.secret_ref}`}
+                  {ch.secret_stored ? (
+                    <span className="inline-flex items-center gap-1">
+                      <KeyRound className="size-3.5" aria-hidden /> {ch.secret_ref} in keychain
+                    </span>
+                  ) : (
+                    `missing secret: lighthouse-gc secret set ${ch.secret_ref}`
+                  )}
                 </span>
               )}
               {ch.kind === "ntfy" && <span className="text-xs text-muted">{ch.server}/{ch.topic}</span>}
@@ -190,7 +197,7 @@ export default function Settings() {
                 <Chip>{n.event}</Chip>
                 <span className="min-w-0 flex-1 truncate">{n.title}</span>
                 <span className={cx("text-xs", n.ok ? "text-ink" : "text-alert")}>
-                  {n.results.map((r) => `${r.channel} ${r.ok ? "✓" : "✗"}`).join(" · ")}
+                  {n.results.map((r) => `${r.channel} ${r.ok ? "ok" : "failed"}`).join(" · ")}
                 </span>
               </li>
             ))}

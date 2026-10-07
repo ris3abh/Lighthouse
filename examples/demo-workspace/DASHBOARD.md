@@ -8,14 +8,14 @@ _Generated 2026-10-06 from the files in `data/`. Do not edit by hand — run `li
 
 | Criterion | Status | Exhibits | Signals | Notes |
 |---|---|---:|---|---|
-| Nationally or internationally recognized prizes or awards (`awards`) | 🟡 building | 1 | — | Needs 1 more strength signal(s). |
-| Membership in associations requiring outstanding achievement (`membership`) | ⬜ gap | 0 | — | No accepted exhibits yet. |
-| Published material about you in major media or trade publications (`press`) | ⬜ gap | 0 | — | No accepted exhibits yet. |
-| Judging the work of others (`judging`) | ✅ banked | 2 | selective_event, multiple_instances, documented_scoring | 2 exhibit(s) with 3 strength signal(s) meet the bar. 1 exhibit(s) not counted until completed (stage: invited). |
-| Original contributions of major significance (`original_contributions`) | 🟡 building | 1 | widely_adopted, used_by_others, sustained_activity | Needs 1 more exhibit(s). |
-| Authorship of scholarly articles (`scholarly_articles`) | ✅ banked | 1 | peer_reviewed, cited, major_venue | 1 exhibit(s) with 3 strength signal(s) meet the bar. 1 exhibit(s) not counted until completed (stage: preprint). |
-| Critical or essential role for distinguished organizations (`critical_role`) | 🟡 building | 1 | critical_capacity | Needs 1 more exhibit(s) and 1 more strength signal(s). |
-| High salary or remuneration (`high_salary`) | ➖ dropped | 0 | — | Marked dropped by you. Rules say: gap — No accepted exhibits yet. |
+| Nationally or internationally recognized prizes or awards (`awards`) | [~] building | 1 | — | Needs 1 more strength signal(s). |
+| Membership in associations requiring outstanding achievement (`membership`) | [ ] gap | 0 | — | No accepted exhibits yet. |
+| Published material about you in major media or trade publications (`press`) | [ ] gap | 0 | — | No accepted exhibits yet. |
+| Judging the work of others (`judging`) | [x] banked | 2 | selective_event, multiple_instances, documented_scoring | 2 exhibit(s) with 3 strength signal(s) meet the bar. 1 exhibit(s) not counted until completed (stage: invited). |
+| Original contributions of major significance (`original_contributions`) | [~] building | 1 | widely_adopted, used_by_others, sustained_activity | Needs 1 more exhibit(s). |
+| Authorship of scholarly articles (`scholarly_articles`) | [x] banked | 1 | peer_reviewed, cited, major_venue | 1 exhibit(s) with 3 strength signal(s) meet the bar. 1 exhibit(s) not counted until completed (stage: preprint). |
+| Critical or essential role for distinguished organizations (`critical_role`) | [~] building | 1 | critical_capacity | Needs 1 more exhibit(s) and 1 more strength signal(s). |
+| High salary or remuneration (`high_salary`) | [-] dropped | 0 | — | Marked dropped by you. Rules say: gap — No accepted exhibits yet. |
 
 ## This week (human-only)
 

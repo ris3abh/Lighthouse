@@ -1,4 +1,4 @@
-import { ArrowRight, Square } from "lucide-react";
+import { ArrowRight, ArrowUp, Square } from "lucide-react";
 import type { Overview } from "../api";
 import Briefing from "../components/Briefing";
 import Sparkline from "../components/Sparkline";
@@ -62,7 +62,9 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
                     style={{ animationDelay: `${120 + i * 60}ms` }}
                   />
                   {i === board.threshold - 1 && (
-                    <span className="absolute top-5 right-0 font-mono text-[10px] tracking-[0.12em] text-ink uppercase">↑ threshold</span>
+                    <span className="absolute top-5 right-0 inline-flex items-center gap-1 font-mono text-[10px] tracking-[0.12em] text-ink uppercase">
+                      <ArrowUp className="size-3" aria-hidden /> threshold
+                    </span>
                   )}
                 </div>
               );

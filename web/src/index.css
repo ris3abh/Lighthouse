@@ -61,6 +61,7 @@
   --animate-slide-in: slide-in 260ms var(--ease-out-quint) both;
   --animate-flash: flash 400ms var(--ease-out-quint);
   --animate-tool-pulse: tool-pulse 1.4s ease-in-out infinite;
+  --animate-draw: draw 320ms var(--ease-out-quint) both;
 
   @keyframes rise {
     from {
@@ -85,6 +86,14 @@
   @keyframes dot-grow {
     from {
       transform: scale(0.5);
+    }
+  }
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
     }
   }
   @keyframes tool-pulse {

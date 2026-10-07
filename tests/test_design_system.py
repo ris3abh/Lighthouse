@@ -14,7 +14,20 @@ PALETTE = re.compile(
 )
 DARK_VARIANT = re.compile(r"(?<![\w-])dark:[\w\[\]/.-]+")
 SHADOW = re.compile(r"(?<![\w-])shadow(?:-(?!none)[\w\[\]]+)?(?![\w-])")
-TOKENS = ("paper", "surface", "sunken", "ink", "ink-2", "muted", "line", "frame", "alert", "alert-soft", "on-ink", "on-alert")
+TOKENS = (
+    "paper",
+    "surface",
+    "sunken",
+    "ink",
+    "ink-2",
+    "muted",
+    "line",
+    "frame",
+    "alert",
+    "alert-soft",
+    "on-ink",
+    "on-alert",
+)
 
 
 def _sources():
@@ -54,3 +67,17 @@ def test_one_accent_reduced_motion_and_theme_choice():
     assert '"system" | "light" | "dark"' in hooks and "prefers-color-scheme: dark" in hooks
     html = (WEB.parent / "index.html").read_text(encoding="utf-8")
     assert 'localStorage.getItem("lh-theme")' in html  # applied before first paint
+
+
+EMOJI = re.compile("[←-⇿⌀-⏿①-➿⬀-⯿\U0001f000-\U0001faff＋■-◿♥★]")
+
+
+def test_no_emoji_or_glyph_icons_in_the_dashboard():
+    """Icons are lucide line icons (ADR 0007), never emoji or text glyphs."""
+    offenders = [
+        f"{path.relative_to(WEB)}:{n}: {line.strip()[:80]}"
+        for path in _sources()
+        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1)
+        if EMOJI.search(line)
+    ]
+    assert offenders == []

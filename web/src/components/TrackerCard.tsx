@@ -60,7 +60,7 @@ export default function TrackerCard({ c, onDone }: { c: Candidate; onDone: () =>
             <p className="mt-1 text-xs text-ink-2">
               {String(p.target_type).replace("_", " ")}:{" "}
               {Object.entries((p.changes as unknown as Record<string, unknown>) ?? {})
-                .map(([k, v]) => `${k} → ${String(v)}`)
+                .map(([k, v]) => `${k}: ${String(v)}`)
                 .join(", ")}
             </p>
           )}

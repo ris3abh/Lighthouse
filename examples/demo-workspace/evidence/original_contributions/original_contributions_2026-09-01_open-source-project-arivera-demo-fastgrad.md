@@ -7,7 +7,7 @@
 - Link: https://github.com/arivera-demo/fastgrad
 - Strength signals: widely_adopted, used_by_others, sustained_activity
 
-arivera-demo/fastgrad — ★ 1,840 · 212 forks · 12 releases — Gradient compression for data-parallel training
+arivera-demo/fastgrad — 1,840 stars · 212 forks · 12 releases — Gradient compression for data-parallel training
 
 ## Facts at capture time
 

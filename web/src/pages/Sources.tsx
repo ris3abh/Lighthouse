@@ -123,7 +123,7 @@ export default function Sources() {
       <Card className="mb-8" title="Import your Claude or ChatGPT history">
         <div className="p-6">
           <p className="mb-4 max-w-3xl text-sm leading-relaxed text-ink-2">
-            Export your data (Claude: Settings → Privacy → Export data; ChatGPT: Settings → Data controls → Export), then drop the{" "}
+            Export your data (Claude: Settings, Privacy, Export data. ChatGPT: Settings, Data controls, Export), then drop the{" "}
             <code>.zip</code> or <code>conversations.json</code> here. Every conversation is saved as a private snapshot in your
             workspace. Lighthouse reads <strong>only your own messages</strong> and proposes deadlines, pipeline items and letter
             writers. These are self-reported: they keep you organized but never count toward a criterion. Only conversations

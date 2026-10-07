@@ -230,7 +230,7 @@ class GitHubSource:
             if releases >= 3:
                 signals.append("sustained_activity")
             desc = (repo.get("description") or "").strip()
-            summary = f"{repo['full_name']} — ★ {stars:,} · {forks:,} forks · {releases} releases"
+            summary = f"{repo['full_name']} — {stars:,} stars · {forks:,} forks · {releases} releases"
             if desc:
                 summary += f" — {desc}"
             out.append(

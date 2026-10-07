@@ -8,7 +8,7 @@ from lighthouse_gc.agent.redact import redact
 
 PLAIN = [
     "1,840 stars, 212 forks, 37 contributors, 12 releases",
-    "118,000 downloads (15,400 last 30d) · ♥ 233 · 14 derivative models",
+    "118,000 downloads (15,400 last 30d) · 233 likes · 14 derivative models",
     "63 citations; h-index 12; i10-index 9",
     "2026-10-14", "Oct 14, 2026", "14 October 2026", "10/14/2026", "2026-10-06T18:30:00+00:00",
     "v0.12.0", "arXiv:2509.04321", "arxiv.org/abs/2502.01234v2", "ICML 2025", "NeurIPS 2026",

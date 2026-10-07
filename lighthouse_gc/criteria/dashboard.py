@@ -10,7 +10,7 @@ from lighthouse_gc.criteria import overview as views
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.criteria.models import Scoreboard
 
-STATUS_ICON = {"banked": "✅ banked", "building": "🟡 building", "gap": "⬜ gap", "dropped": "➖ dropped"}
+STATUS_ICON = {"banked": "[x] banked", "building": "[~] building", "gap": "[ ] gap", "dropped": "[-] dropped"}
 
 DISCLAIMER = (
     "Lighthouse is not legal advice and is not affiliated with USCIS. Criteria profiles are "
@@ -69,7 +69,7 @@ def render(ws: Case, board: Scoreboard | None = None, today: date | None = None)
     w("")
     w(
         "\n".join(f"- [ ] {t['title']}" + (f" — due {t['due']}" if t.get("due") else "") for t in tasks)
-        or "- Nothing due. 🎉"
+        or "- Nothing due."
     )
     w("")
 
@@ -115,7 +115,7 @@ def render(ws: Case, board: Scoreboard | None = None, today: date | None = None)
     for s in sources:
         tracked = sum(i.tracked for i in s.items)
         sync = clock.local_date(s.last_sync).isoformat() if s.last_sync else "never"
-        err = f" — ⚠️ {s.last_error}" if s.last_error else ""
+        err = f" — error: {s.last_error}" if s.last_error else ""
         w(f"- `{s.id}` — {tracked} tracked item(s), last sync {sync}{err}")
     if not sources:
         w("- None yet. Run `lighthouse-gc import <url>`.")

@@ -222,9 +222,9 @@ class HuggingFaceSource:
                 facts |= {"downloads_30d": downloads, "downloads_all_time": all_time}
             noun = {"model": "Model", "dataset": "Dataset", "space": "Space"}[kind]
             stats = (
-                f"♥ {likes:,}"
+                f"{likes:,} likes"
                 if kind == "space"
-                else f"{all_time:,} downloads ({downloads:,} last 30d) · ♥ {likes:,}"
+                else f"{all_time:,} downloads ({downloads:,} last 30d) · {likes:,} likes"
             )
             out.append(
                 Candidate(
