@@ -122,6 +122,10 @@ class LetterBody(BaseModel):
     last_contact: dt.date | None = None
 
 
+class AgentSettingsBody(BaseModel):
+    cheap_mode: bool
+
+
 class KeyBody(BaseModel):
     key: str = Field(min_length=1, max_length=400)
 
@@ -782,6 +786,12 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     @app.put("/api/settings/autopilot")
     def put_autopilot(body: AutopilotBody) -> dict[str, Any]:
         return svc.set_autopilot(**body.model_dump(exclude_none=True)).model_dump()
+
+    @app.put("/api/settings/agent")
+    def put_agent_settings(body: AgentSettingsBody) -> dict[str, Any]:
+        """Cheap mode: chat on the mid tier (ADR 0009 §3)."""
+        svc.set_cheap_mode(body.cheap_mode)
+        return runner.status()
 
     @app.get("/api/agent/status")
     def agent_status() -> dict[str, Any]:

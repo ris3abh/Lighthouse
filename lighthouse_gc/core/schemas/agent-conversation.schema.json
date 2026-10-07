@@ -67,6 +67,19 @@
       "title": "Schema Version",
       "type": "integer"
     },
+    "summarized": {
+      "default": 0,
+      "description": "How many of the first messages the summary covers.",
+      "minimum": 0,
+      "title": "Summarized",
+      "type": "integer"
+    },
+    "summary": {
+      "default": "",
+      "description": "Older turns, summarized on the mundane tier (ADR 0009 \u00a73). The originals stay in messages.",
+      "title": "Summary",
+      "type": "string"
+    },
     "title": {
       "default": "",
       "title": "Title",

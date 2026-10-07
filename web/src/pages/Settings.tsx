@@ -77,6 +77,7 @@ export default function Settings() {
         <div className="p-6">
           <ConnectAI />
         </div>
+        <CheapMode />
       </Card>
 
       <Card title="Notification channels" className="mb-8" actions={
@@ -235,6 +236,35 @@ export default function Settings() {
           <Empty>Nothing sent yet.</Empty>
         )}
       </Card>
+    </div>
+  );
+}
+
+/** Cheap mode (ADR 0009 §3): chat on the mid tier instead of the hard one. */
+function CheapMode() {
+  const toast = useToast();
+  const status = useLoad(() => api.agentStatus(), []);
+  const s = status.data;
+  if (!s) return null;
+  const tier = (t: string) => s.routes.find((r) => r.tier === t)?.model ?? "";
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line p-6">
+      <p className="max-w-2xl text-sm leading-relaxed text-ink-2">
+        <strong className="font-semibold text-ink">Cheap mode</strong>: chat answers on the mid tier ({tier("mid")}) instead of the hard one ({tier("hard")}). Missions,
+        checks and summaries are unchanged.
+      </p>
+      <Button
+        aria-pressed={s.cheap_mode}
+        variant={s.cheap_mode ? "primary" : "secondary"}
+        onClick={() =>
+          api
+            .setCheapMode(!s.cheap_mode)
+            .then(() => status.reload())
+            .catch((e: Error) => toast(e.message, "error"))
+        }
+      >
+        {s.cheap_mode ? "On" : "Off"}
+      </Button>
     </div>
   );
 }

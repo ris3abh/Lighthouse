@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUp, Pin, PinOff, Plus, Sparkles, Square, X } from "lucide-react";
+import { ArrowRight, ArrowUp, Feather, Pin, PinOff, Plus, Sparkles, Square, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { api, type AgentRunView, type AgentStatus, type ConversationView, type RuleCheck } from "../api";
 import { useRefresh } from "../App";
@@ -49,6 +49,7 @@ export default function ChatPanel({
   const [convs, setConvs] = useState<{ id: string; title: string }[]>([]);
   const [convId, setConvId] = useState<string | null>(() => load(CONV_KEY));
   const [turns, setTurns] = useState<Turn[]>([]);
+  const [summary, setSummary] = useState<{ text: string; count: number } | null>(null);
   const [runId, setRunId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -84,6 +85,7 @@ export default function ChatPanel({
   useEffect(() => {
     if (!convId) {
       setTurns([]);
+      setSummary(null);
       return;
     }
     let cancelled = false;
@@ -91,7 +93,10 @@ export default function ChatPanel({
       .conversation(convId)
       .then(async (c: ConversationView) => {
         const base: Turn[] = c.messages.map((m) => ({ role: m.role, text: m.text, runId: m.run_id }));
-        if (!cancelled) setTurns(base);
+        if (!cancelled) {
+          setTurns(base);
+          setSummary(c.summary ? { text: c.summary, count: c.summarized ?? 0 } : null);
+        }
         // Earlier answers show their tool calls inline too: load each run's recorded timeline.
         const runs = await Promise.all(
           base.map((t) => (t.role === "assistant" && t.runId ? api.run(t.runId).catch(() => null) : Promise.resolve(null))),
@@ -188,6 +193,25 @@ export default function ChatPanel({
             </option>
           ))}
         </select>
+        <Button
+          size="sm"
+          variant={status?.cheap_mode ? "secondary" : "ghost"}
+          className="px-2"
+          aria-pressed={!!status?.cheap_mode}
+          onClick={() =>
+            api
+              .setCheapMode(!status?.cheap_mode)
+              .then((s) => {
+                setStatus(s);
+                toast(s.cheap_mode ? "Cheap mode: chat uses the mid tier from your next message." : "Cheap mode off: chat uses the hard tier.");
+              })
+              .catch((e: Error) => toast(e.message, "error"))
+          }
+          title={status?.cheap_mode ? "Cheap mode is on (mid tier). Turn off" : "Cheap mode: answer on the mid tier, for less"}
+          aria-label="Cheap mode"
+        >
+          <Feather />
+        </Button>
         <Button size="sm" variant="ghost" className="px-2" onClick={newChat} title="New conversation" aria-label="New conversation">
           <Plus />
         </Button>
@@ -239,6 +263,14 @@ export default function ChatPanel({
             </div>
           </div>
         )}
+        {summary && (
+          <details className="mb-6 border border-line bg-sunken/40 px-4 py-3 text-xs text-ink-2" data-summary>
+            <summary className="cursor-pointer font-mono text-[10.5px] tracking-[0.06em] uppercase">
+              The first {summary.count} messages are summarized for the AI · the full text is kept below
+            </summary>
+            <p className="mt-2 leading-relaxed whitespace-pre-wrap">{summary.text}</p>
+          </details>
+        )}
         <div className="flex flex-col gap-6">
           {turns.map((t, i) => (
             <TurnView key={i} t={t} />
@@ -283,7 +315,7 @@ export default function ChatPanel({
           )}
         </div>
         <p className="mt-2 truncate font-mono text-[10.5px] text-muted">
-          {status && `${status.model} · ${fmtTokens(status.month.tokens)} TOKENS · ${fmtUsd(status.month.usd)}${status.budget.monthly_usd ? ` OF $${status.budget.monthly_usd}` : ""} THIS MONTH`}
+          {status && `${status.cheap_mode ? "CHEAP MODE · " : ""}${status.model} · ${fmtTokens(status.month.tokens)} TOKENS · ${fmtUsd(status.month.usd)}${status.budget.monthly_usd ? ` OF $${status.budget.monthly_usd}` : ""} THIS MONTH`}
           {" · ENTER TO SEND"}
         </p>
       </form>

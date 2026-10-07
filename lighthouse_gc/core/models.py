@@ -632,6 +632,9 @@ class Conversation(_File):
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
     messages: list[ConversationMessage] = Field(default_factory=list)
+    summary: str = Field("", description="Older turns, summarized on the mundane tier (ADR 0009 §3). The "
+                         "originals stay in messages.")  # fmt: skip
+    summarized: int = Field(0, ge=0, description="How many of the first messages the summary covers.")
 
 
 # --------------------------------------------------------------------------- memory/ (section 5b)

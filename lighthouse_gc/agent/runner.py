@@ -21,7 +21,14 @@ from lighthouse_gc.agent.routing import Route, openai_key, route, table
 from lighthouse_gc.agent.search_policy import SearchPolicy
 from lighthouse_gc.agent.tools import RunContext, build_tools
 from lighthouse_gc.core import clock
-from lighthouse_gc.core.models import AgentRun, Conversation, ConversationMessage, TimelineItem, utcnow
+from lighthouse_gc.core.models import (
+    AgentRun,
+    Conversation,
+    ConversationMessage,
+    RunUsage,
+    TimelineItem,
+    utcnow,
+)
 from lighthouse_gc.core.workspace import NotFound, WorkspaceError, _atomic_write, dump_model
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.engine import get_engine
@@ -31,6 +38,14 @@ from lighthouse_gc.vault import Vault
 from lighthouse_gc.vault.rulecheck import Judge, RuleChecker, engine_judge, notify_conflicts
 
 MAX_HISTORY_MESSAGES = 30
+SUMMARIZE_AFTER_TOKENS = 6_000  # replayed history past this is summarized (ADR 0009 §3)
+KEEP_TURNS = 6  # the most recent messages always go as they are
+SUMMARY_SYSTEM = """You summarize the earlier part of a conversation between a person and Lighthouse, an assistant \
+for their O-1A / EB-1A immigration case, so the conversation can continue without the full text.
+
+Keep: facts the person stated about themselves and their case, decisions, what they asked for and whether it was \
+done, open questions, names, dates and numbers exactly as written. Leave out pleasantries. Never add anything that \
+wasn't said, and never judge eligibility. Plain sentences or short bullets, under 250 words."""
 
 
 class BudgetExceeded(WorkspaceError):
@@ -76,6 +91,40 @@ class AgentRunner:
 
     def checker(self) -> RuleChecker:
         return RuleChecker(Vault(self.ws), self.judge(), self.route("check").model)
+
+    async def _summarize(self, conv: Conversation) -> None:
+        """When replaying the unsummarized turns would pass SUMMARIZE_AFTER_TOKENS, fold all but the last KEEP_TURNS
+        into the summary, on the mundane tier. The originals stay in the conversation. If no model is available the
+        turns are replayed as before."""
+        pending = conv.messages[conv.summarized :]
+        if len(pending) <= KEEP_TURNS:
+            return
+        if _tokens(conv.summary) + sum(_tokens(m.text) for m in pending) <= SUMMARIZE_AFTER_TOKENS:
+            return
+        fold = pending[:-KEEP_TURNS]
+        try:
+            judge, how = self.mundane("summarize")
+            if judge is None:
+                return
+            text = "\n".join(f"{'Person' if m.role == 'user' else 'Lighthouse'}: {m.text}" for m in fold)
+            prompt = (
+                f"Summary so far:\n{conv.summary}\n\n" if conv.summary else ""
+            ) + f"Earlier messages:\n{text}"
+            reply = await judge(SUMMARY_SYSTEM, prompt, how.model)
+        except Exception:  # noqa: BLE001  (a failed summary never blocks the chat)
+            return
+        summary, _ = guard_answer(reply.text.strip())
+        if not summary:
+            return
+        conv.summary, conv.summarized = summary, conv.summarized + len(fold)
+        self._save_conversation(conv)
+        self.save(AgentRun(kind="chat", engine=how.provider if how.provider == "openai" else self.engine().name,
+                           model=how.model, task="summarize", tier=how.tier, provider=how.provider, status="done",
+                           prompt=f"Summarized {len(fold)} earlier messages of a long chat", text=summary,
+                           conversation_id=conv.id, cost_usd=reply.cost_usd,
+                           usage=RunUsage(input_tokens=int(reply.usage.get("input_tokens", 0)),
+                                          output_tokens=int(reply.usage.get("output_tokens", 0))),
+                           finished_at=clock.utcnow()))  # fmt: skip
 
     def route(self, task: str) -> Route:
         cfg = self.ws.config()
@@ -197,8 +246,11 @@ class AgentRunner:
         run = AgentRun(kind=kind, engine=engine.name, model=model, prompt=prompt, mission=mission,  # type: ignore[arg-type]
                        conversation_id=conv.id if conv else None, task=how.task, tier=how.tier,
                        provider=how.provider)  # fmt: skip
+        summary = ""
         if conv is not None:
-            history = list(conv.messages)
+            await self._summarize(conv)
+            history = list(conv.messages[conv.summarized :])
+            summary = conv.summary
             conv.messages.append(ConversationMessage(role="user", text=prompt, run_id=run.id))
             self._save_conversation(conv)
         else:
@@ -210,7 +262,7 @@ class AgentRunner:
         ]
         request = EngineRequest(
             system_prompt=SYSTEM_PROMPT,
-            prompt=_render_turn(prompt, history, self.ws, page),
+            prompt=_render_turn(prompt, history, self.ws, page, summary),
             model=model,
             effort=cfg.agent.effort,
             web_search=cfg.agent.web_search,
@@ -375,10 +427,22 @@ class AgentRunner:
                 return
 
 
-def _render_turn(prompt: str, history: list[ConversationMessage], ws: Case, page: str | None) -> str:
+def _tokens(text: str) -> int:
+    return len(text) // 4  # a rough count; enough to decide when to summarize
+
+
+def _render_turn(
+    prompt: str, history: list[ConversationMessage], ws: Case, page: str | None, summary: str = ""
+) -> str:
     lines = [f"Today is {clock.today().isoformat()}. Active profile: {ws.profile_id()}."]
     if page:
         lines.append(f"The person is on the {page} page of the dashboard.")
+    if summary:
+        lines += [
+            "",
+            "Summary of the earlier conversation (the full text is kept; this is shorter):",
+            summary,
+        ]
     if history:
         lines += ["", "Conversation so far:"]
         for m in history[-MAX_HISTORY_MESSAGES:]:

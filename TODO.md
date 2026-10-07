@@ -100,7 +100,10 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       agent/routing.py (a lighthouse.yaml model that differs from the default still wins); OpenAI only for
       tool-less mundane reading, redacted, capped and costed (gpt-5-mini by default; prices in openai_chat.py);
       without an OpenAI key the mundane tier is Claude Haiku. Runs record task, tier and provider
-- [ ] D3. Long chats: older turns summarized (summary saved, original kept); "cheap mode" toggle (mid tier)
+- [x] D3. Long chats: older turns summarized (summary saved, original kept); "cheap mode" toggle (mid tier).
+      Past ~6,000 replayed tokens, all but the last six messages fold into a summary on the mundane tier
+      (guardrails applied, cost recorded, shown at the top of the chat); a failed summary never blocks the chat;
+      cheap mode in the chat header and Settings
 - [ ] CHECKPOINT 3 (agent): chat actions, routing + cost per run on the Agent page, cheap mode
 
 ### Part E: Google, CRM, outreach (ADR 0010)

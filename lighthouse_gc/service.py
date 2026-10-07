@@ -341,6 +341,20 @@ class Service:
         return self._record("settings.autopilot", "settings", apply, target_id="autopilot", before=before,
                             summary=", ".join(f"{k}={'on' if v else 'off'}" for k, v in flags.items()))  # fmt: skip
 
+    def set_cheap_mode(self, on: bool) -> Any:
+        if self.auto:
+            raise AutopilotRefused("autopilot can't change settings")
+        cfg = self.ws.config()
+        before = {"cheap_mode": cfg.agent.cheap_mode}
+
+        def apply() -> Any:
+            cfg.agent.cheap_mode = bool(on)
+            self.ws.save_config(cfg)
+            return {"cheap_mode": cfg.agent.cheap_mode}
+
+        return self._record("settings.agent", "settings", apply, target_id="cheap_mode", before=before,
+                            summary=f"cheap mode {'on' if on else 'off'}")  # fmt: skip
+
     def set_missions(self, **flags: bool) -> Any:
         if self.auto:
             raise AutopilotRefused("autopilot can't change mission settings")

@@ -39,6 +39,7 @@ YOURS: dict[str, str] = {
     "vault.promote": "It changes which sources the rule check trusts.",
     "settings.autopilot": "It decides what the agent may do on its own.",
     "settings.missions": "It decides what the agent may do on its own.",
+    "settings.agent": "It decides which model answers you and what that costs.",
     "inbox.recheck": "It re-runs the automatic check on the agent's own text.",
     "briefing.recheck": "It re-runs the automatic check on the agent's own text.",
     "onboarding.": "Your own answers about yourself.",

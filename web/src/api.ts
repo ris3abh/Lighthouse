@@ -494,6 +494,8 @@ export interface ConversationView {
   created_at: string;
   updated_at: string;
   messages: { role: "user" | "assistant"; text: string; at: string; run_id: string | null }[];
+  summary?: string;
+  summarized?: number;
 }
 
 /** One event from /api/agent/runs/{id}/stream. */
@@ -644,6 +646,7 @@ export const api = {
   onboardingRestart: () => request<OnboardingView>("POST", "/onboarding/restart"),
   onboardingAi: (choice: "login" | "key" | "skip") => request<OnboardingView>("POST", "/onboarding/ai", { choice }),
   aiStatus: () => request<AiStatus>("GET", "/ai"),
+  setCheapMode: (on: boolean) => request<AgentStatus>("PUT", "/settings/agent", { cheap_mode: on }),
   saveAiKey: (key: string) => request<AiStatus>("PUT", "/ai/key", { key }),
   forgetAiKey: () => request<AiStatus>("DELETE", "/ai/key"),
   scanChats: (files: File[], paths: (f: File) => string) => {

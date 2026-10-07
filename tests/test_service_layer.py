@@ -24,7 +24,7 @@ PDF = b"%PDF-1.4 fictional\n"
 # Routes the five pages write through. Every mutating route under these prefixes must be covered below.
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
-                 "/api/settings/missions", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
+                 "/api/settings/missions", "/api/settings/agent", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
                  "/api/onboarding", "/api/todos")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
@@ -203,6 +203,7 @@ SAMPLES = {
     ("POST", "/api/onboarding/restart"): ("/api/onboarding/restart", {}, "onboarding.restart"),
     ("POST", "/api/onboarding/goto"): ("/api/onboarding/goto", {"json": {"step": "questions"}}, "onboarding.goto"),
     ("PATCH", "/api/todos/{todo_id}"): ("/api/todos/{todo}", {"json": {"status": "done"}}, "todo.update"),
+    ("PUT", "/api/settings/agent"): ("/api/settings/agent", {"json": {"cheap_mode": True}}, "settings.agent"),
     ("POST", "/api/onboarding/ai"): ("/api/onboarding/ai", {"json": {"choice": "skip"}}, "onboarding.ai", "_at_ai"),
 }  # fmt: skip
 
