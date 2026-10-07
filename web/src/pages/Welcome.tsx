@@ -65,7 +65,7 @@ export default function Welcome({ view, onChange }: { view: OnboardingView; onCh
       <main className="@container mx-auto w-full max-w-[1280px] flex-1 px-4 py-10 md:px-10 md:py-16">
         {step === "linkedin" && <LinkedInStep busy={busy} run={run} />}
         {step === "questions" && <QuestionStep view={view} busy={busy} run={run} />}
-        {step === "lookups" && <LookupStep view={view} busy={busy} run={run} />}
+        {step === "lookups" && <LookupStep view={view} busy={busy} run={run} onChange={onChange} />}
         {step === "chats" && <ChatsStep busy={busy} run={run} />}
       </main>
     </div>
@@ -274,8 +274,14 @@ function ProfilePanel({ view }: { view: OnboardingView }) {
   );
 }
 
-function LookupStep({ view, busy, run }: { view: OnboardingView; busy: boolean; run: Run }) {
+function LookupStep({ view, busy, run, onChange }: { view: OnboardingView; busy: boolean; run: Run; onChange: (v: OnboardingView) => void }) {
   const open = view.state.lookups.some((l) => l.status === "offered");
+  const searching = view.state.lookups.some((l) => l.status === "accepted");
+  useEffect(() => {
+    if (!searching) return;
+    const id = setInterval(() => api.onboarding().then(onChange, () => {}), 2500); // web lookups run in the background
+    return () => clearInterval(id);
+  }, [searching, onChange]);
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-10 @4xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
       <div className="min-w-0">
@@ -283,16 +289,16 @@ function LookupStep({ view, busy, run }: { view: OnboardingView; busy: boolean; 
         <h1 className="display mt-4 text-4xl md:text-6xl">Want me to look these up?</h1>
         <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-2">
           Only for what you confirmed. Anything I find goes to your Inbox for you to check first, and finds that may belong to someone with the
-          same name are marked.
+          same name are marked. Web searches use your AI, usually a few cents each.
         </p>
         <div className="mt-8 flex flex-col gap-3">
           {view.state.lookups.map((l) => (
             <LookupCard key={l.id} l={l} busy={busy} run={run} />
           ))}
         </div>
-        {open && (
-          <Button className="mt-6" variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingStep("lookups_done"))}>
-            Not now, continue
+        {(open || searching) && (
+          <Button className="mt-6" variant={open ? "ghost" : "primary"} disabled={busy && open} onClick={() => run(() => api.onboardingStep("lookups_done"))}>
+            {open ? "Not now, continue" : "Continue (searches finish in the background)"}
           </Button>
         )}
       </div>

@@ -9,7 +9,8 @@ from lighthouse_gc.engine.base import AgentEvent, AgentTool, Emit, EngineRequest
 
 class FakeEngine:
     """``script`` steps: ("text", str) | ("tool", name, args) | ("search", args) (built-in web search, through
-    the request's guard) | ("usage", {...}) | ("fail", message)."""
+    the request's guard) | ("usage", {...}) | ("fail", message). ``args`` may be a callable taking the earlier
+    tool outputs, for ids only known at run time (an observation_id from read_page)."""
 
     name = "fake"
 
@@ -36,6 +37,8 @@ class FakeEngine:
                     await emit(AgentEvent("text", {"text": step[1]}))
                 elif step[0] == "tool":
                     _, name, args = step
+                    if callable(args):
+                        args = args(self.tool_outputs)
                     tid = f"tool_{i}"
                     await emit(AgentEvent("tool_call", {"id": tid, "name": name, "input": args}))
                     try:

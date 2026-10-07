@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
+import anyio
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
@@ -34,8 +35,10 @@ class LookupBody(BaseModel):
     accept: bool
 
 
-def view(ws: Case) -> dict[str, Any]:
+def view(ws: Case, runner: Any = None) -> dict[str, Any]:
     state = ws.onboarding()
+    if runner is not None:
+        _refresh_finds(state, runner)
     q = flow.next_question(state) if state.step == "questions" else None
     panel = []
     for key in PANEL:
@@ -57,12 +60,41 @@ def view(ws: Case) -> dict[str, Any]:
             "panel": panel, "person": ws.person().model_dump(mode="json")}  # fmt: skip
 
 
-def _advance(state: OnboardingState) -> None:
+def _refresh_finds(state: OnboardingState, runner: Any) -> None:
+    """A web lookup runs as an agent run in the background; show where it got to (not saved until the next write)."""
+    from lighthouse_gc.core.text import plural
+
+    for lk in state.lookups:
+        if lk.kind != "find" or lk.status != "accepted" or not lk.run_id:
+            continue
+        try:
+            run = runner.get(lk.run_id)
+        except Exception:
+            continue
+        if run.status == "running":
+            lk.result = "Searching the web…"
+        elif run.status == "done":
+            lk.status = "done"
+            n = len(run.proposals)
+            lk.result = (f"Found {plural(n, 'page')} that may confirm it; check your Inbox." if n else
+                         "I couldn't find an official page that names you. The to-do stays open for your own proof.")  # fmt: skip
+        else:
+            lk.status = "failed"
+            lk.result = f"The search stopped ({run.error or run.stop_reason or run.status})."[:300]
+
+
+def todos_for(ws: Case, state: OnboardingState) -> list[Any]:
+    profile = state.target_profile if state.target_profile in flow.PROFILES else None
+    return flow.todos_from(state, {c.id for c in ws.profile(profile).criteria}, clock.today())
+
+
+def _advance(state: OnboardingState, ws: Case | None = None) -> None:
     """Move to the next step once the current one has nothing left to ask."""
     if state.step == "questions" and flow.next_question(state) is None:
-        state.lookups = flow.offer_lookups(state)
+        state.lookups = flow.offer_lookups(state, todos_for(ws, state) if ws is not None else None)
         state.step = "lookups" if state.lookups else "chats"
-    if state.step == "lookups" and all(lk.status != "offered" for lk in state.lookups):
+    # Wait while a web lookup the person approved is still running, so they see it finish (or press Continue).
+    if state.step == "lookups" and all(lk.status not in ("offered", "accepted") for lk in state.lookups):
         state.step = "chats"
 
 
@@ -72,12 +104,16 @@ def _start(state: OnboardingState) -> None:
         state.started_at = clock.utcnow()
 
 
-def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
-    """``judge``: a callable returning the model judge (or None) for non-LinkedIn PDFs."""
+def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any = None) -> None:
+    """``judge``: a callable returning the model judge (or None) for non-LinkedIn PDFs. ``runner``: the agent
+    runner, for web lookups the person said Yes to."""
+
+    def view_now() -> dict[str, Any]:
+        return view(ws, runner)
 
     @app.get("/api/onboarding")
     def get_onboarding() -> dict[str, Any]:
-        return view(ws)
+        return view_now()
 
     @app.post("/api/onboarding/linkedin")
     async def upload_linkedin(file: UploadFile = File(...)) -> dict[str, Any]:
@@ -120,7 +156,7 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
         )
         svc.onboarding_save(state, "onboarding.linkedin", summary=f"read {len(fields)} fields from {file.filename}",
                             evidence=evidence)  # fmt: skip
-        return view(ws)
+        return view_now()
 
     @app.post("/api/onboarding/answer")
     def answer(body: Answer) -> dict[str, Any]:
@@ -136,7 +172,7 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
         if asked is not None:
             state.transcript += [Turn(who="lighthouse", text=asked.text),
                                  Turn(who="you", text=flow.reply_text(asked, body.action, body.value))]  # fmt: skip
-        _advance(state)
+        _advance(state, ws)
         person = dict(writes["person"])
         if writes.get("filing_date") or writes["profile"]:
             from datetime import date
@@ -156,7 +192,7 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
                             todos=todos)  # fmt: skip
         if writes["profile"] and writes["profile"] != ws.profile_id():
             svc.set_profile(writes["profile"])
-        return view(ws)
+        return view_now()
 
     @app.post("/api/onboarding/step")
     def step(body: StepBody) -> dict[str, Any]:
@@ -168,6 +204,8 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
             state.transcript = [Turn(who="lighthouse", text="No problem, we'll do without it. Nice to meet you! "
                                      "Just two quick questions, and you can skip either.")]  # fmt: skip
         elif s == "lookups_done" and state.step == "lookups":
+            if runner is not None:
+                _refresh_finds(state, runner)  # keep what finished; a search still running carries on
             for lk in state.lookups:
                 if lk.status == "offered":
                     lk.status = "declined"
@@ -188,17 +226,17 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
             raise HTTPException(409, f"can't {s} from the {state.step} step")
         _advance(state)
         svc.onboarding_save(state, "onboarding.step", summary=s)
-        return view(ws)
+        return view_now()
 
     @app.post("/api/onboarding/restart")
     def restart() -> dict[str, Any]:
         """Run onboarding again (from Settings). What it added stays; the answers start over."""
         svc.onboarding_save(OnboardingState(status="in_progress", started_at=clock.utcnow()), "onboarding.restart",
                             summary="started over")  # fmt: skip
-        return view(ws)
+        return view_now()
 
     @app.post("/api/onboarding/lookups/{lookup_id}")
-    def lookup(lookup_id: str, body: LookupBody) -> dict[str, Any]:
+    async def lookup(lookup_id: str, body: LookupBody) -> dict[str, Any]:
         """Run a lookup the person said Yes to (or decline it). Finds go to the Inbox, never into the case."""
         state = ws.onboarding()
         lk = next((x for x in state.lookups if x.id == lookup_id), None)
@@ -208,17 +246,34 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
             raise HTTPException(409, f"that lookup is already {lk.status}")
         if not body.accept:
             lk.status = "declined"
+        elif lk.kind == "find":
+            lk.status = "accepted"
+            person = ws.person()
+            todo = next((t for t in ws.todos().todos if t.id == lk.todo_id), None)
+            try:
+                if runner is None:
+                    raise RuntimeError("the agent isn't available")
+                run = await runner.start("manual", flow.find_task(todo.kind if todo else "", lk.targets[0], person.name),
+                                         namesake=[n for n in (person.name, *person.aliases) if n])  # fmt: skip
+                lk.run_id, lk.result = run.id, "Searching the web…"
+            except Exception as exc:  # no AI connected, or over budget: nothing was searched
+                lk.status = "failed"
+                lk.result = (
+                    f"This one needs your AI connected (Settings > Agent). Nothing was searched. ({exc})"
+                )[:300]
         else:
             lk.status = "accepted"
             try:
-                lk.result = run_lookup(ws, lk.kind, lk.targets)
+                lk.result = await anyio.to_thread.run_sync(
+                    run_lookup, ws, lk.kind, lk.targets
+                )  # sync connectors
                 lk.status = "done"
             except Exception as exc:  # network or connector problem: say so, don't stop onboarding
                 lk.result = f"couldn't finish: {exc}"[:300]
                 lk.status = "failed"
         _advance(state)
         svc.onboarding_save(state, "onboarding.lookup", summary=f"{lookup_id}: {lk.status}")
-        return view(ws)
+        return view_now()
 
 
 def run_lookup(ws: Case, kind: str, targets: list[str]) -> str:

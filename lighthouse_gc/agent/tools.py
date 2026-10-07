@@ -30,7 +30,7 @@ from lighthouse_gc.core.models import (
     RunSource,
     slugify,
 )
-from lighthouse_gc.core.text import plural
+from lighthouse_gc.core.text import names_person, plural
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.criteria.models import Letter
 from lighthouse_gc.engine.base import AgentTool
@@ -52,6 +52,9 @@ class RunContext:
     redact: bool = True
     checker: RuleChecker | None = None
     search: SearchPolicy | None = None
+    namesake: list[str] | None = (
+        None  # the person's names: proposals from pages that don't name them are flagged
+    )
     svc: Service = field(init=False)
 
     def __post_init__(self) -> None:
@@ -228,9 +231,19 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                                                predicate="supports_criterion", value=crit.id,
                                                excerpt=args["quote"], stage=args.get("stage"),
                                                valid_from=clock.today(), confidence="medium")])  # fmt: skip
+        summary, confidence, facts = args["summary"][:500], 0.5, {}
+        if ctx.namesake:
+            own = names_person(text, ctx.namesake)
+            facts["namesake_check"] = "passed" if own else "possible namesake"
+            if not own:
+                confidence = 0.2
+                summary = (
+                    summary
+                    + " Possible namesake: the page doesn't name you exactly. Accept only if this is you."
+                )[:600]
         cand = Candidate(kind="evidence", fingerprint=f"agent:{crit.id}:{key}", source=f"agent:{ctx.run.id}",
                          evidence_type=args["evidence_type"], proposed_criterion=crit.id, title=args["title"][:120],
-                         summary=args["summary"][:500], confidence=0.5, raw_url=obs.source_url,
+                         summary=summary, confidence=confidence, raw_url=obs.source_url, facts=facts,
                          stage=args.get("stage"), rule_check=check)  # fmt: skip
         return _propose(cand.with_evidence(evidence))
 

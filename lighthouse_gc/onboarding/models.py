@@ -41,11 +41,13 @@ class Turn(_Model):
 
 class Lookup(_Model):
     id: str
-    kind: Literal["papers", "github", "orcid", "website"]
+    kind: Literal["papers", "github", "orcid", "website", "find"]
     prompt: str
     targets: list[str] = Field(default_factory=list)
     status: Literal["offered", "accepted", "declined", "done", "failed"] = "offered"
     result: str = ""
+    todo_id: str | None = Field(None, description="find: the to-do this lookup looks for proof of.")
+    run_id: str | None = Field(None, description="find: the agent run doing the search.")
 
 
 class OnboardingState(_File):

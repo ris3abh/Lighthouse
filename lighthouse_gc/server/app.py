@@ -179,7 +179,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         ok, _ = runner.engine().available()
         return runner.judge() if ok else None
 
-    mount_onboarding(app, ws, svc, judge=_onboarding_judge)
+    mount_onboarding(app, ws, svc, judge=_onboarding_judge, runner=runner)
     app.state.runner = runner
     vault = Vault(ws)
 

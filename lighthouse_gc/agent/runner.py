@@ -146,6 +146,7 @@ class AgentRunner:
         conversation_id: str | None = None,
         page: str | None = None,
         mission: str | None = None,
+        namesake: list[str] | None = None,
     ) -> AgentRun:
         prompt = prompt.strip()
         if not prompt:
@@ -191,16 +192,18 @@ class AgentRunner:
         )
         live = _Live()
         self._live[run.id] = live
-        live.task = asyncio.create_task(self._execute(run, request, live, used_tokens))
+        live.task = asyncio.create_task(self._execute(run, request, live, used_tokens, namesake))
         return run
 
-    async def _execute(self, run: AgentRun, request: EngineRequest, live: _Live, month_tokens: int) -> None:
+    async def _execute(self, run: AgentRun, request: EngineRequest, live: _Live, month_tokens: int,
+                       namesake: list[str] | None = None) -> None:  # fmt: skip
         cfg = self.ws.config()
         b = cfg.agent.budget
         checker = self.checker()
         policy = SearchPolicy(checker.vault.manifest)
         request.guard = policy
-        ctx = RunContext(self.ws, run, redact=cfg.privacy.redact_before_llm, checker=checker, search=policy)
+        ctx = RunContext(self.ws, run, redact=cfg.privacy.redact_before_llm, checker=checker, search=policy,
+                         namesake=namesake)  # fmt: skip
         tools = build_tools(ctx)
         meta = {t.name: {"read_only": t.read_only, "touches": list(t.touches)} for t in tools}
         meta["WebSearch"] = meta["web_search"] = {"read_only": True, "touches": []}

@@ -93,7 +93,9 @@ def test_maya_software_engineer(fresh, http_mock):
     assert (person.name, person.location, person.field) == (p["name"], p["location"], p["headline"])
     assert str(person.filing_target.target_date) == "2027-03-01" and person.filing_target.profile == "o1a"
     assert view["state"]["step"] == "lookups" and [lk["kind"] for lk in view["state"]["lookups"]] == [
-        "github"
+        "github",
+        "find",
+        "find",
     ]
     assert not http_mock.calls  # nothing went to the web yet
 
@@ -104,7 +106,12 @@ def test_maya_software_engineer(fresh, http_mock):
     view = c.post("/api/onboarding/lookups/github", headers=W, json={"accept": True}).json()
     lk = view["state"]["lookups"][0]
     assert lk["status"] == "done" and "github:mayachen-example" in lk["result"]
-    assert view["state"]["step"] == "chats"
+    view = c.post(
+        "/api/onboarding/step", headers=W, json={"step": "lookups_done"}
+    ).json()  # not the web searches
+    assert view["state"]["step"] == "chats" and {lk["status"] for lk in view["state"]["lookups"][1:]} == {
+        "declined"
+    }
     view = c.post("/api/onboarding/step", headers=W, json={"step": "chats_skip"}).json()
     view = c.post("/api/onboarding/step", headers=W, json={"step": "tour_done"}).json()
     assert view["state"]["status"] == "done" and view["needed"] is False
@@ -121,7 +128,7 @@ def test_ravi_ai_researcher_papers_with_namesake_check(fresh, http_mock):
     )
     assert fresh.profile_id() == "eb1a" and fresh.person().filing_target.profile == "eb1a"
     kinds = [lk["kind"] for lk in view["state"]["lookups"]]
-    assert kinds == ["papers", "orcid"]
+    assert kinds == ["papers", "orcid", "find", "find", "find"]
     assert view["state"]["lookups"][0]["prompt"] == "You mentioned 2 papers. Want me to find them on arXiv?"
 
     feeds = {
@@ -154,7 +161,7 @@ def test_ravi_ai_researcher_papers_with_namesake_check(fresh, http_mock):
     view = c.post(
         "/api/onboarding/lookups/orcid", headers=W, json={"accept": False}
     ).json()  # declined: never runs
-    assert view["state"]["lookups"][1]["status"] == "declined" and view["state"]["step"] == "chats"
+    assert view["state"]["lookups"][1]["status"] == "declined" and view["state"]["step"] == "lookups"
     assert not any("orcid" in str(call.request.url) for call in http_mock.calls)
 
 
@@ -164,14 +171,15 @@ def test_lena_business_analytics_lead_website(fresh, http_mock):
     view, asked = answer_all(c, upload(c, "lena"))
     assert any("You list 1 certification: Certified Analytics Professional (CAP)" in q for q in asked)
     assert any("Your profile links to lenavogel.example. Is this yours?" in q for q in asked)
-    [lk] = view["state"]["lookups"]
+    lk = view["state"]["lookups"][0]
+    assert [x["kind"] for x in view["state"]["lookups"]] == ["website", "find", "find", "find"]
     assert lk["kind"] == "website" and lk["targets"] == ["https://lenavogel.example"]
     page = ("<html><head><title>Lena Vogel</title></head><body><article><h1>Lena Vogel</h1>"
             + "<p>Lena Vogel won the Analytics Leader of the Year award from the Midwest Data Council in 2025.</p>" * 4
             + "</article></body></html>")  # fmt: skip
     http_mock.get("https://lenavogel.example/").respond(200, text=page, headers={"content-type": "text/html"})
     view = c.post(f"/api/onboarding/lookups/{lk['id']}", headers=W, json={"accept": True}).json()
-    assert view["state"]["lookups"][0]["status"] == "done"
+    assert view["state"]["lookups"][0]["status"] == "done", view["state"]["lookups"][0]["result"]
     assert any(
         c.proposed_criterion == "awards" for c in fresh.pending_candidates()
     )  # via the Inbox, not the case
@@ -433,3 +441,117 @@ def test_skipped_items_make_no_todos_and_rerunning_adds_none_twice(fresh):
     c.post("/api/onboarding/restart", headers=W)
     _done(c, "maya")
     assert len(fresh.todos().todos) == _done_again == 2
+
+
+# ----------------------------------------------------------------------------- web lookups for those items (C8)
+
+
+def _finish_questions(ws, pid, engine):
+    from fastapi.testclient import TestClient as TC
+
+    c = TC(create_app(ws, allowed_hosts=["testserver"], engine=engine))
+    view, _ = answer_all(c, upload(c, pid))
+    return c, view
+
+
+def _judging_page(http_mock, names: str) -> str:
+    url = "https://hackseattle.example/judges"
+    body = (
+        f"<p>HackSeattle 2025 judges</p><p>Thank you to everyone who judged HackSeattle 2025: {names}.</p>"
+        * 3
+    )
+    http_mock.get(url).respond(
+        200, text=f"<html><body><main>{body}</main></body></html>", headers={"content-type": "text/html"}
+    )
+    return url
+
+
+def _script(url: str, quote: str):
+    import re as _re
+
+    def propose(outs):
+        obs = _re.search(r'"observation_id": "([^"]+)"', outs[-1][2]).group(1)
+        return {"criterion": "judging", "evidence_type": "program_committee", "title": "HackSeattle 2025 judge",
+                "summary": "Listed among the HackSeattle 2025 judges.", "observation_id": obs, "quote": quote,
+                "stage": "completed"}  # fmt: skip
+
+    return [
+        ("tool", "read_page", {"url": url}),
+        ("tool", "propose_evidence", propose),
+        ("text", "Found the judges page."),
+    ]
+
+
+def _wait(c, lookup_id):
+    import time
+
+    for _ in range(100):
+        lk = next(x for x in c.get("/api/onboarding").json()["state"]["lookups"] if x["id"] == lookup_id)
+        if lk["status"] != "accepted":
+            return lk
+        time.sleep(0.05)
+    raise AssertionError("the lookup never finished")
+
+
+@pytest.mark.usefixtures("public_dns")
+def test_a_yes_runs_one_web_search_for_the_official_page(fresh, http_mock):
+    from agent_fakes import FakeEngine
+
+    url = _judging_page(http_mock, "Maya Chen, Omar Haddad")
+    engine = FakeEngine(
+        _script(url, "Thank you to everyone who judged HackSeattle 2025: Maya Chen, Omar Haddad.")
+    )
+    c, view = _finish_questions(fresh, "maya", engine)
+    finds = {x["targets"][0]: x for x in view["state"]["lookups"] if x["kind"] == "find"}
+    lk = finds["Judge, HackSeattle 2025"]
+    assert lk["prompt"] == "Want me to find the official HackSeattle 2025 page that lists you as a judge?"
+    assert finds["Northwind Engineering Excellence Award 2024"]["prompt"] == (
+        "Want me to look for the official announcement of the Northwind Engineering Excellence Award 2024?"
+    )
+    assert not engine.requests and not http_mock.calls  # nothing searched before the Yes
+    view = c.post(f"/api/onboarding/lookups/{lk['id']}", headers=W, json={"accept": True}).json()
+    assert view["state"]["step"] == "lookups"  # waits while the search runs (or Continue)
+    done = _wait(c, lk["id"])
+    assert done["status"] == "done" and done["result"].startswith("Found 1 page that may confirm it")
+    [request] = engine.requests
+    assert (
+        '"Judge, HackSeattle 2025"' in request.prompt and "only if the page names Maya Chen" in request.prompt
+    )
+    [cand] = [x for x in fresh.pending_candidates() if x.proposed_criterion == "judging"]
+    assert cand.facts["namesake_check"] == "passed" and cand.confidence == 0.5 and cand.raw_url == url
+    assert fresh.exhibits().exhibits == []  # the Inbox decides, not the lookup
+    view = c.post("/api/onboarding/step", headers=W, json={"step": "lookups_done"}).json()
+    saved = next(x for x in view["state"]["lookups"] if x["id"] == lk["id"])
+    assert saved["status"] == "done" and view["state"]["step"] == "chats"
+
+
+@pytest.mark.usefixtures("public_dns")
+def test_a_page_that_doesnt_name_you_is_flagged_as_a_possible_namesake(fresh, http_mock):
+    from agent_fakes import FakeEngine
+
+    url = _judging_page(http_mock, "M. Chen, Omar Haddad")
+    engine = FakeEngine(
+        _script(url, "Thank you to everyone who judged HackSeattle 2025: M. Chen, Omar Haddad.")
+    )
+    c, view = _finish_questions(fresh, "maya", engine)
+    lk = next(x for x in view["state"]["lookups"] if x["targets"] == ["Judge, HackSeattle 2025"])
+    c.post(f"/api/onboarding/lookups/{lk['id']}", headers=W, json={"accept": True})
+    _wait(c, lk["id"])
+    [cand] = [x for x in fresh.pending_candidates() if x.proposed_criterion == "judging"]
+    assert cand.facts["namesake_check"] == "possible namesake" and cand.confidence == 0.2
+    assert "Possible namesake" in cand.summary
+
+
+def test_web_lookups_without_ai_say_so_and_search_nothing(fresh, http_mock):
+    from agent_fakes import FakeEngine
+
+    class Offline(FakeEngine):
+        def available(self):
+            return False, "no Claude login or API key"
+
+    c, view = _finish_questions(fresh, "maya", Offline())
+    lk = next(x for x in view["state"]["lookups"] if x["kind"] == "find")
+    view = c.post(f"/api/onboarding/lookups/{lk['id']}", headers=W, json={"accept": True}).json()
+    lk = next(x for x in view["state"]["lookups"] if x["id"] == lk["id"])
+    assert lk["status"] == "failed" and lk["result"].startswith("This one needs your AI connected")
+    assert not http_mock.calls and fresh.pending_candidates() == []

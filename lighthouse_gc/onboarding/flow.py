@@ -318,8 +318,31 @@ def todos_from(state: OnboardingState, criteria: set[str], today: Any) -> list[T
     return out
 
 
-def offer_lookups(state: OnboardingState) -> list[Lookup]:
-    """Lookups only for what was confirmed; nothing runs until the person says Yes."""
+def find_prompt(kind: str, item: str) -> str:
+    if kind == "judging":
+        role, _, event = item.partition(", ")
+        return f"Want me to find the official {event or item} page that lists you as {_a(role.lower()) if event else 'a judge'}?"
+    if kind == "membership":
+        return f"Want me to look for a public page confirming you're {_member(item)}?"
+    return f"Want me to look for the official announcement of the {item}?"
+
+
+def find_task(kind: str, item: str, person: str) -> str:
+    """The agent's instructions for one approved lookup: the official page, quoted, naming the person."""
+    who = person or "the person"
+    where = {"judging": "the event or organizer's own page (Devpost or MLH for hackathons, the program-committee "
+                        "listing for conferences)",
+             "membership": "the organization's own member directory or announcement",
+             "award": "the awarding organization's own announcement or winners page"}.get(kind, "the official page")  # fmt: skip
+    return (f"Onboarding lookup that {who} approved. They told Lighthouse: \"{item}\". Find {where} that confirms it. "
+            "Search the web, read the page with read_page, and propose it with propose_evidence only if the page names "
+            f"{who}; quote it word for word and use the stage the page shows (an invitation or nomination is not a "
+            "completion). Public professional pages only. If nothing names them, say so in one line and propose nothing.")  # fmt: skip
+
+
+def offer_lookups(state: OnboardingState, todos: list[Todo] | None = None) -> list[Lookup]:
+    """Lookups only for what was confirmed; nothing runs until the person says Yes. Each award, judging role and
+    membership gets one (an agent web search for the official page); papers get an arXiv search."""
     out: list[Lookup] = []
     papers = _confirmed(state, "publications")
     if papers:
@@ -337,6 +360,10 @@ def offer_lookups(state: OnboardingState) -> list[Lookup]:
         elif not host.endswith(("linkedin.com", "twitter.com", "x.com", "facebook.com", "instagram.com")):
             out.append(Lookup(id=f"website-{len(out)}", kind="website", targets=[f"https://{link}"],
                               prompt=f"You linked {link}. Want me to read it for press, talks and awards?"))  # fmt: skip
+    for todo in todos or []:
+        if todo.kind in ("award", "judging", "membership"):
+            out.append(Lookup(id=f"find-{todo.id.removeprefix('todo_')}", kind="find", targets=[todo.item],
+                              prompt=find_prompt(todo.kind, todo.item), todo_id=todo.id))  # fmt: skip
     return out
 
 
