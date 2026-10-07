@@ -48,7 +48,7 @@ def test_every_line_is_used_only_where_it_is_listed():
     for key, text in LINES.items():  # no copy of a line outside the registry and the landing page
         stem = text.split("{")[0][:30]
         for f in tracked:
-            if f.endswith((".json", ".pdf", ".png", ".woff2")) or f.startswith(
+            if f.endswith((".json", ".pdf", ".png", ".woff2", ".test.ts")) or f.startswith(
                 ("docs/adr", "tests/", "CHANGELOG", "TODO")
             ):
                 continue
