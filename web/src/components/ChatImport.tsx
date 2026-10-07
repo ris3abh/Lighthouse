@@ -47,13 +47,15 @@ export default function ChatImport({ onDone, compact }: { onDone: (summary: stri
   if (!scan)
     return (
       <div>
-        <p className="mb-4 max-w-2xl text-[15px] leading-relaxed text-ink-2">
-          When you export, <strong className="font-semibold text-ink">choose the longest range you can</strong>. Lighthouse sorts it on this computer
-          first, shows you what looks related to your case and why, and brings in only what you tick.
-        </p>
+        {!compact && (
+          <p className="mb-4 max-w-2xl text-[15px] leading-relaxed text-ink-2">
+            When you export, <strong className="font-semibold text-ink">choose the longest range you can</strong>. Lighthouse sorts it on this computer
+            first, shows you what looks related to your case and why, and brings in only what you tick.
+          </p>
+        )}
         <DropZone busy={busy === "scan"} multiple label="Upload a chat export" onFiles={read}>
           <Upload className="size-6" strokeWidth={1.5} aria-hidden />
-          <p className="display text-3xl">{busy === "scan" ? "Reading on this computer…" : "Drop your export here"}</p>
+          <p className={cx("display", compact ? "text-2xl" : "text-3xl")}>{busy === "scan" ? "Reading on this computer…" : "Drop your export here"}</p>
           <p className="font-mono text-[11px] text-muted uppercase">the .zip, its .json files, or the whole folder · Claude or ChatGPT</p>
         </DropZone>
         <div className="-mt-5 mb-6 flex justify-center">

@@ -82,3 +82,13 @@ page. A refusal is one friendly line plus an alternative.
 - First runs make no network requests until the person says Yes to a lookup or adds a source.
 - The guardrails can be tested with the scripted engine. Prompt rules still depend on the model; the code
   checks above are the floor.
+
+## Amendment (2026-10-07, C15): onboarding is one conversation
+
+At the owner's request, onboarding looks and behaves like Ask: a window over the blurred dashboard (a full-screen
+sheet on phones) holding a single thread. Every step is a message in that thread; steps already passed stay above,
+so the chat scrolls up as it grows. The PDF drop, the lookup cards and the chat import sit inside the message that
+asks for them, and the reply controls sit where Ask's message box is. New messages from Lighthouse type in (a short
+beat of dots, then the words, never more than 1.6 s); while a request runs, the dots show with what it's doing
+("Reading your PDF", "Looking it up"). Reduced motion shows messages at once. The reply controls wait until
+Lighthouse has finished. The flow, the rules above and the URLs per step and question are unchanged.

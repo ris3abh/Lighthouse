@@ -101,10 +101,12 @@ function Shell() {
       return false;
     }
   });
-  const chatModal = chatOpen && !chatDocked;
   useEffect(() => setMenuOpen(false), [page]);
   useBackToClose(menuOpen, () => setMenuOpen(false));
   const [onboarding, setOnboarding] = useState<OnboardingView | null>(null);
+  // Onboarding is a conversation over the dashboard (C15): the dashboard shows blurred behind it, and Ask waits.
+  const welcoming = !!onboarding?.needed && onboarding.state.step !== "tour";
+  const chatModal = chatOpen && !chatDocked && !welcoming;
   const [finished, setFinished] = useState(false); // the closing moment is showing
   const [docked, setDocked] = useState(false); // the Ask button just landed in the header
   useEffect(() => {
@@ -169,6 +171,7 @@ function Shell() {
     // Cmd/Ctrl+K opens (or closes) the chat; Esc closes it.
     const onKey = (e: KeyboardEvent) => {
       if (isAskShortcut(e)) {
+        if (onboardingNow.current?.needed && onboardingNow.current.state.step !== "tour") return;
         e.preventDefault();
         toggleChat(!chatOpenNow.current);
       } else if (e.key === "Escape" && chatOpenNow.current && !document.querySelector('[role="dialog"]:not([aria-label^="Chat"])')) {
@@ -245,17 +248,6 @@ function Shell() {
       content = <OverviewPage data={ov} error={overview.error} retry={overview.reload} />;
   }
 
-  if (onboarding?.needed && onboarding.state.step !== "tour")
-    return (
-      <Welcome
-        view={onboarding}
-        onChange={(v) => {
-          setOnboarding(v);
-          if (!v.needed) setFinished(v.state.status === "done");
-          bump();
-        }}
-      />
-    );
   const touring = !!onboarding?.needed && onboarding.state.step === "tour";
   const endTour = async (skipped: boolean) => {
     try {
@@ -305,8 +297,8 @@ function Shell() {
   );
 
   return (
-    <div className={cx("lh-shell flex h-full min-h-0", chatModal && "lh-chat-modal")}>
-      <aside className="lh-nav hidden w-60 shrink-0 flex-col border-r border-frame bg-surface lg:flex">
+    <div className={cx("lh-shell flex h-full min-h-0", (chatModal || welcoming) && "lh-chat-modal")}>
+      <aside inert={welcoming} className="lh-nav hidden w-60 shrink-0 flex-col border-r border-frame bg-surface lg:flex">
         <a href="#/overview" className="flex h-16 items-center gap-3 border-b border-frame px-5">
           <img src="./favicon.svg" alt="" className="size-6" />
           <span className="display text-[28px] tracking-tight uppercase">Lighthouse</span>
@@ -335,7 +327,7 @@ function Shell() {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div inert={welcoming} className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-3 border-b border-frame bg-surface px-4 lg:h-16 lg:px-8">
           <Button variant="ghost" size="sm" className="px-2 lg:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
             <Menu />
@@ -378,7 +370,20 @@ function Shell() {
           </footer>
         </main>
       </div>
-      {chatOpen && chatDocked && <ChatPanel page={page} docked onPin={pinChat} onClose={() => toggleChat(false)} />}
+      {welcoming && onboarding && (
+        <>
+          <div className="lh-scrim fixed inset-0 z-40 bg-paper/35" aria-hidden />
+          <Welcome
+            view={onboarding}
+            onChange={(v) => {
+              setOnboarding(v);
+              if (!v.needed) setFinished(v.state.status === "done");
+              bump();
+            }}
+          />
+        </>
+      )}
+      {chatOpen && chatDocked && !welcoming && <ChatPanel page={page} docked onPin={pinChat} onClose={() => toggleChat(false)} />}
       {chatModal && (
         <>
           <div className="lh-scrim fixed inset-0 z-40 bg-paper/35" aria-hidden onMouseDown={() => toggleChat(false)} />

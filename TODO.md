@@ -65,6 +65,10 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       picker step, extraction on picked items (mundane tier), longest-range advice. Shipped on synthetic
       fixtures; the adapter for the owner's Claude export (manifest + dated files) and a ChatGPT sample fixture
       wait for the redacted samples
+- [x] C15. Onboarding as one conversation (ADR 0008 amendment): a window like Ask's over the blurred dashboard,
+      every step a message in one thread that scrolls up as it grows, widgets inside their messages, reply
+      controls in the composer, new messages type in, typing dots while working; a chat drop with no chats says
+      what arrived and what happened to each file
 - [ ] CHECKPOINT 2c: chip input, picker with real match reasons, modal with a highlighted change, both themes
       Reported 2026-10-07 (d4d9ab1, d0d067a, b5a6dfa, 715deb5, 84a179b, 7af2ff3); waiting for approval and the export samples
 
