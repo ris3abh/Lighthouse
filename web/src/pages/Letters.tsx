@@ -43,7 +43,7 @@ export default function Letters() {
     <div>
       <PageHeader eyebrow={plural(letters.length, "writer")} title="Letters" subtitle="Recommendation letter writers, what each one covers, and where each letter stands." />
 
-      <Card title="Writers" className="mb-8">
+      <Card title="Writers" panel="letters" className="mb-8">
         {letters.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

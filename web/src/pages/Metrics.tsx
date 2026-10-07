@@ -78,7 +78,7 @@ export default function Metrics({ focus }: { focus: string | null }) {
         }
       />
       {items.length === 0 ? (
-        <Card>
+        <Card panel="metrics">
           <Empty>
             No metrics yet. <a href="#/sources" className="link">Add a source</a>, then press Snapshot now.
           </Empty>

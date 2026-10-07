@@ -257,6 +257,32 @@ html[data-vt-dir="prev"]::view-transition-new(cal-heading) {
   }
 }
 
+/* Chat as a modal (C13): the dashboard stays visible behind it, blurred; a panel a tool call just changed
+   un-blurs and flashes so you see what happened. */
+.lh-shell > .lh-nav,
+.lh-shell > div > header,
+.lh-content > *,
+.lh-content .card {
+  transition: filter 200ms var(--ease-out-quint);
+}
+.lh-chat-modal > .lh-nav,
+.lh-chat-modal > div > header,
+.lh-chat-modal .lh-content > *:not(:has(.lh-reveal)):not(.lh-reveal),
+.lh-chat-modal .lh-content > :has(.lh-reveal) .card:not(.lh-reveal):not(:has(.lh-reveal)) {
+  filter: blur(5px);
+}
+.lh-reveal {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  animation: reveal-flash 400ms var(--ease-out-quint);
+}
+@keyframes reveal-flash {
+  0% {
+    outline-offset: 10px;
+    outline-color: transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

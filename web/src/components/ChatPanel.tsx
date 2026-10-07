@@ -1,7 +1,8 @@
-import { ArrowRight, ArrowUp, Plus, Sparkles, Square, X } from "lucide-react";
+import { ArrowRight, ArrowUp, Pin, PinOff, Plus, Sparkles, Square, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { api, type AgentRunView, type AgentStatus, type ConversationView, type RuleCheck } from "../api";
 import { useRefresh } from "../App";
+import { panelsFor } from "../lib/reveal";
 import { countTokens, fmtTokens, fmtUsd, itemsFromTimeline, type Item, useRunStream } from "../runStream";
 import Markdown from "./Markdown";
 import RuleCheckView from "./RuleCheck";
@@ -30,7 +31,18 @@ function load(key: string) {
   }
 }
 
-export default function ChatPanel({ page, onClose }: { page: string; onClose: () => void }) {
+/** The chat: a centered modal over the blurred dashboard (default), or docked to the side when pinned (C13). */
+export default function ChatPanel({
+  page,
+  onClose,
+  docked = false,
+  onPin,
+}: {
+  page: string;
+  onClose: () => void;
+  docked?: boolean;
+  onPin?: (docked: boolean) => void;
+}) {
   const { bump } = useRefresh();
   const toast = useToast();
   const [status, setStatus] = useState<AgentStatus | null>(null);
@@ -52,6 +64,17 @@ export default function ChatPanel({ page, onClose }: { page: string; onClose: ()
     bump(); // proposals may have changed the Inbox badge
     api.agentStatus().then(setStatus).catch(() => undefined);
   });
+
+  // A tool call that changed something: the panels showing it un-blur and flash behind the chat.
+  const announced = useRef(new Set<string>());
+  useEffect(() => {
+    for (const it of live.items) {
+      if (it.kind !== "tool" || it.tool.ok !== true || announced.current.has(it.tool.id)) continue;
+      announced.current.add(it.tool.id);
+      const panels = panelsFor(it.tool.touches, it.tool.read_only);
+      if (panels.length) window.dispatchEvent(new CustomEvent("lh:changed", { detail: panels }));
+    }
+  }, [live.items]);
 
   useEffect(() => {
     api.agentStatus().then(setStatus).catch(() => setStatus(null));
@@ -137,7 +160,13 @@ export default function ChatPanel({ page, onClose }: { page: string; onClose: ()
   return (
     <aside
       aria-label="Chat with the Lighthouse agent"
-      className="fixed inset-0 z-40 flex animate-slide-in flex-col border-l border-frame bg-surface md:static md:inset-auto md:z-auto md:w-[440px] md:shrink-0"
+      role={docked ? undefined : "dialog"}
+      aria-modal={docked ? undefined : true}
+      className={
+        docked
+          ? "fixed inset-0 z-40 flex animate-slide-in flex-col border-l border-frame bg-surface md:static md:inset-auto md:z-auto md:w-[440px] md:shrink-0"
+          : "fixed inset-0 z-50 flex animate-rise flex-col bg-surface md:inset-auto md:top-1/2 md:left-1/2 md:h-[min(82vh,780px)] md:w-[min(760px,92vw)] md:-translate-x-1/2 md:-translate-y-1/2 md:border md:border-frame"
+      }
     >
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-frame px-4 lg:h-16">
         <Sparkles className="size-[18px]" strokeWidth={1.5} aria-hidden />
@@ -162,7 +191,20 @@ export default function ChatPanel({ page, onClose }: { page: string; onClose: ()
         <Button size="sm" variant="ghost" className="px-2" onClick={newChat} title="New conversation" aria-label="New conversation">
           <Plus />
         </Button>
-        <Button size="sm" variant="ghost" className="px-2" onClick={onClose} aria-label="Close chat">
+        {onPin && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="hidden px-2 md:inline-flex"
+            onClick={() => onPin(!docked)}
+            aria-pressed={docked}
+            aria-label={docked ? "Unpin: open the chat over the page" : "Pin the chat to the side"}
+            title={docked ? "Unpin (open over the page)" : "Pin to the side"}
+          >
+            {docked ? <PinOff /> : <Pin />}
+          </Button>
+        )}
+        <Button size="sm" variant="ghost" className="px-2" onClick={onClose} aria-label="Close chat" title="Close (Esc)">
           <X />
         </Button>
       </header>

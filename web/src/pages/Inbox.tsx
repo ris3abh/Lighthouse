@@ -36,7 +36,7 @@ export default function Inbox() {
         subtitle="Connectors and the agent propose; you decide. Nothing becomes evidence until you accept it, and accepting records your decision. It doesn't certify legal sufficiency."
       />
       {candidates.length === 0 ? (
-        <Card>
+        <Card panel="inbox">
           <Empty>
             Inbox zero. New candidates arrive when you <a href="#/sources" className="link">add or sync a source</a>.
           </Empty>
@@ -46,6 +46,7 @@ export default function Inbox() {
           {order.map((crit) => (
             <Card
               key={crit}
+              panel="inbox"
               title={
                 <span className="flex items-center gap-3" title={full[crit]}>
                   {labels[crit] ?? crit}
@@ -62,6 +63,7 @@ export default function Inbox() {
           {trackerGroups.map(([kind, list]) => (
             <Card
               key={kind}
+              panel="inbox"
               title={
                 <span className="flex items-center gap-3">
                   {TRACKER_LABEL[kind]}

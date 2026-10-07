@@ -63,7 +63,7 @@ export default function Briefing({ tasks = [] }: { tasks?: Task[] }) {
   const mine = <MyTasks tasks={tasks} />;
   if (!b.generated_at)
     return (
-      <Card title="This week" actions={actions} className="@container">
+      <Card title="This week" panel="briefing inbox deadlines pipeline" actions={actions} className="@container">
         <div className="grid gap-px bg-line @2xl:grid-cols-2">
           <p className="bg-surface p-6 text-[15px] leading-relaxed text-ink-2">
             No briefing yet. Press Refresh for one now, or turn on the daily what-changed mission in{" "}
@@ -78,7 +78,7 @@ export default function Briefing({ tasks = [] }: { tasks?: Task[] }) {
     );
 
   return (
-    <Card title="This week" actions={actions} className="@container">
+    <Card title="This week" panel="briefing inbox deadlines pipeline" actions={actions} className="@container">
       <div className="grid gap-px bg-line @2xl:grid-cols-2 @5xl:grid-cols-3">
         <div className="bg-surface p-6">
           <h3 className="eyebrow mb-4">

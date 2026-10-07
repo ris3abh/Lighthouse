@@ -67,6 +67,7 @@ export default function Pipeline() {
           const cards = items.filter((i) => i.stage === col.id);
           return (
             <section
+              data-panel="pipeline"
               key={col.id}
               aria-label={col.label}
               onDragOver={(e) => {

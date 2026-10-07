@@ -22,6 +22,7 @@ import { api, type OnboardingView } from "./api";
 import ChatPanel from "./components/ChatPanel";
 import Finale from "./components/Finale";
 import { onboardingHash, parseOnboardingHash, samePlace, type OnboardingPlace } from "./lib/nav";
+import { isAskShortcut, panelSelector } from "./lib/reveal";
 import Tour from "./components/Tour";
 import { Button, cx, Segmented, ToastProvider, useToast } from "./components/ui";
 import { useBackToClose, useLoad, useRoute, useTheme, type ThemeMode } from "./hooks";
@@ -93,6 +94,14 @@ function Shell() {
       return false;
     }
   });
+  const [chatDocked, setChatDocked] = useState(() => {
+    try {
+      return localStorage.getItem("lh-chat-dock") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const chatModal = chatOpen && !chatDocked;
   useEffect(() => setMenuOpen(false), [page]);
   useBackToClose(menuOpen, () => setMenuOpen(false));
   const [onboarding, setOnboarding] = useState<OnboardingView | null>(null);
@@ -145,6 +154,45 @@ function Shell() {
       /* storage unavailable */
     }
   };
+  const pinChat = (docked: boolean) => {
+    setChatDocked(docked);
+    try {
+      localStorage.setItem("lh-chat-dock", docked ? "1" : "0");
+    } catch {
+      /* storage unavailable */
+    }
+  };
+  useBackToClose(chatModal, () => toggleChat(false));
+  const chatOpenNow = useRef(chatOpen);
+  chatOpenNow.current = chatOpen;
+  useEffect(() => {
+    // Cmd/Ctrl+K opens (or closes) the chat; Esc closes it.
+    const onKey = (e: KeyboardEvent) => {
+      if (isAskShortcut(e)) {
+        e.preventDefault();
+        toggleChat(!chatOpenNow.current);
+      } else if (e.key === "Escape" && chatOpenNow.current && !document.querySelector('[role="dialog"]:not([aria-label^="Chat"])')) {
+        toggleChat(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  useEffect(() => {
+    // A tool call changed something: those panels un-blur and flash behind the chat, then refresh.
+    const onChanged = (e: Event) => {
+      const panels = (e as CustomEvent<string[]>).detail;
+      bump();
+      document.querySelectorAll(panelSelector(panels)).forEach((el) => {
+        el.classList.remove("lh-reveal");
+        void (el as HTMLElement).offsetWidth; // restart the flash
+        el.classList.add("lh-reveal");
+        window.setTimeout(() => el.classList.remove("lh-reveal"), 1800);
+      });
+    };
+    window.addEventListener("lh:changed", onChanged);
+    return () => window.removeEventListener("lh:changed", onChanged);
+  }, [bump]);
   const ov = overview.data;
 
   const switchProfile = async (id: string) => {
@@ -257,8 +305,8 @@ function Shell() {
   );
 
   return (
-    <div className="flex h-full min-h-0">
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-frame bg-surface lg:flex">
+    <div className={cx("lh-shell flex h-full min-h-0", chatModal && "lh-chat-modal")}>
+      <aside className="lh-nav hidden w-60 shrink-0 flex-col border-r border-frame bg-surface lg:flex">
         <a href="#/overview" className="flex h-16 items-center gap-3 border-b border-frame px-5">
           <img src="./favicon.svg" alt="" className="size-6" />
           <span className="display text-[28px] tracking-tight uppercase">Lighthouse</span>
@@ -312,7 +360,7 @@ function Shell() {
                 toggleChat(!chatOpen);
               }}
               aria-pressed={chatOpen}
-              title="Chat with the agent"
+              title="Ask the agent (Cmd+K or Ctrl+K)"
               data-ask-anchor
               className={cx("transition-[outline-offset] duration-300", docked && "outline-2 outline-offset-4 outline-ink")}
             >
@@ -323,14 +371,20 @@ function Shell() {
         </header>
 
         <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-          <div className="@container mx-auto w-full max-w-[1440px] px-4 py-8 md:px-10 md:py-12">{content}</div>
+          <div className="lh-content @container mx-auto w-full max-w-[1440px] px-4 py-8 md:px-10 md:py-12">{content}</div>
           <footer className="mx-auto max-w-[1440px] border-t border-line px-4 py-5 font-mono text-[10.5px] leading-relaxed text-muted md:px-10">
             Lighthouse is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public
             regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.
           </footer>
         </main>
       </div>
-      {chatOpen && <ChatPanel page={page} onClose={() => toggleChat(false)} />}
+      {chatOpen && chatDocked && <ChatPanel page={page} docked onPin={pinChat} onClose={() => toggleChat(false)} />}
+      {chatModal && (
+        <>
+          <div className="lh-scrim fixed inset-0 z-40 bg-paper/35" aria-hidden onMouseDown={() => toggleChat(false)} />
+          <ChatPanel page={page} onPin={pinChat} onClose={() => toggleChat(false)} />
+        </>
+      )}
       {touring && <Tour overview={ov} onDone={endTour} onBack={() => api.onboardingGoto("chats").then(setOnboarding, (e) => toast((e as Error).message, "error"))} />}
       {finished && (
         <Finale

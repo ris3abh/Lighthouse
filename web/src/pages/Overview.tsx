@@ -67,7 +67,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
   return (
     <div className="flex flex-col gap-8">
       {/* hero: where the case stands */}
-      <section className="card grid animate-rise grid-cols-2 @2xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] @5xl:grid-cols-[2fr_1fr_1fr]">
+      <section data-panel="scoreboard inbox deadlines" className="card grid animate-rise grid-cols-2 @2xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] @5xl:grid-cols-[2fr_1fr_1fr]">
         <div className="col-span-2 border-b border-line p-5 md:p-8 @2xl:col-span-1 @2xl:row-span-2 @2xl:border-r @2xl:border-b-0 @5xl:row-span-1">
           <p className="eyebrow">{board.profile_name}</p>
           <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2">
@@ -115,7 +115,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
       <Briefing tasks={data.tasks} />
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @2xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <Card title="Criteria scoreboard" className="@container" actions={<More href="#/evidence">Evidence</More>}>
+        <Card title="Criteria scoreboard" panel="scoreboard" className="@container" actions={<More href="#/evidence">Evidence</More>}>
           <ul className="grid @xl:grid-cols-2">
             {board.criteria.map((c) => (
               <li key={c.id} className="border-b border-line @xl:odd:border-r">
@@ -140,7 +140,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
         </Card>
 
         <div className="flex flex-col gap-8">
-          <Card title="Next deadlines" actions={<More href="#/calendar">Calendar</More>}>
+          <Card title="Next deadlines" panel="deadlines" actions={<More href="#/calendar">Calendar</More>}>
             {data.deadlines.length ? (
               <ul>
                 {data.deadlines.map((d) => (
@@ -173,7 +173,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
         </div>
       </div>
 
-      <Card title="Metrics" actions={<More href="#/metrics">All metrics</More>}>
+      <Card title="Metrics" panel="metrics" actions={<More href="#/metrics">All metrics</More>}>
         {data.sparklines.length ? (
           <div className="grid grid-cols-1 gap-px bg-line @2xl:grid-cols-2 @5xl:grid-cols-3">
             {data.sparklines.map((s) => (

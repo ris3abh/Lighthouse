@@ -99,15 +99,18 @@ export function Card({
   children,
   className,
   bodyClassName,
+  panel,
 }: {
   title?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
   bodyClassName?: string;
+  /** What the card shows ("inbox deadlines"), so a chat tool call that changes it can highlight it. */
+  panel?: string;
 }) {
   return (
-    <section className={cx("card animate-rise", className)}>
+    <section className={cx("card animate-rise", className)} data-panel={panel}>
       {(title || actions) && (
         <header className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-line px-5 py-2.5">
           <h2 className="eyebrow text-ink">{title}</h2>

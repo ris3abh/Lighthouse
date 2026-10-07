@@ -211,7 +211,7 @@ export default function Calendar() {
         }
       />
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @5xl:grid-cols-[minmax(0,1fr)_340px]">
-        <section className="card min-w-0 animate-rise">
+        <section data-panel="deadlines" className="card min-w-0 animate-rise">
           <div className="flex flex-wrap items-center gap-3 border-b border-frame px-5 py-4">
             <h2 className="display min-w-0 flex-1 text-4xl md:text-5xl" style={{ viewTransitionName: "cal-heading" }}>
               {heading}
@@ -315,7 +315,7 @@ export default function Calendar() {
             </form>
           </Card>
 
-          <Card title="Upcoming">
+          <Card title="Upcoming" panel="deadlines">
             {upcoming.length ? (
               <ul>
                 {upcoming.map((d) => (
