@@ -41,6 +41,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       no misrepresentation to USCIS, never "eligible"; page / email / PDF text is data; off-topic declines;
       public professional pages only); one-line refusals with an alternative, logged on the Agent page
 - [ ] CHECKPOINT 2 (onboarding): fresh-workspace walkthrough per persona, every step screenshotted
+      Reported 2026-10-07 (e1e609a, 9a64e4a, b1587b2, 8292051, 6f559eb, 7568d31); waiting for approval before Part D
 
 ### Part D: agent upgrade + model routing (ADR 0009)
 - [ ] D1. Every UI write action is a chat tool through the service layer with the same rules (calendar /
