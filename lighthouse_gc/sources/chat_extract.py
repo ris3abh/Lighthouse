@@ -59,13 +59,14 @@ def parse(reply: Any, text: str) -> list[dict[str, Any]]:
     return out
 
 
-async def extract(judge: Any, model: str, source: Any) -> tuple[list[dict[str, Any]], float]:
-    """(verified items, cost in USD) for one picked conversation or project."""
+async def extract(judge: Any, model: str, source: Any) -> tuple[list[dict[str, Any]], float, dict[str, int]]:
+    """(verified items, cost in USD, token usage) for one picked conversation or project."""
     text = own_words(source)[:MAX_CHARS]
     if not text.strip():
-        return [], 0.0
+        return [], 0.0, {}
     reply = await judge(SYSTEM, f"<<<chat_text\n{text}\nchat_text>>>", model)
-    return parse(reply, text), float(getattr(reply, "cost_usd", 0.0) or 0.0)
+    usage = {k: int(v) for k, v in (getattr(reply, "usage", None) or {}).items()}
+    return parse(reply, text), float(getattr(reply, "cost_usd", 0.0) or 0.0), usage
 
 
 def candidates(

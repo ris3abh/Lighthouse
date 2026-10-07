@@ -110,7 +110,8 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 ### Checkpoint 3 follow-ups (owner, 2026-10-07)
 - [x] F1. Remove the "Claude Code login" option: an Anthropic API key is the only way to connect the AI
       (Agent SDK terms); the CLI runs with its own empty config folder and no OAuth token (ADR 0013 amendment)
-- [ ] F2. Chat footer token count (no "0 tokens" next to a nonzero cost)
+- [x] F2. Chat footer token count (no "0 tokens" next to a nonzero cost): runs that only recorded a price
+      (chat-history extraction) now record tokens too, and lib/usage.ts shows the cost alone when tokens are unknown
 - [ ] F3. The chat modal blurs the whole background evenly
 - [ ] F4. Test: no chat request can move a criterion claim from invited to completed
 - [ ] F5. Status of items 7-11; finish what isn't done

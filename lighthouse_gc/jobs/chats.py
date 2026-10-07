@@ -84,6 +84,9 @@ class PickedImport:
     candidates_added: dict[str, int] = field(default_factory=dict)
     extracted_by: str = "rules"
     cost_usd: float = 0.0
+    usage: dict[str, int] = field(
+        default_factory=dict
+    )  # tokens the model used, so a cost never shows 0 tokens
     note: str = ""
 
     def line(self) -> str:
@@ -108,6 +111,7 @@ async def import_picked(
     convs, projects = chat_relevance.pick(intake, ids)
     proposals = []
     cost, used_model, note = 0.0, False, ""
+    usage: Counter[str] = Counter()
     snapshots: list[tuple[object, Evidence, str]] = []
     for conv in convs:
         snapshot, cands = chat_export.candidates(conv)
@@ -120,7 +124,8 @@ async def import_picked(
     if judge is not None:
         for source, snapshot, noun in snapshots:
             try:
-                items, spent = await chat_extract.extract(judge, model, source)
+                items, spent, used = await chat_extract.extract(judge, model, source)
+                usage.update(used)
             except Exception as exc:  # the model failing never loses the rule-based suggestions
                 note = f"The model couldn't read some of it ({str(exc)[:120]})."
                 continue
@@ -141,4 +146,5 @@ async def import_picked(
     ws.after_change()
     return PickedImport(picked=len(convs) + len(projects), conversations=len(convs), projects=len(projects),
                         candidates_added=dict(Counter(c.kind for c in added)),
-                        extracted_by=model if used_model else "rules", cost_usd=round(cost, 4), note=note)  # fmt: skip
+                        extracted_by=model if used_model else "rules", cost_usd=round(cost, 4), usage=dict(usage),
+                        note=note)  # fmt: skip

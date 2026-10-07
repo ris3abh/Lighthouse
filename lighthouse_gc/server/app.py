@@ -375,7 +375,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     @app.post("/api/imports/chats/{scan_id}/import")
     async def import_picked_chats(scan_id: str, body: PickBody) -> dict[str, Any]:
         """Import only the ticked conversations and projects; the rest of the scan is discarded."""
-        from lighthouse_gc.core.models import AgentRun
+        from lighthouse_gc.core.models import AgentRun, RunUsage
         from lighthouse_gc.jobs.chats import import_picked
 
         if scan_id not in staged:
@@ -392,7 +392,8 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
             run = AgentRun(kind="manual", engine=how.provider if how.provider == "openai" else runner.engine().name,
                            model=how.model, task=how.task, tier=how.tier, provider=how.provider, status="done",
                            prompt=f"Chat-history extraction ({report.picked} picked)", text=report.line(),
-                           cost_usd=report.cost_usd, finished_at=clock.utcnow())  # fmt: skip
+                           cost_usd=report.cost_usd, usage=RunUsage.model_validate({k: v for k, v in report.usage.items() if k in RunUsage.model_fields}),
+                           finished_at=clock.utcnow())  # fmt: skip
             runner.save(run)
         return {**report.__dict__, "summary": report.line()}
 

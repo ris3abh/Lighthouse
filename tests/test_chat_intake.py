@@ -286,3 +286,15 @@ def test_letters_and_case_paperwork_count_and_acronyms_read_naturally():
         "mentions I-129, O-1A, RFE, USCIS" in m["Call"].reasons
     )  # the first four, acronyms as written officially
     assert not any("critical role" in r for r in m["Call"].reasons)  # "filed the" isn't "led the"
+
+
+def test_the_extraction_run_records_its_tokens_with_its_cost(ws):
+    """A cost on the Agent page or in chat never sits beside "0 tokens" (Checkpoint 3 follow-up)."""
+    from agent_fakes import FakeEngine
+
+    engine = FakeEngine([("usage", {"input_tokens": 1800, "output_tokens": 240}), ("text", '{"items": []}')])
+    c = TestClient(create_app(ws, allowed_hosts=["testserver"], engine=engine))
+    scan = _scan(c, [("conversations.json", json.dumps([CASE]).encode())])
+    c.post(f"/api/imports/chats/{scan['id']}/import", headers=W, json={"ids": [scan["items"][0]["id"]]})
+    [run] = [r for r in c.get("/api/agent/runs").json() if "Chat-history extraction" in r["prompt"]]
+    assert run["cost_usd"] > 0 and run["counted_tokens"] == 2040

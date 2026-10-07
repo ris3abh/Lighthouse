@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { api, type AgentRunView, type AgentStatus, type ConversationView, type RuleCheck } from "../api";
 import { useRefresh } from "../App";
 import { panelsFor } from "../lib/reveal";
-import { countTokens, fmtTokens, fmtUsd, itemsFromTimeline, type Item, useRunStream } from "../runStream";
+import { usageLine } from "../lib/usage";
+import { countTokens, fmtTokens, itemsFromTimeline, type Item, useRunStream } from "../runStream";
 import Markdown from "./Markdown";
 import RuleCheckView from "./RuleCheck";
 import ToolCall from "./ToolCall";
@@ -315,7 +316,8 @@ export default function ChatPanel({
           )}
         </div>
         <p className="mt-2 truncate font-mono text-[10.5px] text-muted">
-          {status && `${status.cheap_mode ? "CHEAP MODE · " : ""}${status.model} · ${fmtTokens(status.month.tokens)} TOKENS · ${fmtUsd(status.month.usd)}${status.budget.monthly_usd ? ` OF $${status.budget.monthly_usd}` : ""} THIS MONTH`}
+          {status &&
+            `${status.cheap_mode ? "CHEAP MODE · " : ""}${status.model} · ${usageLine(status.month.tokens, status.month.usd).toUpperCase()}${status.budget.monthly_usd ? ` OF $${status.budget.monthly_usd}` : ""} THIS MONTH`}
           {" · ENTER TO SEND"}
         </p>
       </form>
@@ -324,7 +326,7 @@ export default function ChatPanel({
 }
 
 function meta(run: AgentRunView) {
-  const parts = [`${fmtTokens(run.counted_tokens ?? countTokens(run.usage))} tokens`, fmtUsd(run.cost_usd)];
+  const parts = [usageLine(run.counted_tokens ?? countTokens(run.usage), run.cost_usd)].filter(Boolean);
   if (run.status !== "done") parts.unshift(run.status === "stopped" ? `stopped (${run.stop_reason})` : `error: ${run.error}`);
   if (run.proposals.length) parts.push(`${run.proposals.length} proposal${run.proposals.length > 1 ? "s" : ""}`);
   return parts.join(" · ");
