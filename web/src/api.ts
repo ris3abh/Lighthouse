@@ -562,6 +562,34 @@ export interface OnboardingLookup {
   result: string;
   resolved?: Record<string, string>;
 }
+export type Relationship = "recommender" | "collaborator" | "organizer" | "editor" | "mentor" | "employer" | "other";
+export interface GmailThreadView {
+  id: string;
+  subject: string;
+  contact_ids: string[];
+  last_at: string;
+  last_from: "you" | "them";
+  snippet: string;
+  messages: number;
+}
+export interface ContactView {
+  id: string;
+  name: string;
+  emails: string[];
+  org: string;
+  relationship: Relationship;
+  notes: string;
+  asks: string[];
+  next_follow_up: string | null;
+  last_touch: string | null;
+  letter_ids: string[];
+  pipeline_ids: string[];
+  virtual: boolean;
+  letters: { id: string; name: string; status: string }[];
+  pipeline: { id: string; title: string; stage: string }[];
+  threads: GmailThreadView[];
+}
+export type ContactFields = Partial<Pick<ContactView, "name" | "emails" | "org" | "relationship" | "notes" | "asks" | "next_follow_up" | "last_touch" | "letter_ids" | "pipeline_ids">>;
 export interface GoogleStatus {
   client: boolean;
   connected: boolean;
@@ -653,6 +681,10 @@ export const api = {
   onboardingRestart: () => request<OnboardingView>("POST", "/onboarding/restart"),
   onboardingAi: (choice: "key" | "skip") => request<OnboardingView>("POST", "/onboarding/ai", { choice }),
   aiStatus: () => request<AiStatus>("GET", "/ai"),
+  contacts: () => request<ContactView[]>("GET", "/contacts"),
+  addContact: (fields: ContactFields) => request<ContactView>("POST", "/contacts", fields),
+  updateContact: (id: string, fields: ContactFields) => request<ContactView>("PATCH", `/contacts/${enc(id)}`, fields),
+  deleteContact: (id: string) => request<unknown>("DELETE", `/contacts/${enc(id)}`),
   googleStatus: () => request<GoogleStatus>("GET", "/google"),
   saveGoogleClient: (client_id: string, client_secret: string) => request<GoogleStatus>("PUT", "/google/client", { client_id, client_secret }),
   connectGoogle: (features: string[]) => request<{ url: string }>("POST", "/google/connect", { features }),

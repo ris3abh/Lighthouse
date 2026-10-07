@@ -60,6 +60,9 @@ def _undo_restores(ws, out: str, read):
         ("update_letter_writer", {"id": "{letter}", "changes": {"last_contact": "2026-10-07"}}, "letters"),
         ("delete_letter_writer", {"id": "{letter}"}, "letters"),
         ("update_todo", {"id": "{todo}", "status": "done"}, "todos"),
+        ("add_contact", {"name": "Prof. Lee", "emails": ["lee@uni.example"], "relationship": "recommender"}, "contacts"),
+        ("update_contact", {"id": "{contact}", "changes": {"next_follow_up": "2026-10-20"}}, "contacts"),
+        ("delete_contact", {"id": "{contact}"}, "contacts"),
     ],
 )  # fmt: skip
 def test_each_direct_tool_applies_through_the_service_and_undoes(demo_ws, name, args, read):
@@ -75,7 +78,8 @@ def test_each_direct_tool_applies_through_the_service_and_undoes(demo_ws, name, 
         ]
     )
     ids = {"deadline": demo_ws.deadlines().deadlines[0].id, "pipeline": demo_ws.pipeline().items[0].id,
-           "letter": demo_ws.letters().letters[0].id, "todo": "todo_x"}  # fmt: skip
+           "letter": demo_ws.letters().letters[0].id, "todo": "todo_x",
+           "contact": demo_ws.add_contact(name="Dr. Sam Ortiz").id}  # fmt: skip
     args = {k: (v.format(**ids) if isinstance(v, str) else v) for k, v in args.items()}
     load = getattr(demo_ws, read)
 

@@ -11,6 +11,9 @@ from areao1.core.workspace import NotFound, Workspace, WorkspaceError
 from areao1.criteria import engine
 from areao1.criteria.models import (
     DEFAULT_PROFILE,
+    Contact,
+    Contacts,
+    GmailThreads,
     Letter,
     Letters,
     Person,
@@ -22,7 +25,8 @@ from areao1.criteria.models import (
 from areao1.onboarding.models import OnboardingState
 
 # Case files written on first use; validated when present.
-CASE_OPTIONAL_FILES: dict[str, type[BaseModel]] = {"onboarding.json": OnboardingState, "todos.json": Todos}
+CASE_OPTIONAL_FILES: dict[str, type[BaseModel]] = {"onboarding.json": OnboardingState, "todos.json": Todos,
+                                                   "contacts.json": Contacts, "threads.json": GmailThreads}  # fmt: skip
 
 DATA_FILES: dict[str, type[BaseModel]] = {
     "person.json": Person,
@@ -45,6 +49,63 @@ class Case(Workspace):
 
     def save_onboarding(self, v: OnboardingState) -> None:
         self._save("onboarding.json", v)
+
+    # ------------------------------------------------------------------ contacts (ADR 0014 §4)
+
+    def threads(self) -> GmailThreads:
+        return self._load("threads.json", GmailThreads)
+
+    def save_threads(self, threads: GmailThreads) -> None:
+        self._save("threads.json", threads)
+
+    def contacts(self) -> Contacts:
+        return self._load("contacts.json", Contacts)
+
+    CONTACT_FIELDS = ("name", "emails", "org", "relationship", "notes", "asks", "next_follow_up", "last_touch",
+                     "letter_ids", "pipeline_ids")  # fmt: skip
+
+    def add_contact(self, **fields: Any) -> Contact:
+        with self.lock:
+            bad = set(fields) - set(self.CONTACT_FIELDS)
+            if bad:
+                raise WorkspaceError(f"not a contact field: {', '.join(sorted(bad))}")
+            try:
+                contact = Contact.model_validate(fields)
+            except ValueError as exc:
+                raise WorkspaceError(f"invalid contact: {exc}") from exc
+            contacts = self.contacts()
+            contacts.contacts.append(contact)
+            self._save("contacts.json", contacts)
+            self.after_change()
+            return contact
+
+    def update_contact(self, contact_id: str, **changes: Any) -> Contact:
+        with self.lock:
+            contacts = self.contacts()
+            idx = next((i for i, p in enumerate(contacts.contacts) if p.id == contact_id), None)
+            if idx is None:
+                raise NotFound(f"no contact {contact_id!r}")
+            bad = set(changes) - set(self.CONTACT_FIELDS)
+            if bad:
+                raise WorkspaceError(f"not editable: {', '.join(sorted(bad))}")
+            try:
+                updated = Contact.model_validate({**contacts.contacts[idx].model_dump(), **changes})
+            except ValueError as exc:
+                raise WorkspaceError(f"invalid contact: {exc}") from exc
+            contacts.contacts[idx] = updated
+            self._save("contacts.json", contacts)
+            self.after_change()
+            return updated
+
+    def delete_contact(self, contact_id: str) -> None:
+        with self.lock:
+            contacts = self.contacts()
+            kept = [p for p in contacts.contacts if p.id != contact_id]
+            if len(kept) == len(contacts.contacts):
+                raise NotFound(f"no contact {contact_id!r}")
+            contacts.contacts = kept
+            self._save("contacts.json", contacts)
+            self.after_change()
 
     def todos(self) -> Todos:
         return self._load("todos.json", Todos)
@@ -227,6 +288,20 @@ class Case(Workspace):
         return super().update_tracker(target_type, target_id, **changes)
 
     def restore_record(self, target_type: str, record_id: str, before: dict[str, Any] | None) -> None:
+        if target_type == "contact":
+            with self.lock:
+                contacts = self.contacts()
+                ids = [p.id for p in contacts.contacts]
+                others = [p for p in contacts.contacts if p.id != record_id]
+                if before is not None:
+                    others.insert(
+                        ids.index(record_id) if record_id in ids else len(others),
+                        Contact.model_validate(before),
+                    )
+                contacts.contacts = others
+                self._save("contacts.json", contacts)
+                self.after_change()
+            return None
         if target_type == "todo":
             with self.lock:
                 todos = self.todos()

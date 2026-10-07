@@ -119,6 +119,19 @@ class PipelineBody(BaseModel):
     notes: str | None = None
 
 
+class ContactBody(BaseModel):
+    name: str | None = None
+    emails: list[str] | None = None
+    org: str | None = None
+    relationship: str | None = None
+    notes: str | None = None
+    asks: list[str] | None = None
+    next_follow_up: dt.date | None = None
+    last_touch: dt.date | None = None
+    letter_ids: list[str] | None = None
+    pipeline_ids: list[str] | None = None
+
+
 class LetterBody(BaseModel):
     name: str | None = None
     relationship: str | None = None
@@ -653,6 +666,34 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     def remove_letter(letter_id: str) -> dict[str, Any]:
         svc.delete_letter(letter_id)
         return {"removed": letter_id}
+
+    # ------------------------------------------------------------------ contacts (ADR 0014 §4)
+
+    @app.get("/api/contacts")
+    def get_contacts() -> list[dict[str, Any]]:
+        from areao1.criteria import contacts
+
+        return contacts.views(ws)
+
+    @app.post("/api/contacts")
+    def post_contact(body: ContactBody) -> dict[str, Any]:
+        return svc.add_contact(**body.model_dump(exclude_none=True)).model_dump(mode="json")
+
+    @app.patch("/api/contacts/{contact_id}")
+    def patch_contact(contact_id: str, body: ContactBody) -> dict[str, Any]:
+        """Change a contact. A letter writer's entry becomes a stored contact, linked to the letter."""
+        from areao1.criteria import contacts
+
+        start = contacts.from_letter(ws, contact_id)
+        changes = body.model_dump(exclude_unset=True)
+        if start is not None:
+            return svc.add_contact(**{**start, **changes}).model_dump(mode="json")
+        return svc.update_contact(contact_id, **changes).model_dump(mode="json")
+
+    @app.delete("/api/contacts/{contact_id}")
+    def remove_contact(contact_id: str) -> dict[str, Any]:
+        svc.delete_contact(contact_id)
+        return {"removed": contact_id}
 
     @app.get("/api/drafts/{path:path}")
     def get_draft(path: str) -> FileResponse:

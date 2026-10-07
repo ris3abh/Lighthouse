@@ -25,7 +25,7 @@ PDF = b"%PDF-1.4 fictional\n"
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
                  "/api/settings/missions", "/api/settings/agent", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
-                 "/api/onboarding", "/api/todos")  # fmt: skip
+                 "/api/onboarding", "/api/todos", "/api/contacts")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -106,6 +106,7 @@ def _ids(ws):
         "briefing": _briefing(ws),
         "finding": _finding(ws),
         "onboarding": _onboarding(ws),
+        "contact": ws.add_contact(name="Dr. Sam Ortiz", emails=["sam@uni.example"]).id,
         "todo": _todo(ws),
     }
 
@@ -206,6 +207,9 @@ SAMPLES = {
     ("POST", "/api/onboarding/goto"): ("/api/onboarding/goto", {"json": {"step": "questions"}}, "onboarding.goto"),
     ("PATCH", "/api/todos/{todo_id}"): ("/api/todos/{todo}", {"json": {"status": "done"}}, "todo.update"),
     ("PUT", "/api/settings/agent"): ("/api/settings/agent", {"json": {"cheap_mode": True}}, "settings.agent"),
+    ("POST", "/api/contacts"): ("/api/contacts", {"json": {"name": "Prof. Lee"}}, "contact.add"),
+    ("PATCH", "/api/contacts/{contact_id}"): ("/api/contacts/{contact}", {"json": {"notes": "Met at ICML"}}, "contact.update"),
+    ("DELETE", "/api/contacts/{contact_id}"): ("/api/contacts/{contact}", {}, "contact.delete"),
     ("POST", "/api/onboarding/ai"): ("/api/onboarding/ai", {"json": {"choice": "skip"}}, "onboarding.ai", "_at_ai"),
 }  # fmt: skip
 

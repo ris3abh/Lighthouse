@@ -6,6 +6,8 @@ const PANELS: [prefix: string, panels: string[]][] = [
   ["data/deadlines.json", ["deadlines"]],
   ["data/pipeline.json", ["pipeline"]],
   ["data/letters.json", ["letters"]],
+  ["data/contacts.json", ["contacts"]],
+  ["data/threads.json", ["contacts"]],
   ["data/metrics.csv", ["metrics"]],
   ["data/briefing.json", ["briefing"]],
   ["data/exhibits.json", ["scoreboard"]],

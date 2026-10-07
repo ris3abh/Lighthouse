@@ -417,6 +417,54 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         ctx.svc.delete_letter(args["id"])
         return _done("Removed the letter writer", record.name)
 
+    async def t_contacts(args: S) -> str:
+        from areao1.criteria import contacts
+
+        keys = (
+            "id",
+            "name",
+            "emails",
+            "org",
+            "relationship",
+            "asks",
+            "next_follow_up",
+            "last_touch",
+            "virtual",
+        )
+        return ctx.out([{k: c[k] for k in keys} for c in contacts.views(ws)])
+
+    def _contact(cid: str) -> Any:
+        found = next((c for c in ws.contacts().contacts if c.id == cid), None)
+        if found is None:
+            raise ValueError(
+                f"no contact {cid!r}; list_contacts first (a letter writer's id starts with letter:)"
+            )
+        return found
+
+    async def t_add_contact(args: S) -> str:
+        fields = {k: args[k] for k in ws.CONTACT_FIELDS if args.get(k) not in (None, "", [])}
+        ctx.svc.add_contact(**fields)
+        return _done("Added the contact", fields["name"])
+
+    async def t_update_contact(args: S) -> str:
+        from areao1.criteria import contacts
+
+        changes = {k: v for k, v in (args.get("changes") or {}).items() if k in ws.CONTACT_FIELDS}
+        if not changes:
+            raise ValueError("changes is empty (fields: " + ", ".join(ws.CONTACT_FIELDS) + ")")
+        start = contacts.from_letter(ws, args["id"])
+        if start is not None:  # a letter writer's entry becomes a stored contact
+            ctx.svc.add_contact(**{**start, **changes})
+            return _done("Updated", start["name"])
+        c = _contact(args["id"])
+        ctx.svc.update_contact(c.id, **changes)
+        return _done("Updated", c.name)
+
+    async def t_delete_contact(args: S) -> str:
+        c = _contact(args["id"])
+        ctx.svc.delete_contact(c.id)
+        return _done("Removed the contact", c.name)
+
     async def t_todos(args: S) -> str:
         return ctx.out([t.model_dump(mode="json") for t in ws.todos().todos if t.status == "open"])
 
@@ -581,6 +629,57 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
             read_only=False,
         ),
         AgentTool(
+            "list_contacts",
+            "Your contacts: letter writers, organizers, editors, collaborators (id, emails, relationship, asks, "
+            "last touch, next follow-up).",
+            _obj({}, []),
+            t_contacts,
+        ),
+        AgentTool(
+            "add_contact",
+            "Add a contact." + asked,
+            _obj(
+                {
+                    "name": STR,
+                    "emails": {"type": "array", "items": STR},
+                    "org": STR,
+                    "relationship": {
+                        "type": "string",
+                        "enum": [
+                            "recommender",
+                            "collaborator",
+                            "organizer",
+                            "editor",
+                            "mentor",
+                            "employer",
+                            "other",
+                        ],
+                    },
+                    "notes": STR,
+                    "asks": {"type": "array", "items": STR},
+                    "next_follow_up": DATE,
+                },
+                ["name"],
+            ),  # fmt: skip
+            t_add_contact,
+            read_only=False,
+        ),
+        AgentTool(
+            "update_contact",
+            "Change a contact (list_contacts for the id): emails, org, relationship, notes, asks, next_follow_up, "
+            "last_touch." + asked,
+            _obj({"id": STR, "changes": changes}, ["id", "changes"]),
+            t_update_contact,
+            read_only=False,
+        ),
+        AgentTool(
+            "delete_contact",
+            "Remove a contact." + asked,
+            _obj({"id": STR}, ["id"]),
+            t_delete_contact,
+            read_only=False,
+        ),
+        AgentTool(
             "list_todos",
             "Open to-dos (things only the person can do, e.g. upload proof).",
             _obj({}, []),
@@ -700,7 +799,9 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         "update_pipeline_item": ("data/pipeline.json",), "delete_pipeline_item": ("data/pipeline.json",),
         "add_letter_writer": ("data/letters.json",), "update_letter_writer": ("data/letters.json",),
         "delete_letter_writer": ("data/letters.json",), "list_todos": ("data/todos.json",),
-        "update_todo": ("data/todos.json",),
+        "update_todo": ("data/todos.json",), "list_contacts": ("data/contacts.json", "data/threads.json"),
+        "add_contact": ("data/contacts.json",), "update_contact": ("data/contacts.json",),
+        "delete_contact": ("data/contacts.json",),
         "undo_change": ("data/pipeline.json", "data/letters.json", "data/deadlines.json", "data/todos.json"),
     }  # fmt: skip
     for t in tool_list:

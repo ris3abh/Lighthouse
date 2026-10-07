@@ -20,6 +20,9 @@ TOOL_FOR: dict[str, str] = {
     "letter.update": "update_letter_writer",
     "letter.delete": "delete_letter_writer",
     "todo.update": "update_todo",
+    "contact.add": "add_contact",
+    "contact.update": "update_contact",
+    "contact.delete": "delete_contact",
     "pipeline_item.undo": "undo_change",  # the page's Undo, for any change it can undo
 }
 

@@ -286,6 +286,22 @@ class Service:
         self._record("letter.delete", "letter", lambda: self.ws.delete_letter(letter_id),
                      target_id=letter_id, before=before, summary=before.name)  # fmt: skip
 
+    # ------------------------------------------------------------------ contacts (ADR 0014 §4)
+
+    def add_contact(self, **fields: Any) -> Any:
+        return self._record("contact.add", "contact", lambda: self.ws.add_contact(**fields),
+                            summary=str(fields.get("name", "")))  # fmt: skip
+
+    def update_contact(self, contact_id: str, **changes: Any) -> Any:
+        before = self._find(self.ws.contacts().contacts, contact_id, "contact")
+        return self._record("contact.update", "contact", lambda: self.ws.update_contact(contact_id, **changes),
+                            before=before, summary=before.name)  # fmt: skip
+
+    def delete_contact(self, contact_id: str) -> None:
+        before = self._find(self.ws.contacts().contacts, contact_id, "contact")
+        self._record("contact.delete", "contact", lambda: self.ws.delete_contact(contact_id),
+                     target_id=contact_id, before=before, summary=before.name)  # fmt: skip
+
     # ------------------------------------------------------------------ trackers (generic) + metrics
 
     def update_tracker(self, target_type: str, target_id: str, **changes: Any) -> Any:
@@ -386,7 +402,7 @@ class Service:
 
     UNDOABLE = frozenset({"pipeline.add", "pipeline.update", "pipeline.move", "pipeline.delete", "deadline.add",
                           "deadline.update", "deadline.delete", "letter.add", "letter.update", "letter.delete",
-                          "todo.update", "metrics.record"})  # fmt: skip
+                          "todo.update", "contact.add", "contact.update", "contact.delete", "metrics.record"})  # fmt: skip
 
     def undoable(self, change: Change, changes: list[Change] | None = None) -> bool:
         changes = changes if changes is not None else self.ws.changes()
@@ -424,6 +440,8 @@ class Service:
             items = list(self.ws.letters().letters)
         elif target_type == "todo":
             items = list(self.ws.todos().todos)
+        elif target_type == "contact":
+            items = list(self.ws.contacts().contacts)
         else:
             raise WorkspaceError(f"can't undo changes to {target_type!r}")
         found = next((i for i in items if i.id == target_id), None)

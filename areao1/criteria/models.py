@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from typing import Literal
 
@@ -114,6 +115,65 @@ class Todo(_Model):
 
 class Todos(_File):
     todos: list[Todo] = Field(default_factory=list)
+
+
+RELATIONSHIPS = ("recommender", "collaborator", "organizer", "editor", "mentor", "employer", "other")
+
+
+class Contact(_Model):
+    """Someone your case runs through (ADR 0014 §4): a letter writer, an organizer, an editor. Tracking only: a
+    contact never counts toward a criterion."""
+
+    id: str = Field(default_factory=lambda: new_id("con"))
+    name: str = Field(min_length=1, max_length=120)
+    emails: list[str] = Field(default_factory=list)
+    org: str = ""
+    relationship: Literal[
+        "recommender", "collaborator", "organizer", "editor", "mentor", "employer", "other"
+    ] = "other"
+    notes: str = ""
+    asks: list[str] = Field(default_factory=list, description="What you've asked of them, in your words.")
+    next_follow_up: date | None = None
+    last_touch: date | None = Field(
+        None, description="Set by hand, or from the newest Gmail thread with them."
+    )
+    letter_ids: list[str] = Field(default_factory=list)
+    pipeline_ids: list[str] = Field(default_factory=list)
+    tier: Literal["self_reported"] = "self_reported"
+
+    @field_validator("emails")
+    @classmethod
+    def _emails(cls, v: list[str]) -> list[str]:
+        out = []
+        for e in v:
+            e = e.strip().lower()
+            if e and e not in out:
+                if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", e):
+                    raise ValueError(f"{e!r} isn't an email address")
+                out.append(e)
+        return out
+
+
+class Contacts(_File):
+    contacts: list[Contact] = Field(default_factory=list)
+
+
+class GmailThread(_Model):
+    """A Gmail thread with at least one of your contacts (ADR 0014 §2). No bodies, no attachments: who, when, the
+    subject and one redacted line."""
+
+    id: str
+    subject: str = ""
+    contact_ids: list[str] = Field(default_factory=list)
+    last_at: datetime
+    last_from: Literal["you", "them"]
+    snippet: str = Field("", max_length=200)
+    messages: int = Field(1, ge=1)
+
+
+class GmailThreads(_File):
+    threads: list[GmailThread] = Field(default_factory=list)
+    synced_at: datetime | None = None
 
 
 # --------------------------------------------------------------------------- profiles/*.yaml

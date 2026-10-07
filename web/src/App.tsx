@@ -14,6 +14,7 @@ import {
   Settings as SettingsIcon,
   Sparkles,
   Sun,
+  Users,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -32,6 +33,7 @@ import Evidence from "./pages/Evidence";
 import Inbox from "./pages/Inbox";
 import Knowledge from "./pages/Knowledge";
 import Letters from "./pages/Letters";
+import Contacts from "./pages/Contacts";
 import Metrics from "./pages/Metrics";
 import OverviewPage from "./pages/Overview";
 import Pipeline from "./pages/Pipeline";
@@ -54,6 +56,7 @@ const NAV: { id: string; label: string; icon: LucideIcon }[] = [
   { id: "metrics", label: "Metrics", icon: ChartLine },
   { id: "pipeline", label: "Pipeline", icon: Kanban },
   { id: "letters", label: "Letters", icon: Mail },
+  { id: "contacts", label: "Contacts", icon: Users },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "agent", label: "Agent", icon: Sparkles },
   { id: "knowledge", label: "Knowledge", icon: BookOpen },
@@ -285,6 +288,9 @@ function Shell() {
       break;
     case "letters":
       content = <Letters />;
+      break;
+    case "contacts":
+      content = <Contacts />;
       break;
     case "agent":
       content = <Agent focus={params.get("run")} />;
