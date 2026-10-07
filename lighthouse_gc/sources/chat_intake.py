@@ -75,10 +75,14 @@ class Intake:
 # ----------------------------------------------------------------------------- the files
 
 
-def gather(dropped: list[tuple[str, bytes]]) -> dict[str, bytes]:
+def gather(
+    dropped: list[tuple[str, bytes]], left_out: list[tuple[str, str]] | None = None
+) -> dict[str, bytes]:
     """Every dropped file, with .zip archives opened in memory (never extracted to disk). Paths keep their
-    folders, so a manifest's relative paths resolve."""
+    folders, so a manifest's relative paths resolve. Files inside an archive that aren't read go to `left_out`
+    with the reason, so a drop that yields nothing can say why."""
     out: dict[str, bytes] = {}
+    left_out = left_out if left_out is not None else []
     total = 0
 
     def add(name: str, data: bytes) -> None:
@@ -93,13 +97,18 @@ def gather(dropped: list[tuple[str, bytes]]) -> dict[str, bytes]:
     for name, data in dropped:
         if zipfile.is_zipfile(io.BytesIO(data)):
             with zipfile.ZipFile(io.BytesIO(data)) as zf:
-                for info in zf.infolist():
-                    if info.is_dir() or info.file_size > MAX_EXPORT_BYTES:
+                entries = [i for i in zf.infolist() if not i.is_dir()]
+                if not entries:
+                    left_out.append((name, "the .zip is empty"))
+                for info in entries:
+                    if info.file_size > MAX_EXPORT_BYTES:
+                        left_out.append((f"{name}/{info.filename}", "larger than 512 MB unpacked"))
                         continue
                     if (
                         PurePosixPath(info.filename).name.startswith((".", "__MACOSX"))
                         or "__MACOSX" in info.filename
                     ):
+                        left_out.append((f"{name}/{info.filename}", "a hidden or Mac metadata file"))
                         continue
                     add(info.filename, zf.read(info))
         else:
@@ -169,7 +178,8 @@ LABELS = {
 
 def read(dropped: list[tuple[str, bytes]]) -> Intake:
     """Read everything dropped. Raises ExportError naming the files when nothing at all could be read."""
-    files = gather(dropped)
+    left_out: list[tuple[str, str]] = []
+    files = gather(dropped, left_out)
     intake = Intake(files=len(files))
     order = sorted(files)
     manifests = [
@@ -183,6 +193,11 @@ def read(dropped: list[tuple[str, bytes]]) -> Intake:
             continue
         order = [p for p in listed if p != m] + [p for p in order if p not in listed and p != m]
         intake.formats.append(f"followed {PurePosixPath(m).name} to {len(listed)} files")
+        wanted = _manifest_wants(json.loads(files[m]))
+        if len(listed) < wanted:
+            left_out.append(
+                (m, f"it lists {wanted} files and {wanted - len(listed)} of them weren't in what you dropped")
+            )
     seen: dict[tuple[str, str], Conversation] = {}
     labels: dict[str, int] = {}
     for path in order:
@@ -228,7 +243,33 @@ def read(dropped: list[tuple[str, bytes]]) -> Intake:
     )
     intake.formats += [k for k in LABELS.values() if k in labels]
     if not intake.conversations and not intake.projects:
-        named = ", ".join(p for p, _ in intake.unread[:8]) or ", ".join(order[:8]) or "nothing"
-        raise ExportError(f"I couldn't find any Claude or ChatGPT chats in what you dropped. Files I couldn't read: {named}"
-                          + (" …" if len(intake.unread) > 8 else "") + ". Drop the export .zip, or its conversations files.")  # fmt: skip
+        raise ExportError(no_chats_message(dropped, intake, left_out))
     return intake
+
+
+def _manifest_wants(doc: Any) -> int:
+    """How many .json files a manifest lists."""
+    if isinstance(doc, str):
+        return int(doc.lower().endswith(".json"))
+    if isinstance(doc, dict):
+        return sum(_manifest_wants(v) for v in doc.values())
+    if isinstance(doc, list):
+        return sum(_manifest_wants(v) for v in doc)
+    return 0
+
+
+def no_chats_message(
+    dropped: list[tuple[str, bytes]], intake: Intake, left_out: list[tuple[str, str]]
+) -> str:
+    """What arrived and what happened to each file, when nothing in the drop was a chat. Never just "nothing"."""
+    from lighthouse_gc.core.text import plural
+
+    received = ", ".join(n for n, _ in dropped[:4]) + (" …" if len(dropped) > 4 else "")
+    why = [*left_out, *intake.unread, *((p, "not a chat file") for p in intake.skipped)]
+    head = f"I couldn't find any Claude or ChatGPT chats in what you dropped ({plural(len(dropped), 'file')}: {received or 'none'})."
+    if not why:
+        return head + " The drop arrived empty. Drop the export .zip, or its whole folder."
+    lines = "; ".join(f"{p}: {r}" for p, r in why[:6]) + (
+        f"; and {len(why) - 6} more" if len(why) > 6 else ""
+    )
+    return f"{head} What happened to each: {lines}. Drop the export .zip, or its whole folder."

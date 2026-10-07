@@ -107,8 +107,38 @@ def test_unknown_files_are_named_never_dropped_silently():
         "notes/odd.json": "not a Claude or ChatGPT format I know",
         "broken.json": "not valid JSON",
     }
-    with pytest.raises(ExportError, match="Files I couldn't read: notes/odd.json"):
+    with pytest.raises(ExportError, match="notes/odd.json: not a Claude or ChatGPT format I know"):
         chat_intake.read(_drop({"notes/odd.json": {"hello": "world"}}))
+
+
+def _zip(entries: dict[str, bytes]) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        for n, b in entries.items():
+            zf.writestr(n, b)
+    return buf.getvalue()
+
+
+@pytest.mark.parametrize(
+    ("drop", "says"),
+    [
+        # the owner's run: a drop that yielded no readable file said "Files I couldn't read: nothing"
+        ([("export.zip", _zip({"__MACOSX/._conversations.json": b"x", ".DS_Store": b"x"}))],
+         ["export.zip/.DS_Store: a hidden or Mac metadata file"]),
+        ([("manifest.json", json.dumps({"files": ["chats/2026-08-01.json", "chats/2026-08-02.json"]}).encode())],
+         ["manifest.json: it lists 2 files and 2 of them weren't in what you dropped"]),
+        ([("users.json", b"[]")], ["users.json: not a chat file"]),
+        ([("empty.zip", _zip({}))], ["empty.zip: the .zip is empty"]),
+    ],
+)  # fmt: skip
+def test_a_drop_with_no_chats_says_what_arrived_and_what_happened_to_each(drop, says):
+    with pytest.raises(ExportError) as err:
+        chat_intake.read(drop)
+    msg = str(err.value)
+    assert "nothing" not in msg
+    assert f"({len(drop)} file" in msg and drop[0][0] in msg
+    for s in says:
+        assert s in msg
 
 
 # ----------------------------------------------------------------------------- relevance (local, no model)
