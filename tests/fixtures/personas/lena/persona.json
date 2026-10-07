@@ -6,12 +6,32 @@
   "location": "Chicago, Illinois, United States",
   "employer": "Brightline Retail",
   "role": "Head of Business Analytics",
-  "education": ["Lakeshore School of Business, Master of Business Administration - MBA, Analytics"],
-  "awards": ["Analytics Leader of the Year 2025, Midwest Data Council"],
+  "education": [
+    "Lakeshore School of Business, Master of Business Administration - MBA, Analytics"
+  ],
+  "awards": [
+    "Analytics Leader of the Year 2025, Midwest Data Council"
+  ],
   "publications": [],
-  "certifications": ["Certified Analytics Professional (CAP)"],
-  "skills": ["Business Analytics", "Forecasting", "SQL"],
-  "links": ["lenavogel.example"],
-  "redacted": ["lena.vogel@example.com", "+1 312 555 0187"],
-  "lookups": ["website"]
+  "certifications": [
+    "Certified Analytics Professional (CAP)"
+  ],
+  "skills": [
+    "Business Analytics",
+    "Forecasting",
+    "SQL"
+  ],
+  "links": [
+    "lenavogel.example"
+  ],
+  "redacted": [
+    "lena.vogel@example.com",
+    "+1 312 555 0187"
+  ],
+  "lookups": [
+    "website"
+  ],
+  "memberships": [
+    "Member, Midwest Data Council"
+  ]
 }

@@ -17,10 +17,11 @@ from lighthouse_gc.onboarding.models import Lookup, OnboardingState, ProfileFiel
 
 LABELS = {"name": "Name", "headline": "Field", "location": "Based in", "employer": "Employer", "role": "Role",
           "education": "Education", "awards": "Awards", "publications": "Papers", "judging": "Judging",
-          "certifications": "Certifications", "links": "Links", "skills": "Skills", "summary": "Summary"}  # fmt: skip
+          "certifications": "Certifications", "links": "Links", "skills": "Skills", "summary": "Summary",
+          "memberships": "Memberships"}  # fmt: skip
 # Asked in this order; skills and summary only fill the panel.
 ORDER = ("name", "role", "location", "headline", "education", "awards", "publications", "judging",
-         "certifications", "links")  # fmt: skip
+         "memberships", "certifications", "links")  # fmt: skip
 PROFILES = {
     "o1a": "O-1A (temporary, extraordinary ability)",
     "eb1a": "EB-1A (green card, extraordinary ability)",
@@ -71,6 +72,81 @@ def evidence_for(pdf: bytes, filename: str, text: str, fields: list[ProfileField
                     claims=claims)  # fmt: skip
 
 
+def _member(membership: str) -> str:
+    """'Senior Member, IEEE' -> 'a Senior Member of IEEE'; 'Member, X' -> 'a member of X'."""
+    role, _, org = membership.partition(", ")
+    if not org:
+        return f"a member of {membership}"
+    return f"{'a member' if role.lower() == 'member' else _a(role)} of {org}"
+
+
+def _count(fields: list[ProfileField], key: str) -> int:
+    f = next((x for x in fields if x.key == key), None)
+    return len(_list(f.value)) if f else 0
+
+
+def opening(fields: list[ProfileField], parser: str) -> str:
+    """The first thing Lighthouse says after reading the PDF: a short, warm reaction and what it found. Every
+    detail comes from the PDF; nothing is confirmed yet, so the questions that follow check each one."""
+    got = {f.key: f.value for f in fields}
+    found = [(_a(word) if n == 1 else plural(n, word)) for key, word in (("awards", "award"), ("judging", "judging role"), ("publications", "paper"),
+             ("memberships", "membership"), ("certifications", "certification")) if (n := _count(fields, key))]  # fmt: skip
+    if not fields:
+        return ("I couldn't read much from that PDF, so I'll just ask. Nice to meet you! "
+                "A few quick questions, and you can skip any of them.")  # fmt: skip
+    many = len(fields) >= 7 or len(found) >= 2
+    first = str(got.get("name", "")).split()[0] if got.get("name") else ""
+    hello = f"Nice to meet you{', ' + first if first else ''}!"
+    lead = ("That wasn't a LinkedIn export, but I picked out a few things. " if parser == "model" else
+            "I got quite a few things about you. " if many else "I got the basics from your PDF. ")  # fmt: skip
+    who = ""
+    if got.get("role") and got.get("employer"):
+        who = f"You're {_a(str(got['role']))} at {got['employer']}"
+    elif got.get("headline"):
+        who = f"You work as {got['headline']}"
+    if who and got.get("location"):
+        who += f", based in {str(got['location']).split(',')[0]}"
+    parts = [lead + hello]
+    if who:
+        parts.append(who + ".")
+    if found:
+        parts.append(f"I also spotted {_and(found)}, which can matter for your case.")
+    parts.append("I'll check each with you, one at a time. It takes a couple of minutes.")
+    return " ".join(parts)
+
+
+def _a(role: str) -> str:
+    if role.split(" ")[0].lower() in (
+        "head",
+        "director",
+        "chief",
+        "vp",
+        "president",
+        "founder",
+        "co-founder",
+    ):
+        return role  # "You're Head of Analytics at ..."
+    return ("an " if role[:1].lower() in "aeiou" else "a ") + role
+
+
+def _and(items: list[str]) -> str:
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def reply_text(q: Question, action: str, value: Any = None) -> str:
+    """How the person's answer reads in the transcript."""
+    if action == "skip":
+        return "Skip"
+    if q.kind == "choice":
+        return next((o["label"] for o in q.options if o["value"] == value), str(value))
+    if q.kind == "month":
+        return str(value)
+    if action == "fix":
+        shown = "; ".join(str(v) for v in value.values()) if isinstance(value, dict) else str(value)
+        return f"Not quite: {shown}"
+    return "Yes"
+
+
 def _first(state: OnboardingState) -> str:
     name = state.field("name")
     if name and name.status in ("confirmed", "fixed") and str(name.value).strip():
@@ -119,6 +195,7 @@ def next_question(state: OnboardingState) -> Question | None:
             "awards": f"You list {plural(len(items), 'award')}: {'; '.join(items)}. Is that right?",
             "publications": f"You mentioned {plural(len(items), 'paper')}: {'; '.join(items)}. Is that right?",
             "judging": f"You mention judging or reviewing: {'; '.join(items)}. Is that right?",
+            "memberships": f"You're {_and([_member(m) for m in items])}. Is that right?",
             "certifications": f"You list {plural(len(items), 'certification')}: {'; '.join(items)}. Is that right?",
             "links": f"Your profile links to {', '.join(items)}. {'Is this yours' if len(items) == 1 else 'Are these yours'}?",
         }[key]

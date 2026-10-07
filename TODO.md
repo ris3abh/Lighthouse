@@ -42,7 +42,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       public professional pages only); one-line refusals with an alternative, logged on the Agent page
 - [x] C5. Status palette on monochrome: green = banked, amber = building, red = attention; status only
       (bars, markers, badges, countdowns); AA in both themes; guard test + ADR 0007 amended
-- [ ] C6. Onboarding as a conversation: a warm opening that sums up what the PDF held, then the questions in
+- [x] C6. Onboarding as a conversation: a warm opening that sums up what the PDF held, then the questions in
       a compact dialog beside the profile panel (no full-page headlines)
 - [ ] C7. What onboarding learns becomes self-reported to-dos ("Upload proof of HackSeattle 2025 judging"),
       one per award / judging role / publication / membership, in This week and linked to the criterion;

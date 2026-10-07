@@ -315,3 +315,46 @@ def test_namesake_check():
     }
     cand = flow.paper_candidate(entry, "Ravi Iyer", [])
     assert cand.facts["namesake_check"] == "possible namesake" and cand.confidence == 0.2
+
+
+# ----------------------------------------------------------------------------- the conversation (C6)
+
+
+def test_onboarding_opens_with_a_warm_summary_and_keeps_the_conversation(fresh):
+    c = client_for(fresh)
+    view = upload(c, "ravi")
+    [opening] = view["state"]["transcript"]
+    assert opening["who"] == "lighthouse"
+    assert opening["text"].startswith("I got quite a few things about you. Nice to meet you, Ravi!")
+    assert "an award, a judging role, 2 papers and a membership" in opening["text"]
+    assert "@" not in opening["text"] and "555" not in opening["text"]  # contact details never reach it
+    q = view["question"]
+    view = c.post("/api/onboarding/answer", headers=W, json={"id": q["id"], "action": "yes"}).json()
+    q2 = view["question"]
+    view = c.post("/api/onboarding/answer", headers=W, json={"id": q2["id"], "action": "fix",
+                                                             "value": {"employer": "Lakeshore AI", "role": "Scientist"}}).json()  # fmt: skip
+    turns = [(t["who"], t["text"]) for t in view["state"]["transcript"]]
+    assert turns[1:] == [("lighthouse", q["text"]), ("you", "Yes"), ("lighthouse", q2["text"]),
+                         ("you", "Not quite: Lakeshore AI; Scientist")]  # fmt: skip
+    assert (
+        client_for(fresh).get("/api/onboarding").json()["state"]["transcript"] == view["state"]["transcript"]
+    )
+    view, asked = answer_all(c, view, target="eb1a")
+    assert any(q.endswith("You're a Senior Member of IEEE. Is that right?") for q in asked)
+    assert {line["key"]: line["value"] for line in view["panel"]}["memberships"] == ["Senior Member, IEEE"]
+
+
+def test_the_opening_adapts_to_what_the_pdf_held():
+    few = flow.fields_from({"name": {"value": "Sam Lee", "quote": "Sam Lee"}})
+    assert flow.opening(few, "linkedin").startswith("I got the basics from your PDF. Nice to meet you, Sam!")
+    assert flow.opening(few, "model").startswith(
+        "That wasn't a LinkedIn export, but I picked out a few things."
+    )
+    assert flow.opening([], "none").startswith("I couldn't read much from that PDF, so I'll just ask.")
+
+
+def test_skipping_the_pdf_still_opens_the_conversation(fresh):
+    c = client_for(fresh)
+    view = c.post("/api/onboarding/step", headers=W, json={"step": "skip_linkedin"}).json()
+    assert view["state"]["transcript"][0]["text"].startswith("No problem, we'll do without it.")
+    assert view["question"]["id"] == "target"

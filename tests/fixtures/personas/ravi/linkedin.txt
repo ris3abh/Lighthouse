@@ -17,7 +17,7 @@ AI Research Scientist at Lakeshore AI Lab
 Boston, Massachusetts, United States
 Summary
 I work on efficient and reliable large models. My papers appeared at NeurIPS and ICLR, and I review for
-NeurIPS, ICML and ICLR.
+NeurIPS, ICML and ICLR. I'm a Senior Member of IEEE.
 Experience
 Lakeshore AI Lab
 AI Research Scientist

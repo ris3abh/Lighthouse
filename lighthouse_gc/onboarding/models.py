@@ -32,6 +32,13 @@ class LinkedInSource(_Model):
     parser: Literal["linkedin", "model", "none"] = "none"
 
 
+class Turn(_Model):
+    """One line of the onboarding conversation, kept so a resumed onboarding reads the same."""
+
+    who: Literal["lighthouse", "you"]
+    text: str
+
+
 class Lookup(_Model):
     id: str
     kind: Literal["papers", "github", "orcid", "website"]
@@ -49,6 +56,7 @@ class OnboardingState(_File):
     target_profile: str | None = None
     target_date: str | None = Field(None, description="YYYY-MM the person hopes to file, or 'skipped'.")
     lookups: list[Lookup] = Field(default_factory=list)
+    transcript: list[Turn] = Field(default_factory=list)
     chats: Literal["pending", "imported", "skipped"] = "pending"
     tour: Literal["pending", "seen", "skipped"] = "pending"
     started_at: datetime | None = None

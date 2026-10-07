@@ -12,12 +12,12 @@ from pydantic import BaseModel
 from lighthouse_gc.core import clock
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.onboarding import flow
-from lighthouse_gc.onboarding.models import LinkedInSource, OnboardingState
+from lighthouse_gc.onboarding.models import LinkedInSource, OnboardingState, Turn
 from lighthouse_gc.service import Service
 
 MAX_PDF_BYTES = 10_000_000
 PANEL = ("name", "headline", "location", "employer", "role", "education", "awards", "publications", "judging",
-         "certifications", "links", "skills")  # fmt: skip
+         "memberships", "certifications", "links", "skills")  # fmt: skip
 
 
 class Answer(BaseModel):
@@ -113,6 +113,7 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
             parser=parser,
         )  # type: ignore[arg-type]
         state.step = "questions"
+        state.transcript = [Turn(who="lighthouse", text=flow.opening(fields, parser))]
         _advance(state)
         evidence = (
             flow.evidence_for(data, file.filename or "profile.pdf", text, fields) if text.strip() else None
@@ -126,10 +127,14 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
         state = ws.onboarding()
         if state.step != "questions":
             raise HTTPException(409, "there's no question waiting")
+        asked = flow.next_question(state)
         try:
             writes = flow.answer(state, body.id, body.action, body.value)
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
+        if asked is not None:
+            state.transcript += [Turn(who="lighthouse", text=asked.text),
+                                 Turn(who="you", text=flow.reply_text(asked, body.action, body.value))]  # fmt: skip
         _advance(state)
         person = dict(writes["person"])
         if writes.get("filing_date") or writes["profile"]:
@@ -155,6 +160,8 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
         s = body.step
         if s == "skip_linkedin" and state.step == "linkedin":
             state.step = "questions"
+            state.transcript = [Turn(who="lighthouse", text="No problem, we'll do without it. Nice to meet you! "
+                                     "Just two quick questions, and you can skip either.")]  # fmt: skip
         elif s == "lookups_done" and state.step == "lookups":
             for lk in state.lookups:
                 if lk.status == "offered":

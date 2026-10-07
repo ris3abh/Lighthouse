@@ -6,12 +6,28 @@
   "location": "Seattle, Washington, United States",
   "employer": "Northwind Cloud",
   "role": "Senior Software Engineer",
-  "education": ["Pacific Northwest Institute of Technology, Bachelor of Science - BS, Computer Science"],
-  "awards": ["Northwind Engineering Excellence Award 2024"],
+  "education": [
+    "Pacific Northwest Institute of Technology, Bachelor of Science - BS, Computer Science"
+  ],
+  "awards": [
+    "Northwind Engineering Excellence Award 2024"
+  ],
   "publications": [],
   "certifications": [],
-  "skills": ["Distributed Systems", "Rust", "Kubernetes"],
-  "links": ["github.com/mayachen-example"],
-  "redacted": ["maya.chen@example.com", "+1 206 555 0142"],
-  "lookups": ["github"]
+  "skills": [
+    "Distributed Systems",
+    "Rust",
+    "Kubernetes"
+  ],
+  "links": [
+    "github.com/mayachen-example"
+  ],
+  "redacted": [
+    "maya.chen@example.com",
+    "+1 206 555 0142"
+  ],
+  "lookups": [
+    "github"
+  ],
+  "memberships": []
 }

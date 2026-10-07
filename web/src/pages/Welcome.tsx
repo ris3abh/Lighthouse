@@ -1,5 +1,5 @@
-import { ArrowRight, Check, FileText, MessageSquare, Pencil, Search, SkipForward, Upload } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { Check, FileText, MessageSquare, Pencil, Search, SkipForward, Upload } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type OnboardingLookup, type OnboardingQuestion, type OnboardingView } from "../api";
 import DropZone from "../components/DropZone";
 import { Button, cx, plural, Segmented, useToast } from "../components/ui";
@@ -107,124 +107,145 @@ function asText(v: string | string[] | undefined) {
 
 function QuestionStep({ view, busy, run }: { view: OnboardingView; busy: boolean; run: Run }) {
   const q = view.question;
+  const turns = view.state.transcript ?? [];
+  const end = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "nearest" });
+  }, [turns.length, q?.id]);
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-10 @4xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-      <div className="min-w-0">
-        <p className="eyebrow">Step 2 · Your profile</p>
-        {q ? <QuestionCard key={q.id} q={q} busy={busy} run={run} source={view.state.source?.filename} /> : <p className="mt-6 text-ink-2">All set.</p>}
-        {view.state.source && (
-          <p className="mt-6 font-mono text-[10.5px] text-muted uppercase">
-            Read locally from {view.state.source.filename} · {plural(view.state.source.redactions, "contact detail")} removed before anything else saw it
-          </p>
-        )}
-      </div>
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @4xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <section className="card flex min-w-0 flex-col self-start" aria-label="Getting to know you">
+        <header className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
+          <h1 className="eyebrow text-ink">Getting to know you</h1>
+          {view.state.source && (
+            <span className="truncate font-mono text-[10.5px] text-muted uppercase">
+              {view.state.source.filename} · {plural(view.state.source.redactions, "contact detail")} removed
+            </span>
+          )}
+        </header>
+        <div className="flex max-h-[min(62vh,640px)] flex-col gap-3 overflow-y-auto px-5 py-5" aria-live="polite">
+          {turns.map((turn, i) => (
+            <Bubble key={i} who={turn.who} first={i === 0 || turns[i - 1].who !== turn.who}>
+              {turn.text}
+            </Bubble>
+          ))}
+          {q && (
+            <Bubble key={q.id} who="lighthouse" first={turns.at(-1)?.who !== "lighthouse"} current>
+              {q.text}
+              {q.quote && !q.text.includes(q.quote) && (
+                <span className="mt-2 flex items-start gap-1.5 text-xs text-ink-2">
+                  <FileText className="mt-0.5 size-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+                  From your PDF: “{q.quote}”
+                </span>
+              )}
+            </Bubble>
+          )}
+          {!q && <p className="text-sm text-ink-2">All set.</p>}
+          <div ref={end} />
+        </div>
+        {q && <Answer key={q.id} q={q} busy={busy} run={run} />}
+      </section>
       <ProfilePanel view={view} />
     </div>
   );
 }
 
-function QuestionCard({ q, busy, run, source }: { q: OnboardingQuestion; busy: boolean; run: Run; source?: string }) {
+function Bubble({ who, first, current, children }: { who: "lighthouse" | "you"; first: boolean; current?: boolean; children: ReactNode }) {
+  const me = who === "you";
+  return (
+    <div className={cx("flex animate-rise flex-col", me ? "items-end" : "items-start")}>
+      {first && <span className="mb-1 font-mono text-[10px] tracking-[0.12em] text-muted uppercase">{me ? "You" : "Lighthouse"}</span>}
+      <p
+        className={cx(
+          "max-w-[85%] border px-4 py-2.5 text-[15px] leading-relaxed",
+          me ? "border-ink bg-ink text-on-ink" : current ? "border-ink bg-surface text-ink" : "border-line bg-paper text-ink",
+        )}
+      >
+        {children}
+      </p>
+    </div>
+  );
+}
+
+/** The reply area under the conversation: Yes / No, let me fix it / Skip, a choice, or a month. */
+function Answer({ q, busy, run }: { q: OnboardingQuestion; busy: boolean; run: Run }) {
   const [fixing, setFixing] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>(() => Object.fromEntries(q.keys.map((k) => [k, asText(q.values[k])])));
+  const skip = (
+    <Button type="button" variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingAnswer(q.id, "skip"))}>
+      Skip
+    </Button>
+  );
+  let body: ReactNode;
   if (q.kind === "month")
-    return (
+    body = (
       <form
-        className="mt-4 animate-rise"
+        className="flex flex-wrap items-end gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           if (draft.when) run(() => api.onboardingAnswer(q.id, "yes", draft.when));
         }}
       >
-        <h1 className="display text-4xl md:text-6xl">{q.text}</h1>
-        <label className="mt-8 block max-w-xs">
+        <label className="min-w-0 flex-1 basis-48">
           <span className="label">Month</span>
-          <input id="when" type="month" className="input h-12 text-base" value={draft.when ?? ""} onChange={(e) => setDraft({ when: e.target.value })} />
+          <input id="when" type="month" className="input" value={draft.when ?? ""} onChange={(e) => setDraft({ when: e.target.value })} />
         </label>
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Button type="submit" variant="primary" className="h-12 px-6" disabled={busy || !draft.when}>
+        <Button type="submit" variant="primary" disabled={busy || !draft.when}>
+          <Check /> Save
+        </Button>
+        {skip}
+      </form>
+    );
+  else if (q.kind === "choice")
+    body = (
+      <div className="flex flex-wrap gap-2">
+        {q.options.map((o) => (
+          <Button key={o.value} disabled={busy} onClick={() => run(() => api.onboardingAnswer(q.id, "yes", o.value))}>
+            {o.label}
+          </Button>
+        ))}
+        {skip}
+      </div>
+    );
+  else if (fixing)
+    body = (
+      <form
+        className="grid gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(() => api.onboardingAnswer(q.id, "fix", q.keys.length === 1 ? draft[q.keys[0]] : draft));
+        }}
+      >
+        {q.keys.map((k) => (
+          <label key={k}>
+            <span className="label">{k}</span>
+            <input className="input" id={`fix-${k}`} autoFocus={k === q.keys[0]} value={draft[k] ?? ""} onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />
+            {Array.isArray(q.values[k]) && <span className="mt-1 block font-mono text-[10.5px] text-muted uppercase">Separate items with ;</span>}
+          </label>
+        ))}
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" variant="primary" disabled={busy}>
             <Check /> Save
           </Button>
-          <Button type="button" variant="ghost" className="h-12 px-6" disabled={busy} onClick={() => run(() => api.onboardingAnswer(q.id, "skip"))}>
-            Skip
+          <Button type="button" variant="ghost" onClick={() => setFixing(false)}>
+            Cancel
           </Button>
         </div>
       </form>
     );
-  if (q.kind === "choice")
-    return (
-      <div className="mt-4 animate-rise">
-        <h1 className="display text-4xl md:text-6xl">{q.text}</h1>
-        <div className="mt-8 flex flex-col gap-2">
-          {q.options.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              disabled={busy}
-              onClick={() => run(() => api.onboardingAnswer(q.id, "yes", o.value))}
-              className="group flex items-center justify-between border border-ink bg-surface px-5 py-4 text-left text-[15px] transition-colors hover:bg-ink hover:text-on-ink"
-            >
-              {o.label}
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden />
-            </button>
-          ))}
-        </div>
-        <Button className="mt-4" variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingAnswer(q.id, "skip"))}>
-          Skip
+  else
+    body = (
+      <div className="flex flex-wrap gap-2">
+        <Button variant="primary" disabled={busy} onClick={() => run(() => api.onboardingAnswer(q.id, "yes"))}>
+          <Check /> Yes
         </Button>
+        <Button disabled={busy} onClick={() => setFixing(true)}>
+          <Pencil /> No, let me fix it
+        </Button>
+        {skip}
       </div>
     );
-  return (
-    <div className="mt-4 animate-rise">
-      <h1 className="display text-4xl leading-[0.95] md:text-6xl">{q.text}</h1>
-      {q.quote && (
-        <p className="mt-5 flex items-start gap-2 border-l-2 border-ink pl-3 text-sm text-ink-2">
-          <FileText className="mt-0.5 size-4 shrink-0" strokeWidth={1.5} aria-hidden />
-          <span>
-            From your PDF{source ? ` (${source})` : ""}
-            {q.text.includes(q.quote) ? "" : `: “${q.quote}”`}
-          </span>
-        </p>
-      )}
-      {fixing ? (
-        <form
-          className="mt-8 grid gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const value = q.keys.length === 1 ? draft[q.keys[0]] : draft;
-            run(() => api.onboardingAnswer(q.id, "fix", value));
-          }}
-        >
-          {q.keys.map((k) => (
-            <label key={k}>
-              <span className="label">{k}</span>
-              <input className="input h-12 text-base" id={`fix-${k}`} autoFocus={k === q.keys[0]} value={draft[k] ?? ""} onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />
-              {Array.isArray(q.values[k]) && <span className="mt-1 block font-mono text-[10.5px] text-muted uppercase">Separate items with ;</span>}
-            </label>
-          ))}
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" variant="primary" disabled={busy}>
-              <Check /> Save
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => setFixing(false)}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <div className="mt-8 flex flex-wrap gap-2">
-          <Button variant="primary" className="h-12 px-6" disabled={busy} onClick={() => run(() => api.onboardingAnswer(q.id, "yes"))}>
-            <Check /> Yes
-          </Button>
-          <Button className="h-12 px-6" disabled={busy} onClick={() => setFixing(true)}>
-            <Pencil /> No, let me fix it
-          </Button>
-          <Button variant="ghost" className="h-12 px-6" disabled={busy} onClick={() => run(() => api.onboardingAnswer(q.id, "skip"))}>
-            Skip
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+  return <div className="border-t border-line bg-sunken/40 px-5 py-4">{body}</div>;
 }
 
 function ProfilePanel({ view }: { view: OnboardingView }) {

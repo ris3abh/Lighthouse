@@ -535,6 +535,7 @@ export interface OnboardingView {
     step: "linkedin" | "questions" | "lookups" | "chats" | "tour" | "done";
     source: { filename: string; chars: number; redactions: number; parser: string } | null;
     lookups: OnboardingLookup[];
+    transcript: { who: "lighthouse" | "you"; text: string }[];
     target_profile: string | null;
     tour: string;
     chats: string;
