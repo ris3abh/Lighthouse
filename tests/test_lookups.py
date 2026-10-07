@@ -170,3 +170,37 @@ def test_a_web_search_that_ends_after_you_move_on_is_still_saved(fresh):  # noqa
         time.sleep(0.05)
     assert saved.status == "nothing_found" and saved.result.startswith("I couldn't find an official page")
     assert any(ch.action == "onboarding.lookup_result" for ch in fresh.changes())
+
+
+def test_an_arxiv_link_shows_its_real_title_only_after_the_yes(fresh, http_mock):  # noqa: F811
+    c = _at_lookups(fresh, {"publications": ["https://arxiv.org/abs/2609.34227"]})
+    before = c.get("/api/onboarding").json()
+    assert (
+        before["state"]["lookups"][0]["resolved"] == {} and not http_mock.calls
+    )  # nothing fetched to show it
+    http_mock.get(url__regex=r"https://export\.arxiv\.org/api/query.*").respond(
+        200, text=arxiv_feed([("2609.34227", "When Does Selection Help?", "Jordan Example")]),
+        headers={"content-type": "application/atom+xml"})  # fmt: skip
+    after = c.post("/api/onboarding/lookups/papers", headers=W, json={"accept": True}).json()
+    assert after["state"]["lookups"][0]["resolved"] == {
+        "https://arxiv.org/abs/2609.34227": "When Does Selection Help?"
+    }
+    assert fresh.onboarding().field("publications").value == [
+        "https://arxiv.org/abs/2609.34227"
+    ]  # the answer itself is kept
+
+
+def test_a_list_answer_from_the_chip_input_is_kept_item_for_item(fresh):  # noqa: F811
+    from test_onboarding import client_for, upload
+
+    c = client_for(fresh)
+    view = upload(c, "ravi")
+    while view["question"]["id"] != "publications":
+        view = c.post(
+            "/api/onboarding/answer", headers=W, json={"id": view["question"]["id"], "action": "yes"}
+        ).json()
+    chips = ["Sparse Mixture Routing; for Efficient Transformers", "A third paper, with a comma"]
+    view = c.post(
+        "/api/onboarding/answer", headers=W, json={"id": "publications", "action": "fix", "value": chips}
+    ).json()
+    assert {line["key"]: line["value"] for line in view["panel"]}["publications"] == chips  # no re-splitting

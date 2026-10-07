@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, Check, FileText, MessageSquare, Pencil, RotateCw, Search, SkipForward, Upload } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type OnboardingLookup, type OnboardingQuestion, type OnboardingView } from "../api";
+import ChipInput from "../components/ChipInput";
 import DropZone from "../components/DropZone";
 import { Button, Chip, cx, plural, Segmented, useToast } from "../components/ui";
 import { useTheme, type ThemeMode } from "../hooks";
@@ -170,11 +171,16 @@ function QuestionStep({ view, busy, run }: { view: OnboardingView; busy: boolean
           {!q && <p className="text-sm text-ink-2">All set.</p>}
           <div ref={end} />
         </div>
-        {q && <Answer key={q.id} q={q} busy={busy} run={run} />}
+        {q && <Answer key={q.id} q={q} busy={busy} run={run} labels={labels(view)} />}
       </section>
       <ProfilePanel view={view} />
     </div>
   );
+}
+
+/** Real titles for list items (a paper's arXiv link), known only after a lookup the person said Yes to. */
+function labels(view: OnboardingView): Record<string, string> {
+  return Object.assign({}, ...view.state.lookups.map((l) => l.resolved ?? {}));
 }
 
 function Bubble({ who, first, current, children }: { who: "lighthouse" | "you"; first: boolean; current?: boolean; children: ReactNode }) {
@@ -195,8 +201,11 @@ function Bubble({ who, first, current, children }: { who: "lighthouse" | "you"; 
 }
 
 /** The reply area under the conversation: Yes / No, let me fix it / Skip, a choice, or a month. */
-function Answer({ q, busy, run }: { q: OnboardingQuestion; busy: boolean; run: Run }) {
+function Answer({ q, busy, run, labels }: { q: OnboardingQuestion; busy: boolean; run: Run; labels: Record<string, string> }) {
   const [fixing, setFixing] = useState(false);
+  const [lists, setLists] = useState<Record<string, string[]>>(() =>
+    Object.fromEntries(q.keys.filter((k) => Array.isArray(q.values[k])).map((k) => [k, q.values[k] as string[]])),
+  );
   const [draft, setDraft] = useState<Record<string, string>>(() => Object.fromEntries(q.keys.map((k) => [k, asText(q.values[k])])));
   const skip = (
     <Button type="button" variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingAnswer(q.id, "skip"))}>
@@ -240,16 +249,26 @@ function Answer({ q, busy, run }: { q: OnboardingQuestion; busy: boolean; run: R
         className="grid gap-3"
         onSubmit={(e) => {
           e.preventDefault();
-          run(() => api.onboardingAnswer(q.id, "fix", q.keys.length === 1 ? draft[q.keys[0]] : draft));
+          const all: Record<string, string | string[]> = { ...draft, ...lists };
+          run(() => api.onboardingAnswer(q.id, "fix", q.keys.length === 1 ? all[q.keys[0]] : all));
         }}
       >
-        {q.keys.map((k) => (
-          <label key={k}>
-            <span className="label">{k}</span>
-            <input className="input" id={`fix-${k}`} autoFocus={k === q.keys[0]} value={draft[k] ?? ""} onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />
-            {Array.isArray(q.values[k]) && <span className="mt-1 block font-mono text-[10.5px] text-muted uppercase">Separate items with ;</span>}
-          </label>
-        ))}
+        {q.keys.map((k) =>
+          Array.isArray(q.values[k]) ? (
+            <div key={k}>
+              <span className="label" id={`fix-${k}-label`}>
+                {k}
+              </span>
+              <ChipInput id={`fix-${k}`} label={k} value={lists[k] ?? []} labels={labels} onChange={(items) => setLists({ ...lists, [k]: items })} />
+              <span className="mt-1 block font-mono text-[10.5px] text-muted uppercase">; or Enter adds one · paste a list · Backspace removes the last · click one to edit</span>
+            </div>
+          ) : (
+            <label key={k}>
+              <span className="label">{k}</span>
+              <input className="input" id={`fix-${k}`} autoFocus={k === q.keys[0]} value={draft[k] ?? ""} onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />
+            </label>
+          ),
+        )}
         <div className="flex flex-wrap gap-2">
           <Button type="submit" variant="primary" disabled={busy}>
             <Check /> Save
@@ -290,7 +309,7 @@ function ProfilePanel({ view }: { view: OnboardingView }) {
             <div key={l.key} className="animate-rise border-b border-line px-5 py-3 last:border-b-0">
               <dt className="eyebrow">{l.label}</dt>
               <dd className={cx("mt-1 text-[15px] leading-snug", l.status === "skipped" ? "text-muted" : "text-ink")}>
-                {l.status === "skipped" ? "Skipped" : asText(l.value)}
+                {l.status === "skipped" ? "Skipped" : Array.isArray(l.value) ? l.value.map((v) => labels(view)[v] ?? v).join("; ") : asText(l.value)}
                 {l.status === "fixed" && <span className="ml-2 font-mono text-[10px] text-muted uppercase">edited</span>}
               </dd>
             </div>

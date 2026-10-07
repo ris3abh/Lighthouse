@@ -364,7 +364,7 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
                 )
         else:
             try:
-                status, lk.result = await anyio.to_thread.run_sync(
+                status, lk.result, lk.resolved = await anyio.to_thread.run_sync(
                     run_lookup, ws, lk.kind, lk.targets
                 )  # sync connectors
                 lk.status = status  # type: ignore[assignment]
@@ -389,8 +389,8 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
         runner.on_finish.append(_search_finished)
 
 
-def run_lookup(ws: Case, kind: str, targets: list[str]) -> tuple[str, str]:
-    """(status, plain result). Connector imports for confirmed links; arXiv for confirmed papers, by arXiv id when
+def run_lookup(ws: Case, kind: str, targets: list[str]) -> tuple[str, str, dict[str, str]]:
+    """(status, plain result, entry -> real title). Connector imports for confirmed links; arXiv for confirmed papers, by arXiv id when
     the entry has one, else by its title with venue tails dropped (namesake-checked)."""
     from lighthouse_gc.core.text import plural
 
@@ -399,6 +399,7 @@ def run_lookup(ws: Case, kind: str, targets: list[str]) -> tuple[str, str]:
 
         person = ws.person()
         cands, missing, dois = [], [], []
+        resolved: dict[str, str] = {}
         for item in targets:
             how, ref = flow.paper_ref(item)
             if how == "doi":
@@ -410,6 +411,8 @@ def run_lookup(ws: Case, kind: str, targets: list[str]) -> tuple[str, str]:
                 missing.append(ref)
                 continue
             cands.append(flow.paper_candidate(hits[0], person.name, person.aliases))
+            if hits[0].get("title") and hits[0]["title"] != item:
+                resolved[item] = hits[0]["title"]  # an arXiv link now shows the paper's title
         new = ws.add_candidates(cands)
         notes = []
         if missing:
@@ -421,12 +424,13 @@ def run_lookup(ws: Case, kind: str, targets: list[str]) -> tuple[str, str]:
             return (
                 "nothing_found",
                 f"Nothing found. {detail[:1].upper()}{detail[1:]}." if notes else "Nothing found.",
+                {},
             )
         namesakes = sum(1 for c in new if c.facts.get("namesake_check") != "passed")
         msg = f"{plural(len(cands), 'paper')} found and sent to your Inbox"
         if namesakes:
             msg += f" ({namesakes} flagged as a possible namesake)"
-        return "found", msg + ("; " + "; ".join(notes) if notes else "") + "."
+        return "found", msg + ("; " + "; ".join(notes) if notes else "") + ".", resolved
     from lighthouse_gc.jobs.sync import import_source
 
     reports = [import_source(ws, url) for url in targets]
@@ -436,5 +440,6 @@ def run_lookup(ws: Case, kind: str, targets: list[str]) -> tuple[str, str]:
         return (
             "nothing_found",
             f"Read {names}, but found nothing to suggest yet. It's now a source, checked daily.",
+            {},
         )
-    return "found", f"Imported {names}: {plural(added, 'suggestion')} in your Inbox."
+    return "found", f"Imported {names}: {plural(added, 'suggestion')} in your Inbox.", {}

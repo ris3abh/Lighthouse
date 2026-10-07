@@ -532,6 +532,7 @@ export interface OnboardingLookup {
   targets: string[];
   status: "offered" | "declined" | "searching" | "found" | "nothing_found" | "unreachable" | "blocked" | "failed" | "accepted" | "done";
   result: string;
+  resolved?: Record<string, string>;
 }
 export interface OnboardingView {
   needed: boolean;

@@ -58,7 +58,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       shows searching / found / nothing found / couldn't reach / blocked with the reason and Retry
 - [x] C11. Back and forth: Back on every onboarding step and question, clickable step bar, answers kept and
       lookups re-offered; a URL per step and question; browser back / forward across pages and dialogs
-- [ ] C12. Chip input for lists in onboarding (one shared, keyboard-accessible component)
+- [x] C12. Chip input for lists in onboarding (one shared, keyboard-accessible component)
 - [ ] C13. Chat as a centered modal over a blurred dashboard; changed panels un-blur and highlight; pin to
       dock; Cmd/Ctrl+K, Esc; full-screen sheet on phones
 - [ ] C14. Chat-history import for real exports: format-agnostic intake with adapters, local relevance filter,

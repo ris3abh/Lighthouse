@@ -53,6 +53,8 @@ class Lookup(_Model):
     result: str = Field("", description="What happened, in plain words (the reason, when it didn't work).")
     todo_id: str | None = Field(None, description="find: the to-do this lookup looks for proof of.")
     run_id: str | None = Field(None, description="find: the agent run doing the search.")
+    resolved: dict[str, str] = Field(default_factory=dict,
+                                     description="papers: an entry (an arXiv link) -> the real title the lookup found.")  # fmt: skip
 
 
 class OnboardingState(_File):
