@@ -1,8 +1,27 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import {
+  BookOpen,
+  Cable,
+  CalendarDays,
+  ChartLine,
+  FileStack,
+  Gauge,
+  Inbox as InboxIcon,
+  Kanban,
+  Mail,
+  Menu,
+  Monitor,
+  Moon,
+  Settings as SettingsIcon,
+  Sparkles,
+  Sun,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { api } from "./api";
 import ChatPanel from "./components/ChatPanel";
-import { Button, cx, ToastProvider, useToast } from "./components/ui";
-import { useLoad, useRoute, useTheme } from "./hooks";
+import { Button, cx, Segmented, ToastProvider, useToast } from "./components/ui";
+import { useLoad, useRoute, useTheme, type ThemeMode } from "./hooks";
 import Agent from "./pages/Agent";
 import Calendar from "./pages/Calendar";
 import Evidence from "./pages/Evidence";
@@ -19,19 +38,25 @@ import Sources from "./pages/Sources";
 const RefreshCtx = createContext<{ version: number; bump: () => void }>({ version: 0, bump: () => {} });
 export const useRefresh = () => useContext(RefreshCtx);
 
-const NAV = [
-  { id: "overview", label: "Overview", icon: "◎" },
-  { id: "inbox", label: "Inbox", icon: "⇣" },
-  { id: "evidence", label: "Evidence", icon: "▤" },
-  { id: "metrics", label: "Metrics", icon: "∿" },
-  { id: "pipeline", label: "Pipeline", icon: "▥" },
-  { id: "letters", label: "Letters", icon: "✉" },
-  { id: "calendar", label: "Calendar", icon: "▦" },
-  { id: "agent", label: "Agent", icon: "✦" },
-  { id: "knowledge", label: "Knowledge", icon: "§" },
-  { id: "sources", label: "Sources", icon: "⛁" },
-  { id: "settings", label: "Settings", icon: "⚙" },
-] as const;
+const NAV: { id: string; label: string; icon: LucideIcon }[] = [
+  { id: "overview", label: "Overview", icon: Gauge },
+  { id: "inbox", label: "Inbox", icon: InboxIcon },
+  { id: "evidence", label: "Evidence", icon: FileStack },
+  { id: "metrics", label: "Metrics", icon: ChartLine },
+  { id: "pipeline", label: "Pipeline", icon: Kanban },
+  { id: "letters", label: "Letters", icon: Mail },
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
+  { id: "agent", label: "Agent", icon: Sparkles },
+  { id: "knowledge", label: "Knowledge", icon: BookOpen },
+  { id: "sources", label: "Sources", icon: Cable },
+  { id: "settings", label: "Settings", icon: SettingsIcon },
+];
+
+const THEMES: { value: ThemeMode; label: ReactNode; title: string }[] = [
+  { value: "system", label: <Monitor aria-label="System" />, title: "Theme: follow the system" },
+  { value: "light", label: <Sun aria-label="Light" />, title: "Theme: light" },
+  { value: "dark", label: <Moon aria-label="Dark" />, title: "Theme: dark" },
+];
 
 export default function App() {
   const [version, setVersion] = useState(0);
@@ -48,10 +73,11 @@ export default function App() {
 function Shell() {
   const { page, params } = useRoute();
   const { version, bump } = useRefresh();
-  const { dark, toggle } = useTheme();
+  const { mode, setMode } = useTheme();
   const toast = useToast();
   const overview = useLoad(() => api.overview(), [version]);
   const [switching, setSwitching] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(() => {
     try {
       return localStorage.getItem("lh-chat-open") === "1";
@@ -59,6 +85,7 @@ function Shell() {
       return false;
     }
   });
+  useEffect(() => setMenuOpen(false), [page]);
   const toggleChat = (open: boolean) => {
     setChatOpen(open);
     try {
@@ -70,6 +97,7 @@ function Shell() {
   const ov = overview.data;
 
   const switchProfile = async (id: string) => {
+    if (id === ov?.profile) return;
     setSwitching(true);
     try {
       const board = await api.setProfile(id);
@@ -118,93 +146,104 @@ function Shell() {
       content = <OverviewPage data={ov} error={overview.error} retry={overview.reload} />;
   }
 
+  const nav = (
+    <nav className="flex flex-col" aria-label="Main">
+      {NAV.map((n) => {
+        const Icon = n.icon;
+        const active = page === n.id;
+        return (
+          <a
+            key={n.id}
+            href={`#/${n.id}`}
+            aria-current={active ? "page" : undefined}
+            className={cx(
+              "group flex h-11 items-center gap-3 border-b border-line px-5 text-[15px] transition-colors duration-150",
+              active ? "bg-ink text-on-ink" : "text-ink-2 hover:bg-sunken hover:text-ink",
+            )}
+          >
+            <Icon className="size-[18px] shrink-0" strokeWidth={1.5} aria-hidden />
+            {n.label}
+            {n.id === "inbox" && !!ov?.inbox_pending && (
+              <span className={cx("num ml-auto text-xs", active ? "text-on-ink" : "text-ink")}>{ov.inbox_pending}</span>
+            )}
+          </a>
+        );
+      })}
+    </nav>
+  );
+
+  const profileSwitch = ov && ov.profiles.length > 1 && (
+    <Segmented
+      label="Criteria profile"
+      size="sm"
+      value={ov.profile}
+      onChange={(id) => !switching && switchProfile(id)}
+      options={ov.profiles.map((p) => ({ value: p.id, label: p.id === "o1a" ? "O-1A" : p.id === "eb1a" ? "EB-1A" : p.id, title: p.name }))}
+    />
+  );
+
   return (
     <div className="flex h-full min-h-0">
-      <aside className="hidden w-52 shrink-0 flex-col border-r border-zinc-200 bg-white md:flex dark:border-zinc-800 dark:bg-zinc-900">
-        <a href="#/overview" className="flex items-center gap-2 px-4 py-4">
-          <img src="./favicon.svg" alt="" className="size-7" />
-          <span className="font-semibold tracking-tight">Lighthouse</span>
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-frame bg-surface lg:flex">
+        <a href="#/overview" className="flex h-16 items-center gap-3 border-b border-frame px-5">
+          <img src="./favicon.svg" alt="" className="size-6" />
+          <span className="display text-[28px] tracking-tight uppercase">Lighthouse</span>
         </a>
-        <nav className="flex flex-col gap-0.5 px-2" aria-label="Main">
-          {NAV.map((n) => (
-            <a
-              key={n.id}
-              href={`#/${n.id}`}
-              aria-current={page === n.id ? "page" : undefined}
-              className={cx(
-                "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm",
-                page === n.id
-                  ? "bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-white"
-                  : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800/60",
-              )}
-            >
-              <span className="w-4 text-center text-zinc-400" aria-hidden>
-                {n.icon}
-              </span>
-              {n.label}
-              {n.id === "inbox" && !!ov?.inbox_pending && (
-                <span className="ml-auto rounded-full bg-amber-500 px-1.5 text-[11px] font-semibold text-white tabular-nums">
-                  {ov.inbox_pending}
-                </span>
-              )}
-            </a>
-          ))}
-        </nav>
-        <div className="mt-auto p-4 text-[11px] leading-snug text-zinc-400">
+        {nav}
+        <div className="mt-auto border-t border-line p-5 font-mono text-[10.5px] leading-relaxed tracking-[0.06em] text-muted uppercase">
           Local only · 127.0.0.1
           <br />
-          Every change is a file in your workspace.
+          Every change is a file in your workspace
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-zinc-200 bg-white/80 px-4 py-2 backdrop-blur md:px-6 dark:border-zinc-800 dark:bg-zinc-900/80">
-          <nav className="flex gap-1 md:hidden" aria-label="Main (mobile)">
-            {NAV.map((n) => (
-              <a key={n.id} href={`#/${n.id}`} className={cx("rounded px-2 py-1 text-xs", page === n.id && "bg-zinc-100 dark:bg-zinc-800")}>
-                {n.label}
-              </a>
-            ))}
-          </nav>
-          <div className="hidden min-w-0 truncate text-sm md:block">
-            <span className="font-medium">{ov?.person.name || "Your case"}</span>
-            {ov?.person.field && <span className="text-zinc-500 dark:text-zinc-400"> · {ov.person.field}</span>}
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            {ov && (
-              <div className="flex rounded-md border border-zinc-300 p-0.5 dark:border-zinc-700" role="group" aria-label="Criteria profile">
-                {ov.profiles.map((p) => (
-                  <button
-                    key={p.id}
-                    disabled={switching}
-                    onClick={() => p.id !== ov.profile && switchProfile(p.id)}
-                    aria-pressed={p.id === ov.profile}
-                    title={p.name}
-                    className={cx(
-                      "rounded px-2.5 py-1 text-xs font-medium uppercase",
-                      p.id === ov.profile ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white",
-                    )}
-                  >
-                    {p.id === "o1a" ? "O-1A" : p.id === "eb1a" ? "EB-1A" : p.id}
-                  </button>
-                ))}
-              </div>
-            )}
-            <Button variant={chatOpen ? "primary" : "secondary"} size="sm" onClick={() => toggleChat(!chatOpen)} aria-pressed={chatOpen} title="Chat with the agent">
-              ✦ Ask
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-surface lg:hidden" role="dialog" aria-label="Menu">
+          <div className="flex h-14 items-center justify-between border-b border-frame px-4">
+            <span className="display text-2xl uppercase">Lighthouse</span>
+            <Button variant="ghost" size="sm" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="px-2">
+              <X />
             </Button>
-            <Button variant="ghost" size="sm" onClick={toggle} aria-label="Toggle dark mode" title="Toggle theme">
-              {dark ? "☀" : "☾"}
+          </div>
+          {nav}
+          <div className="flex flex-wrap items-center gap-3 p-4">
+            {profileSwitch}
+            <Segmented label="Theme" size="sm" value={mode} onChange={setMode} options={THEMES} />
+          </div>
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-frame bg-surface px-4 lg:h-16 lg:px-8">
+          <Button variant="ghost" size="sm" className="px-2 lg:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+            <Menu />
+          </Button>
+          <a href="#/overview" className="display text-2xl uppercase lg:hidden">
+            Lighthouse
+          </a>
+          <div className="hidden min-w-0 items-baseline gap-3 truncate lg:flex">
+            <span className="text-[15px] font-semibold">{ov?.person.name || "Your case"}</span>
+            {ov?.person.field && <span className="truncate font-mono text-xs text-muted">{ov.person.field}</span>}
+          </div>
+          <div className="ml-auto flex items-center gap-2 md:gap-3">
+            <div className="hidden md:block">{profileSwitch}</div>
+            <div className="hidden sm:block">
+              <Segmented label="Theme" size="sm" value={mode} onChange={setMode} options={THEMES} />
+            </div>
+            <Button variant={chatOpen ? "primary" : "secondary"} size="sm" onClick={() => toggleChat(!chatOpen)} aria-pressed={chatOpen} title="Chat with the agent">
+              <Sparkles strokeWidth={1.5} />
+              Ask
             </Button>
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">{content}</main>
-
-        <footer className="border-t border-zinc-200 px-4 py-2 text-[11px] text-zinc-500 md:px-6 dark:border-zinc-800 dark:text-zinc-500">
-          Lighthouse is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of
-          public regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.
-        </footer>
+        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1440px] px-4 py-8 md:px-10 md:py-12">{content}</div>
+          <footer className="mx-auto max-w-[1440px] border-t border-line px-4 py-5 font-mono text-[10.5px] leading-relaxed text-muted md:px-10">
+            Lighthouse is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public
+            regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.
+          </footer>
+        </main>
       </div>
       {chatOpen && <ChatPanel page={page} onClose={() => toggleChat(false)} />}
     </div>

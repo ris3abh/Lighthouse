@@ -1,5 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { ArrowDownRight, ArrowUpRight, Minus, X } from "lucide-react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { CriterionStatus } from "../api";
+import { CountUp, useInView, useReducedMotion } from "../lib/motion";
+
+/** Brutalism 2.0 primitives (ADR 0007). Pages use these and the semantic tokens, never raw palette colors. */
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(" ");
@@ -8,11 +12,10 @@ export function cx(...parts: (string | false | null | undefined)[]) {
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
-  secondary:
-    "border border-zinc-300 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800",
-  ghost: "hover:bg-zinc-100 dark:hover:bg-zinc-800",
-  danger: "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950",
+  primary: "border border-ink bg-ink text-on-ink hover:bg-ink-2 hover:border-ink-2",
+  secondary: "border border-ink bg-transparent text-ink hover:bg-sunken",
+  ghost: "border border-transparent text-ink-2 hover:bg-sunken hover:text-ink",
+  danger: "border border-alert text-alert hover:bg-alert-soft",
 };
 
 export function Button({
@@ -25,8 +28,8 @@ export function Button({
     <button
       {...props}
       className={cx(
-        "inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-        size === "sm" ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-sm",
+        "inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-4 [&_svg]:shrink-0",
+        size === "sm" ? "h-8 px-3 text-xs" : "h-10 px-4 text-sm",
         VARIANTS[variant],
         className,
       )}
@@ -34,90 +37,135 @@ export function Button({
   );
 }
 
-export const STATUS_STYLE: Record<CriterionStatus, { dot: string; chip: string; label: string }> = {
-  banked: {
-    dot: "bg-emerald-500",
-    chip: "bg-emerald-50 text-emerald-800 ring-emerald-600/20 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-400/30",
-    label: "Banked",
-  },
-  building: {
-    dot: "bg-amber-500",
-    chip: "bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-400/30",
-    label: "Building",
-  },
-  gap: {
-    dot: "bg-zinc-300 dark:bg-zinc-600",
-    chip: "bg-zinc-50 text-zinc-600 ring-zinc-500/20 dark:bg-zinc-900 dark:text-zinc-400 dark:ring-zinc-500/30",
-    label: "Gap",
-  },
-  dropped: {
-    dot: "bg-zinc-200 dark:bg-zinc-700",
-    chip: "bg-transparent text-zinc-400 ring-zinc-400/20 line-through dark:text-zinc-500",
-    label: "Dropped",
-  },
+/** Status by fill, not hue: banked solid, building half, gap hollow, dropped struck through. */
+export const STATUS_STYLE: Record<CriterionStatus, { label: string; mark: string; text: string }> = {
+  banked: { label: "Banked", mark: "bg-ink border-ink", text: "text-ink" },
+  building: { label: "Building", mark: "border-ink bg-[linear-gradient(90deg,var(--ink)_50%,transparent_50%)]", text: "text-ink" },
+  gap: { label: "Gap", mark: "border-ink bg-transparent", text: "text-ink-2" },
+  dropped: { label: "Dropped", mark: "border-muted bg-transparent", text: "text-muted line-through" },
 };
+
+export function StatusMark({ status, className }: { status: CriterionStatus; className?: string }) {
+  return <span aria-hidden className={cx("inline-block size-2.5 shrink-0 border transition-[background] duration-300", STATUS_STYLE[status].mark, className)} />;
+}
 
 export function StatusBadge({ status }: { status: CriterionStatus }) {
   const s = STATUS_STYLE[status];
+  // Keyed by status so a change (gap -> building -> banked) replays the short flash.
   return (
-    <span className={cx("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset", s.chip)}>
-      <span className={cx("size-1.5 rounded-full", s.dot)} />
+    <span key={status} className={cx("inline-flex animate-flash items-center gap-1.5 font-mono text-[11px] tracking-[0.1em] uppercase", s.text)}>
+      <StatusMark status={status} />
       {s.label}
     </span>
   );
 }
 
-export function Chip({ children, tone = "zinc" }: { children: ReactNode; tone?: "zinc" | "amber" | "emerald" | "red" }) {
-  const tones = {
-    red: "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200",
-    zinc: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-    amber: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200",
-    emerald: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200",
+type Tone = "zinc" | "amber" | "emerald" | "red" | "ink" | "outline" | "muted" | "alert";
+
+/** Tag. Monochrome: "ink"/"emerald" = solid (done), "outline"/"amber" = framed (in progress), "muted"/"zinc" =
+ * quiet, "alert"/"red" = needs attention (the only red). */
+export function Chip({ children, tone = "zinc", className }: { children: ReactNode; tone?: Tone; className?: string }) {
+  const tones: Record<Tone, string> = {
+    ink: "border-ink bg-ink text-on-ink",
+    emerald: "border-ink bg-ink text-on-ink",
+    outline: "border-ink text-ink",
+    amber: "border-ink text-ink",
+    muted: "border-line text-ink-2",
+    zinc: "border-line text-ink-2",
+    alert: "border-alert text-alert",
+    red: "border-alert text-alert",
   };
-  return <span className={cx("inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[11px]", tones[tone])}>{children}</span>;
+  return (
+    <span className={cx("inline-flex h-5 items-center gap-1 border px-1.5 font-mono text-[10.5px] tracking-[0.06em] whitespace-nowrap uppercase [&_svg]:size-3", tones[tone], className)}>
+      {children}
+    </span>
+  );
 }
 
-export function Card({ title, actions, children, className }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
+export function Card({
+  title,
+  actions,
+  children,
+  className,
+  bodyClassName,
+}: {
+  title?: ReactNode;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  bodyClassName?: string;
+}) {
   return (
-    <section className={cx("card", className)}>
+    <section className={cx("card animate-rise", className)}>
       {(title || actions) && (
-        <header className="flex items-center justify-between gap-2 border-b border-zinc-100 px-4 py-2.5 dark:border-zinc-800">
-          <h2 className="text-sm font-semibold">{title}</h2>
-          {actions}
+        <header className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-line px-5 py-2.5">
+          <h2 className="eyebrow text-ink">{title}</h2>
+          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </header>
       )}
-      {children}
+      {bodyClassName ? <div className={bodyClassName}>{children}</div> : children}
     </section>
   );
 }
 
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({ title, subtitle, actions, eyebrow }: { title: string; subtitle?: ReactNode; actions?: ReactNode; eyebrow?: ReactNode }) {
   return (
-    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{subtitle}</p>}
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-b border-frame pb-5">
+      <div className="min-w-0">
+        {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
+        <h1 className="display text-5xl break-words md:text-7xl">{title}</h1>
+        {subtitle && <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-2">{subtitle}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+/** A big number with a mono label; counts up on first view. */
+export function Stat({ label, value, sub, alert, decimals }: { label: ReactNode; value: number | null | undefined; sub?: ReactNode; alert?: boolean; decimals?: number }) {
+  return (
+    <div className="min-w-0">
+      <p className="eyebrow">{label}</p>
+      <p className={cx("display mt-2 text-5xl md:text-6xl", alert && "text-alert")}>
+        {value === null || value === undefined ? "—" : <CountUp value={value} decimals={decimals} />}
+      </p>
+      {sub && <div className="mt-2 font-mono text-xs text-ink-2">{sub}</div>}
+    </div>
+  );
+}
+
+/** Fills to its level the first time it's on screen. */
+export function Progress({ value, max, alert, label }: { value: number; max: number; alert?: boolean; label?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const seen = useInView(ref);
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+  return (
+    <div ref={ref} className="h-2 w-full border border-ink" role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value} aria-label={label}>
+      <div className={cx("h-full transition-[width] duration-[400ms] ease-out", alert ? "bg-alert" : "bg-ink")} style={{ width: seen ? `${pct}%` : 0 }} />
     </div>
   );
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <div className="px-4 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">{children}</div>;
+  return <div className="px-5 py-12 text-center text-sm text-ink-2">{children}</div>;
 }
 
 export function Loading() {
-  return <div className="p-8 text-sm text-zinc-500">Loading…</div>;
+  return (
+    <div className="flex items-center gap-3 p-10 font-mono text-xs tracking-[0.14em] text-muted uppercase">
+      <span className="size-2 animate-tool-pulse bg-ink" />
+      Loading
+    </div>
+  );
 }
 
 export function ErrorBox({ error, retry }: { error: Error; retry?: () => void }) {
   return (
-    <div className="card border-red-200 p-4 text-sm text-red-700 dark:border-red-900 dark:text-red-300">
-      <p className="font-medium">Couldn't load this page.</p>
-      <p className="mt-1">{error.message}</p>
+    <div className="border border-alert bg-surface p-5 text-sm">
+      <p className="eyebrow text-alert">Couldn't load this page</p>
+      <p className="mt-2 text-ink-2">{error.message}</p>
       {retry && (
-        <Button className="mt-3" size="sm" onClick={retry}>
+        <Button className="mt-4" size="sm" onClick={retry}>
           Retry
         </Button>
       )}
@@ -130,14 +178,52 @@ export function fmt(n: number | null | undefined) {
   return Number.isInteger(n) ? n.toLocaleString() : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+/** Change since the last snapshot. Not an alert, so ink either way; slides in. */
 export function Delta({ value }: { value: number | null }) {
-  if (value === null) return <span className="text-zinc-400">—</span>;
-  const tone = value > 0 ? "text-emerald-600 dark:text-emerald-400" : value < 0 ? "text-red-600 dark:text-red-400" : "text-zinc-400";
+  if (value === null) return <span className="font-mono text-muted">—</span>;
+  const Icon = value > 0 ? ArrowUpRight : value < 0 ? ArrowDownRight : Minus;
   return (
-    <span className={cx("tabular-nums", tone)}>
+    <span className={cx("inline-flex animate-slide-in items-center gap-0.5 font-mono tabular-nums", value === 0 ? "text-muted" : "text-ink")}>
+      <Icon className="size-3.5" aria-hidden />
       {value > 0 ? "+" : ""}
       {fmt(value)}
     </span>
+  );
+}
+
+/** Segmented control (mono, framed). */
+export function Segmented<T extends string>({
+  value,
+  options,
+  onChange,
+  label,
+  size = "md",
+}: {
+  value: T;
+  options: { value: T; label: ReactNode; title?: string }[];
+  onChange: (v: T) => void;
+  label: string;
+  size?: "sm" | "md";
+}) {
+  return (
+    <div className="inline-flex border border-ink" role="group" aria-label={label}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          title={o.title}
+          aria-pressed={o.value === value}
+          onClick={() => onChange(o.value)}
+          className={cx(
+            "inline-flex items-center gap-1.5 font-mono tracking-[0.08em] uppercase transition-colors duration-150 [&_svg]:size-3.5",
+            size === "sm" ? "h-7 px-2 text-[10.5px]" : "h-8 px-3 text-[11px]",
+            o.value === value ? "bg-ink text-on-ink" : "text-ink-2 hover:bg-sunken hover:text-ink",
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -148,21 +234,21 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-zinc-950/40 p-4 pt-[10vh] backdrop-blur-sm" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-paper/85 p-4 pt-[8vh]" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={cx("card w-full p-0", wide ? "max-w-4xl" : "max-w-lg")}
+        className={cx("card w-full animate-rise", wide ? "max-w-4xl" : "max-w-xl")}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <header className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-          <h2 className="text-sm font-semibold">{title}</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close">
-            ✕
+        <header className="flex items-center justify-between border-b border-frame px-5 py-3">
+          <h2 className="display text-3xl">{title}</h2>
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close" className="px-2">
+            <X />
           </Button>
         </header>
-        <div className="p-4">{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );
@@ -183,13 +269,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={push}>
       {children}
-      <div className="pointer-events-none fixed right-4 bottom-4 z-50 flex flex-col gap-2" aria-live="polite">
+      <div className="pointer-events-none fixed right-4 bottom-4 z-[60] flex flex-col gap-2" aria-live="polite">
         {toasts.map((t) => (
           <div
             key={t.id}
             className={cx(
-              "pointer-events-auto max-w-sm rounded-lg px-3 py-2 text-sm shadow-lg",
-              t.tone === "error" ? "bg-red-600 text-white" : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900",
+              "pointer-events-auto max-w-sm animate-rise border px-4 py-3 text-sm",
+              t.tone === "error" ? "border-alert bg-alert text-white dark:text-paper" : "border-ink bg-ink text-on-ink",
             )}
           >
             {t.text}
@@ -201,3 +287,5 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 export const useToast = () => useContext(ToastCtx);
+
+export { useReducedMotion };

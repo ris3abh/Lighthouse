@@ -1,7 +1,7 @@
 import type { Overview } from "../api";
 import Briefing from "../components/Briefing";
 import Sparkline from "../components/Sparkline";
-import { Card, cx, Delta, Empty, ErrorBox, fmt, Loading, STATUS_STYLE } from "../components/ui";
+import { Card, cx, Delta, Empty, ErrorBox, fmt, Loading, STATUS_STYLE, StatusMark } from "../components/ui";
 
 const metricLabel: Record<string, string> = {
   stars: "stars",
@@ -89,7 +89,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
             {board.criteria.map((c) => (
               <li key={c.id} className="border-b border-zinc-100 last:border-b-0 sm:odd:border-r dark:border-zinc-800">
                 <a href={`#/evidence?c=${c.id}`} className="flex items-start gap-2.5 px-4 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50" title={c.reason}>
-                  <span className={cx("mt-1.5 size-2 shrink-0 rounded-full", STATUS_STYLE[c.status].dot)} />
+                  <StatusMark status={c.status} className="mt-1.5" />
                   <span className="min-w-0 flex-1">
                     <span className={cx("block truncate text-sm", c.status === "dropped" && "text-zinc-400 line-through")}>{c.label}</span>
                     <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">

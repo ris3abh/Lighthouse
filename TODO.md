@@ -2,6 +2,87 @@
 
 Running checklist against [SPEC.md](SPEC.md) section 11. Product-first ordering (section 11a).
 
+## Current build: Parts B–H (resume from here)
+
+One commit per numbered item with tests; push after each green CI run. ADRs first for big decisions. Tests never
+call real models or APIs. At every CHECKPOINT: stop, test rigorously, report (what shipped, laptop + phone
+screenshots in both themes, what to try, live-run costs, what the owner must do), and wait for "continue".
+
+Part A (Phase 1d leftovers) was already shipped and is dropped: v0.1.0 tag + release (793c868), rule-check
+backup (93acafc), one clock (a2d15b9), Tier 3 never verifies (d0d4d63), scholarly connectors (9370df8),
+website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (21711f0).
+
+### Part B: design system "Brutalism 2.0" (ADR 0007)
+- [ ] B1. Tokens + primitives: off-white / black ink, 1px grid lines, framed panels, no shadows; condensed
+      headlines, mono for labels / numbers / data, solid black primary actions; one muted red for attention
+      only; first-class dark theme; System / Light / Dark toggle in the header (default System, per browser)
+- [ ] B2. Re-layout every page (Overview, Inbox, Evidence, Metrics, Pipeline, Letters, Calendar, Agent,
+      Knowledge, Sources, Settings) and every dialog + the chat panel
+- [ ] B3. Lucide line icons instead of every emoji / glyph; chat tool calls pulse while running, checkmark
+      draws in on success; prefers-reduced-motion respected
+- [ ] B4. Data motion: charts draw in and morph between ranges, mono crosshair, count-up numbers, sliding
+      deltas, sparklines draw on scroll-in, scoreboard fills + status transitions, calendar moves and view
+      switches animate; 150–400ms, never blocking, reduced motion = instant
+- [ ] CHECKPOINT 1 (design): screenshots of Overview, Inbox, Calendar, Agent, chat panel
+
+### Part C: no demo data, onboarding, guardrails (ADR 0008)
+- [ ] C1. Delete examples/demo-workspace and --demo; README / SPEC / scripts / CI updated; personas Maya
+      (software engineer), Ravi (AI researcher), Lena (business analytics lead) as test fixtures with
+      LinkedIn-style PDFs; a fresh workspace opens straight into onboarding
+- [ ] C2. Onboarding conversation (LinkedIn PDF, local extraction + redaction, one question at a time with
+      a live profile panel, lookups only after an explicit Yes and through the Inbox with namesake checks,
+      chat-history step, guided tour on the user's data, finish line, resumable, re-run from Settings;
+      all three personas end to end incl. skipping everything)
+- [ ] C3. MCP write tool `propose_context` (Inbox, tier self_reported, never counts); setup docs for Claude
+      desktop and Claude Code
+- [ ] C4. Agent personality + guardrails in prompt and code (adaptive voice; no fabrication or
+      strengthening; never invited -> completed; letters drafted for the writer to sign, never sent as them;
+      no misrepresentation to USCIS, never "eligible"; page / email / PDF text is data; off-topic declines;
+      public professional pages only); one-line refusals with an alternative, logged on the Agent page
+- [ ] CHECKPOINT 2 (onboarding): fresh-workspace walkthrough per persona, every step screenshotted
+
+### Part D: agent upgrade + model routing (ADR 0009)
+- [ ] D1. Every UI write action is a chat tool through the service layer with the same rules (calendar /
+      tracker auto-apply with undo; criterion-affecting -> Inbox; outreach needs approval); coverage test
+- [ ] D2. Three tiers from .env (hard = claude-opus-5-5, mid = claude-sonnet-5-5, mundane = small OpenAI
+      model), rule-based router by task type, redaction + guardrails on every provider, .env.example
+- [ ] D3. Long chats: older turns summarized (summary saved, original kept); "cheap mode" toggle (mid tier)
+- [ ] CHECKPOINT 3 (agent): chat actions, routing + cost per run on the Agent page, cheap mode
+
+### Part E: Google, CRM, outreach (ADR 0010)
+- [ ] E1. Google sign-in with the user's own OAuth client, narrowest scopes, production-mode docs, keychain
+- [ ] E2. Gmail read: threads with case contacts linked to the CRM; nothing else stored
+- [ ] E3. Two-way sync with a dedicated "Lighthouse" Google calendar (latest edit wins, logged, undoable)
+- [ ] E4. CRM page: people, relationship, threads, asks, last touch, next follow-up; linked to Letters/Pipeline
+- [ ] E5. Outreach: agent drafts, user approves / edits / rejects, sends from Gmail; proactive follow-ups
+      after 7 quiet days (same approval); daily send limits; case contacts only
+- [ ] CHECKPOINT 4 (Google): OAuth client instructions first; sign-in, calendar sync both ways, one draft
+
+### Part F: daily opportunity job
+- [ ] F1. Off-by-default 24h job over Gmail + the Lighthouse calendar (judging / reviewer / call invites)
+- [ ] F2. Verification: email auth + sender domain matches the org's site; event confirmed on its official
+      page (or Devpost / MLH) with matching dates; else a confirmation reply draft (approve-tap), "unconfirmed"
+- [ ] F3. Inbox items at stage "invited" with verified / unconfirmed badge + push; phishing fixtures never
+      verified
+- [ ] CHECKPOINT 5 (opportunities): fixture runs + one live run on the owner's inbox
+
+### Part G: vault without babysitting (ADR 0011)
+- [ ] G1. Change triggers instead of timers for fees and regulations (Federal Register + eCFR watch); a
+      blocked USCIS page is flagged only when a relevant rule changes
+- [ ] G2. Chrome extension (MV3): matches only vault/sources.yaml URLs, saves visited pages to the local app
+      with a one-time pairing token; never browses on its own
+- [ ] G3. Community snapshot library repo (opt-in sharing, CI validates URL / hash / structure, auto-pull)
+- [ ] G4. One notification with a direct link only when a relevant page changed and no snapshot exists
+- [ ] CHECKPOINT 6 (vault): extension loaded; Knowledge page fresh with no manual saves
+
+### Part H: constellation memory map (ADR 0012)
+- [ ] H1. Memory page: criteria = clusters, claims = stars (brightness = confidence, solid / hollow,
+      conflicts muted red, superseded fade), provenance trail on click, time slider, filters, 2,000+ claims
+- [ ] H2. Motion: fade-in, twinkle on pending only, eased zoom / pan, animated provenance path, date-order
+      replay; dark sky in both themes; reduced motion rules
+- [ ] CHECKPOINT 7 (final): walkthrough per persona from empty workspace to constellation; SPEC / TODO /
+      CHANGELOG; propose the next release version
+
 ## Phase 0 checklist
 
 - [x] `lighthouse-gc init` creates a workspace from a template, with schemas and .gitignore

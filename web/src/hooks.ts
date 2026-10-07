@@ -40,19 +40,43 @@ export function useRoute() {
   return route;
 }
 
+export type ThemeMode = "system" | "light" | "dark";
+
+function systemDark() {
+  return !!window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+}
+
+function applyTheme(mode: ThemeMode) {
+  document.documentElement.classList.toggle("dark", mode === "dark" || (mode === "system" && systemDark()));
+}
+
+/** System / Light / Dark, remembered per browser; System follows the OS setting live. */
 export function useTheme() {
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
-  const toggle = () => {
-    const next = !dark;
-    document.documentElement.classList.toggle("dark", next);
+  const [mode, setModeState] = useState<ThemeMode>(() => {
     try {
-      localStorage.setItem("lh-theme", next ? "dark" : "light");
+      const saved = localStorage.getItem("lh-theme");
+      return saved === "light" || saved === "dark" ? saved : "system";
+    } catch {
+      return "system";
+    }
+  });
+  useEffect(() => {
+    applyTheme(mode);
+    if (mode !== "system") return;
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const on = () => applyTheme("system");
+    mq?.addEventListener("change", on);
+    return () => mq?.removeEventListener("change", on);
+  }, [mode]);
+  const setMode = (next: ThemeMode) => {
+    try {
+      localStorage.setItem("lh-theme", next);
     } catch {
       /* storage unavailable */
     }
-    setDark(next);
+    setModeState(next);
   };
-  return { dark, toggle };
+  return { mode, setMode };
 }
 
 /** Local calendar date as YYYY-MM-DD. */
