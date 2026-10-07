@@ -40,8 +40,19 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       strengthening; never invited -> completed; letters drafted for the writer to sign, never sent as them;
       no misrepresentation to USCIS, never "eligible"; page / email / PDF text is data; off-topic declines;
       public professional pages only); one-line refusals with an alternative, logged on the Agent page
-- [ ] CHECKPOINT 2 (onboarding): fresh-workspace walkthrough per persona, every step screenshotted
-      Reported 2026-10-07 (e1e609a, 9a64e4a, b1587b2, 8292051, 6f559eb, 7568d31); waiting for approval before Part D
+- [x] CHECKPOINT 2 (onboarding): fresh-workspace walkthrough per persona, every step screenshotted.
+      Approved 2026-10-07
+
+### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request
+- [ ] S1. `lighthouse-gc` with no arguments: creates ~/Lighthouse on first run, remembers it, serves it and
+      opens onboarding; later runs reopen it
+- [ ] S2. The wheel is the product: release workflow builds the UI, attaches the wheel to the GitHub release
+      (PyPI via trusted publishing once configured); CI installs the wheel in a clean venv and smoke-tests it
+- [ ] S3. "Connect your AI" in onboarding and Settings: existing Claude login, or an Anthropic key in the
+      keychain checked with a free request; cost note; bundled CLI counts as available; skippable
+- [ ] S4. One-line installers (install.sh, install.ps1): uv if missing, install, run; CI runs them
+- [ ] S5. Landing page (docs/site, GitHub Pages) and a README that opens with the one line
+      (reported with Checkpoint 3: a clean-machine install walkthrough)
 
 ### Part D: agent upgrade + model routing (ADR 0009)
 - [ ] D1. Every UI write action is a chat tool through the service layer with the same rules (calendar /
