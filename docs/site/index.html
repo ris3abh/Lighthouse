@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lighthouse</title>
+  <meta name="description" content="Build your O-1A / EB-1A evidence file on your own computer. One line to install; your case stays a private folder of plain files.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <style>
+    /* Brutalism 2.0 (ADR 0007), the same tokens as the app: monochrome, square 1px frames, condensed
+       Archivo headlines, JetBrains Mono eyebrows. Fonts are served from this site, not a font CDN. */
+    @font-face {
+      font-family: "Archivo";
+      src: url("fonts/archivo.woff2") format("woff2-variations");
+      font-weight: 100 900;
+      font-stretch: 62% 125%;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("fonts/jetbrains-mono.woff2") format("woff2-variations");
+      font-weight: 100 800;
+      font-display: swap;
+    }
+    :root {
+      --paper: #f3f1eb; --surface: #faf9f5; --sunken: #ebe8e0; --ink: #0b0b0a; --ink-2: #45443f;
+      --muted: #67655f; --line: #d6d3ca; --frame: #0b0b0a; --on-ink: #f3f1eb;
+      --sans: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #0d0d0c; --surface: #151514; --sunken: #1d1d1b; --ink: #eceae4; --ink-2: #b9b7b0;
+        --muted: #8f8d87; --line: #2e2d2a; --frame: #4a4945; --on-ink: #0d0d0c;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans);
+      font-size: 17px; line-height: 1.55;
+    }
+    a { color: inherit; text-decoration: underline; text-decoration-color: var(--line);
+        text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-color: var(--ink); }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+    header.top { border-bottom: 1px solid var(--frame); }
+    header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand svg { width: 24px; height: 24px; }
+    .brand span { font-stretch: 68%; font-weight: 700; font-size: 26px; letter-spacing: -0.01em; text-transform: uppercase; }
+    .eyebrow { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.14em;
+               text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+    h1, h2 { font-stretch: 68%; font-weight: 700; letter-spacing: -0.01em; line-height: 0.92; margin: 0; }
+    h1 { font-size: clamp(48px, 9vw, 104px); max-width: 12ch; }
+    h2 { font-size: clamp(32px, 5vw, 48px); margin-bottom: 16px; }
+    .hero { padding: 56px 0 40px; }
+    .lede { max-width: 62ch; color: var(--ink-2); font-size: 19px; margin: 24px 0 0; }
+    .card { border: 1px solid var(--frame); background: var(--surface); }
+    .install { margin-top: 40px; }
+    .install .row { padding: 16px 20px; border-top: 1px solid var(--line); }
+    .install .row:first-child { border-top: 0; }
+    .install code {
+      display: block; overflow-x: auto; white-space: pre; padding: 12px 14px; margin: 0;
+      background: var(--ink); color: var(--on-ink); font-family: var(--mono); font-size: 14px;
+      user-select: all; -webkit-user-select: all;
+    }
+    .install p.note { margin: 0; padding: 14px 20px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 15px; }
+    figure { margin: 48px 0 0; }
+    figure img { display: block; width: 100%; height: auto; border: 1px solid var(--frame); }
+    figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+                 color: var(--muted); margin-top: 10px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 0; margin: 56px 0; }
+    .grid > section { padding: 28px 24px; border: 1px solid var(--frame); background: var(--surface); }
+    .grid > section + section { border-top: 0; }
+    @media (min-width: 820px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .grid > section + section { border-top: 1px solid var(--frame); border-left: 0; }
+    }
+    ul { margin: 0; padding-left: 1.1em; }
+    li { margin: 0 0 10px; }
+    li::marker { color: var(--muted); }
+    footer { border-top: 1px solid var(--frame); padding: 20px 0 32px; font-family: var(--mono);
+             font-size: 11.5px; line-height: 1.7; color: var(--muted); }
+    footer p { margin: 0 0 8px; max-width: 110ch; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="https://github.com/ris3abh/Lighthouse" aria-label="Lighthouse on GitHub">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" fill="var(--ink)"/><path d="M13 10h6l1.5 16h-9z" fill="var(--paper)"/><path d="M12 7h8v3h-8z" fill="var(--paper)"/><path d="M20 8.5 29 5v7z" fill="var(--muted)"/></svg>
+        <span>Lighthouse</span>
+      </a>
+      <a href="https://github.com/ris3abh/Lighthouse">GitHub</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <p class="eyebrow">O-1A · EB-1A · Local-first · Open source</p>
+      <h1>Your evidence file, built on your own computer.</h1>
+      <p class="lede">
+        Lighthouse turns your work (papers, code, talks, press, judging) into a living evidence file for an
+        O-1A or EB-1A extraordinary-ability case: a criteria scoreboard, an evidence inbox, metrics, deadlines,
+        letters and a dashboard. Start from your LinkedIn PDF; it takes a few minutes.
+      </p>
+
+      <div class="card install">
+        <div class="row">
+          <p class="eyebrow">macOS / Linux: paste into Terminal</p>
+          <code>curl -LsSf https://raw.githubusercontent.com/ris3abh/Lighthouse/main/install.sh | sh</code>
+        </div>
+        <div class="row">
+          <p class="eyebrow">Windows: paste into PowerShell</p>
+          <code>powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/ris3abh/Lighthouse/main/install.ps1 | iex"</code>
+        </div>
+        <p class="note">
+          It installs <a href="https://docs.astral.sh/uv/">uv</a> if you don't have it, installs Lighthouse, and
+          opens it in your browser. Nothing else on your machine changes. The scripts are short; read
+          <a href="https://github.com/ris3abh/Lighthouse/blob/main/install.sh">install.sh</a> or
+          <a href="https://github.com/ris3abh/Lighthouse/blob/main/install.ps1">install.ps1</a> first.
+          Afterwards, start it again with <code style="display:inline;padding:1px 5px;font-size:13px">lighthouse-gc</code>.
+        </p>
+      </div>
+
+      <figure>
+        <picture>
+          <source srcset="onboarding-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="onboarding-light.png" width="1440" height="900"
+               alt="Lighthouse's first screen: a conversation that starts by asking for your LinkedIn profile as a PDF, with your profile filling in beside it">
+        </picture>
+        <figcaption>The first run: onboarding starts from your LinkedIn PDF</figcaption>
+      </figure>
+    </section>
+
+    <div class="grid">
+      <section>
+        <p class="eyebrow">What you need</p>
+        <h2>A PDF, and that's it</h2>
+        <ul>
+          <li><strong>Your LinkedIn profile as a PDF</strong> (on LinkedIn: Profile &gt; More &gt; Save to PDF).
+            Lighthouse reads it on your computer and removes emails and phone numbers first. You can also skip it.</li>
+          <li><strong>Optionally, an AI connection</strong>: the Claude Code login already on your computer, or an
+            Anthropic API key. Only chat and agent runs need it; everything else works without a model.</li>
+          <li>macOS, Linux or Windows, and an internet connection to install.</li>
+        </ul>
+      </section>
+      <section>
+        <p class="eyebrow">Privacy</p>
+        <h2>It runs on your computer</h2>
+        <ul>
+          <li>The dashboard is served only to your own computer (127.0.0.1). There's no Lighthouse account or server.</li>
+          <li>Your case is a private workspace folder (<code>~/Lighthouse</code>): plain files in their own git
+            repo. It's yours to keep, back up to a private remote, move or delete.</li>
+          <li>Lighthouse goes online only for what you ask: a lookup you said yes to, a source you import, or the
+            AI you connect.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p>Lighthouse is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public
+        regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.</p>
+      <p><a href="https://github.com/ris3abh/Lighthouse">Source on GitHub</a> ·
+        <a href="https://github.com/ris3abh/Lighthouse/blob/main/DISCLAIMER.md">Disclaimer</a> · Apache-2.0</p>
+    </div>
+  </footer>
+</body>
+</html>

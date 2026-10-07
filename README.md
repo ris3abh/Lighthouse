@@ -1,6 +1,43 @@
 # Lighthouse
 
-**Evidence-grounded memory for long-running LLM agents, first applied to O-1A / EB-1A.**
+**Your O-1A / EB-1A evidence file, built on your own computer.**
+
+Lighthouse turns your work (papers, code, talks, press, judging) into a living evidence file for an
+extraordinary-ability case: a criteria scoreboard, an evidence inbox, metrics, deadlines, letters and a
+dashboard. Start from your LinkedIn PDF; it takes a few minutes.
+
+## Install and start
+
+macOS / Linux, in Terminal:
+
+```sh
+curl -LsSf https://raw.githubusercontent.com/ris3abh/Lighthouse/main/install.sh | sh
+```
+
+Windows, in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/ris3abh/Lighthouse/main/install.ps1 | iex"
+```
+
+It installs [uv](https://docs.astral.sh/uv/) if you don't have it, installs Lighthouse, and opens it in your
+browser; nothing else on your machine changes. The scripts are short: read [install.sh](install.sh) or
+[install.ps1](install.ps1) first. Afterwards, start it again with `lighthouse-gc`. The first run creates your
+private workspace at `~/Lighthouse`.
+
+## What you need
+
+- **Your LinkedIn profile as a PDF** (on LinkedIn: Profile > More > Save to PDF). It's read on your computer,
+  with emails and phone numbers removed first. You can also skip it.
+- **Optionally, an AI connection**: the Claude Code login already on your computer, or an Anthropic API key.
+  Only chat and agent runs need it; everything else works without a model.
+
+Lighthouse runs on your computer and serves the dashboard only to it (127.0.0.1). Your case is a folder of
+plain files in its own git repo, and it's yours.
+
+## About
+
+Evidence-grounded memory for long-running LLM agents, first applied to O-1A / EB-1A.
 
 In practice: a local-first command center for building an extraordinary-ability immigration case (O-1A now,
 EB-1A too, more via community profiles) that anyone can install and use out of the box. Provenance follows the
@@ -33,9 +70,9 @@ in a **private workspace directory** on your machine (its own Git repo); this re
 | O-1A + EB-1A rubrics, rule-based scoreboard | MCP write tools (through the Inbox), Claude Code / Codex agent, chat |
 | Dashboard: Overview, Inbox, Evidence, Metrics, Pipeline, Letters, Calendar, Sources, Settings | Opportunities, Chat |
 
-## Quick start
+## From a checkout, and more than one case
 
-Lighthouse isn't on PyPI yet. From a checkout:
+To work on Lighthouse itself, install it from a checkout:
 
 ```sh
 git clone https://github.com/ris3abh/Lighthouse && cd Lighthouse
@@ -46,7 +83,7 @@ lighthouse-gc init ~/my-case      # an empty, private workspace (a git repo of p
 lighthouse-gc up -w ~/my-case     # opens onboarding: start from your LinkedIn PDF, or skip
 ```
 
-Your own case:
+A case in a place you choose (or a second case), from the command line:
 
 ```sh
 lighthouse-gc init ~/my-case --name "Your Name" --profile o1a

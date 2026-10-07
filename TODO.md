@@ -86,8 +86,9 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       process only. Lighthouse never reads the Claude Code login itself
 - [x] S4. One-line installers (install.sh, install.ps1): uv if missing, install, run; CI runs them
       (latest release wheel by default; LIGHTHOUSE_GC_SPEC / LIGHTHOUSE_GC_NO_RUN for CI; ubuntu, macOS, Windows)
-- [ ] S5. Landing page (docs/site, GitHub Pages) and a README that opens with the one line
+- [x] S5. Landing page (docs/site, GitHub Pages) and a README that opens with the one line
       (reported with Checkpoint 3: a clean-machine install walkthrough)
+      (static page with self-hosted fonts and a first-run screenshot; pages.yml deploys once Pages is enabled)
 
 ### Part D: agent upgrade + model routing (ADR 0009)
 - [ ] D1. Every UI write action is a chat tool through the service layer with the same rules (calendar /
