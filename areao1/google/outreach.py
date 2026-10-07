@@ -4,6 +4,7 @@ and the same guardrails as other text the agent writes for your case."""
 
 from __future__ import annotations
 
+import threading
 from email.message import EmailMessage
 from email.utils import make_msgid
 from typing import Any
@@ -36,6 +37,11 @@ def compose(ws: Case, contact_id: str, subject: str, body: str, purpose: str = "
         drafted_by=drafted_by,
         thread_id=thread_id,
     )  # type: ignore[arg-type]
+
+
+SENDING = threading.Lock()
+"""Held from reading a draft to recording it as sent: a second Approve & send (a double click while Gmail is slow)
+waits, then finds the email already sent instead of sending it again."""
 
 
 def can_send() -> bool:

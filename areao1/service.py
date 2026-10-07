@@ -337,12 +337,13 @@ class Service:
             raise WorkspaceError("only you can approve and send an email")
         from areao1.google import outreach
 
-        before = self._draft(draft_id)
-        sent = outreach.send(self.ws, before)
-        after = before.model_copy(update={"status": "sent", "sent_at": clock.utcnow(), "gmail_id": sent.get("id"),
-                                          "thread_id": sent.get("threadId") or before.thread_id})  # fmt: skip
-        return self._record("outreach.send", "outreach", lambda: self.ws.put_draft(after), before=before,
-                            summary=f"to {before.to}: {before.subject}")  # fmt: skip
+        with outreach.SENDING:  # one at a time, read fresh: approving twice sends once
+            before = self._draft(draft_id)
+            sent = outreach.send(self.ws, before)
+            after = before.model_copy(update={"status": "sent", "sent_at": clock.utcnow(), "gmail_id": sent.get("id"),
+                                              "thread_id": sent.get("threadId") or before.thread_id})  # fmt: skip
+            return self._record("outreach.send", "outreach", lambda: self.ws.put_draft(after), before=before,
+                                summary=f"to {before.to}: {before.subject}")  # fmt: skip
 
     # ------------------------------------------------------------------ trackers (generic) + metrics
 

@@ -162,3 +162,31 @@ def test_a_reply_carries_in_reply_to(ws, people, fake):
     Service(ws).send_draft(d.id)
     [msg] = fake.sent
     assert msg["In-Reply-To"] == "<o2@mlh.example>" and msg["References"] == "<o2@mlh.example>"
+
+
+def test_approving_twice_while_gmail_is_slow_sends_once(ws, people, fake, monkeypatch):
+    """The live test: four clicks on Approve & send during a slow SMTP send went out four times."""
+    import threading
+    import time
+
+    omar, _ = people
+    c = _app(ws)
+    d = _draft(c, omar.id)
+    slow = mail.SMTP
+
+    class Slow(slow):
+        def send_message(self, msg):
+            time.sleep(0.2)
+            return super().send_message(msg)
+
+    monkeypatch.setattr(mail, "SMTP", Slow)
+    codes: list[int] = []
+    clicks = [threading.Thread(target=lambda: codes.append(c.post(f"/api/outreach/{d['id']}/send", headers=W)
+                                                           .status_code)) for _ in range(4)]  # fmt: skip
+    for t in clicks:
+        t.start()
+    for t in clicks:
+        t.join()
+    assert len(fake.sent) == 1 and sorted(codes) == [200, 400, 400, 400]
+    assert [ch.action for ch in ws.changes()].count("outreach.send") == 1
+    assert c.get("/api/outreach").json()["sent_today"] == 1

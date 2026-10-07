@@ -262,8 +262,9 @@ function Outreach({ view, onChange }: { view: OutreachView; onChange: () => void
   );
 }
 
-function DraftRow({ d, canSend, act }: { d: OutreachDraftView; canSend: boolean; act: (fn: () => Promise<unknown>, msg: string) => void }) {
+function DraftRow({ d, canSend, act }: { d: OutreachDraftView; canSend: boolean; act: (fn: () => Promise<unknown>, msg: string) => Promise<void> }) {
   const [subject, setSubject] = useState(d.subject);
+  const [sending, setSending] = useState(false); // Gmail can take seconds: one click, one email
   const [body, setBody] = useState(d.body);
   const edited = subject !== d.subject || body !== d.body;
   const who = d.drafted_by === "user" ? "you" : d.drafted_by === "follow-up" ? "a follow-up (7 quiet days)" : "the agent";
@@ -277,11 +278,14 @@ function DraftRow({ d, canSend, act }: { d: OutreachDraftView; canSend: boolean;
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="primary"
-          disabled={!canSend || edited}
+          disabled={!canSend || edited || sending}
           title={!canSend ? "Connect Gmail in Settings > Gmail" : edited ? "Save your edits first" : undefined}
-          onClick={() => act(() => api.sendDraft(d.id), `Sent to ${d.to}`)}
+          onClick={() => {
+            setSending(true);
+            act(() => api.sendDraft(d.id), `Sent to ${d.to}`).finally(() => setSending(false));
+          }}
         >
-          <Check /> Approve & send
+          <Check /> {sending ? "Sending…" : "Approve & send"}
         </Button>
         {edited && (
           <Button onClick={() => act(() => api.editDraft(d.id, { subject, body }), "Saved")}>

@@ -139,8 +139,10 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       16-letter app password (test login, keychain, plain errors); IMAP headers only / SMTP for approved sends;
       OAuth client flow and Google Calendar sync removed (an old sign-in leaves the keychain on start); optional
       Email step in onboarding; docs/gmail.md
-- [ ] E6 live check: the owner connects with their own app password; Refresh threads; one approved send to
-      their second address
+- [x] E6 live check (2026-10-07): connected with an app password; one approved send to the owner's second
+      address. The audit found it went out 4 times (clicks during a 6-second SMTP send); fixed: sends are
+      serialized and re-read the draft, the button disables while sending (regression test). Refresh threads
+      not yet tried live
 - [ ] CHECKPOINT 4 (Gmail): connect with an app password, Refresh threads, one approved send
       Reported 2026-10-07 (built and tested with fake IMAP / SMTP); the live run waits for the owner's app password
 
