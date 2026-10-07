@@ -182,16 +182,36 @@ function Shell() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   useEffect(() => {
-    // A tool call changed something: those panels un-blur and flash behind the chat, then refresh.
+    // A tool call changed something: those panels refresh, and while the chat is open over them (everything
+    // behind stays evenly blurred) a crisp outline and label on top of the blur show where. Docked, the panel
+    // itself flashes.
     const onChanged = (e: Event) => {
       const panels = (e as CustomEvent<string[]>).detail;
       bump();
-      document.querySelectorAll(panelSelector(panels)).forEach((el) => {
-        el.classList.remove("lh-reveal");
-        void (el as HTMLElement).offsetWidth; // restart the flash
-        el.classList.add("lh-reveal");
-        window.setTimeout(() => el.classList.remove("lh-reveal"), 1800);
-      });
+      const found = [...document.querySelectorAll<HTMLElement>(panelSelector(panels))];
+      const outer = found.filter((el) => !found.some((o) => o !== el && o.contains(el))); // one mark per area
+      for (const el of outer) {
+        if (!document.querySelector(".lh-chat-modal")) {
+          el.classList.remove("lh-reveal");
+          void el.offsetWidth; // restart the flash
+          el.classList.add("lh-reveal");
+          window.setTimeout(() => el.classList.remove("lh-reveal"), 1800);
+          continue;
+        }
+        const r = el.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > window.innerHeight || !r.width) continue;
+        const mark = document.createElement("div");
+        mark.className = "lh-mark";
+        mark.setAttribute("aria-hidden", "true");
+        Object.assign(mark.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+        const label = document.createElement("span");
+        label.textContent = `Changed: ${(el.dataset.panel ?? "").split(" ").filter((p) => panels.includes(p)).join(", ")}`;
+        const chat = document.querySelector('aside[aria-label^="Chat"]')?.getBoundingClientRect();
+        if (chat && r.right > chat.right && r.left > chat.left) Object.assign(label.style, { left: "auto", right: "-3px" }); // the side you can see
+        mark.appendChild(label);
+        document.body.appendChild(mark);
+        window.setTimeout(() => mark.remove(), 1800);
+      }
     };
     window.addEventListener("lh:changed", onChanged);
     return () => window.removeEventListener("lh:changed", onChanged);

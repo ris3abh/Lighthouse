@@ -214,3 +214,12 @@ def test_text_tokens_meet_wcag_aa_in_both_themes():
                 assert _contrast(tokens[status], tokens[bg]) >= 4.5, (selector, status, bg)  # status text
             assert _contrast(tokens[status], tokens[f"{status}-soft"]) >= 4.5, (selector, status)  # badges
             assert _contrast(tokens["on-status"], tokens[status]) >= 4.5, (selector, status)  # filled
+
+
+def test_the_chat_modal_blurs_everything_behind_it_evenly():
+    """Checkpoint 3 follow-up: nothing behind the open chat stays sharp, not even a panel a tool call just changed
+    (a mark on top shows that). In Chrome, 75 to 133 elements stayed sharp under the old per-column rule."""
+    css = (Path(__file__).resolve().parents[1] / "web" / "src" / "index.css").read_text()
+    rule = css[css.index(".lh-chat-modal > .lh-nav") : css.index("}", css.index(".lh-chat-modal > .lh-nav"))]
+    assert ".lh-chat-modal .lh-content" in rule and "main > footer" in rule and "blur(" in rule
+    assert ":has(.lh-reveal)" not in css and ":not(.lh-reveal)" not in css  # no exemption from the blur

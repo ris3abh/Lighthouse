@@ -257,19 +257,40 @@ html[data-vt-dir="prev"]::view-transition-new(cal-heading) {
   }
 }
 
-/* Chat as a modal (C13): the dashboard stays visible behind it, blurred; a panel a tool call just changed
-   un-blurs and flashes so you see what happened. */
+/* Chat as a modal (C13, Checkpoint 3 follow-up): the dashboard stays visible behind it, blurred evenly; nothing
+   behind it is ever sharp. A panel a tool call just changed stays blurred too: a crisp outline and label drawn
+   on top of the blur (.lh-mark, placed over the panel by App.tsx) show where the change happened. */
 .lh-shell > .lh-nav,
 .lh-shell > div > header,
-.lh-content > *,
-.lh-content .card {
+.lh-shell main > footer,
+.lh-content {
   transition: filter 200ms var(--ease-out-quint);
 }
 .lh-chat-modal > .lh-nav,
 .lh-chat-modal > div > header,
-.lh-chat-modal .lh-content > *:not(:has(.lh-reveal)):not(.lh-reveal),
-.lh-chat-modal .lh-content > :has(.lh-reveal) .card:not(.lh-reveal):not(:has(.lh-reveal)) {
+.lh-chat-modal main > footer,
+.lh-chat-modal .lh-content {
   filter: blur(5px);
+}
+.lh-mark {
+  position: fixed;
+  z-index: 45;
+  pointer-events: none;
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  animation: reveal-flash 400ms var(--ease-out-quint);
+}
+.lh-mark > span {
+  position: absolute;
+  top: -28px;
+  left: -3px;
+  padding: 2px 6px;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .lh-reveal {
   outline: 2px solid var(--ink);
