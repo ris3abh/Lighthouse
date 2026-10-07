@@ -52,20 +52,20 @@ export default function TrackerCard({ c, onDone }: { c: Candidate; onDone: () =>
     }, `${ADD_TO[kind].replace("Add to", "Added to")}`);
 
   return (
-    <article className="card p-3">
+    <article className="animate-rise border-b border-line px-5 py-5 last:border-b-0 md:px-6">
       <div className="flex flex-wrap items-start gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium">{kind === "letter" ? String(p.name) : kind === "update" || kind === "metric" ? c.title : String(p.title)}</h3>
+          <h3 className="text-[15px] leading-snug font-medium">{kind === "letter" ? String(p.name) : kind === "update" || kind === "metric" ? c.title : String(p.title)}</h3>
           {kind === "update" && (
-            <p className="mt-0.5 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-ink-2">
               {String(p.target_type).replace("_", " ")}:{" "}
               {Object.entries((p.changes as unknown as Record<string, unknown>) ?? {})
                 .map(([k, v]) => `${k} → ${String(v)}`)
                 .join(", ")}
             </p>
           )}
-          <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500">
-            {kind === "deadline" && <span className="font-medium tabular-nums text-zinc-700 dark:text-zinc-200">due {String(p.due)}</span>}
+          <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink-2">
+            {kind === "deadline" && <span className="num text-[11px] text-ink">DUE {String(p.due)}</span>}
             {kind === "pipeline" && <Chip>pipeline: {String(p.stage)}</Chip>}
             {kind === "letter" && (
               <>
@@ -74,15 +74,15 @@ export default function TrackerCard({ c, onDone }: { c: Candidate; onDone: () =>
               </>
             )}
             <StageChip stage={c.stage} />
-            {c.source_tier === "self_reported" ? <Chip tone="amber">self-reported</Chip> : c.source.startsWith("agent:") ? <Chip>from the agent</Chip> : null}
+            {c.source_tier === "self_reported" ? <Chip tone="outline">self-reported</Chip> : c.source.startsWith("agent:") ? <Chip>from the agent</Chip> : null}
           </p>
-          <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400">{c.summary}</p>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-ink-2">{c.summary}</p>
           <ClaimsPanel ids={c.claim_ids} verb="Adding approves" />
         </div>
       </div>
 
       {editing && (
-        <div className="mt-3 grid gap-2 border-t border-zinc-100 pt-3 sm:grid-cols-2 dark:border-zinc-800">
+        <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
           {kind !== "letter" && (
             <label className="sm:col-span-2">
               <span className="label">Title</span>
@@ -134,9 +134,9 @@ export default function TrackerCard({ c, onDone }: { c: Candidate; onDone: () =>
 
       <RuleCheckView check={c.rule_check} onRecheck={() => api.recheckCandidate(c.id).then(onDone).catch((e: Error) => toast(e.message, "error"))} />
       {blocking(c.rule_check).length > 0 && (
-        <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">States rules the knowledge vault doesn't confirm; it can't be added as written.</p>
+        <p className="mt-3 font-mono text-[11px] text-alert">States rules the knowledge vault doesn't confirm; it can't be added as written.</p>
       )}
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="primary" size="sm" disabled={busy} onClick={add}>
           {editing ? `Save & ${ADD_TO[kind].toLowerCase()}` : ADD_TO[kind]}
         </Button>

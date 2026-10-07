@@ -1,12 +1,13 @@
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { api, type Claim, stageCounts } from "../api";
 import { Chip, cx } from "./ui";
 
 const STATUS_TONE: Record<Claim["status"], string> = {
-  proposed: "text-zinc-500",
-  corroborated: "text-sky-600 dark:text-sky-400",
-  approved: "text-emerald-600 dark:text-emerald-400",
-  rejected: "text-red-600 dark:text-red-400",
+  proposed: "text-ink-2",
+  corroborated: "text-ink",
+  approved: "text-ink font-semibold",
+  rejected: "text-muted line-through",
 };
 
 /** Stage chip: completed stages are green; earlier ones (invited, preprint…) are amber and don't count yet. */
@@ -14,7 +15,7 @@ export function StageChip({ stage }: { stage: string | null }) {
   if (!stage) return null;
   return (
     <span title={stageCounts(stage) ? "Completed — counts toward the criterion" : "Not completed — doesn't count yet"}>
-      <Chip tone={stageCounts(stage) ? "emerald" : "amber"}>stage: {stage}</Chip>
+      <Chip tone={stageCounts(stage) ? "ink" : "outline"}>stage: {stage}</Chip>
     </span>
   );
 }
@@ -37,29 +38,29 @@ export default function ClaimsPanel({ ids, verb = "Accepting approves" }: { ids:
 
   return (
     <div className="mt-2">
-      <button type="button" onClick={toggle} className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white" aria-expanded={open}>
-        {open ? "▾" : "▸"} {verb} {ids.length} sourced claim{ids.length > 1 ? "s" : ""}
+      <button type="button" onClick={toggle} className="inline-flex items-center gap-1.5 font-mono text-[11px] text-ink-2 uppercase hover:text-ink" aria-expanded={open}>
+        <ChevronDown className={cx("size-3.5 transition-transform duration-200", !open && "-rotate-90")} aria-hidden /> {verb} {ids.length} sourced claim{ids.length > 1 ? "s" : ""}
       </button>
       {open && (
-        <div className="mt-1.5 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
-          {error && <p className="p-2 text-xs text-red-600">{error}</p>}
-          {!claims && !error && <p className="p-2 text-xs text-zinc-500">Loading…</p>}
+        <div className="mt-2 animate-rise overflow-hidden border border-line">
+          {error && <p className="p-2 text-xs text-alert">{error}</p>}
+          {!claims && !error && <p className="p-2 text-xs text-muted">Loading…</p>}
           {claims?.map((c) => (
-            <div key={c.id} className="border-b border-zinc-100 px-3 py-2 text-xs last:border-b-0 dark:border-zinc-800">
+            <div key={c.id} className="border-b border-line px-4 py-3 text-xs last:border-b-0">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="font-medium">
+                <span className="font-medium text-ink">
                   {c.predicate.replace(/_/g, " ")} = <span className="tabular-nums">{String(c.value)}</span>
                 </span>
-                <span className={cx("font-medium", STATUS_TONE[c.status])}>{c.status}</span>
-                <span className="text-zinc-400">
+                <span className={cx("font-mono text-[11px] uppercase", STATUS_TONE[c.status])}>{c.status}</span>
+                <span className="font-mono text-[11px] text-muted">
                   confidence {c.confidence} · v{c.version}
                   {c.valid_from && ` · valid from ${c.valid_from}`}
                 </span>
               </div>
-              <code className="mt-1 block truncate rounded bg-zinc-50 px-1.5 py-0.5 text-[11px] text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300" title={c.excerpt}>
+              <code className="mt-2 block truncate border-l-2 border-ink bg-sunken px-2 py-1 font-mono text-[11px] text-ink" title={c.excerpt}>
                 {c.excerpt}
               </code>
-              <p className="mt-0.5 truncate text-[11px] text-zinc-400" title={c.source_url ?? ""}>
+              <p className="mt-1 truncate font-mono text-[10.5px] text-muted" title={c.source_url ?? ""}>
                 quoted from {c.source_url} · captured {c.captured_at?.slice(0, 10)} via {c.connector}
               </p>
             </div>

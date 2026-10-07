@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { api, type KnowledgeView, type VaultSourceStatus } from "../api";
 import { useRefresh } from "../App";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
+import { RefreshCw } from "lucide-react";
+import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, Stat, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 
 const TIER_LABEL = { 1: "Tier 1 · primary law and agency", 2: "Tier 2 · adjudication", 3: "Tier 3 · secondary (context only)" } as const;
@@ -9,11 +10,11 @@ const TIER_LABEL = { 1: "Tier 1 · primary law and agency", 2: "Tier 2 · adjudi
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—");
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—");
 
-function freshness(s: VaultSourceStatus): { label: string; tone: "emerald" | "amber" | "red" | "zinc" } {
-  if (s.status === "unreadable") return { label: s.checked_at ? "unreadable · stale soon" : "unreadable", tone: "red" };
-  if (s.status === "error") return { label: "error", tone: "red" };
-  if (!s.checked_at) return { label: "never fetched", tone: "zinc" };
-  return s.fresh ? { label: "fresh", tone: "emerald" } : { label: "stale", tone: "amber" };
+function freshness(s: VaultSourceStatus): { label: string; tone: "ink" | "outline" | "alert" | "muted" } {
+  if (s.status === "unreadable") return { label: s.checked_at ? "unreadable · stale soon" : "unreadable", tone: "alert" };
+  if (s.status === "error") return { label: "error", tone: "alert" };
+  if (!s.checked_at) return { label: "never fetched", tone: "muted" };
+  return s.fresh ? { label: "fresh", tone: "ink" } : { label: "stale", tone: "outline" };
 }
 
 export default function Knowledge() {
@@ -52,50 +53,62 @@ export default function Knowledge() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div>
       <PageHeader
+        eyebrow={`${official.length} official sources`}
         title="Knowledge"
         subtitle="The official sources every rule statement is checked against: what each said, when it was checked, and what changed."
         actions={
           <Button variant="primary" size="sm" disabled={!k.enabled || busy !== null} onClick={() => sync()}>
+            <RefreshCw className={cx(busy === "all" && "animate-spin")} />
             {busy === "all" ? "Checking…" : "Check what's due"}
           </Button>
         }
       />
       {!k.enabled && (
-        <p className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+        <p className="mb-8 border border-alert bg-surface px-5 py-4 text-sm text-ink">
           The vault is turned off (<code>vault: {"{enabled: false}"}</code> in lighthouse.yaml). Nothing is fetched, and rule statements show as unverified.
         </p>
       )}
 
-      <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-5">
-        <Stat label="Tier 1 fresh" value={`${t1.filter((s) => s.fresh).length}/${t1.length}`} />
-        <Stat label="Fresh sources" value={counts.fresh} />
-        <Stat label="Stale" value={counts.stale} tone={counts.stale ? "amber" : undefined} />
-        <Stat label="Can't read automatically" value={counts.unreadable} tone={counts.unreadable ? "red" : undefined} />
-        <Stat label="Open conflicts" value={k.conflicts.length} tone={k.conflicts.length ? "red" : undefined} />
-      </div>
+      <section className="card mb-8 grid animate-rise grid-cols-2 @3xl:grid-cols-5 [&>div]:border-line [&>div]:p-6">
+        <div className="border-r border-b @3xl:border-b-0">
+          <Stat label="Tier 1 fresh" value={t1.filter((s) => s.fresh).length} sub={`OF ${t1.length}`} />
+        </div>
+        <div className="border-b @3xl:border-r @3xl:border-b-0">
+          <Stat label="Fresh sources" value={counts.fresh} />
+        </div>
+        <div className="border-r border-b @3xl:border-b-0">
+          <Stat label="Stale" value={counts.stale} />
+        </div>
+        <div className="border-b @3xl:border-r @3xl:border-b-0">
+          <Stat label="Can't read automatically" value={counts.unreadable} alert={counts.unreadable > 0} />
+        </div>
+        <div className="col-span-2 @3xl:col-span-1">
+          <Stat label="Open conflicts" value={k.conflicts.length} alert={k.conflicts.length > 0} />
+        </div>
+      </section>
 
       {k.conflicts.length > 0 && (
-        <Card title="Open conflicts" className="mb-4">
-          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <Card title="Open conflicts" className="mb-8 border-alert">
+          <ul className="divide-y divide-line">
             {k.conflicts.map((c) => (
-              <li key={c.claim.id} className="p-4 text-sm">
-                <p className="font-medium">{c.claim.text}</p>
-                <p className="mt-0.5 text-xs text-zinc-500">
+              <li key={c.claim.id} className="p-6 text-sm">
+                <p className="text-[15px] font-medium">{c.claim.text}</p>
+                <p className="mt-0.5 text-xs text-muted">
                   In{" "}
-                  <a className="underline" href={c.where.type === "run" ? `#/agent?run=${c.where.id}` : c.where.type === "briefing" ? "#/overview" : "#/inbox"}>
+                  <a className="link" href={c.where.type === "run" ? `#/agent?run=${c.where.id}` : c.where.type === "briefing" ? "#/overview" : "#/inbox"}>
                     {c.where.label}
                   </a>{" "}
                   · {day(c.at)}
                 </p>
                 <div className="mt-2 grid gap-2 md:grid-cols-2">
                   {c.claim.citations.map((x, i) => (
-                    <blockquote key={i} className={cx("border-l-2 pl-2 text-xs", x.verdict === "contradicts" ? "border-red-400" : "border-emerald-400")}>
+                    <blockquote key={i} className={cx("border-l-2 pl-2 text-xs", x.verdict === "contradicts" ? "border-alert" : "border-ink")}>
                       <p>“{x.quote}”</p>
-                      <p className="mt-0.5 text-zinc-500">
+                      <p className="mt-0.5 text-muted">
                         {x.verdict === "contradicts" ? "says otherwise" : "says so"} · Tier {x.tier} ·{" "}
-                        <a className="underline" href={x.url} target="_blank" rel="noreferrer">
+                        <a className="link" href={x.url} target="_blank" rel="noreferrer">
                           {x.title}
                         </a>
                       </p>
@@ -108,13 +121,13 @@ export default function Knowledge() {
         </Card>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @5xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="flex flex-col gap-8">
           {([1, 2, 3] as const).map((tier) => {
             const rows = official.filter((s) => s.tier === tier);
             return rows.length ? (
               <Card key={tier} title={TIER_LABEL[tier]}>
-                <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                <ul className="divide-y divide-line">
                   {rows.map((s) => (
                     <SourceRow key={s.id} s={s} busy={busy} enabled={k.enabled} onSync={() => sync([s.id], true)} onDone={bump} />
                   ))}
@@ -124,10 +137,10 @@ export default function Knowledge() {
           })}
           {findings.length > 0 && (
             <Card title={`Found by the agent (${findings.length})`}>
-              <p className="border-b border-zinc-100 px-4 py-2 text-xs text-zinc-500 dark:border-zinc-800">
+              <p className="border-b border-line px-5 py-3 text-sm text-ink-2">
                 Official pages the agent read. They're searchable, but rule statements aren't verified against them until you add them as sources.
               </p>
-              <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <ul className="divide-y divide-line">
                 {findings.map((s) => (
                   <FindingRow key={s.id} s={s} kinds={k.kinds} onDone={bump} />
                 ))}
@@ -138,28 +151,28 @@ export default function Knowledge() {
 
         <Card title="Recent changes">
           {k.recent.length ? (
-            <ul className="max-h-[80vh] divide-y divide-zinc-100 overflow-y-auto text-xs dark:divide-zinc-800">
+            <ul className="max-h-[80vh] divide-y divide-line overflow-y-auto text-xs">
               {k.recent.map((e) => (
-                <li key={e.id} className="px-3 py-2">
+                <li key={e.id} className="px-5 py-4">
                   <div className="flex items-center gap-1.5">
-                    <Chip tone={e.status === "changed" ? "amber" : e.status === "new" ? "emerald" : e.status === "unchanged" ? "zinc" : "red"}>{e.status}</Chip>
+                    <Chip tone={e.status === "changed" ? "ink" : e.status === "new" ? "outline" : e.status === "unchanged" ? "muted" : "alert"}>{e.status}</Chip>
                     {e.origin !== "fetch" && <Chip>{e.origin === "manual" ? "imported" : "agent"}</Chip>}
-                    <span className="ml-auto text-zinc-400">{when(e.fetched_at)}</span>
+                    <span className="num ml-auto text-[10.5px] text-muted">{when(e.fetched_at)}</span>
                   </div>
-                  <p className="mt-1 font-medium text-zinc-700 dark:text-zinc-200">{e.title}</p>
+                  <p className="mt-2 text-sm font-medium text-ink">{e.title}</p>
                   {e.diff && e.diff.sample.length > 0 && (
-                    <ul className="mt-1 space-y-0.5 text-zinc-500">
+                    <ul className="mt-2 space-y-1 border-l-2 border-ink pl-3 font-mono text-[11px] text-ink-2">
                       {e.diff.sample.map((line, i) => (
                         <li key={i}>+ {line}</li>
                       ))}
                     </ul>
                   )}
                   {e.diff && (
-                    <p className="mt-0.5 text-[11px] text-zinc-400">
+                    <p className="mt-0.5 text-[11px] text-muted">
                       {e.diff.added} line(s) added, {e.diff.removed} removed
                     </p>
                   )}
-                  {e.error && <p className="mt-0.5 text-red-600">{e.error}</p>}
+                  {e.error && <p className="mt-0.5 text-alert">{e.error}</p>}
                 </li>
               ))}
             </ul>
@@ -172,16 +185,6 @@ export default function Knowledge() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number | string; tone?: "amber" | "red" }) {
-  return (
-    <div className="card p-4">
-      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
-      <p className={cx("mt-1 text-2xl font-semibold tabular-nums", tone === "amber" && "text-amber-700 dark:text-amber-400", tone === "red" && "text-red-700 dark:text-red-400")}>
-        {value}
-      </p>
-    </div>
-  );
-}
 
 function SourceRow({ s, busy, enabled, onSync, onDone }: { s: VaultSourceStatus; busy: string | null; enabled: boolean; onSync: () => void; onDone: () => void }) {
   const toast = useToast();
@@ -189,13 +192,13 @@ function SourceRow({ s, busy, enabled, onSync, onDone }: { s: VaultSourceStatus;
   const f = freshness(s);
   const blocked = s.status === "unreadable";
   return (
-    <li className="px-4 py-3 text-sm">
+    <li className="px-5 py-4 text-sm">
       <div className="flex flex-wrap items-start gap-2">
         <div className="min-w-0 flex-1">
-          <a href={s.link || s.url} target="_blank" rel="noreferrer" className="font-medium hover:underline">
+          <a href={s.link || s.url} target="_blank" rel="noreferrer" className="text-[15px] font-medium hover:underline">
             {s.title}
           </a>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <p className="mt-0.5 text-xs text-muted">
             {s.manual && "manual import · "}
             {s.secondary_to && `secondary to ${s.secondary_to} · `}
             {s.kind.replace("_", " ")} · fresh for {s.ttl === "monthly" ? "the month" : `${s.ttl} days`}
@@ -205,13 +208,13 @@ function SourceRow({ s, busy, enabled, onSync, onDone }: { s: VaultSourceStatus;
             {s.snapshots > 1 && ` · ${s.snapshots} versions kept`}
             {s.last_changed && ` · changed ${day(s.last_changed)}`}
           </p>
-          {s.error && <p className="mt-0.5 text-xs text-red-600">{s.error}</p>}
+          {s.error && <p className="mt-0.5 text-xs text-alert">{s.error}</p>}
           {(blocked || (s.manual && !s.checked_at)) && (
-            <p className="mt-0.5 text-xs text-zinc-500">
+            <p className="mt-0.5 text-xs text-muted">
               This site can't be read automatically right now. Open the link, save the page from your browser (HTML or PDF) and import it here.
             </p>
           )}
-          {s.notes && !blocked && !(s.manual && !s.checked_at) && <p className="mt-0.5 text-xs text-zinc-400">{s.notes}</p>}
+          {s.notes && !blocked && !(s.manual && !s.checked_at) && <p className="mt-0.5 text-xs text-muted">{s.notes}</p>}
         </div>
         <Chip tone={f.tone}>{f.label}</Chip>
         <Button size="sm" variant="ghost" disabled={!enabled || busy !== null} onClick={onSync}>
@@ -247,16 +250,16 @@ function FindingRow({ s, kinds, onDone }: { s: VaultSourceStatus; kinds: string[
   const toast = useToast();
   const [kind, setKind] = useState("guidance");
   return (
-    <li className="flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
+    <li className="flex flex-wrap items-center gap-2 px-5 py-4 text-sm">
       <div className="min-w-0 flex-1">
         <a href={s.url} target="_blank" rel="noreferrer" className="font-medium hover:underline">
           {s.title}
         </a>
-        <p className="mt-0.5 text-xs text-zinc-500">
+        <p className="mt-0.5 text-xs text-muted">
           Tier {s.tier} domain · read {when(s.checked_at)} · {s.notes}
         </p>
       </div>
-      <select aria-label="Kind of source" className="input w-auto py-1 text-xs" value={kind} onChange={(e) => setKind(e.target.value)}>
+      <select aria-label="Kind of source" className="input h-8 w-auto py-0 font-mono text-[11px]" value={kind} onChange={(e) => setKind(e.target.value)}>
         {kinds.map((k) => (
           <option key={k} value={k}>
             {k.replace("_", " ")}

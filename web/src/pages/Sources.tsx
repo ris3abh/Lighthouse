@@ -1,3 +1,4 @@
+import { ArrowRight, KeyRound, TriangleAlert, Upload } from "lucide-react";
 import { useState } from "react";
 import { api, type Source } from "../api";
 import { useRefresh } from "../App";
@@ -69,30 +70,34 @@ export default function Sources() {
   if (!sources.data) return <Loading />;
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <PageHeader title="Sources" subtitle="Connected accounts and the items Lighthouse tracks. Connectors only read." />
+    <div>
+      <PageHeader
+        eyebrow={`${sources.data.length} connected`}
+        title="Sources"
+        subtitle="Connected accounts and the items Lighthouse tracks. Connectors only read."
+      />
 
-      <Card className="mb-4">
-        <form onSubmit={add} className="flex flex-col gap-3 p-4">
+      <Card className="mb-8" title="Add a source">
+        <form onSubmit={add} className="flex flex-col gap-4 p-6">
           <label>
-            <span className="label">
-              Add a source — paste a GitHub or Hugging Face profile, org or repo URL, a scholarly profile (Semantic
-              Scholar, OpenAlex, arXiv author page, ORCID), or any web page or sitemap (press, award pages)
+            <span className="mb-3 block max-w-3xl text-[15px] leading-relaxed text-ink-2">
+              Paste a GitHub or Hugging Face profile, org or repo URL, a scholarly profile (Semantic Scholar, OpenAlex, arXiv
+              author page, ORCID), or any web page or sitemap (press, award pages).
             </span>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <input
-                className="input"
+                className="input h-12 text-base"
                 placeholder="https://github.com/you  ·  https://huggingface.co/you  ·  https://orcid.org/0000-…"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
               />
-              <Button type="submit" variant="primary" disabled={!input.trim() || busy === "add"}>
+              <Button type="submit" variant="primary" className="h-12 px-6" disabled={!input.trim() || busy === "add"}>
                 {busy === "add" ? "Importing…" : "Import"}
               </Button>
             </div>
           </label>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-            {kind ? <Chip tone="emerald">detected: {kind}</Chip> : input && <Chip tone="amber">not recognized yet</Chip>}
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+            {kind ? <Chip tone="ink">detected: {kind}</Chip> : input && <Chip tone="outline">not recognized yet</Chip>}
             {(!kind || kind in TOKEN_PAGES) && (
               <button type="button" className="link" onClick={() => setShowToken(!showToken)}>
                 {showToken ? "Public only" : "Private repos? Add a read-only token"}
@@ -115,17 +120,17 @@ export default function Sources() {
         </form>
       </Card>
 
-      <Card className="mb-4" title="Import your Claude or ChatGPT history">
-        <div className="p-4">
-          <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+      <Card className="mb-8" title="Import your Claude or ChatGPT history">
+        <div className="p-6">
+          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-ink-2">
             Export your data (Claude: Settings → Privacy → Export data; ChatGPT: Settings → Data controls → Export), then drop the{" "}
             <code>.zip</code> or <code>conversations.json</code> here. Every conversation is saved as a private snapshot in your
             workspace. Lighthouse reads <strong>only your own messages</strong> and proposes deadlines, pipeline items and letter
             writers. These are self-reported: they keep you organized but never count toward a criterion. Only conversations
             that produced a suggestion are saved.
           </p>
-          <label className="mb-3 flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-            <input type="checkbox" checked={keepAll} onChange={(e) => setKeepAll(e.target.checked)} />
+          <label className="mb-5 flex items-center gap-2.5 text-sm text-ink-2">
+            <input type="checkbox" className="size-4 accent-[var(--ink)]" checked={keepAll} onChange={(e) => setKeepAll(e.target.checked)} />
             Also save conversations with no suggestions (your whole history goes into the workspace)
           </label>
           <DropZone
@@ -138,8 +143,9 @@ export default function Sources() {
               })
             }
           >
-            <p className="text-sm font-medium">{busy === "chats" ? "Importing…" : "Drop your export here, or click to choose"}</p>
-            <p className="text-xs text-zinc-500">conversations.json or the export .zip · stays on this machine</p>
+            <Upload className="size-6" strokeWidth={1.5} aria-hidden />
+            <p className="display text-3xl">{busy === "chats" ? "Importing…" : "Drop your export here"}</p>
+            <p className="font-mono text-[11px] text-muted uppercase">conversations.json or the export .zip · stays on this machine</p>
           </DropZone>
         </div>
       </Card>
@@ -149,7 +155,7 @@ export default function Sources() {
           <Empty>No sources yet. Import your GitHub, Hugging Face or scholarly profile above.</Empty>
         </Card>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-8">
           {sources.data.map((s) => (
             <Card
               key={s.id}
@@ -158,12 +164,12 @@ export default function Sources() {
                   <a href={s.url} target="_blank" rel="noreferrer" className="link">
                     {s.id}
                   </a>
-                  <Chip>{s.auth === "token" ? "🔑 token" : "public"}</Chip>
+                  <Chip>{s.auth === "token" ? (<><KeyRound /> token</>) : "public"}</Chip>
                 </span>
               }
               actions={
                 <div className="flex items-center gap-1">
-                  <span className="mr-2 text-xs text-zinc-500" title={s.last_sync ?? ""}>
+                  <span className="num mr-2 text-[10.5px] text-muted uppercase" title={s.last_sync ?? ""}>
                     synced {ago(s.last_sync)}
                   </span>
                   <Button
@@ -200,25 +206,29 @@ export default function Sources() {
                 </div>
               }
             >
-              {s.last_error && <p className="border-b border-red-100 bg-red-50 px-4 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">⚠ {s.last_error}</p>}
-              <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {s.last_error && (
+                <p className="flex items-start gap-2 border-b border-alert bg-alert-soft px-5 py-3 text-xs text-alert">
+                  <TriangleAlert className="mt-px size-3.5 shrink-0" aria-hidden /> {s.last_error}
+                </p>
+              )}
+              <ul className="divide-y divide-line">
                 {s.items.map((i) => (
-                  <li key={i.id} className="flex items-center gap-3 px-4 py-2 text-sm">
+                  <li key={i.id} className="flex items-center gap-3 px-5 py-3 text-sm">
                     <Chip>{i.kind}</Chip>
                     <a href={i.url} target="_blank" rel="noreferrer" className="link truncate">
                       {i.name}
                     </a>
-                    {i.private && <Chip tone="amber">private</Chip>}
+                    {i.private && <Chip tone="outline">private</Chip>}
                     {i.unreadable && (
                       <span title={`${i.unreadable}. Save the page from your browser and drop it on the Evidence page.`}>
-                        <Chip tone="red">unreadable</Chip>
+                        <Chip tone="alert">unreadable</Chip>
                       </span>
                     )}
-                    <span className="min-w-0 flex-1 truncate text-xs text-zinc-500">
+                    <span className="min-w-0 flex-1 truncate text-xs text-muted">
                       {i.unreadable ? `${i.unreadable} — save the page from your browser and drop it on the Evidence page` : i.title}
                     </span>
-                    <a href={`#/metrics?item=${encodeURIComponent(i.name)}`} className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white">
-                      metrics →
+                    <a href={`#/metrics?item=${encodeURIComponent(i.name)}`} className="inline-flex items-center gap-1 font-mono text-[10.5px] text-muted uppercase hover:text-ink">
+                      Metrics <ArrowRight className="size-3" aria-hidden />
                     </a>
                   </li>
                 ))}
@@ -252,7 +262,7 @@ function ReauthModal({ source, onClose, onDone }: { source: Source; onClose: () 
   return (
     <Modal title={`Re-authenticate ${source.id}`} onClose={onClose}>
       <form onSubmit={save} className="grid gap-3">
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">
+        <p className="text-sm text-ink-2">
           Paste a <strong>read-only</strong> token. It goes to your OS keychain; workspace files only store its name.
           {help && (
             <>

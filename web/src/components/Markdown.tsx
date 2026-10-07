@@ -8,7 +8,7 @@ export default function Markdown({ text }: { text: string }) {
   const flush = () => {
     if (list.length) {
       blocks.push(
-        <ul key={blocks.length} className="my-1 list-disc space-y-0.5 pl-5">
+        <ul key={blocks.length} className="my-2 list-disc space-y-1 pl-5 marker:text-ink-2">
           {list.map((li, i) => (
             <li key={i}>{inline(li)}</li>
           ))}
@@ -29,18 +29,18 @@ export default function Markdown({ text }: { text: string }) {
     const heading = line.match(/^#{1,4}\s+(.*)$/);
     blocks.push(
       heading ? (
-        <p key={blocks.length} className="mt-2 font-semibold">
+        <p key={blocks.length} className="mt-3 font-semibold">
           {inline(heading[1])}
         </p>
       ) : (
-        <p key={blocks.length} className="my-1">
+        <p key={blocks.length} className="my-2">
           {inline(line)}
         </p>
       ),
     );
   }
   flush();
-  return <div className="text-sm leading-relaxed">{blocks}</div>;
+  return <div className="text-[14.5px] leading-relaxed">{blocks}</div>;
 }
 
 function inline(text: string): ReactNode[] {
@@ -53,7 +53,7 @@ function inline(text: string): ReactNode[] {
     if (tok.startsWith("**")) out.push(<strong key={out.length}>{tok.slice(2, -2)}</strong>);
     else if (tok.startsWith("`"))
       out.push(
-        <code key={out.length} className="rounded bg-zinc-100 px-1 text-[12px] dark:bg-zinc-800">
+        <code key={out.length} className="bg-sunken px-1 font-mono text-[12px]">
           {tok.slice(1, -1)}
         </code>,
       );

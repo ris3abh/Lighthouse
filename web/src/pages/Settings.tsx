@@ -38,7 +38,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader
         title="Settings"
         subtitle={
@@ -49,27 +49,27 @@ export default function Settings() {
         }
       />
 
-      <Card title="Notification channels" className="mb-4" actions={
+      <Card title="Notification channels" className="mb-8" actions={
         <Button size="sm" disabled={!!busy} onClick={() => test()}>
           {busy === "all" ? "Sending…" : "Send test"}
         </Button>
       }>
-        <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <ul className="divide-y divide-line">
           {s.channels.map((ch) => (
-            <li key={ch.name} className="flex flex-wrap items-center gap-2 px-4 py-2.5 text-sm">
-              <span className="font-medium">{ch.name}</span>
+            <li key={ch.name} className="flex flex-wrap items-center gap-2 px-5 py-4 text-sm">
+              <span className="text-[15px] font-medium">{ch.name}</span>
               <Chip>{ch.kind}</Chip>
-              {!ch.enabled && <Chip tone="amber">disabled</Chip>}
+              {!ch.enabled && <Chip tone="muted">disabled</Chip>}
               <span title="minimal = counts only, no titles; for channels that leave this machine">
-                <Chip tone={ch.detail === "minimal" ? "emerald" : "zinc"}>detail: {ch.detail}</Chip>
+                <Chip tone={ch.detail === "minimal" ? "ink" : "muted"}>detail: {ch.detail}</Chip>
               </span>
               {ch.secret_ref && (
-                <span className={cx("text-xs", ch.secret_stored ? "text-emerald-600" : "text-red-600")}>
+                <span className={cx("text-xs", ch.secret_stored ? "text-ink" : "text-alert")}>
                   {ch.secret_stored ? `🔑 ${ch.secret_ref} in keychain` : `missing secret: lighthouse-gc secret set ${ch.secret_ref}`}
                 </span>
               )}
-              {ch.kind === "ntfy" && <span className="text-xs text-zinc-500">{ch.server}/{ch.topic}</span>}
-              {ch.kind === "email" && <span className="text-xs text-zinc-500">{ch.to_addr} via {ch.host}</span>}
+              {ch.kind === "ntfy" && <span className="text-xs text-muted">{ch.server}/{ch.topic}</span>}
+              {ch.kind === "email" && <span className="text-xs text-muted">{ch.to_addr} via {ch.host}</span>}
               <Button className="ml-auto" size="sm" variant="ghost" disabled={!!busy} onClick={() => test(ch.name)}>
                 {busy === ch.name ? "Sending…" : "Test"}
               </Button>
@@ -78,18 +78,18 @@ export default function Settings() {
         </ul>
       </Card>
 
-      <Card title="Missions" className="mb-4">
-        <div className="p-4">
-          <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+      <Card title="Missions" className="mb-8">
+        <div className="p-6">
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-ink-2">
             Scheduled agent runs on the missions model, inside your monthly budget. Results land on the Agent page and as a
             notification; suggestions go to your Inbox (or are applied, where autopilot is on).
           </p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col divide-y divide-line border-y border-line">
             {MISSIONS.map((m) => (
-              <label key={m.id} className="flex items-start gap-3 text-sm">
+              <label key={m.id} className="flex cursor-pointer items-start gap-4 py-4 text-sm">
                 <input
                   type="checkbox"
-                  className="mt-1"
+                  className="mt-1 size-4 accent-[var(--ink)]"
                   checked={s.missions[m.id]}
                   disabled={busy === m.id}
                   onChange={async (e) => {
@@ -106,8 +106,8 @@ export default function Settings() {
                   }}
                 />
                 <span>
-                  <span className="font-medium">{m.label}</span>
-                  <span className="block text-xs text-zinc-500">
+                  <span className="text-[15px] font-medium">{m.label}</span>
+                  <span className="mt-1 block text-sm text-ink-2">
                     {m.detail} Schedule: <code>{s.schedules[m.job] || "off"}</code>
                   </span>
                 </span>
@@ -117,19 +117,19 @@ export default function Settings() {
         </div>
       </Card>
 
-      <Card title="Agent autopilot" className="mb-4">
-        <div className="p-4">
-          <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+      <Card title="Agent autopilot" className="mb-8">
+        <div className="p-6">
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-ink-2">
             Let the agent apply some changes without asking. Each one is logged and can be undone in one click on the Agent page.
             Anything that could affect a criterion (evidence, exhibits, overrides, your profile) always waits for your approval,
             whatever you turn on here.
           </p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col divide-y divide-line border-y border-line">
             {AUTOPILOT.map((a) => (
-              <label key={a.id} className="flex items-start gap-3 text-sm">
+              <label key={a.id} className="flex cursor-pointer items-start gap-4 py-4 text-sm">
                 <input
                   type="checkbox"
-                  className="mt-1"
+                  className="mt-1 size-4 accent-[var(--ink)]"
                   checked={s.autopilot[a.id]}
                   disabled={busy === a.id}
                   onChange={async (e) => {
@@ -146,8 +146,8 @@ export default function Settings() {
                   }}
                 />
                 <span>
-                  <span className="font-medium">{a.label}</span>
-                  <span className="block text-xs text-zinc-500">{a.detail}</span>
+                  <span className="text-[15px] font-medium">{a.label}</span>
+                  <span className="mt-1 block text-sm text-ink-2">{a.detail}</span>
                 </span>
               </label>
             ))}
@@ -155,27 +155,27 @@ export default function Settings() {
         </div>
       </Card>
 
-      <div className="mb-4 grid gap-4 md:grid-cols-2">
+      <div className="mb-8 grid gap-8 @4xl:grid-cols-2">
         <Card title="Routes: which event goes where">
           <table className="w-full text-sm">
             <tbody>
               {Object.entries(s.routes).map(([event, chans]) => (
-                <tr key={event} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
-                  <td className="px-4 py-2 font-mono text-xs">{event}</td>
-                  <td className="px-4 py-2">{chans.length ? chans.join(", ") : <span className="text-zinc-400">none</span>}</td>
+                <tr key={event} className="border-b border-line last:border-0">
+                  <td className="px-5 py-3 font-mono text-xs">{event}</td>
+                  <td className="px-5 py-3">{chans.length ? chans.join(", ") : <span className="text-muted">none</span>}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="px-4 pb-3 text-xs text-zinc-500">Deadline alerts at {s.deadline_alert_days.join(", ")} days out.</p>
+          <p className="px-5 py-3 font-mono text-[11px] text-muted uppercase">Deadline alerts at {s.deadline_alert_days.join(", ")} days out.</p>
         </Card>
         <Card title="Workspace">
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 px-4 py-3 text-sm">
-            <dt className="text-zinc-500">Profile</dt>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 px-5 py-5 text-sm [&_dt]:eyebrow [&_dt]:pt-0.5">
+            <dt className="text-muted">Profile</dt>
             <dd>{s.profile}</dd>
-            <dt className="text-zinc-500">Agent engine</dt>
+            <dt className="text-muted">Agent engine</dt>
             <dd>{s.engine}</dd>
-            <dt className="text-zinc-500">Redact before LLM</dt>
+            <dt className="text-muted">Redact before LLM</dt>
             <dd>{s.privacy.redact_before_llm ? "on" : "off"}</dd>
           </dl>
         </Card>
@@ -183,13 +183,13 @@ export default function Settings() {
 
       <Card title="Recent notifications">
         {s.recent_notifications.length ? (
-          <ul className="divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
+          <ul className="divide-y divide-line text-sm">
             {s.recent_notifications.map((n, i) => (
-              <li key={i} className="flex flex-wrap items-center gap-2 px-4 py-2">
-                <span className="text-xs text-zinc-500 tabular-nums">{n.at.replace("T", " ").slice(0, 16)}</span>
+              <li key={i} className="flex flex-wrap items-center gap-2 px-5 py-3">
+                <span className="num text-[11px] text-muted">{n.at.replace("T", " ").slice(0, 16)}</span>
                 <Chip>{n.event}</Chip>
                 <span className="min-w-0 flex-1 truncate">{n.title}</span>
-                <span className={cx("text-xs", n.ok ? "text-emerald-600" : "text-red-600")}>
+                <span className={cx("text-xs", n.ok ? "text-ink" : "text-alert")}>
                   {n.results.map((r) => `${r.channel} ${r.ok ? "✓" : "✗"}`).join(" · ")}
                 </span>
               </li>

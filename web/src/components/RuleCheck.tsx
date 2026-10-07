@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { RuleCheck, RuleClaim, RuleStatus } from "../api";
+import { ChevronDown, ShieldCheck } from "lucide-react";
 import { Button, Chip, cx } from "./ui";
 
-const TONE: Record<RuleStatus, "emerald" | "amber" | "red"> = { verified: "emerald", unverified: "amber", stale: "amber", conflict: "red" };
+const TONE: Record<RuleStatus, "ink" | "outline" | "alert"> = { verified: "ink", unverified: "alert", stale: "outline", conflict: "alert" };
 
 export const blocking = (check?: RuleCheck | null) => (check?.claims ?? []).filter((c) => c.status !== "verified");
 
@@ -22,12 +23,13 @@ export default function RuleCheckView({
   const counts = check.claims.reduce<Record<string, number>>((acc, c) => ({ ...acc, [c.status]: (acc[c.status] ?? 0) + 1 }), {});
   const summary = (["verified", "unverified", "stale", "conflict"] as RuleStatus[]).filter((s) => counts[s]).map((s) => `${counts[s]} ${s}`);
   return (
-    <div className="mt-2 rounded-md border border-zinc-200 text-xs dark:border-zinc-800">
-      <div className="flex items-center gap-2 px-2.5 py-1.5">
+    <div className="mt-3 border border-line text-xs">
+      <div className="flex items-center gap-2 px-3 py-2">
         <button type="button" className="flex flex-1 items-center gap-2 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
-          <span className="font-medium text-zinc-600 dark:text-zinc-300">Rule check</span>
-          <span className="text-zinc-500">{summary.join(" · ") || check.note}</span>
-          <span className="ml-auto text-zinc-400">{open ? "▾" : "▸"}</span>
+          <ShieldCheck className="size-3.5 text-ink-2" aria-hidden />
+          <span className="eyebrow text-ink-2">Rule check</span>
+          <span className="font-mono text-[11px] text-ink-2">{summary.join(" · ") || check.note}</span>
+          <ChevronDown className={cx("ml-auto size-3.5 text-muted transition-transform duration-200", !open && "-rotate-90")} aria-hidden />
         </button>
         {onRecheck && (
           <Button
@@ -48,11 +50,11 @@ export default function RuleCheckView({
         )}
       </div>
       {open && (
-        <ul className="divide-y divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-800 dark:border-zinc-800">
+        <ul className="divide-y divide-line border-t border-line">
           {check.claims.map((c) => (
             <ClaimRow key={c.id} c={c} />
           ))}
-          {check.note && check.note !== "no rule statements" && <li className="px-2.5 py-1.5 text-zinc-500">{check.note}</li>}
+          {check.note && check.note !== "no rule statements" && <li className="px-3 py-2 text-ink-2">{check.note}</li>}
         </ul>
       )}
     </div>
@@ -61,18 +63,18 @@ export default function RuleCheckView({
 
 function ClaimRow({ c }: { c: RuleClaim }) {
   return (
-    <li className="px-2.5 py-2">
+    <li className="px-3 py-3">
       <div className="flex items-start gap-2">
         <Chip tone={TONE[c.status]}>{c.status}</Chip>
-        <p className="min-w-0 flex-1 text-zinc-700 dark:text-zinc-200">{c.sentence}</p>
+        <p className="min-w-0 flex-1 text-[13px] leading-snug text-ink">{c.sentence}</p>
       </div>
-      {c.reason && <p className="mt-0.5 pl-1 text-zinc-500">{c.reason}</p>}
+      {c.reason && <p className={cx("mt-1 font-mono text-[11px]", c.status === "verified" ? "text-ink-2" : "text-alert")}>{c.reason}</p>}
       {c.citations.map((x, i) => (
-        <blockquote key={i} className={cx("mt-1.5 border-l-2 pl-2", x.verdict === "contradicts" ? "border-red-400" : "border-emerald-400", !x.fresh && "opacity-60")}>
-          <p className="text-zinc-600 dark:text-zinc-300">“{x.quote}”</p>
-          <p className="mt-0.5 text-[11px] text-zinc-400">
+        <blockquote key={i} className={cx("mt-2 border-l-2 pl-3", x.verdict === "contradicts" ? "border-alert" : "border-ink", !x.fresh && "opacity-60")}>
+          <p className="text-[13px] text-ink-2">“{x.quote}”</p>
+          <p className="mt-1 font-mono text-[10.5px] text-muted">
             {x.verdict === "contradicts" ? "contradicted by " : ""}Tier {x.tier} ·{" "}
-            <a className="underline hover:text-zinc-700 dark:hover:text-zinc-200" href={x.url} target="_blank" rel="noreferrer">
+            <a className="link hover:text-ink" href={x.url} target="_blank" rel="noreferrer">
               {x.title}
             </a>{" "}
             · checked {new Date(x.checked_at).toLocaleDateString()}

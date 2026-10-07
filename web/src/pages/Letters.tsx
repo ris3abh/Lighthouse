@@ -11,9 +11,9 @@ const ASKS = [
   { id: "membership_ref", label: "Membership ref" },
 ] as const;
 const STATUS_TONE: Record<string, string> = {
-  signed: "text-emerald-700 dark:text-emerald-400",
-  declined: "text-zinc-400 line-through",
-  sent: "text-sky-700 dark:text-sky-400",
+  signed: "text-ink",
+  declined: "text-muted line-through",
+  sent: "text-ink",
 };
 
 export default function Letters() {
@@ -39,45 +39,45 @@ export default function Letters() {
     save(() => api.updateLetter(lt.id, { status, last_contact: today() }), `${lt.name}: ${status}`);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <PageHeader title="Letters" subtitle="Recommendation letter writers, what each one covers, and where each letter stands." />
+    <div>
+      <PageHeader eyebrow={`${letters.length} writers`} title="Letters" subtitle="Recommendation letter writers, what each one covers, and where each letter stands." />
 
-      <Card title="Writers" className="mb-4">
+      <Card title="Writers" className="mb-8">
         {letters.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs text-zinc-500">
-                <tr className="border-b border-zinc-100 dark:border-zinc-800">
-                  <th className="px-4 py-2 font-medium">Writer</th>
-                  <th className="px-2 py-2 font-medium">Relationship</th>
-                  <th className="px-2 py-2 font-medium">Covers</th>
-                  <th className="px-2 py-2 font-medium">Asks</th>
-                  <th className="px-2 py-2 font-medium">Status</th>
-                  <th className="px-2 py-2 font-medium">Last contact</th>
-                  <th className="px-2 py-2 font-medium">Draft</th>
+              <thead className="eyebrow text-left">
+                <tr className="border-b border-line">
+                  <th className="px-5 py-3 font-medium">Writer</th>
+                  <th className="px-3 py-3 font-medium">Relationship</th>
+                  <th className="px-3 py-3 font-medium">Covers</th>
+                  <th className="px-3 py-3 font-medium">Asks</th>
+                  <th className="px-3 py-3 font-medium">Status</th>
+                  <th className="px-3 py-3 font-medium">Last contact</th>
+                  <th className="px-3 py-3 font-medium">Draft</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
                 {letters.map((lt) => (
-                  <tr key={lt.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
-                    <td className="px-4 py-2">
-                      <div className={cx("font-medium", STATUS_TONE[lt.status])}>{lt.name}</div>
-                      {lt.credentials && <div className="text-xs text-zinc-500">{lt.credentials}</div>}
+                  <tr key={lt.id} className="border-b border-line last:border-0">
+                    <td className="px-5 py-4 align-top">
+                      <div className={cx("text-[15px] font-medium", STATUS_TONE[lt.status])}>{lt.name}</div>
+                      {lt.credentials && <div className="mt-0.5 text-xs text-ink-2">{lt.credentials}</div>}
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-3 py-4 align-top">
                       <Chip>{lt.relationship}</Chip>
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-3 py-4 align-top">
                       <div className="flex flex-wrap gap-1">
                         {lt.criteria.length ? lt.criteria.map((c) => (
                           <span key={c} title={label[c] ?? c}>
                             <Chip>{c}</Chip>
                           </span>
-                        )) : <span className="text-xs text-zinc-400">none yet</span>}
+                        )) : <span className="text-xs text-muted">none yet</span>}
                       </div>
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-3 py-4 align-top">
                       <div className="flex flex-col gap-0.5">
                         {ASKS.map((a) => (
                           <label key={a.id} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
@@ -96,32 +96,32 @@ export default function Letters() {
                         ))}
                       </div>
                     </td>
-                    <td className="px-2 py-2">
-                      <select aria-label={`Status for ${lt.name}`} className="input w-auto py-1 text-xs" value={lt.status} onChange={(e) => setStatus(lt, e.target.value as LetterWriter["status"])}>
+                    <td className="px-3 py-4 align-top">
+                      <select aria-label={`Status for ${lt.name}`} className="input h-8 w-auto py-0 font-mono text-[11px]" value={lt.status} onChange={(e) => setStatus(lt, e.target.value as LetterWriter["status"])}>
                         {STATUSES.map((s) => (
                           <option key={s}>{s}</option>
                         ))}
                       </select>
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-3 py-4 align-top">
                       <input
                         type="date"
                         aria-label={`Last contact with ${lt.name}`}
-                        className="input w-auto px-1.5 py-0.5 text-xs"
+                        className="input h-8 w-auto px-2 py-0 font-mono text-[11px]"
                         value={lt.last_contact ?? ""}
                         onChange={(e) => save(() => api.updateLetter(lt.id, { last_contact: e.target.value || null }), `${lt.name}: last contact updated`)}
                       />
                     </td>
-                    <td className="px-2 py-2 text-xs">
+                    <td className="px-3 py-4 align-top text-xs">
                       {lt.draft_exists && lt.draft_path ? (
                         <a className="link" href={api.draftUrl(lt.draft_path)} target="_blank" rel="noreferrer">
                           open
                         </a>
                       ) : (
-                        <span className="text-zinc-400">—</span>
+                        <span className="text-muted">—</span>
                       )}
                     </td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
+                    <td className="px-3 py-4 text-right align-top whitespace-nowrap">
                       {lt.status !== "sent" && lt.status !== "signed" && (
                         <Button size="sm" variant="ghost" onClick={() => setStatus(lt, "sent")}>
                           Mark sent
@@ -142,7 +142,7 @@ export default function Letters() {
           <Empty>No writers yet. Add one below, or import your chats; "I asked Dr. … for a letter" becomes a suggestion.</Empty>
         )}
         <form
-          className="flex flex-wrap items-end gap-2 border-t border-zinc-100 p-3 dark:border-zinc-800"
+          className="flex flex-wrap items-end gap-3 border-t border-line p-5"
           onSubmit={(e) => {
             e.preventDefault();
             save(async () => {
@@ -175,21 +175,21 @@ export default function Letters() {
 
       <Card title="Coverage by criterion (declined writers excluded)">
         <table className="w-full text-sm">
-          <thead className="text-left text-xs text-zinc-500">
-            <tr className="border-b border-zinc-100 dark:border-zinc-800">
-              <th className="px-4 py-2 font-medium">Criterion</th>
-              <th className="px-2 py-2 text-right font-medium">Independent</th>
-              <th className="px-2 py-2 text-right font-medium">Employer</th>
-              <th className="px-4 py-2 text-right font-medium">Co-author</th>
+          <thead className="eyebrow text-left">
+            <tr className="border-b border-line">
+              <th className="px-5 py-3 font-medium">Criterion</th>
+              <th className="px-3 py-3 text-right font-medium">Independent</th>
+              <th className="px-3 py-3 text-right font-medium">Employer</th>
+              <th className="px-5 py-3 text-right font-medium">Co-author</th>
             </tr>
           </thead>
           <tbody>
             {coverage.map((row) => (
-              <tr key={row.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
-                <td className="px-4 py-1.5">{row.label}</td>
-                <td className={cx("px-2 py-1.5 text-right tabular-nums", row.independent ? "font-medium" : "text-zinc-400")}>{row.independent}</td>
-                <td className={cx("px-2 py-1.5 text-right tabular-nums", !row.employer && "text-zinc-400")}>{row.employer}</td>
-                <td className={cx("px-4 py-1.5 text-right tabular-nums", !row.coauthor && "text-zinc-400")}>{row.coauthor}</td>
+              <tr key={row.id} className="border-b border-line last:border-0">
+                <td className="px-5 py-3">{row.label}</td>
+                <td className={cx("display px-3 py-3 text-right text-2xl", !row.independent && "text-muted")}>{row.independent}</td>
+                <td className={cx("display px-3 py-3 text-right text-2xl", !row.employer && "text-muted")}>{row.employer}</td>
+                <td className={cx("display px-5 py-3 text-right text-2xl", !row.coauthor && "text-muted")}>{row.coauthor}</td>
               </tr>
             ))}
           </tbody>

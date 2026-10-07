@@ -4,7 +4,8 @@ import { useRefresh } from "../App";
 import ClaimsPanel, { StageChip } from "../components/Claims";
 import RuleCheckView, { blocking } from "../components/RuleCheck";
 import TrackerCard, { TRACKER_LABEL } from "../components/TrackerCard";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
+import { Paperclip } from "lucide-react";
+import { Button, Card, Chip, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { today, useLoad } from "../hooks";
 
 export default function Inbox() {
@@ -27,10 +28,11 @@ export default function Inbox() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader
+        eyebrow={`${candidates.length} to review`}
         title="Inbox"
-        subtitle="Connectors propose; you decide. Nothing becomes evidence until you accept it — and accepting records your decision, it doesn't certify legal sufficiency."
+        subtitle="Connectors and the agent propose; you decide. Nothing becomes evidence until you accept it, and accepting records your decision. It doesn't certify legal sufficiency."
       />
       {candidates.length === 0 ? (
         <Card>
@@ -39,42 +41,49 @@ export default function Inbox() {
           </Empty>
         </Card>
       ) : (
-        <div className="flex flex-col gap-5">
-          {trackerGroups.length > 0 && (
-            <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3 dark:border-sky-900 dark:bg-sky-950/20">
-              <p className="mb-3 text-xs text-sky-900 dark:text-sky-200">
-                <strong>Tracker suggestions</strong> from your chats and the agent. Adding them updates your trackers and
-                metrics; they never count toward a criterion. For evidence, upload the underlying document on the Evidence page.
-              </p>
-              {trackerGroups.map(([kind, list]) => (
-                <section key={kind} className="mb-3 last:mb-0">
-                  <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                    {TRACKER_LABEL[kind]}
-                    <span className="rounded-full bg-zinc-200 px-1.5 text-xs tabular-nums dark:bg-zinc-800">{list.length}</span>
-                  </h2>
-                  <div className="flex flex-col gap-2">
-                    {list.map((c) => (
-                      <TrackerCard key={c.id} c={c} onDone={bump} />
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          )}
+        <div className="flex flex-col gap-8">
           {order.map((crit) => (
-            <section key={crit}>
-              <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                {labels[crit] ?? crit}
-                <span className="rounded-full bg-zinc-200 px-1.5 text-xs tabular-nums dark:bg-zinc-800">{groups.get(crit)!.length}</span>
-                {!labels[crit] && <span className="text-xs font-normal text-amber-600">not in the {profile.name} profile</span>}
-              </h2>
-              <div className="flex flex-col gap-2">
-                {groups.get(crit)!.map((c) => (
-                  <CandidateCard key={c.id} c={c} profile={profile} onDone={bump} />
-                ))}
-              </div>
-            </section>
+            <Card
+              key={crit}
+              title={
+                <span className="flex items-center gap-3">
+                  {labels[crit] ?? crit}
+                  <span className="num text-ink-2">{groups.get(crit)!.length}</span>
+                </span>
+              }
+              actions={!labels[crit] && <Chip tone="outline">not in the {profile.name} profile</Chip>}
+            >
+              {groups.get(crit)!.map((c) => (
+                <CandidateCard key={c.id} c={c} profile={profile} onDone={bump} />
+              ))}
+            </Card>
           ))}
+          {trackerGroups.map(([kind, list]) => (
+            <Card
+              key={kind}
+              title={
+                <span className="flex items-center gap-3">
+                  {TRACKER_LABEL[kind]}
+                  <span className="num text-ink-2">{list.length}</span>
+                </span>
+              }
+              actions={<span className="font-mono text-[10.5px] text-muted uppercase">Tracker · never counts toward a criterion</span>}
+            >
+              {list.map((c) => (
+                <TrackerCard key={c.id} c={c} onDone={bump} />
+              ))}
+            </Card>
+          ))}
+          {trackerGroups.length > 0 && (
+            <p className="max-w-3xl text-sm leading-relaxed text-ink-2">
+              Tracker suggestions come from your chats and the agent. Adding them updates your deadlines, pipeline, letters and metrics;
+              they never count toward a criterion. For evidence, upload the underlying document on the{" "}
+              <a href="#/evidence" className="link">
+                Evidence
+              </a>{" "}
+              page.
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -84,11 +93,12 @@ export default function Inbox() {
 function Confidence({ value }: { value: number }) {
   const pct = Math.round(value * 100);
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-zinc-500" title="How sure the connector is that this is evidence">
-      <span className="h-1.5 w-12 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-        <span className={cx("block h-full rounded-full", pct >= 65 ? "bg-emerald-500" : pct >= 45 ? "bg-amber-500" : "bg-zinc-400")} style={{ width: `${pct}%` }} />
+    <span className="hidden w-24 shrink-0 flex-col items-end gap-1.5 @2xl:flex" title="How sure the connector is that this is evidence">
+      <span className="display text-3xl leading-none">
+        {pct}
+        <span className="text-muted">%</span>
       </span>
-      {pct}%
+      <span className="eyebrow">confidence</span>
     </span>
   );
 }
@@ -128,10 +138,10 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
     act(() => api.accept(c.id, { ...(editing ? edits() : {}), date: form.date }), "Accepted — exhibit filed and scoreboard updated");
 
   return (
-    <article className="card p-4">
-      <div className="flex flex-wrap items-start gap-3">
+    <article className="animate-rise border-b border-line px-5 py-6 last:border-b-0 md:px-6">
+      <div className="flex items-start gap-6">
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium">
+          <h3 className="text-lg leading-snug font-medium">
             {c.raw_url ? (
               <a href={c.raw_url} target="_blank" rel="noreferrer" className="link">
                 {c.title}
@@ -140,21 +150,22 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
               c.title
             )}
           </h3>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{c.summary}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <p className="mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-2">{c.summary}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <Chip>{c.evidence_type}</Chip>
             <StageChip stage={c.stage} />
             {c.signals.map((s) => (
-              <Chip key={s} tone="emerald">
+              <Chip key={s} tone="ink">
                 {s}
               </Chip>
             ))}
-            <span className="text-xs text-zinc-400">from {c.source}</span>
-            {c.status === "snoozed" && <Chip tone="amber">snooze ended {c.snoozed_until}</Chip>}
+            <span className="ml-1 font-mono text-[11px] text-muted">FROM {c.source}</span>
+            <span className="font-mono text-[11px] text-muted @2xl:hidden">· {Math.round(c.confidence * 100)}% CONFIDENCE</span>
+            {c.status === "snoozed" && <Chip tone="outline">snooze ended {c.snoozed_until}</Chip>}
           </div>
           {c.attachment && (
-            <a href={api.attachmentUrl(c.attachment)} target="_blank" rel="noreferrer" className="link mt-2 inline-block text-xs">
-              📎 Preview the uploaded file
+            <a href={api.attachmentUrl(c.attachment)} target="_blank" rel="noreferrer" className="link mt-3 inline-flex items-center gap-1.5 text-sm">
+              <Paperclip className="size-4" strokeWidth={1.5} aria-hidden /> Preview the uploaded file
             </a>
           )}
           <ClaimsPanel ids={c.claim_ids} />
@@ -163,7 +174,7 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
       </div>
 
       {editing && (
-        <div className="mt-3 grid gap-3 border-t border-zinc-100 pt-3 sm:grid-cols-2 dark:border-zinc-800">
+        <div className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-2">
           <label>
             <span className="label">Criterion</span>
             <select
@@ -207,12 +218,12 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
 
       <RuleCheckView check={c.rule_check} onRecheck={() => api.recheckCandidate(c.id).then(onDone).catch((e: Error) => toast(e.message, "error"))} />
       {blocking(c.rule_check).length > 0 && !editing && (
-        <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">
+        <p className="mt-3 max-w-3xl font-mono text-[11px] leading-relaxed text-alert">
           This states rules the knowledge vault doesn't confirm, so it can't become an exhibit as written. Re-check after
           the vault refreshes, or edit the text into your own words.
         </p>
       )}
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-5 flex flex-wrap gap-2">
         <Button variant="primary" size="sm" disabled={busy || !form.proposed_criterion || (blocking(c.rule_check).length > 0 && !editing)} onClick={accept}>
           {editing ? "Save & accept" : "Accept"}
         </Button>

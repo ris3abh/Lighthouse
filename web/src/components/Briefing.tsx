@@ -48,7 +48,7 @@ export default function Briefing() {
   const actions = (
     <span className="flex items-center gap-2">
       {b?.generated_at && (
-        <a href={`#/agent?run=${b.run_id}`} className="text-[11px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
+        <a href={`#/agent?run=${b.run_id}`} className="font-mono text-[11px] text-muted uppercase hover:text-ink">
           {new Date(b.generated_at).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" })}
         </a>
       )}
@@ -62,9 +62,9 @@ export default function Briefing() {
   if (!b.generated_at)
     return (
       <Card title="This week" actions={actions}>
-        <p className="p-4 text-sm text-zinc-500">
+        <p className="px-5 py-6 text-[15px] text-ink-2">
           No briefing yet. Press Refresh for one now, or turn on the daily what-changed mission in{" "}
-          <a className="underline" href="#/settings">
+          <a className="link" href="#/settings">
             Settings
           </a>{" "}
           to get one every morning.
@@ -74,47 +74,48 @@ export default function Briefing() {
 
   return (
     <Card title="This week" actions={actions}>
-      <div className="grid gap-4 p-4 md:grid-cols-2">
-        <div>
-          <h3 className="mb-1.5 text-xs font-medium text-zinc-500">
+      <div className="grid @3xl:grid-cols-2">
+        <div className="border-b border-line p-6 @3xl:border-r @3xl:border-b-0">
+          <h3 className="eyebrow mb-4">
             What changed{b.since ? ` since ${new Date(b.since + "T00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}
           </h3>
           {b.changed.length ? (
-            <ul className="list-disc space-y-1 pl-4 text-sm">
+            <ul className="space-y-3 text-[15px] leading-snug">
               {b.changed.map((c, i) => (
-                <li key={i}>{c}</li>
+                <li key={i} className="flex gap-3">
+                  <span className="mt-2 size-1.5 shrink-0 bg-ink" aria-hidden />
+                  {c}
+                </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-zinc-500">Nothing worth noting.</p>
+            <p className="text-[15px] text-ink-2">Nothing worth noting.</p>
           )}
         </div>
-        <div>
-          <h3 className="mb-1.5 text-xs font-medium text-zinc-500">Three things to do</h3>
-          <ol className="space-y-2">
+        <div className="p-6">
+          <h3 className="eyebrow mb-4">Three things to do</h3>
+          <ol className="space-y-5">
             {b.todos.map((t, i) => {
               const c = t.candidate;
               const open = c && c.status === "pending";
               return (
-                <li key={i} className={cx("flex gap-2 text-sm", c && !open && "opacity-60")}>
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[11px] font-semibold text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
-                    {i + 1}
-                  </span>
+                <li key={i} className={cx("flex gap-4 text-[15px]", c && !open && "opacity-50")}>
+                  <span className="display w-6 shrink-0 text-4xl leading-none">{i + 1}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium">
+                    <p className="font-medium leading-snug">
                       {t.link && !c ? (
-                        <a className="hover:underline" href={t.link} {...(t.link.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}>
+                        <a className="link" href={t.link} {...(t.link.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}>
                           {t.title}
                         </a>
                       ) : (
                         t.title
                       )}
                     </p>
-                    {t.why && <p className="text-xs text-zinc-500">{t.why}</p>}
+                    {t.why && <p className="mt-1 text-sm text-ink-2">{t.why}</p>}
                     {c && (
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <Chip>{c.kind}</Chip>
-                        {c.source_tier === "self_reported" && <Chip tone="amber">self-reported</Chip>}
+                        {c.source_tier === "self_reported" && <Chip tone="outline">self-reported</Chip>}
                         {open ? (
                           <>
                             <Button size="sm" variant="primary" disabled={busy === c.id} onClick={() => decide(c.id, true)}>
@@ -123,16 +124,16 @@ export default function Briefing() {
                             <Button size="sm" disabled={busy === c.id} onClick={() => decide(c.id, false)}>
                               Dismiss
                             </Button>
-                            <a className="text-[11px] text-zinc-500 underline" href="#/inbox">
+                            <a className="link font-mono text-[11px] text-ink-2 uppercase" href="#/inbox">
                               review in Inbox
                             </a>
                           </>
                         ) : (
-                          <span className="text-[11px] text-zinc-500">{c.status === "rejected" ? "dismissed" : c.status}</span>
+                          <span className="text-[11px] text-muted">{c.status === "rejected" ? "dismissed" : c.status}</span>
                         )}
                       </div>
                     )}
-                    {t.candidate_id && !c && <p className="text-[11px] text-zinc-500">done</p>}
+                    {t.candidate_id && !c && <p className="text-[11px] text-muted">done</p>}
                   </div>
                 </li>
               );
@@ -141,7 +142,7 @@ export default function Briefing() {
         </div>
       </div>
       {b.rule_check && b.rule_check.claims.length > 0 && (
-        <div className="px-4 pb-3">
+        <div className="border-t border-line px-6 py-4">
           <RuleCheckView
             check={b.rule_check}
             compact
@@ -154,7 +155,7 @@ export default function Briefing() {
           />
         </div>
       )}
-      <p className="border-t border-zinc-100 px-4 py-2 text-[11px] text-zinc-400 dark:border-zinc-800">
+      <p className="border-t border-line px-6 py-3 font-mono text-[10.5px] text-muted uppercase">
         Written by the agent from your workspace. Opinions, not legal advice.
       </p>
     </Card>

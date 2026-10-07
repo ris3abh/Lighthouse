@@ -223,7 +223,7 @@ function Shell() {
           </a>
           <div className="hidden min-w-0 items-baseline gap-3 truncate lg:flex">
             <span className="text-[15px] font-semibold">{ov?.person.name || "Your case"}</span>
-            {ov?.person.field && <span className="truncate font-mono text-xs text-muted">{ov.person.field}</span>}
+            {ov?.person.field && <span className={cx("truncate font-mono text-xs text-muted", chatOpen && "hidden 2xl:inline")}>{ov.person.field}</span>}
           </div>
           <div className="ml-auto flex items-center gap-2 md:gap-3">
             <div className="hidden md:block">{profileSwitch}</div>
@@ -238,7 +238,7 @@ function Shell() {
         </header>
 
         <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1440px] px-4 py-8 md:px-10 md:py-12">{content}</div>
+          <div className="@container mx-auto w-full max-w-[1440px] px-4 py-8 md:px-10 md:py-12">{content}</div>
           <footer className="mx-auto max-w-[1440px] border-t border-line px-4 py-5 font-mono text-[10.5px] leading-relaxed text-muted md:px-10">
             Lighthouse is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public
             regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.

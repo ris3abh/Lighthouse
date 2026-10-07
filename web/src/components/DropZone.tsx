@@ -50,10 +50,8 @@ export default function DropZone({ onFiles, busy, children }: { onFiles: (files:
       onClick={() => input.current?.click()}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), input.current?.click())}
       className={cx(
-        "mb-4 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors",
-        over
-          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-          : "border-zinc-300 hover:border-zinc-400 hover:bg-white dark:border-zinc-700 dark:hover:bg-zinc-900",
+        "mb-8 flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-6 py-10 text-center transition-colors duration-150",
+        over ? "border-ink bg-sunken" : "border-ink-2 hover:border-ink hover:bg-surface",
         busy && "pointer-events-none opacity-60",
       )}
     >

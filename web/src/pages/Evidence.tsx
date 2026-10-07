@@ -1,3 +1,4 @@
+import { Check, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, type EvidenceCriterion, type Exhibit, STAGES, stageCounts } from "../api";
 import ClaimsPanel, { StageChip } from "../components/Claims";
@@ -39,21 +40,26 @@ export default function Evidence({ focus }: { focus: string | null }) {
   const { criteria, naming_issues, other_exhibits } = view.data;
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <PageHeader title="Evidence" subtitle="Accepted exhibits per criterion. Files live in evidence/<criterion>/ in your workspace." />
+    <div>
+      <PageHeader
+        eyebrow={`${criteria.reduce((n, c) => n + c.exhibit_count, 0)} exhibits · ${criteria.filter((c) => c.status === "banked").length} criteria banked`}
+        title="Evidence"
+        subtitle="Accepted exhibits per criterion. Files live in evidence/<criterion>/ in your workspace."
+      />
 
       <DropZone onFiles={(f) => sendToInbox(f)} busy={sending}>
-        <p className="text-sm font-medium">{sending ? "Uploading…" : "Drop certificates, letters, screenshots or PDFs here"}</p>
-        <p className="text-xs text-zinc-500">
+        <Upload className="size-6" strokeWidth={1.5} aria-hidden />
+        <p className="display text-3xl">{sending ? "Uploading…" : "Drop certificates, letters, screenshots or PDFs"}</p>
+        <p className="max-w-xl text-sm text-ink-2">
           or click to choose. They go to your Inbox with a suggested criterion and stage; nothing is filed until you accept. Drop
           onto a criterion below to propose it there.
         </p>
       </DropZone>
 
       {naming_issues.length > 0 && (
-        <div className="card mb-4 border-amber-300 p-3 text-sm dark:border-amber-800">
-          <p className="font-medium text-amber-800 dark:text-amber-300">Naming check: {naming_issues.length} issue(s)</p>
-          <ul className="mt-1 list-disc pl-5 text-xs text-zinc-600 dark:text-zinc-400">
+        <div className="mb-8 border border-alert bg-surface p-5 text-sm">
+          <p className="eyebrow text-alert">Naming check · {naming_issues.length} issue(s)</p>
+          <ul className="mt-3 space-y-1 font-mono text-xs text-ink-2">
             {naming_issues.map((i) => (
               <li key={i.file}>
                 <code>{i.file}</code> — {i.problem.replace("_", " ")}: {i.detail}
@@ -63,7 +69,7 @@ export default function Evidence({ focus }: { focus: string | null }) {
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-8">
         {criteria.map((c) => (
           <CriterionSection
             key={c.id}
@@ -78,9 +84,9 @@ export default function Evidence({ focus }: { focus: string | null }) {
         ))}
         {other_exhibits.length > 0 && (
           <Card title="Filed under criteria outside this profile">
-            <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            <ul className="divide-y divide-line">
               {other_exhibits.map((e) => (
-                <li key={e.id} className="px-4 py-2 text-sm">
+                <li key={e.id} className="px-5 py-3 text-sm">
                   {e.title} <Chip>{e.criterion}</Chip>
                 </li>
               ))}
@@ -145,25 +151,27 @@ function CriterionSection({
     <section
       id={`crit-${c.id}`}
       {...bind}
-      className={cx("card relative scroll-mt-4", highlighted && "ring-2 ring-amber-400", over && "ring-2 ring-amber-500")}
+      className={cx("card relative animate-rise scroll-mt-6", (highlighted || over) && "outline-2 outline-offset-2 outline-ink")}
     >
       {over && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-amber-50/90 text-sm font-medium text-amber-900 dark:bg-amber-950/80 dark:text-amber-200">
+        <div className="display pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-sunken/95 text-3xl text-ink">
           Drop to propose under “{c.label}”
         </div>
       )}
-      <header className="flex flex-wrap items-center gap-3 px-4 py-3">
-        <StatusBadge status={c.status} />
-        <h2 className="min-w-0 flex-1 text-sm font-semibold">{c.label}</h2>
-        <span className="text-xs text-zinc-500 tabular-nums">
+      <header className="flex flex-wrap items-start gap-x-6 gap-y-3 border-b border-line px-6 py-5">
+        <div className="min-w-0 flex-1">
+          <StatusBadge status={c.status} />
+          <h2 className="display mt-2 text-3xl md:text-4xl">{c.label}</h2>
+        </div>
+        <span className="num self-center text-xs text-ink-2 uppercase">
           have {c.exhibit_count}
           {need && ` / need ${need.min_exhibits}`}
           {need && need.min_signals > 0 && ` · signals ${c.matched_signals.length}/${need.min_signals}`}
           {c.in_progress_count > 0 && ` · ${c.in_progress_count} in progress`}
         </span>
-        <div className="flex gap-1">
+        <div className="flex gap-1.5 self-center">
           <Button size="sm" variant="primary" onClick={onUpload}>
-            Upload
+            <Upload /> Upload
           </Button>
           {c.overridden ? (
             <Button size="sm" disabled={busy} onClick={() => override(null)}>
@@ -181,32 +189,30 @@ function CriterionSection({
           )}
         </div>
       </header>
-      <p className="px-4 pb-2 text-xs text-zinc-500 dark:text-zinc-400">{c.reason}</p>
+      <p className="px-6 pt-4 text-sm text-ink-2">{c.reason}</p>
       {c.strength_signals.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 px-4 pb-3">
+        <div className="flex flex-wrap gap-1.5 px-6 pt-3 pb-5">
           {c.strength_signals.map((s) => (
             <span
               key={s.id}
               title={s.id}
               className={cx(
-                "rounded-full px-2 py-0.5 text-[11px]",
-                c.matched_signals.includes(s.id)
-                  ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200"
-                  : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
+                "inline-flex items-center gap-1 border px-2 py-0.5 font-mono text-[10.5px] uppercase",
+                c.matched_signals.includes(s.id) ? "border-ink bg-ink text-on-ink" : "border-line text-muted",
               )}
             >
-              {c.matched_signals.includes(s.id) ? "✓ " : ""}
+              {c.matched_signals.includes(s.id) && <Check className="size-3" aria-hidden />}
               {s.label}
             </span>
           ))}
         </div>
       )}
       {c.exhibits.length > 0 ? (
-        <ul className="divide-y divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-800 dark:border-zinc-800">
+        <ul className="border-t border-line">
           {c.exhibits.map((e) => (
-            <li key={e.id} className={cx("flex flex-wrap items-center gap-3 px-4 py-2", !stageCounts(e.stage) && "bg-amber-50/50 dark:bg-amber-950/20")}>
+            <li key={e.id} className={cx("flex flex-wrap items-center gap-3 border-b border-line px-6 py-4 last:border-b-0", !stageCounts(e.stage) && "bg-sunken/60")}>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm">
+                <p className="truncate text-[15px]">
                   {e.source_url ? (
                     <a className="link" href={e.source_url} target="_blank" rel="noreferrer">
                       {e.title}
@@ -215,13 +221,13 @@ function CriterionSection({
                     e.title
                   )}
                 </p>
-                <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500">
-                  <span className="tabular-nums">{e.date}</span>
+                <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+                  <span className="num">{e.date}</span>
                   <Chip>{e.evidence_type}</Chip>
                   <StageChip stage={e.stage} />
-                  {!stageCounts(e.stage) && <span className="text-amber-700 dark:text-amber-400">not counted until completed</span>}
+                  {!stageCounts(e.stage) && <span className="font-mono text-[10.5px] text-ink uppercase">not counted until completed</span>}
                   {e.signals.map((s) => (
-                    <Chip key={s} tone="emerald">
+                    <Chip key={s} tone="ink">
                       {signalLabel[s] ?? s}
                     </Chip>
                   ))}
@@ -233,7 +239,7 @@ function CriterionSection({
               </Button>
               <select
                 aria-label="Re-map to another criterion"
-                className="input w-auto py-1 text-xs"
+                className="input h-8 w-auto py-0 font-mono text-[11px]"
                 value=""
                 onChange={(ev) => ev.target.value && remap(e, ev.target.value)}
               >
@@ -250,7 +256,7 @@ function CriterionSection({
           ))}
         </ul>
       ) : (
-        <div className="border-t border-zinc-100 dark:border-zinc-800">
+        <div className="border-t border-line">
           <Empty>
             No exhibits yet. Accepts types: {c.evidence_types.map((t) => <Chip key={t}>{t}</Chip>)}
           </Empty>
@@ -296,7 +302,8 @@ function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClo
   };
 
   return (
-    <Modal title={`Upload exhibit — ${crit.label}`} onClose={onClose}>
+    <Modal title="Upload exhibit" onClose={onClose}>
+      <p className="eyebrow -mt-1 mb-4">{crit.label}</p>
       <form onSubmit={submit} className="grid gap-3">
         <label>
           <span className="label">File (PDF, image, letter…)</span>
@@ -348,9 +355,10 @@ function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClo
             <legend className="label">Strength signals this document shows</legend>
             <div className="flex flex-col gap-1">
               {crit.strength_signals.map((s) => (
-                <label key={s.id} className="flex items-center gap-2 text-sm">
+                <label key={s.id} className="flex items-center gap-2.5 text-sm">
                   <input
                     type="checkbox"
+                    className="size-4 accent-[var(--ink)]"
                     checked={signals.includes(s.id)}
                     onChange={(e) => setSignals(e.target.checked ? [...signals, s.id] : signals.filter((x) => x !== s.id))}
                   />
@@ -360,7 +368,7 @@ function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClo
             </div>
           </fieldset>
         )}
-        <div className="flex justify-end gap-2">
+        <div className="mt-2 flex justify-end gap-2 border-t border-line pt-4">
           <Button type="button" onClick={onClose}>
             Cancel
           </Button>
@@ -391,17 +399,17 @@ function PreviewModal({ exhibit, onClose }: { exhibit: Exhibit; onClose: () => v
 
   return (
     <Modal title={exhibit.title} onClose={onClose} wide>
-      <p className="mb-3 font-mono text-xs text-zinc-500">{exhibit.file}</p>
+      <p className="mb-3 font-mono text-xs text-muted">{exhibit.file}</p>
       {isText ? (
         error ? (
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-alert">{error}</p>
         ) : (
-          <pre className="max-h-[60vh] overflow-auto rounded-md bg-zinc-50 p-3 text-xs whitespace-pre-wrap dark:bg-zinc-950">{text ?? "Loading…"}</pre>
+          <pre className="max-h-[60vh] overflow-auto bg-sunken p-3 text-xs whitespace-pre-wrap">{text ?? "Loading…"}</pre>
         )
       ) : isImage ? (
-        <img src={url} alt={exhibit.title} className="max-h-[65vh] rounded-md" />
+        <img src={url} alt={exhibit.title} className="max-h-[65vh]" />
       ) : ext === "pdf" ? (
-        <iframe src={url} title={exhibit.title} className="h-[65vh] w-full rounded-md border border-zinc-200 dark:border-zinc-800" />
+        <iframe src={url} title={exhibit.title} className="h-[65vh] w-full border border-line" />
       ) : (
         <Empty>No preview for .{ext} files.</Empty>
       )}

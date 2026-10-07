@@ -1,7 +1,9 @@
+import { ArrowRight, Square } from "lucide-react";
 import type { Overview } from "../api";
 import Briefing from "../components/Briefing";
 import Sparkline from "../components/Sparkline";
-import { Card, cx, Delta, Empty, ErrorBox, fmt, Loading, STATUS_STYLE, StatusMark } from "../components/ui";
+import { Card, cx, Delta, Empty, ErrorBox, Loading, STATUS_STYLE, StatusBadge, StatusMark } from "../components/ui";
+import { CountUp } from "../lib/motion";
 
 const metricLabel: Record<string, string> = {
   stars: "stars",
@@ -10,7 +12,18 @@ const metricLabel: Record<string, string> = {
   downloads_all_time: "downloads",
   likes: "likes",
   views: "views / day",
+  citations: "citations",
+  h_index: "h-index",
 };
+
+function More({ href, children }: { href: string; children: string }) {
+  return (
+    <a href={href} className="inline-flex items-center gap-1 font-mono text-[11px] tracking-[0.1em] text-ink-2 uppercase hover:text-ink">
+      {children}
+      <ArrowRight className="size-3.5" aria-hidden />
+    </a>
+  );
+}
 
 export default function OverviewPage({ data, error, retry }: { data: Overview | null; error: Error | null; retry: () => void }) {
   if (error && !data) return <ErrorBox error={error} retry={retry} />;
@@ -22,84 +35,80 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
   const slots = Math.max(board.target, board.banked + board.building);
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-4">
-      {/* progress */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-4 lg:col-span-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h1 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{board.profile_name}</h1>
-            <span className={cx("text-xs font-medium", remaining ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
-              {remaining ? `${remaining} more ${remaining > 1 ? "criteria" : "criterion"} to reach the threshold` : "Threshold met — keep building toward the target"}
-            </span>
-          </div>
-          <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">
-            <a href="#/evidence" className="hover:text-amber-600">
-              {board.banked}
+    <div className="flex flex-col gap-8">
+      {/* hero: where the case stands */}
+      <section className="card grid animate-rise @3xl:grid-cols-2 @5xl:grid-cols-[2fr_1fr_1fr]">
+        <div className="border-b border-line p-6 @3xl:col-span-2 md:p-8 @5xl:col-span-1 @5xl:border-r @5xl:border-b-0">
+          <p className="eyebrow">{board.profile_name}</p>
+          <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2">
+            <a href="#/evidence" className="display text-[96px] leading-[0.8] hover:text-ink-2 md:text-[132px]" aria-label={`${board.banked} banked of ${board.threshold} needed`}>
+              <CountUp value={board.banked} />
+              <span className="text-muted">/{board.threshold}</span>
             </a>
-            <span className="text-zinc-400"> banked</span>
-            <span className="mx-2 text-zinc-300 dark:text-zinc-600">/</span>
-            {board.threshold}
-            <span className="text-zinc-400"> needed</span>
-            <span className="ml-3 text-base font-normal text-zinc-500">
-              target {board.target} · {board.building} building
-            </span>
+            <div className="pb-2 font-mono text-xs leading-relaxed text-ink-2">
+              <p>CRITERIA BANKED / NEEDED</p>
+              <p>
+                TARGET {board.target} · {board.building} BUILDING
+              </p>
+            </div>
+          </div>
+          <div className="relative mt-8 flex gap-1.5" aria-label={`${board.banked} of ${board.target} target criteria banked`}>
+            {Array.from({ length: slots }, (_, i) => {
+              const status = i < board.banked ? "banked" : i < board.banked + board.building ? "building" : "gap";
+              return (
+                <div key={i} className="relative flex-1">
+                  <div
+                    className={cx("h-3 animate-rise border border-ink", STATUS_STYLE[status].mark)}
+                    style={{ animationDelay: `${120 + i * 60}ms` }}
+                  />
+                  {i === board.threshold - 1 && (
+                    <span className="absolute top-5 right-0 font-mono text-[10px] tracking-[0.12em] text-ink uppercase">↑ threshold</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-10 text-[15px] text-ink-2">
+            {remaining ? `${remaining} more ${remaining > 1 ? "criteria" : "criterion"} to reach the threshold.` : "Threshold met. Keep building toward the target."}
           </p>
-          <div className="mt-3 flex gap-1" aria-label={`${board.banked} of ${board.target} target criteria banked`}>
-            {Array.from({ length: slots }, (_, i) => (
-              <div
-                key={i}
-                className={cx(
-                  "h-2 flex-1 rounded-full",
-                  i < board.banked ? "bg-emerald-500" : i < board.banked + board.building ? "bg-amber-400/70" : "bg-zinc-200 dark:bg-zinc-800",
-                  i === board.threshold - 1 && "ring-2 ring-zinc-900/70 ring-offset-1 dark:ring-white/60 dark:ring-offset-zinc-900",
-                )}
-                title={i === board.threshold - 1 ? "threshold" : undefined}
-              />
-            ))}
-          </div>
-        </Card>
-        <div className="grid grid-cols-2 gap-4">
-          <a href="#/inbox" className="card block p-4 hover:border-amber-400">
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Inbox</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums">{data.inbox_pending}</p>
-            <p className="text-xs text-zinc-500">candidates to review</p>
-          </a>
-          <div className="card p-4">
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Filing target</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums">{daysToFiling !== null ? `${daysToFiling}d` : "—"}</p>
-            <p className="text-xs text-zinc-500">{target ?? "set in data/person.json"}</p>
-          </div>
         </div>
-      </div>
+        <a href="#/inbox" className="group flex flex-col justify-between border-b border-line p-6 hover:bg-sunken @3xl:border-r @3xl:border-b-0 md:p-8">
+          <p className="eyebrow">Inbox</p>
+          <p className="display my-6 text-7xl md:text-8xl">
+            <CountUp value={data.inbox_pending} />
+          </p>
+          <p className="flex items-center justify-between font-mono text-xs text-ink-2">
+            TO REVIEW <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden />
+          </p>
+        </a>
+        <div className="flex flex-col justify-between p-6 md:p-8">
+          <p className="eyebrow">Filing target</p>
+          <p className="display my-6 text-7xl md:text-8xl">
+            {daysToFiling !== null ? <CountUp value={daysToFiling} /> : "—"}
+            {daysToFiling !== null && <span className="text-muted">d</span>}
+          </p>
+          <p className="font-mono text-xs text-ink-2">{target ?? "SET IN DATA/PERSON.JSON"}</p>
+        </div>
+      </section>
 
       <Briefing />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* scoreboard */}
-        <Card
-          title="Criteria scoreboard"
-          className="lg:col-span-2"
-          actions={
-            <a href="#/evidence" className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white">
-              Evidence →
-            </a>
-          }
-        >
-          <ul className="grid divide-zinc-100 sm:grid-cols-2 dark:divide-zinc-800">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @5xl:grid-cols-12">
+        <Card title="Criteria scoreboard" className="@5xl:col-span-8" actions={<More href="#/evidence">Evidence</More>}>
+          <ul className="grid @2xl:grid-cols-2">
             {board.criteria.map((c) => (
-              <li key={c.id} className="border-b border-zinc-100 last:border-b-0 sm:odd:border-r dark:border-zinc-800">
-                <a href={`#/evidence?c=${c.id}`} className="flex items-start gap-2.5 px-4 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50" title={c.reason}>
+              <li key={c.id} className="border-b border-line @2xl:odd:border-r">
+                <a href={`#/evidence?c=${c.id}`} className="flex h-full items-start gap-4 px-5 py-4 transition-colors hover:bg-sunken" title={c.reason}>
                   <StatusMark status={c.status} className="mt-1.5" />
                   <span className="min-w-0 flex-1">
-                    <span className={cx("block truncate text-sm", c.status === "dropped" && "text-zinc-400 line-through")}>{c.label}</span>
-                    <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">
-                      {STATUS_STYLE[c.status].label}
-                      {c.status === "building" && c.needed_exhibits > 0 && ` · needs ${c.needed_exhibits} more`}
-                      {c.in_progress_count > 0 && ` · ${c.in_progress_count} in progress`}
-                      {c.matched_signals.length > 0 && ` · ${c.matched_signals.length} signal${c.matched_signals.length > 1 ? "s" : ""}`}
+                    <span className={cx("block text-[15px] leading-snug", c.status === "dropped" && "text-muted line-through")}>{c.label}</span>
+                    <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-ink-2">
+                      <StatusBadge status={c.status} />
+                      {c.status === "building" && c.needed_exhibits > 0 && <span>· NEEDS {c.needed_exhibits} MORE</span>}
+                      {c.in_progress_count > 0 && <span>· {c.in_progress_count} IN PROGRESS</span>}
                     </span>
                   </span>
-                  <span className="text-sm font-medium tabular-nums text-zinc-500" aria-label={`${c.exhibit_count} exhibits`}>
+                  <span className="display text-4xl text-ink-2" aria-label={`${c.exhibit_count} exhibits`}>
                     {c.exhibit_count}
                   </span>
                 </a>
@@ -108,16 +117,14 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
           </ul>
         </Card>
 
-        <div className="flex flex-col gap-4">
-          <Card title="This week — only you can do these">
+        <div className="flex flex-col gap-8 @5xl:col-span-4">
+          <Card title="Only you can do these">
             {data.tasks.length ? (
-              <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <ul>
                 {data.tasks.slice(0, 5).map((t, i) => (
-                  <li key={i} className="flex items-start gap-2 px-4 py-2 text-sm">
-                    <span className="mt-0.5 text-zinc-400" aria-hidden>
-                      ☐
-                    </span>
-                    <span className="min-w-0 flex-1">
+                  <li key={i} className="flex items-start gap-3 border-b border-line px-5 py-3.5 text-[15px] last:border-b-0">
+                    <Square className="mt-1 size-3.5 shrink-0 text-ink-2" strokeWidth={1.5} aria-hidden />
+                    <span className="min-w-0 flex-1 leading-snug">
                       {t.link ? (
                         <a href={t.link} className="link" target={t.link.startsWith("#") ? undefined : "_blank"} rel="noreferrer">
                           {t.title}
@@ -126,7 +133,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
                         t.title
                       )}
                     </span>
-                    {t.due && <span className="shrink-0 text-xs text-zinc-500 tabular-nums">{t.due.slice(5)}</span>}
+                    {t.due && <span className="num shrink-0 text-xs text-ink-2">{t.due.slice(5)}</span>}
                   </li>
                 ))}
               </ul>
@@ -134,73 +141,67 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
               <Empty>Nothing needs you this week.</Empty>
             )}
           </Card>
-          <Card title="Next deadlines">
+          <Card title="Next deadlines" actions={<More href="#/calendar">Calendar</More>}>
             {data.deadlines.length ? (
-              <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <ul>
                 {data.deadlines.map((d) => (
-                  <li key={d.id} className="flex items-center gap-3 px-4 py-2 text-sm">
-                    <span
-                      className={cx(
-                        "w-10 shrink-0 text-right text-xs font-semibold tabular-nums",
-                        d.days_left <= 7 ? "text-red-600 dark:text-red-400" : d.days_left <= 14 ? "text-amber-600" : "text-zinc-500",
-                      )}
-                    >
-                      {d.days_left}d
+                  <li key={d.id} className="flex items-baseline gap-4 border-b border-line px-5 py-3.5 last:border-b-0">
+                    <span className={cx("display w-12 shrink-0 text-3xl", d.days_left < 0 && "text-alert")}>
+                      {d.days_left < 0 ? `${-d.days_left}d` : `${d.days_left}d`}
                     </span>
-                    <span className="min-w-0 flex-1 truncate">
-                      {d.url ? (
-                        <a href={d.url} className="link" target="_blank" rel="noreferrer">
-                          {d.title}
-                        </a>
-                      ) : (
-                        d.title
-                      )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px]">
+                        {d.url ? (
+                          <a href={d.url} className="link" target="_blank" rel="noreferrer">
+                            {d.title}
+                          </a>
+                        ) : (
+                          d.title
+                        )}
+                      </span>
+                      <span className={cx("num text-[11px]", d.days_left < 0 ? "text-alert" : "text-ink-2")}>
+                        {d.days_left < 0 ? "OVERDUE · " : ""}
+                        {d.due}
+                      </span>
                     </span>
-                    <span className="text-xs text-zinc-500 tabular-nums">{d.due}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <Empty>No upcoming deadlines in data/deadlines.json.</Empty>
+              <Empty>No upcoming deadlines.</Empty>
             )}
           </Card>
         </div>
       </div>
 
-      {/* sparklines */}
-      <Card
-        title="Metrics"
-        actions={
-          <a href="#/metrics" className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white">
-            All metrics →
-          </a>
-        }
-      >
+      <Card title="Metrics" actions={<More href="#/metrics">All metrics</More>}>
         {data.sparklines.length ? (
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-px bg-zinc-100 dark:bg-zinc-800">
+          <div className="grid grid-cols-1 gap-px bg-line @2xl:grid-cols-2 @5xl:grid-cols-3">
             {data.sparklines.map((s) => (
               <a
                 key={`${s.source}:${s.item}:${s.metric}`}
                 href={`#/metrics?item=${encodeURIComponent(s.item)}`}
-                className="bg-white px-4 py-2.5 hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
+                className="flex flex-col gap-3 bg-surface px-5 py-5 transition-colors hover:bg-sunken"
               >
-                <p className="truncate text-xs text-zinc-500 dark:text-zinc-400" title={s.item}>
+                <p className="num truncate text-[11px] text-ink-2" title={s.item}>
                   {s.item.replace(/^datasets\//, "")}
                 </p>
-                <p className="mt-0.5 flex items-baseline gap-1.5">
-                  <span className="text-lg font-semibold tabular-nums">{fmt(s.value)}</span>
-                  <span className="text-xs text-zinc-500">{metricLabel[s.metric] ?? s.metric}</span>
+                <p className="flex items-baseline gap-2">
+                  <span className="display text-5xl">
+                    <CountUp value={s.value} />
+                  </span>
+                  <span className="font-mono text-[11px] text-muted uppercase">{metricLabel[s.metric] ?? s.metric}</span>
                 </p>
-                <Sparkline points={s.points} />
-                <p className="text-[11px] text-zinc-500">
-                  <Delta value={s.delta} /> since {s.previous_date?.slice(5) ?? "—"}
+                <Sparkline points={s.points} className="h-12 w-full" />
+                <p className="flex items-center gap-2 font-mono text-[11px] text-muted">
+                  <Delta value={s.delta} /> SINCE {s.previous_date?.slice(5) ?? "—"}
                 </p>
               </a>
             ))}
           </div>
         ) : (
           <Empty>
-            No metrics yet — <a href="#/sources" className="link">add a source</a>, then take a snapshot.
+            No metrics yet. <a href="#/sources" className="link">Add a source</a>, then take a snapshot.
           </Empty>
         )}
       </Card>

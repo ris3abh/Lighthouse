@@ -4,16 +4,17 @@ import { useRefresh } from "../App";
 import Markdown from "../components/Markdown";
 import RuleCheckView from "../components/RuleCheck";
 import ToolCall from "../components/ToolCall";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
+import { Play } from "lucide-react";
+import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, Progress, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 import { cacheRate, countTokens, fmtPct, fmtTokens, fmtUsd, itemsFromTimeline, useRunStream } from "../runStream";
 
 const KIND_LABEL = { chat: "chat", manual: "manual", scheduled: "scheduled" } as const;
 const STATUS_TONE: Record<string, string> = {
-  running: "text-amber-600",
-  done: "text-emerald-600",
-  error: "text-red-600",
-  stopped: "text-zinc-500",
+  running: "text-ink",
+  done: "text-ink",
+  error: "text-alert",
+  stopped: "text-muted",
 };
 
 function duration(r: AgentRunView) {
@@ -67,87 +68,82 @@ export default function Agent({ focus }: { focus: string | null }) {
   };
 
   const b = status.budget;
+  const monthPct = b.monthly_tokens ? Math.min(100, (100 * status.month.tokens) / b.monthly_tokens) : 0;
   return (
-    <div className="mx-auto max-w-7xl">
+    <div>
       <PageHeader
+        eyebrow={`${runs.length} runs`}
         title="Agent"
         subtitle="Every agent run, from chat, by hand or on a schedule: what it read, what it proposed, what it cost."
       />
 
-      <div className="mb-4 grid gap-4 md:grid-cols-3">
-        <Card className="p-4 md:col-span-2">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (prompt.trim()) start();
-            }}
-          >
-            <label className="label" htmlFor="agent-task">
-              Run a task
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="agent-task"
-                className="input"
-                placeholder="e.g. Find peer-review calls for ML workshops closing in the next 6 weeks"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                disabled={!status.available}
-              />
-              <Button type="submit" variant="primary" disabled={!prompt.trim() || busy || !status.available}>
-                Run
-              </Button>
-            </div>
-            <p className="mt-1.5 text-xs text-zinc-500">
-              {status.available
-                ? `chat ${status.models.chat} · tasks ${status.models.task} · missions ${status.models.mission} · effort ${status.effort} · web search ${status.web_search ? "on" : "off"}`
-                : `Unavailable: ${status.reason}`}
-            </p>
-          </form>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs font-medium text-zinc-500">This month</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{fmtUsd(status.month.usd)}</p>
-          <p className="text-xs text-zinc-500">
-            {fmtTokens(status.month.tokens)} of {fmtTokens(b.monthly_tokens)} tokens
-            {b.monthly_usd ? ` · cap $${b.monthly_usd}` : ""}
-          </p>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-            <div
-              className="h-full rounded-full bg-amber-500"
-              style={{ width: `${Math.min(100, (100 * status.month.tokens) / b.monthly_tokens)}%` }}
+      <section className="card mb-8 grid animate-rise @4xl:grid-cols-[2fr_1fr]">
+        <form
+          className="border-b border-line p-6 @4xl:border-r @4xl:border-b-0 md:p-8"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (prompt.trim()) start();
+          }}
+        >
+          <label className="label" htmlFor="agent-task">
+            Run a task
+          </label>
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+            <input
+              id="agent-task"
+              className="input h-12 text-base"
+              placeholder="Find peer-review calls for ML workshops closing in the next 6 weeks"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              disabled={!status.available}
             />
+            <Button type="submit" variant="primary" className="h-12 px-6" disabled={!prompt.trim() || busy || !status.available}>
+              <Play /> Run
+            </Button>
           </div>
-          <p className="mt-1.5 text-[11px] text-zinc-500">
-            Prompt cache: {fmtPct(status.month.cache_hit_rate)} of input tokens served from cache ({fmtTokens(status.month.cache_read)} cached,{" "}
-            {fmtTokens(status.month.cache_write)} written, {fmtTokens(status.month.uncached_input)} uncached)
+          <p className={cx("mt-4 font-mono text-[11px] leading-relaxed uppercase", status.available ? "text-muted" : "text-alert")}>
+            {status.available
+              ? `chat ${status.models.chat} · tasks ${status.models.task} · missions ${status.models.mission} · effort ${status.effort} · web search ${status.web_search ? "on" : "off"}`
+              : `Unavailable: ${status.reason}`}
           </p>
-          <p className="mt-1 text-[11px] text-zinc-400">
-            Per run: {fmtTokens(b.per_run_tokens)} tokens{b.per_run_usd ? `, $${b.per_run_usd}` : ""} · set in lighthouse.yaml
+        </form>
+        <div className="p-6 md:p-8">
+          <p className="eyebrow">This month</p>
+          <p className="display mt-3 text-6xl">{fmtUsd(status.month.usd)}</p>
+          <p className="mt-2 font-mono text-xs text-ink-2">
+            {fmtTokens(status.month.tokens)} / {fmtTokens(b.monthly_tokens)} TOKENS{b.monthly_usd ? ` · CAP $${b.monthly_usd}` : ""}
           </p>
-        </Card>
-      </div>
+          <div className="mt-4">
+            <Progress value={monthPct} max={100} alert={monthPct >= 90} label="Monthly token budget used" />
+          </div>
+          <p className="mt-4 text-xs leading-relaxed text-ink-2">
+            Prompt cache served {fmtPct(status.month.cache_hit_rate)} of input ({fmtTokens(status.month.cache_read)} cached, {fmtTokens(status.month.cache_write)}{" "}
+            written, {fmtTokens(status.month.uncached_input)} uncached). Per run: {fmtTokens(b.per_run_tokens)} tokens
+            {b.per_run_usd ? `, $${b.per_run_usd}` : ""}.
+          </p>
+        </div>
+      </section>
 
-      <Card title="Missions" className="mb-4">
-        <ul className="grid divide-y divide-zinc-100 md:grid-cols-2 md:divide-x md:divide-y-0 dark:divide-zinc-800">
+      <Card title="Missions" className="mb-8">
+        <ul className="grid divide-y divide-line @3xl:grid-cols-2 @3xl:divide-x @3xl:divide-y-0">
           {missionList.map((m) => (
-            <li key={m.name} className="flex items-start gap-3 p-4">
+            <li key={m.name} className="flex items-start gap-4 p-6">
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-2 text-sm font-medium">
-                  {m.title} <Chip tone={m.enabled ? "emerald" : "zinc"}>{m.enabled ? "on" : "off"}</Chip>
+                <p className="flex items-center gap-3">
+                  <span className="display text-3xl">{m.title}</span> <Chip tone={m.enabled ? "ink" : "muted"}>{m.enabled ? "on" : "off"}</Chip>
                 </p>
-                <p className="mt-0.5 text-xs text-zinc-500">
+                <p className="mt-2 text-sm leading-relaxed text-ink-2">
                   {m.name === "opportunity_scout"
                     ? "Weekly: finds judging calls, CFPs, awards and memberships for your weakest criteria."
                     : "Daily: what changed and the three things to do this week. Skipped (no cost) when nothing changed."}
                 </p>
-                <p className="mt-1 text-[11px] text-zinc-400">
+                <p className="mt-3 font-mono text-[10.5px] text-muted uppercase">
                   {m.enabled && m.next_run ? `Next ${new Date(m.next_run).toLocaleString()} · ` : m.enabled ? "" : "Turn on in Settings · "}
                   {m.model}
                   {m.last_run && (
                     <>
                       {" · last "}
-                      <a className="underline" href={`#/agent?run=${m.last_run.id}`}>
+                      <a className="link" href={`#/agent?run=${m.last_run.id}`}>
                         {new Date(m.last_run.at).toLocaleDateString()}
                       </a>
                       {`, ${m.last_run.proposals} proposal(s), ${fmtUsd(m.last_run.cost_usd)}`}
@@ -163,11 +159,11 @@ export default function Agent({ focus }: { focus: string | null }) {
         </ul>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @5xl:grid-cols-[400px_minmax(0,1fr)]">
         <Card
           title="Runs"
           actions={
-            <select aria-label="Filter runs" className="input w-auto py-1 text-xs" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
+            <select aria-label="Filter runs" className="input h-8 w-auto py-0 font-mono text-[11px]" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
               <option value="all">All</option>
               <option value="chat">Chat</option>
               <option value="manual">Manual</option>
@@ -176,7 +172,7 @@ export default function Agent({ focus }: { focus: string | null }) {
           }
         >
           {shown.length ? (
-            <ul className="max-h-[70vh] divide-y divide-zinc-100 overflow-y-auto dark:divide-zinc-800">
+            <ul className="max-h-[75vh] overflow-y-auto">
               {shown.map((r) => (
                 <li key={r.id}>
                   <button
@@ -185,15 +181,15 @@ export default function Agent({ focus }: { focus: string | null }) {
                       setSelected(r.id);
                       window.location.hash = `#/agent?run=${r.id}`;
                     }}
-                    className={cx("w-full px-3 py-2 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50", current === r.id && "bg-zinc-100 dark:bg-zinc-800")}
+                    className={cx("w-full border-b border-l-[3px] border-b-line px-5 py-4 text-left transition-colors hover:bg-sunken", current === r.id ? "border-l-ink bg-sunken" : "border-l-transparent")}
                   >
-                    <div className="flex items-center gap-1.5 text-[11px]">
+                    <div className="flex items-center gap-2 text-[11px]">
                       <Chip>{r.mission ? (missionList.find((m) => m.name === r.mission)?.title ?? r.mission) : KIND_LABEL[r.kind]}</Chip>
-                      <span className={cx("font-medium", STATUS_TONE[r.status])}>{r.status}</span>
-                      <span className="ml-auto text-zinc-400 tabular-nums">{new Date(r.started_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                      <span className={cx("font-mono text-[11px] uppercase", STATUS_TONE[r.status])}>{r.status}</span>
+                      <span className="num ml-auto text-muted">{new Date(r.started_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                     </div>
-                    <p className="mt-0.5 truncate text-sm">{r.prompt}</p>
-                    <p className="text-[11px] text-zinc-500 tabular-nums">
+                    <p className="mt-2 truncate text-[15px]">{r.prompt}</p>
+                    <p className="num mt-1 text-[10.5px] text-muted">
                       {r.tool_calls ?? 0} tool call{r.tool_calls === 1 ? "" : "s"} · {r.sources.length} source{r.sources.length === 1 ? "" : "s"} ·{" "}
                       {r.proposals.length} proposal{r.proposals.length === 1 ? "" : "s"} · {fmtTokens(r.counted_tokens)} · {fmtPct(cacheRate(r.usage))} cached ·{" "}
                       {fmtUsd(r.cost_usd)}
@@ -235,12 +231,12 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
   const tokens = live ? stream.tokens : countTokens(run.usage);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="@container flex min-w-0 flex-col gap-8">
       <Card
         title={
           <span className="flex items-center gap-2">
             <Chip>{run.kind}</Chip>
-            <span className={cx(STATUS_TONE[live ? "running" : run.status])}>{live ? "running" : run.status}</span>
+            <span className={cx("uppercase", STATUS_TONE[live ? "running" : run.status])}>{live ? "running" : run.status}</span>
           </span>
         }
         actions={
@@ -251,52 +247,52 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
           ) : undefined
         }
       >
-        <div className="px-4 py-3">
-          <p className="text-sm font-medium">{run.prompt}</p>
-          <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-5">
+        <div className="px-6 py-6">
+          <p className="display text-3xl md:text-4xl">{run.prompt}</p>
+          <dl className="mt-6 grid grid-cols-2 gap-px border border-line bg-line text-xs @2xl:grid-cols-5 [&>div]:bg-surface [&>div]:p-3 [&_dd]:mt-1 [&_dd]:font-mono [&_dd]:text-sm [&_dt]:eyebrow">
             <div>
-              <dt className="text-zinc-500">Cost</dt>
-              <dd className="font-medium tabular-nums">{fmtUsd(run.cost_usd)}</dd>
+              <dt className="text-muted">Cost</dt>
+              <dd>{fmtUsd(run.cost_usd)}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Tokens (counted)</dt>
-              <dd className="font-medium tabular-nums">{fmtTokens(tokens)}</dd>
+              <dt className="text-muted">Tokens (counted)</dt>
+              <dd>{fmtTokens(tokens)}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Input: cached / written / uncached</dt>
-              <dd className="tabular-nums" title="Cached = read from the prompt cache (system prompt, tools, earlier turns); written = added to the cache this run; uncached = billed at the full rate">
+              <dt className="text-muted">Input: cached / written / uncached</dt>
+              <dd title="Cached = read from the prompt cache (system prompt, tools, earlier turns); written = added to the cache this run; uncached = billed at the full rate">
                 {fmtTokens(run.usage.cache_read_input_tokens)} / {fmtTokens(run.usage.cache_creation_input_tokens)} /{" "}
                 {fmtTokens(run.usage.input_tokens)}{" "}
-                <span className="text-zinc-400">({fmtPct(cacheRate(run.usage))} cached)</span>
+                <span className="text-muted">({fmtPct(cacheRate(run.usage))} cached)</span>
               </dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Output</dt>
-              <dd className="tabular-nums">{fmtTokens(run.usage.output_tokens)}</dd>
+              <dt className="text-muted">Output</dt>
+              <dd>{fmtTokens(run.usage.output_tokens)}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Duration</dt>
-              <dd className="tabular-nums">{duration(run)}</dd>
+              <dt className="text-muted">Duration</dt>
+              <dd>{duration(run)}</dd>
             </div>
           </dl>
-          <p className="mt-2 text-[11px] text-zinc-400">
+          <p className="mt-4 font-mono text-[10.5px] text-muted uppercase">
             {run.engine} · {run.model}
             {run.stop_reason && ` · ${run.stop_reason}`}
             {run.conversation_id && " · from chat"}
           </p>
-          {run.error && <p className="mt-2 text-xs text-red-600">{run.error}</p>}
+          {run.error && <p className="mt-2 text-xs text-alert">{run.error}</p>}
         </div>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @4xl:grid-cols-[minmax(0,1fr)_300px]">
         <Card title="What it did">
-          <div className="flex flex-col gap-1.5 p-3">
+          <div className="flex flex-col gap-2 p-5">
             {items.length ? (
               items.map((it, i) =>
                 it.kind === "tool" ? (
                   <ToolCall key={i} t={it.tool} />
                 ) : it.kind === "error" ? (
-                  <p key={i} className="text-xs text-red-600">
+                  <p key={i} className="text-xs text-alert">
                     {it.text}
                   </p>
                 ) : (
@@ -306,11 +302,11 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
             ) : (
               <Empty>{live ? "Starting…" : "Nothing recorded."}</Empty>
             )}
-            {stream.error && <p className="text-xs text-red-600">{stream.error}</p>}
+            {stream.error && <p className="text-xs text-alert">{stream.error}</p>}
           </div>
         </Card>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-8">
           {run.rule_check && run.rule_check.claims.length > 0 && (
             <div>
               <RuleCheckView
@@ -326,13 +322,13 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
           )}
           <Card title={`Sources read (${run.sources.length})`}>
             {run.sources.length ? (
-              <ul className="divide-y divide-zinc-100 text-xs dark:divide-zinc-800">
+              <ul className="divide-y divide-line text-xs">
                 {run.sources.map((s, i) => (
-                  <li key={i} className="px-3 py-2">
+                  <li key={i} className="px-5 py-3">
                     <a href={s.url} target="_blank" rel="noreferrer" className="link break-all">
                       {s.title || s.url}
                     </a>
-                    {s.observation_id && <p className="mt-0.5 font-mono text-[10px] text-zinc-400">snapshot {s.observation_id}</p>}
+                    {s.observation_id && <p className="mt-0.5 font-mono text-[10px] text-muted">snapshot {s.observation_id}</p>}
                   </li>
                 ))}
               </ul>
@@ -342,15 +338,15 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
           </Card>
           <Card title={`Proposals (${run.proposals.length})`}>
             {run.proposals.length ? (
-              <ul className="divide-y divide-zinc-100 text-xs dark:divide-zinc-800">
+              <ul className="divide-y divide-line text-xs">
                 {run.proposals.map((id) => {
                   const c = byId.get(id);
                   return (
-                    <li key={id} className="px-3 py-2">
+                    <li key={id} className="px-5 py-3">
                       <a href="#/inbox" className="link">
                         {c?.title ?? id}
                       </a>
-                      <p className="mt-0.5 text-[11px] text-zinc-500">
+                      <p className="mt-0.5 text-[11px] text-muted">
                         {c ? `${c.kind} · ${c.status}` : "accepted or removed from the Inbox"}
                       </p>
                     </li>
@@ -363,12 +359,12 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
           </Card>
           <Card title={`Changes (${changes.length})`}>
             {changes.length ? (
-              <ul className="divide-y divide-zinc-100 text-xs dark:divide-zinc-800">
+              <ul className="divide-y divide-line text-xs">
                 {changes.map((ch) => (
-                  <li key={ch.id} className={cx("px-3 py-2", ch.undone && "opacity-60")}>
+                  <li key={ch.id} className={cx("px-5 py-3", ch.undone && "opacity-50")}>
                     <div className="flex items-start gap-1.5">
                       <span className="min-w-0 flex-1">
-                        {ch.auto && <Chip tone="amber">auto</Chip>} <span className="font-mono text-[11px]">{ch.action}</span> {ch.summary}
+                        {ch.auto && <Chip tone="outline">auto</Chip>} <span className="font-mono text-[11px]">{ch.action}</span> {ch.summary}
                       </span>
                       {ch.undoable && !ch.undone && (
                         <Button
@@ -389,7 +385,7 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
                         </Button>
                       )}
                     </div>
-                    <p className="text-[11px] text-zinc-400">
+                    <p className="text-[11px] text-muted">
                       {new Date(ch.at).toLocaleString()}
                       {ch.undone && " · undone"}
                     </p>

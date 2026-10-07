@@ -44,17 +44,17 @@ export default function ToolCall({ t }: { t: ToolView }) {
   const { icon, text } = describe(t);
   const running = t.ok === undefined || t.ok === null;
   return (
-    <div className={cx("rounded-md border px-2 py-1.5 text-xs", t.ok === false ? "border-red-200 dark:border-red-900" : "border-zinc-200 dark:border-zinc-800")}>
+    <div className={cx("border px-2 py-1.5 text-xs", t.ok === false ? "border-alert" : "border-line")}>
       <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-start gap-1.5 text-left" aria-expanded={open}>
         <span aria-hidden>{icon}</span>
         <span className="min-w-0 flex-1">{text}</span>
-        <span className={cx("shrink-0", running ? "animate-pulse text-zinc-400" : t.ok ? "text-emerald-600" : "text-red-600")}>
+        <span className={cx("shrink-0", running ? "animate-pulse text-muted" : t.ok ? "text-ink" : "text-alert")}>
           {running ? "…" : t.ok ? "✓" : "✗"}
         </span>
       </button>
       {t.touches && t.touches.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-1 pl-5">
-          <span className="text-[11px] text-zinc-400">{t.read_only === false ? "wrote" : "read"}</span>
+          <span className="text-[11px] text-muted">{t.read_only === false ? "wrote" : "read"}</span>
           {t.touches.map((f) => (
             <Chip key={f}>{f}</Chip>
           ))}
@@ -67,8 +67,8 @@ export default function ToolCall({ t }: { t: ToolView }) {
       )}
       {open && (
         <div className="mt-1.5 space-y-1 pl-5">
-          <pre className="max-h-40 overflow-auto rounded bg-zinc-50 p-1.5 text-[11px] whitespace-pre-wrap dark:bg-zinc-950">{JSON.stringify(t.input, null, 2)}</pre>
-          {t.summary && <p className="text-[11px] whitespace-pre-wrap text-zinc-500">{t.summary}</p>}
+          <pre className="max-h-40 overflow-auto bg-sunken p-1.5 text-[11px] whitespace-pre-wrap">{JSON.stringify(t.input, null, 2)}</pre>
+          {t.summary && <p className="text-[11px] whitespace-pre-wrap text-muted">{t.summary}</p>}
         </div>
       )}
     </div>

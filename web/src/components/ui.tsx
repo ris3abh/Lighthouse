@@ -15,7 +15,8 @@ const VARIANTS: Record<Variant, string> = {
   primary: "border border-ink bg-ink text-on-ink hover:bg-ink-2 hover:border-ink-2",
   secondary: "border border-ink bg-transparent text-ink hover:bg-sunken",
   ghost: "border border-transparent text-ink-2 hover:bg-sunken hover:text-ink",
-  danger: "border border-alert text-alert hover:bg-alert-soft",
+  // Destructive but not "attention": monochrome. Red is reserved for conflicts, overdue and refusals.
+  danger: "border border-line text-ink-2 hover:border-ink hover:text-ink",
 };
 
 export function Button({
@@ -60,20 +61,16 @@ export function StatusBadge({ status }: { status: CriterionStatus }) {
   );
 }
 
-type Tone = "zinc" | "amber" | "emerald" | "red" | "ink" | "outline" | "muted" | "alert";
+type Tone = "ink" | "outline" | "muted" | "alert";
 
-/** Tag. Monochrome: "ink"/"emerald" = solid (done), "outline"/"amber" = framed (in progress), "muted"/"zinc" =
- * quiet, "alert"/"red" = needs attention (the only red). */
-export function Chip({ children, tone = "zinc", className }: { children: ReactNode; tone?: Tone; className?: string }) {
+/** Tag. Monochrome: "ink" = solid (done, positive), "outline" = framed (in progress, notice), "muted" = quiet,
+ * "alert" = needs attention (the only red). */
+export function Chip({ children, tone = "muted", className }: { children: ReactNode; tone?: Tone; className?: string }) {
   const tones: Record<Tone, string> = {
     ink: "border-ink bg-ink text-on-ink",
-    emerald: "border-ink bg-ink text-on-ink",
     outline: "border-ink text-ink",
-    amber: "border-ink text-ink",
     muted: "border-line text-ink-2",
-    zinc: "border-line text-ink-2",
     alert: "border-alert text-alert",
-    red: "border-alert text-alert",
   };
   return (
     <span className={cx("inline-flex h-5 items-center gap-1 border px-1.5 font-mono text-[10.5px] tracking-[0.06em] whitespace-nowrap uppercase [&_svg]:size-3", tones[tone], className)}>
@@ -215,7 +212,7 @@ export function Segmented<T extends string>({
           aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
           className={cx(
-            "inline-flex items-center gap-1.5 font-mono tracking-[0.08em] uppercase transition-colors duration-150 [&_svg]:size-3.5",
+            "inline-flex items-center gap-1.5 font-mono tracking-[0.08em] whitespace-nowrap uppercase transition-colors duration-150 [&_svg]:size-3.5",
             size === "sm" ? "h-7 px-2 text-[10.5px]" : "h-8 px-3 text-[11px]",
             o.value === value ? "bg-ink text-on-ink" : "text-ink-2 hover:bg-sunken hover:text-ink",
           )}
@@ -275,7 +272,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             className={cx(
               "pointer-events-auto max-w-sm animate-rise border px-4 py-3 text-sm",
-              t.tone === "error" ? "border-alert bg-alert text-white dark:text-paper" : "border-ink bg-ink text-on-ink",
+              t.tone === "error" ? "border-alert bg-alert text-on-alert" : "border-ink bg-ink text-on-ink",
             )}
           >
             {t.text}

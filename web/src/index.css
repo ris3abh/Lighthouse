@@ -18,6 +18,7 @@
   --alert: #a8372b;
   --alert-soft: #f3dcd6;
   --on-ink: #f3f1eb;
+  --on-alert: #ffffff;
   color-scheme: light;
 }
 
@@ -33,6 +34,7 @@
   --alert: #e2705f;
   --alert-soft: #3a1d18;
   --on-ink: #0d0d0c;
+  --on-alert: #0d0d0c;
   color-scheme: dark;
 }
 
@@ -52,6 +54,7 @@
   --color-alert: var(--alert);
   --color-alert-soft: var(--alert-soft);
   --color-on-ink: var(--on-ink);
+  --color-on-alert: var(--on-alert);
 
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --animate-rise: rise 320ms var(--ease-out-quint) both;
@@ -77,6 +80,11 @@
     }
     40% {
       transform: scale(1.12);
+    }
+  }
+  @keyframes dot-grow {
+    from {
+      transform: scale(0.5);
     }
   }
   @keyframes tool-pulse {
@@ -180,6 +188,11 @@
   ::view-transition-new(*) {
     animation: none !important;
   }
+}
+
+.recharts-active-dot circle {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 ::view-transition-old(root),

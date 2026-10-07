@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { Trash2, Check, ChevronLeft, ChevronRight, Download, Link2, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { api, type DeadlineItem, type JobStatus, type PipelineCard } from "../api";
 import { useRefresh } from "../App";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, Modal, PageHeader, useToast } from "../components/ui";
+import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, Modal, PageHeader, Segmented, useToast } from "../components/ui";
+import { withViewTransition } from "../lib/motion";
 import { today, useLoad } from "../hooks";
 
 const KINDS = ["application", "submission", "filing", "follow_up", "personal", "other"];
@@ -19,6 +21,7 @@ type CalEvent = {
   title: string;
   kind: "deadline" | "follow_up";
   done?: boolean;
+  overdue?: boolean;
   urgent?: boolean;
   deadline?: DeadlineItem;
   detail?: string;
@@ -35,31 +38,58 @@ function cronText(expr: string | null) {
   return known[expr] ?? expr;
 }
 
-function EventChip({ e, onEdit, large }: { e: CalEvent; onEdit: (d: DeadlineItem) => void; large?: boolean }) {
+function EventChip({
+  e,
+  onEdit,
+  large,
+  onDragStart,
+}: {
+  e: CalEvent;
+  onEdit: (d: DeadlineItem) => void;
+  large?: boolean;
+  onDragStart?: (id: string) => void;
+}) {
   const tone =
     e.kind === "follow_up"
-      ? "bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200"
+      ? "border-dashed border-ink-2 text-ink-2"
       : e.done
-        ? "bg-zinc-100 text-zinc-400 line-through dark:bg-zinc-800"
-        : e.urgent
-          ? "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200"
-          : "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200";
+        ? "border-line text-muted line-through"
+        : e.overdue
+          ? "border-alert bg-alert-soft text-alert"
+          : e.urgent
+            ? "border-ink bg-ink text-on-ink"
+            : "border-ink text-ink";
   const body = (
     <>
-      <span className={large ? "block font-medium" : "truncate"}>{e.title}</span>
-      {large && e.detail && <span className="block text-[11px] opacity-75">{e.detail}</span>}
+      <span className={large ? "block font-medium" : "block truncate"}>{e.title}</span>
+      {large && e.detail && <span className="mt-0.5 block font-mono text-[10px] uppercase opacity-75">{e.detail}</span>}
     </>
   );
+  const base = cx("block w-full border px-1.5 py-1 text-left text-[11.5px] leading-tight transition-colors", tone);
+  // A stable view-transition name lets a moved event glide to its new day.
+  const vt = e.deadline ? { viewTransitionName: `ev-${e.deadline.id}` } : undefined;
   if (e.deadline) {
     const d = e.deadline;
     return (
-      <button type="button" title={`${e.title}: click to edit`} onClick={() => onEdit(d)} className={cx("w-full rounded px-1 py-0.5 text-left text-[11px] hover:ring-1 hover:ring-amber-500", !large && "truncate", tone)}>
+      <button
+        type="button"
+        title={`${e.title}: click to edit, or drag to another day`}
+        onClick={() => onEdit(d)}
+        draggable={!e.done}
+        onDragStart={(ev) => {
+          ev.dataTransfer.setData("text/plain", d.id);
+          ev.dataTransfer.effectAllowed = "move";
+          onDragStart?.(d.id);
+        }}
+        className={cx(base, "cursor-grab hover:outline-1 hover:outline-ink active:cursor-grabbing")}
+        style={vt}
+      >
         {body}
       </button>
     );
   }
   return (
-    <a href="#/pipeline" title={e.title} className={cx("block rounded px-1 py-0.5 text-[11px]", !large && "truncate", tone)}>
+    <a href="#/pipeline" title={e.title} className={base}>
       {body}
     </a>
   );
@@ -81,23 +111,30 @@ export default function Calendar() {
   const [form, setForm] = useState({ title: "", due: today(7), kind: "application" });
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<DeadlineItem | null>(null);
+  const [moved, setMoved] = useState<Record<string, string>>({}); // optimistic due dates while a move saves
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   const [deadlines, pipeline, jobs] = data.data ?? [[], [], []];
+  useEffect(() => setMoved({}), [deadlines]);
   const events = useMemo(() => {
-    const out: CalEvent[] = (deadlines as DeadlineItem[]).map((d) => ({
-      date: d.due,
-      title: d.title,
-      kind: "deadline",
-      done: d.done,
-      urgent: !d.done && d.days_left <= 3,
-      deadline: d,
-      detail: d.kind + (d.human_only ? " · needs you" : ""),
-    }));
+    const out: CalEvent[] = (deadlines as DeadlineItem[]).map((d) => {
+      const due = moved[d.id] ?? d.due;
+      return {
+        date: due,
+        title: d.title,
+        kind: "deadline",
+        done: d.done,
+        overdue: !d.done && due < today(),
+        urgent: !d.done && d.days_left <= 3,
+        deadline: d,
+        detail: d.kind.replace("_", " ") + (d.human_only ? " · needs you" : ""),
+      };
+    });
     for (const p of pipeline as PipelineCard[])
       if (p.follow_up && p.stage !== "done")
         out.push({ date: p.follow_up, title: `Follow up: ${p.title}`, kind: "follow_up", detail: `pipeline · ${p.stage}` });
     return out;
-  }, [deadlines, pipeline]);
+  }, [deadlines, pipeline, moved]);
 
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
   if (!data.data) return <Loading />;
@@ -116,8 +153,15 @@ export default function Calendar() {
       setBusy(null);
     }
   };
+  const move = async (id: string, due: string) => {
+    const d = (deadlines as DeadlineItem[]).find((x) => x.id === id);
+    if (!d || (moved[id] ?? d.due) === due) return;
+    withViewTransition(() => setMoved((m) => ({ ...m, [id]: due })));
+    const ok = await run(id, () => api.updateDeadline(id, { due }), `Moved to ${due}`);
+    if (!ok) withViewTransition(() => setMoved((m) => Object.fromEntries(Object.entries(m).filter(([k]) => k !== id))));
+  };
   const switchView = (v: "month" | "week") => {
-    setView(v);
+    withViewTransition(() => setView(v));
     try {
       localStorage.setItem("lh-cal-view", v);
     } catch {
@@ -132,101 +176,116 @@ export default function Calendar() {
   const monthDays = Array.from({ length: 42 }, (_, i) => addDays(monthStart, i));
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const step = (dir: 1 | -1) =>
-    view === "month" ? setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + dir, 1)) : setWeekStart(addDays(weekStart, 7 * dir));
-  const goToday = () => {
-    setCursor(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-    setWeekStart(mondayOf(new Date()));
-  };
+    withViewTransition(() =>
+      view === "month" ? setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + dir, 1)) : setWeekStart(addDays(weekStart, 7 * dir)),
+    );
+  const goToday = () =>
+    withViewTransition(() => {
+      setCursor(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+      setWeekStart(mondayOf(new Date()));
+    });
   const heading =
     view === "month"
       ? cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })
       : `${weekDays[0].toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${weekDays[6].toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div>
       <PageHeader
+        eyebrow={`${upcoming.length} open deadlines`}
         title="Calendar"
-        subtitle="Deadlines and pipeline follow-ups. Click a deadline to edit it. calendar.ics in your workspace updates with every change."
+        subtitle="Deadlines and pipeline follow-ups. Click a deadline to edit it, or drag it to another day. calendar.ics in your workspace updates with every change."
         actions={
           <>
             <Button size="sm" onClick={() => navigator.clipboard?.writeText(subscribe).then(() => toast("Subscribe link copied"))}>
-              Copy subscribe link
+              <Link2 /> Subscribe link
             </Button>
             <a href={api.calendarUrl} download="lighthouse.ics">
-              <Button size="sm">Download .ics</Button>
+              <Button size="sm" tabIndex={-1}>
+                <Download /> .ics
+              </Button>
             </a>
           </>
         }
       />
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <Card>
-          <div className="flex flex-wrap items-center gap-2 border-b border-zinc-100 px-4 py-2.5 dark:border-zinc-800">
-            <Button size="sm" variant="ghost" aria-label={`Previous ${view}`} onClick={() => step(-1)}>
-              ‹
-            </Button>
-            <h2 className="min-w-40 text-center text-sm font-semibold">{heading}</h2>
-            <Button size="sm" variant="ghost" aria-label={`Next ${view}`} onClick={() => step(1)}>
-              ›
-            </Button>
-            <Button size="sm" variant="ghost" onClick={goToday}>
-              Today
-            </Button>
-            <div className="ml-auto flex rounded-md border border-zinc-300 p-0.5 dark:border-zinc-700" role="group" aria-label="Calendar view">
-              {(["month", "week"] as const).map((v) => (
-                <button
-                  key={v}
-                  aria-pressed={view === v}
-                  onClick={() => switchView(v)}
-                  className={cx("rounded px-2.5 py-0.5 text-xs font-medium capitalize", view === v ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "text-zinc-500")}
-                >
-                  {v}
-                </button>
-              ))}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @5xl:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="card min-w-0 animate-rise">
+          <div className="flex flex-wrap items-center gap-3 border-b border-frame px-5 py-4">
+            <h2 className="display min-w-0 flex-1 text-4xl md:text-5xl" style={{ viewTransitionName: "cal-heading" }}>
+              {heading}
+            </h2>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" className="px-2" aria-label={`Previous ${view}`} onClick={() => step(-1)}>
+                <ChevronLeft />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={goToday}>
+                Today
+              </Button>
+              <Button size="sm" variant="ghost" className="px-2" aria-label={`Next ${view}`} onClick={() => step(1)}>
+                <ChevronRight />
+              </Button>
+            </div>
+            <Segmented label="Calendar view" size="sm" value={view} onChange={switchView} options={[{ value: "month", label: "Month" }, { value: "week", label: "Week" }]} />
+          </div>
+          <div className="overflow-x-auto">
+            <div className="min-w-[640px]" style={{ viewTransitionName: "cal-grid" }}>
+              <div className="grid grid-cols-7 border-b border-line">
+                {(view === "month" ? WEEKDAYS : weekDays.map((d, i) => `${WEEKDAYS[i]} ${d.getDate()}`)).map((d) => (
+                  <div key={d} className="eyebrow px-2.5 py-2">
+                    {d}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7">
+                {(view === "month" ? monthDays : weekDays).map((d) => {
+                  const key = iso(d);
+                  const dim = view === "month" && d.getMonth() !== cursor.getMonth();
+                  const dayEvents = events.filter((e) => e.date === key);
+                  return (
+                    <div
+                      key={key}
+                      onDragOver={(ev) => {
+                        ev.preventDefault();
+                        setDropTarget(key);
+                      }}
+                      onDragLeave={() => setDropTarget((t) => (t === key ? null : t))}
+                      onDrop={(ev) => {
+                        ev.preventDefault();
+                        setDropTarget(null);
+                        const id = ev.dataTransfer.getData("text/plain");
+                        if (id) move(id, key);
+                      }}
+                      className={cx(
+                        "border-r border-b border-line p-2 transition-colors duration-150 [&:nth-child(7n)]:border-r-0",
+                        view === "month" ? "min-h-28" : "min-h-96",
+                        dim && "bg-sunken/60 text-muted",
+                        view === "week" && key === todayIso && "bg-sunken",
+                        dropTarget === key && "bg-sunken outline-1 -outline-offset-1 outline-ink",
+                      )}
+                    >
+                      {view === "month" && (
+                        <div className={cx("num mb-1.5 flex size-6 items-center justify-center text-xs", key === todayIso ? "bg-ink text-on-ink" : dim ? "text-muted" : "text-ink-2")}>
+                          {d.getDate()}
+                        </div>
+                      )}
+                      <div className={cx("flex flex-col", view === "week" ? "gap-1.5" : "gap-1")}>
+                        {dayEvents.map((e, i) => (
+                          <EventChip key={e.deadline?.id ?? i} e={e} onEdit={setEditing} large={view === "week"} />
+                        ))}
+                        {view === "week" && !dayEvents.length && <span className="font-mono text-[11px] text-muted">—</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-7 border-b border-zinc-100 text-center text-[11px] font-medium text-zinc-500 dark:border-zinc-800">
-            {(view === "month" ? WEEKDAYS : weekDays.map((d, i) => `${WEEKDAYS[i]} ${d.getDate()}`)).map((d) => (
-              <div key={d} className="py-1.5">
-                {d}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7">
-            {(view === "month" ? monthDays : weekDays).map((d) => {
-              const key = iso(d);
-              const dim = view === "month" && d.getMonth() !== cursor.getMonth();
-              const dayEvents = events.filter((e) => e.date === key);
-              return (
-                <div
-                  key={key}
-                  className={cx(
-                    "border-r border-b border-zinc-100 p-1.5 text-xs dark:border-zinc-800 [&:nth-child(7n)]:border-r-0",
-                    view === "month" ? "min-h-24" : "min-h-80",
-                    dim && "bg-zinc-50/60 text-zinc-400 dark:bg-zinc-950/40",
-                    view === "week" && key === todayIso && "bg-amber-50/40 dark:bg-amber-950/20",
-                  )}
-                >
-                  {view === "month" && (
-                    <div className={cx("mb-1 flex size-5 items-center justify-center rounded-full tabular-nums", key === todayIso && "bg-amber-500 font-semibold text-white")}>
-                      {d.getDate()}
-                    </div>
-                  )}
-                  <div className={cx("flex flex-col", view === "week" ? "gap-1" : "gap-0.5")}>
-                    {dayEvents.map((e, i) => (
-                      <EventChip key={i} e={e} onEdit={setEditing} large={view === "week"} />
-                    ))}
-                    {view === "week" && !dayEvents.length && <span className="text-[11px] text-zinc-300 dark:text-zinc-700">—</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
+        </section>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-8">
           <Card title="Add a deadline">
             <form
-              className="grid gap-2 p-3"
+              className="grid gap-3 p-5"
               onSubmit={(e) => {
                 e.preventDefault();
                 run(
@@ -240,7 +299,7 @@ export default function Calendar() {
               }}
             >
               <input className="input" required placeholder="e.g. IEEE Senior Member application" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <input type="date" required className="input" value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} />
                 <select className="input" value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
                   {KINDS.map((k) => (
@@ -248,25 +307,25 @@ export default function Calendar() {
                   ))}
                 </select>
               </div>
-              <Button type="submit" variant="primary" size="sm" disabled={busy === "add"}>
-                Add
+              <Button type="submit" variant="primary" disabled={busy === "add"}>
+                <Plus /> Add deadline
               </Button>
             </form>
           </Card>
 
           <Card title="Upcoming">
             {upcoming.length ? (
-              <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <ul>
                 {upcoming.map((d) => (
-                  <li key={d.id} className="flex items-center gap-1.5 px-3 py-2 text-sm">
-                    <span className={cx("w-9 shrink-0 text-right text-xs font-semibold tabular-nums", d.days_left <= 3 ? "text-red-600" : d.days_left <= 14 ? "text-amber-600" : "text-zinc-500")}>
-                      {d.days_left < 0 ? `${-d.days_left}d late` : `${d.days_left}d`}
+                  <li key={d.id} className="flex items-center gap-3 border-b border-line px-5 py-3 last:border-b-0">
+                    <span className={cx("display w-14 shrink-0 text-2xl", d.days_left < 0 && "text-alert")}>
+                      {d.days_left < 0 ? `-${-d.days_left}d` : `${d.days_left}d`}
                     </span>
-                    <button className="min-w-0 flex-1 truncate text-left hover:underline" title={`${d.title}: edit`} onClick={() => setEditing(d)}>
+                    <button className="min-w-0 flex-1 truncate text-left text-sm hover:underline" title={`${d.title}: edit`} onClick={() => setEditing(d)}>
                       {d.title}
                     </button>
-                    <Button size="sm" variant="ghost" disabled={!!busy} onClick={() => run(d.id, () => api.updateDeadline(d.id, { done: true }), "Marked done")}>
-                      Done
+                    <Button size="sm" variant="ghost" className="px-2" title="Mark done" aria-label={`Mark "${d.title}" done`} disabled={!!busy} onClick={() => run(d.id, () => api.updateDeadline(d.id, { done: true }), "Marked done")}>
+                      <Check />
                     </Button>
                   </li>
                 ))}
@@ -277,20 +336,20 @@ export default function Calendar() {
           </Card>
 
           <Card title="Recurring jobs">
-            <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            <ul>
               {(jobs as JobStatus[]).map((j) => (
-                <li key={j.name} className="px-3 py-2 text-sm">
+                <li key={j.name} className="border-b border-line px-5 py-3 last:border-b-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs">{j.name}</span>
+                    <span className="font-mono text-xs text-ink">{j.name}</span>
                     <Chip>{cronText(j.schedule)}</Chip>
                     <Button className="ml-auto" size="sm" variant="ghost" disabled={!!busy} onClick={() => run(`job-${j.name}`, () => api.runJob(j.name), `${j.name} ran`)}>
                       {busy === `job-${j.name}` ? "Running…" : "Run now"}
                     </Button>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-zinc-500">
+                  <p className="mt-1 font-mono text-[10.5px] text-muted uppercase">
                     {j.next_run ? `next ${new Date(j.next_run).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}` : "not scheduled"}
-                    {j.last_run && ` · last ${new Date(j.last_run).toLocaleDateString()} ${j.ok ? "✓" : "✗"}`}
-                    {j.error && <span className="text-red-600"> · {j.error}</span>}
+                    {j.last_run && ` · last ${new Date(j.last_run).toLocaleDateString()} ${j.ok ? "ok" : "failed"}`}
+                    {j.error && <span className="text-alert"> · {j.error}</span>}
                   </p>
                 </li>
               ))}
@@ -304,7 +363,12 @@ export default function Calendar() {
           d={editing}
           busy={busy === editing.id}
           onClose={() => setEditing(null)}
-          onSave={async (changes) => (await run(editing.id, () => api.updateDeadline(editing.id, changes), "Deadline updated")) && setEditing(null)}
+          onSave={async (changes) => {
+            const id = editing.id;
+            setEditing(null);
+            if (changes.due && changes.due !== editing.due) withViewTransition(() => setMoved((m) => ({ ...m, [id]: changes.due! })));
+            await run(id, () => api.updateDeadline(id, changes), "Deadline updated");
+          }}
           onDelete={async () => (await run(editing.id, () => api.deleteDeadline(editing.id), "Deadline deleted")) && setEditing(null)}
         />
       )}
@@ -357,17 +421,17 @@ function EditDeadline({
           <span className="label">Link (optional)</span>
           <input className="input" type="url" placeholder="https://…" value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} />
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={f.human_only} onChange={(e) => setF({ ...f, human_only: e.target.checked })} />
+        <label className="flex items-center gap-2.5 text-sm">
+          <input type="checkbox" className="size-4 accent-[var(--ink)]" checked={f.human_only} onChange={(e) => setF({ ...f, human_only: e.target.checked })} />
           Needs me (shows in "This week" and gets a reminder)
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={f.done} onChange={(e) => setF({ ...f, done: e.target.checked })} />
+        <label className="flex items-center gap-2.5 text-sm">
+          <input type="checkbox" className="size-4 accent-[var(--ink)]" checked={f.done} onChange={(e) => setF({ ...f, done: e.target.checked })} />
           Done
         </label>
-        <div className="flex justify-between gap-2">
+        <div className="mt-2 flex justify-between gap-2 border-t border-line pt-4">
           <Button type="button" variant="danger" disabled={busy} onClick={onDelete}>
-            Delete
+            <Trash2 /> Delete
           </Button>
           <div className="flex gap-2">
             <Button type="button" onClick={onClose}>
