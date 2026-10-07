@@ -65,6 +65,8 @@ artifacts = ["lighthouse_gc/server/static/**"]
 
 [tool.hatch.build.targets.sdist]
 include = ["lighthouse_gc", "profiles", "examples", "vault", "tests", "web/src", "web/*.json", "web/*.ts", "web/index.html", "*.md", "LICENSE"]
+# The built UI too, so a wheel built from the sdist (the default for `python -m build`) still has it.
+artifacts = ["lighthouse_gc/server/static/**"]
 
 [tool.ruff]
 line-length = 110

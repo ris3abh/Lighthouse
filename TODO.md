@@ -76,8 +76,10 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 ### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request
 - [x] S1. `lighthouse-gc` with no arguments: creates ~/Lighthouse on first run, remembers it, serves it and
       opens onboarding; later runs reopen it
-- [ ] S2. The wheel is the product: release workflow builds the UI, attaches the wheel to the GitHub release
+- [x] S2. The wheel is the product: release workflow builds the UI, attaches the wheel to the GitHub release
       (PyPI via trusted publishing once configured); CI installs the wheel in a clean venv and smoke-tests it
+      (release.yml on v* tags; PyPI waits for the PYPI_PUBLISH variable; scripts/smoke_wheel.py; the sdist
+      now keeps the built UI, which `python -m build` used to drop)
 - [x] S3. "Connect your AI" in onboarding and Settings: existing Claude login, or an Anthropic key in the
       keychain checked with a free request; cost note; bundled CLI counts as available; skippable. A new
       onboarding step ("Your AI") between the questions and the lookups, asked once; the key goes to the CLI
