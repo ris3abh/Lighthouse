@@ -155,8 +155,9 @@ def _advance(state: OnboardingState, ws: Case | None = None) -> None:
         state.lookups = [
             old[lk.id] if lk.id in old and old[lk.id].targets == lk.targets else lk for lk in fresh
         ]
-        # Connect your AI comes before the lookups (web searches need it); once chosen, it isn't asked again.
-        state.step = "ai" if state.ai in ("pending", "login") else after_ai(state)  # "login" is no longer offered
+        # Connect your AI comes before the lookups (web searches need it); once chosen, it isn't asked again. An old
+        # "login" choice (no longer offered) asks again.
+        state.step = "ai" if state.ai in ("pending", "login") else after_ai(state)
     # Stay on the lookups so every outcome (and Retry) stays visible; Continue moves on at any time. Only a step
     # where every lookup was declined moves on by itself.
     if state.step == "lookups" and all(lk.status == "declined" for lk in state.lookups):
