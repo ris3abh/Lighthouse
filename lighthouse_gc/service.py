@@ -23,6 +23,7 @@ from typing import Any, TypeVar
 from pydantic import BaseModel
 
 from lighthouse_gc.agent.autopilot import AUTO_ACTIONS, AutopilotRefused
+from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import Briefing, Candidate, Change, Evidence, Exhibit, MetricRow
 from lighthouse_gc.core.text import plural
 from lighthouse_gc.core.workspace import NotFound, WorkspaceError
@@ -429,11 +430,22 @@ class Service:
         self._record("metrics.undo", "metric", revert, target_id=change.target_id,
                      before=current, summary=f"undo: {change.summary}", undoes=change.id)  # fmt: skip
 
+    # ------------------------------------------------------------------ to-dos
+
+    def update_todo(self, todo_id: str, status: str) -> Any:
+        before = next((t for t in self.ws.todos().todos if t.id == todo_id), None)
+        if before is None:
+            raise NotFound(f"no to-do {todo_id!r}")
+        closed = clock.today() if status != "open" else None
+        return self._record("todo.update", "todo", lambda: self.ws.update_todo(todo_id, status=status, closed=closed),
+                            before=before, summary=f"{before.title}: {status}")  # fmt: skip
+
     # ------------------------------------------------------------------ onboarding (ADR 0008)
 
     def onboarding_save(self, state: Any, action: str, summary: str = "", person: dict[str, Any] | None = None,
-                        evidence: Evidence | None = None) -> Any:  # fmt: skip
-        """Save onboarding progress, plus the person fields an answer confirmed and the PDF observation."""
+                        evidence: Evidence | None = None, todos: list[Any] | None = None) -> Any:  # fmt: skip
+        """Save onboarding progress, plus the person fields an answer confirmed, the PDF observation and the
+        self-reported to-dos the answers produced."""
         before = self.ws.onboarding()
 
         def do() -> Any:
@@ -448,6 +460,8 @@ class Service:
                 for key, value in person.items():
                     setattr(p, key, value)
                 self.ws.save_person(p)
+            if todos:
+                self.ws.add_todos(todos)
             self.ws.save_onboarding(state)
             return state
 

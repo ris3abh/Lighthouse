@@ -132,6 +132,7 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
             writes = flow.answer(state, body.id, body.action, body.value)
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
+        was_asking = state.step == "questions"
         if asked is not None:
             state.transcript += [Turn(who="lighthouse", text=asked.text),
                                  Turn(who="you", text=flow.reply_text(asked, body.action, body.value))]  # fmt: skip
@@ -146,9 +147,13 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None) -> None:
             if writes["profile"]:
                 update["profile"] = writes["profile"]
             person["filing_target"] = ws.person().filing_target.model_copy(update=update)
-        svc.onboarding_save(
-            state, "onboarding.answer", summary=f"{body.id}: {body.action}", person=person or None
-        )
+        todos = None
+        if was_asking and state.step != "questions":  # the last answer: what was confirmed becomes next steps
+            todos = flow.todos_from(
+                state, {c.id for c in ws.profile(writes["profile"] or None).criteria}, clock.today()
+            )
+        svc.onboarding_save(state, "onboarding.answer", summary=f"{body.id}: {body.action}", person=person or None,
+                            todos=todos)  # fmt: skip
         if writes["profile"] and writes["profile"] != ws.profile_id():
             svc.set_profile(writes["profile"])
         return view(ws)

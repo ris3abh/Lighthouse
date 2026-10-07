@@ -12,6 +12,7 @@ from typing import Any
 
 from lighthouse_gc.core.models import Candidate, ClaimDraft, Evidence, json_excerpt
 from lighthouse_gc.core.text import plural
+from lighthouse_gc.criteria.models import Todo
 from lighthouse_gc.onboarding.linkedin import extract_text, parse_linkedin, redact_contact
 from lighthouse_gc.onboarding.models import Lookup, OnboardingState, ProfileField
 
@@ -280,6 +281,41 @@ def answer(state: OnboardingState, qid: str, action: str, value: Any = None) -> 
 def _confirmed(state: OnboardingState, key: str) -> list[str]:
     f = state.field(key)
     return _list(f.value) if f and f.status in ("confirmed", "fixed") else []
+
+
+# What each confirmed list becomes: (to-do kind, the criteria it may support, most specific first).
+TODO_KINDS = {"awards": ("award", ("awards",)), "judging": ("judging", ("judging",)),
+              "publications": ("publication", ("scholarly_articles",)),
+              "memberships": ("membership", ("membership",))}  # fmt: skip
+
+
+def todo_title(kind: str, item: str) -> str:
+    if kind == "judging":
+        role, _, event = item.partition(", ")
+        if not event:
+            return f"Upload proof of your judging: {item}"
+        if role.lower() in ("judge", "jury member"):
+            return f"Upload proof of {event} judging"
+        if role.lower() == "reviewer":
+            return f"Upload proof of your reviewing for {event}"
+        return f"Upload proof of your {role.lower()} role at {event}"
+    if kind == "publication":
+        return f"Upload the published version of “{item}”"
+    if kind == "membership":
+        return f"Upload proof that you're {_member(item)}"
+    return f"Upload proof of the {item}" if not item.lower().startswith("the ") else f"Upload proof of {item}"
+
+
+def todos_from(state: OnboardingState, criteria: set[str], today: Any) -> list[Todo]:
+    """One self-reported to-do per confirmed award, judging role, paper and membership. Never evidence: a to-do
+    asks for the proof; only accepted proof counts."""
+    out = []
+    for key, (kind, crits) in TODO_KINDS.items():
+        for item in _confirmed(state, key):
+            digest = hashlib.sha256(f"{kind}\n{item.strip().lower()}".encode()).hexdigest()[:12]
+            out.append(Todo(id=f"todo_{digest}", title=todo_title(kind, item), kind=kind, item=item,  # type: ignore[arg-type]
+                            criterion=next((c for c in crits if c in criteria), None), created=today))  # fmt: skip
+    return out
 
 
 def offer_lookups(state: OnboardingState) -> list[Lookup]:

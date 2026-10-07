@@ -96,6 +96,26 @@ class Letters(_File):
     letters: list[Letter] = Field(default_factory=list)
 
 
+class Todo(_Model):
+    """A next step from something the person told Lighthouse (onboarding, chat): "Upload proof of HackSeattle 2025
+    judging". Self-reported, so it never counts toward a criterion; the proof it asks for does, once accepted."""
+
+    id: str
+    title: str
+    kind: Literal["award", "judging", "publication", "membership"]
+    item: str = Field(description="What the person said, as they confirmed it.")
+    criterion: str | None = None
+    tier: Literal["self_reported"] = "self_reported"
+    source: str = "onboarding"
+    status: Literal["open", "done", "dismissed"] = "open"
+    created: date
+    closed: date | None = None
+
+
+class Todos(_File):
+    todos: list[Todo] = Field(default_factory=list)
+
+
 # --------------------------------------------------------------------------- profiles/*.yaml
 
 

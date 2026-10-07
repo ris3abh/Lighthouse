@@ -111,6 +111,21 @@ def human_tasks(ws: Case, today: date | None = None) -> list[dict[str, Any]]:
                 }
             )
 
+    todos = [t for t in ws.todos().todos if t.status == "open"]
+    names = {c.id: c.short_label or c.label for c in ws.profile().criteria}
+    for t in todos:
+        tasks.append(
+            {
+                "kind": "todo",
+                "id": t.id,
+                "title": t.title,
+                "criterion": t.criterion,
+                "criterion_label": names.get(t.criterion or "", ""),
+                "self_reported": True,
+                "link": f"#/evidence?c={t.criterion}" if t.criterion else "#/evidence",
+            }
+        )
+
     issues = ws.naming_check()
     if issues:
         tasks.append(

@@ -25,7 +25,7 @@ PDF = b"%PDF-1.4 fictional\n"
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
                  "/api/settings/missions", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
-                 "/api/onboarding")  # fmt: skip
+                 "/api/onboarding", "/api/todos")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -101,7 +101,18 @@ def _ids(ws):
         "briefing": _briefing(ws),
         "finding": _finding(ws),
         "onboarding": _onboarding(ws),
+        "todo": _todo(ws),
     }
+
+
+def _todo(ws) -> str:
+    from datetime import date
+
+    from lighthouse_gc.criteria.models import Todo
+
+    ws.add_todos([Todo(id="todo_test", title="Upload proof of HackSeattle 2025 judging", kind="judging",
+                       item="Judge, HackSeattle 2025", criterion="judging", created=date(2026, 10, 6))])  # fmt: skip
+    return "todo_test"
 
 
 def _onboarding(ws) -> str:
@@ -187,6 +198,7 @@ SAMPLES = {
                                         "onboarding.answer"),
     ("POST", "/api/onboarding/step"): ("/api/onboarding/step", {"json": {"step": "skip_all"}}, "onboarding.step"),
     ("POST", "/api/onboarding/restart"): ("/api/onboarding/restart", {}, "onboarding.restart"),
+    ("PATCH", "/api/todos/{todo_id}"): ("/api/todos/{todo}", {"json": {"status": "done"}}, "todo.update"),
 }  # fmt: skip
 
 

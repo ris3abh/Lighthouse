@@ -9,11 +9,20 @@ from pydantic import BaseModel
 from lighthouse_gc.core.workspace import DATA_FILES as CORE_DATA_FILES
 from lighthouse_gc.core.workspace import NotFound, Workspace, WorkspaceError
 from lighthouse_gc.criteria import engine
-from lighthouse_gc.criteria.models import DEFAULT_PROFILE, Letter, Letters, Person, Profile, Scoreboard
+from lighthouse_gc.criteria.models import (
+    DEFAULT_PROFILE,
+    Letter,
+    Letters,
+    Person,
+    Profile,
+    Scoreboard,
+    Todo,
+    Todos,
+)
 from lighthouse_gc.onboarding.models import OnboardingState
 
 # Case files written on first use; validated when present.
-CASE_OPTIONAL_FILES: dict[str, type[BaseModel]] = {"onboarding.json": OnboardingState}
+CASE_OPTIONAL_FILES: dict[str, type[BaseModel]] = {"onboarding.json": OnboardingState, "todos.json": Todos}
 
 DATA_FILES: dict[str, type[BaseModel]] = {
     "person.json": Person,
@@ -36,6 +45,29 @@ class Case(Workspace):
 
     def save_onboarding(self, v: OnboardingState) -> None:
         self._save("onboarding.json", v)
+
+    def todos(self) -> Todos:
+        return self._load("todos.json", Todos)
+
+    def add_todos(self, todos: list[Todo]) -> list[Todo]:
+        """Add the ones not already there (same id: same kind and item), so re-running onboarding adds nothing twice."""
+        current = self.todos()
+        have = {t.id for t in current.todos}
+        new = [t for t in todos if t.id not in have]
+        if new:
+            current.todos += new
+            self._save("todos.json", current)
+        return new
+
+    def update_todo(self, todo_id: str, **changes: Any) -> Todo:
+        current = self.todos()
+        todo = next((t for t in current.todos if t.id == todo_id), None)
+        if todo is None:
+            raise NotFound(f"no to-do {todo_id!r}")
+        for key, value in changes.items():
+            setattr(todo, key, value)
+        self._save("todos.json", current)
+        return todo
 
     def needs_onboarding(self) -> bool:
         """A brand-new workspace (no onboarding file, no name, nothing collected) or one mid-onboarding."""

@@ -52,6 +52,11 @@ export interface Task {
   title: string;
   due?: string;
   link?: string | null;
+  /** Self-reported to-dos (kind "todo") can be ticked off; they never count toward a criterion. */
+  id?: string;
+  criterion?: string | null;
+  criterion_label?: string;
+  self_reported?: boolean;
 }
 
 export interface Deadline {
@@ -628,6 +633,7 @@ export const api = {
 
   deadlines: () => request<DeadlineItem[]>("GET", "/deadlines"),
   addDeadline: (d: { title: string; due: string; kind: string }) => request<DeadlineItem>("POST", "/deadlines", d),
+  updateTodo: (id: string, status: "open" | "done" | "dismissed") => request<unknown>("PATCH", `/todos/${enc(id)}`, { status }),
   updateDeadline: (id: string, d: Partial<DeadlineItem>) => request<DeadlineItem>("PATCH", `/deadlines/${enc(id)}`, d),
   deleteDeadline: (id: string) => request<{ removed: string }>("DELETE", `/deadlines/${enc(id)}`),
   pipeline: () => request<PipelineCard[]>("GET", "/pipeline"),

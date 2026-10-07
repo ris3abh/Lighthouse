@@ -358,3 +358,78 @@ def test_skipping_the_pdf_still_opens_the_conversation(fresh):
     view = c.post("/api/onboarding/step", headers=W, json={"step": "skip_linkedin"}).json()
     assert view["state"]["transcript"][0]["text"].startswith("No problem, we'll do without it.")
     assert view["question"]["id"] == "target"
+
+
+# ----------------------------------------------------------------------------- to-dos from what you said (C7)
+
+
+def _done(c, pid, target="o1a"):
+    view, _ = answer_all(c, upload(c, pid), target=target)
+    return view
+
+
+def test_confirmed_items_become_self_reported_todos_linked_to_criteria(fresh):
+    c = client_for(fresh)
+    _done(c, "ravi", target="eb1a")
+    todos = {t.kind: t for t in fresh.todos().todos}
+    assert [t.title for t in fresh.todos().todos] == [
+        "Upload proof of the Best Paper Award, Workshop on Efficient Machine Learning 2025",
+        "Upload proof of your program committee member role at NeurIPS 2025",
+        "Upload the published version of “Sparse Mixture Routing for Efficient Transformers”",
+        "Upload the published version of “Calibrated Uncertainty in Vision-Language Models”",
+        "Upload proof that you're a Senior Member of IEEE",
+    ]
+    assert {k: t.criterion for k, t in todos.items()} == {"award": "awards", "judging": "judging",
+                                                         "publication": "scholarly_articles", "membership": "membership"}  # fmt: skip
+    assert all(t.tier == "self_reported" and t.status == "open" for t in fresh.todos().todos)
+    week = c.get("/api/overview").json()["tasks"]
+    mine = [t for t in week if t["kind"] == "todo"]
+    assert (
+        len(mine) == 5
+        and mine[1]["link"] == "#/evidence?c=judging"
+        and mine[1]["criterion_label"] == "Judging"
+    )
+
+
+def test_maya_gets_the_hackseattle_judging_todo(fresh):
+    c = client_for(fresh)
+    _done(c, "maya")
+    assert "Upload proof of HackSeattle 2025 judging" in [t.title for t in fresh.todos().todos]
+
+
+def test_todos_are_never_evidence(fresh):
+    c = client_for(fresh)
+    board_before = fresh.scoreboard().model_dump()
+    _done(c, "lena")
+    assert fresh.todos().todos
+    assert fresh.exhibits().exhibits == []
+    assert [x.kind for x in fresh.pending_candidates()] == []  # nothing in the Inbox from answers alone
+    board = fresh.scoreboard()
+    assert board.banked == 0 and board.building == 0
+    assert {c_.id: c_.exhibit_count for c_ in board.criteria} == {
+        c_["id"]: c_["exhibit_count"] for c_ in board_before["criteria"]
+    }
+    todo = fresh.todos().todos[0]
+    r = c.patch(f"/api/todos/{todo.id}", headers=W, json={"status": "done"})
+    assert r.status_code == 200 and r.json()["closed"]
+    assert fresh.scoreboard().banked == 0  # ticking it off doesn't bank anything either
+    assert todo.id not in [t.get("id") for t in c.get("/api/overview").json()["tasks"]]
+
+
+def test_skipped_items_make_no_todos_and_rerunning_adds_none_twice(fresh):
+    c = client_for(fresh)
+    view = upload(c, "maya")
+    while view["question"]:
+        q = view["question"]
+        action = "skip" if q["id"] in ("awards", "judging") else "yes"
+        value = {"confirm": None, "choice": "o1a", "month": "2027-03"}[q["kind"]]
+        view = c.post(
+            "/api/onboarding/answer", headers=W, json={"id": q["id"], "action": action, "value": value}
+        ).json()
+    assert fresh.todos().todos == []
+    c.post("/api/onboarding/restart", headers=W)
+    _done(c, "maya")
+    _done_again = len(fresh.todos().todos)
+    c.post("/api/onboarding/restart", headers=W)
+    _done(c, "maya")
+    assert len(fresh.todos().todos) == _done_again == 2

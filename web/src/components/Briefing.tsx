@@ -168,16 +168,45 @@ export default function Briefing({ tasks = [] }: { tasks?: Task[] }) {
   );
 }
 
-/** Things only the person can do (sign, send, submit): from the workspace, not the agent. */
+/** Things only the person can do (sign, send, submit): from the workspace, not the agent. Self-reported to-dos
+ * (from onboarding) carry their criterion and can be ticked off; ticking one never banks anything. */
 function MyTasks({ tasks }: { tasks: Task[] }) {
+  const toast = useToast();
+  const { bump } = useRefresh();
+  const [closed, setClosed] = useState<Set<string>>(new Set());
+  const [all, setAll] = useState(false);
+  const open = tasks.filter((t) => !t.id || !closed.has(t.id));
+  const shown = all ? open : open.slice(0, 6);
+  const tick = async (t: Task) => {
+    if (!t.id) return;
+    setClosed((s) => new Set(s).add(t.id!));
+    try {
+      await api.updateTodo(t.id, "done");
+      toast("Ticked off. Upload the proof to the Inbox when you have it; that's what counts.");
+      bump();
+    } catch (e) {
+      setClosed((s) => {
+        const n = new Set(s);
+        n.delete(t.id!);
+        return n;
+      });
+      toast((e as Error).message, "error");
+    }
+  };
   return (
     <div className="bg-surface p-6">
       <h3 className="eyebrow mb-4">Only you can do these</h3>
-      {tasks.length ? (
+      {shown.length ? (
         <ul className="space-y-3">
-          {tasks.slice(0, 5).map((t, i) => (
-            <li key={i} className="flex items-start gap-3 text-[15px] leading-snug">
-              <Square className="mt-1 size-3.5 shrink-0 text-ink-2" strokeWidth={1.5} aria-hidden />
+          {shown.map((t, i) => (
+            <li key={t.id ?? i} className="flex animate-rise items-start gap-3 text-[15px] leading-snug">
+              {t.id ? (
+                <button type="button" onClick={() => tick(t)} className="mt-1 shrink-0 text-ink-2 hover:text-ink" aria-label={`Mark done: ${t.title}`}>
+                  <Square className="size-3.5" strokeWidth={1.5} aria-hidden />
+                </button>
+              ) : (
+                <Square className="mt-1 size-3.5 shrink-0 text-ink-2" strokeWidth={1.5} aria-hidden />
+              )}
               <span className="min-w-0 flex-1">
                 {t.link ? (
                   <a href={t.link} className="link" target={t.link.startsWith("#") ? undefined : "_blank"} rel="noreferrer">
@@ -186,6 +215,12 @@ function MyTasks({ tasks }: { tasks: Task[] }) {
                 ) : (
                   t.title
                 )}
+                {t.self_reported && (
+                  <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {t.criterion_label && <Chip tone="outline">{t.criterion_label}</Chip>}
+                    <span className="font-mono text-[10px] tracking-[0.06em] text-muted uppercase">You told me · not evidence yet</span>
+                  </span>
+                )}
               </span>
               {t.due && <span className="num shrink-0 text-xs text-ink-2">{t.due.slice(5)}</span>}
             </li>
@@ -193,6 +228,11 @@ function MyTasks({ tasks }: { tasks: Task[] }) {
         </ul>
       ) : (
         <p className="text-[15px] text-ink-2">Nothing needs you this week.</p>
+      )}
+      {open.length > shown.length && (
+        <button type="button" className="mt-4 font-mono text-[11px] tracking-[0.1em] text-ink-2 uppercase hover:text-ink" onClick={() => setAll(true)}>
+          {open.length - shown.length} more
+        </button>
       )}
     </div>
   );

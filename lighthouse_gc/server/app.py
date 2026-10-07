@@ -16,7 +16,7 @@ import datetime as dt
 import io
 import json
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, Literal
 
 import anyio
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -82,6 +82,10 @@ class SourceBody(BaseModel):
 
 class TokenBody(BaseModel):
     token: str
+
+
+class TodoBody(BaseModel):
+    status: Literal["open", "done", "dismissed"]
 
 
 class DeadlineBody(BaseModel):
@@ -482,6 +486,11 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     def remove_deadline(deadline_id: str) -> dict[str, Any]:
         svc.delete_deadline(deadline_id)
         return {"removed": deadline_id}
+
+    @app.patch("/api/todos/{todo_id}")
+    def patch_todo(todo_id: str, body: TodoBody) -> dict[str, Any]:
+        """Tick off (or dismiss, or reopen) a self-reported to-do. It never changes a criterion."""
+        return svc.update_todo(todo_id, body.status).model_dump(mode="json")
 
     @app.get("/api/pipeline")
     def get_pipeline() -> list[dict[str, Any]]:
