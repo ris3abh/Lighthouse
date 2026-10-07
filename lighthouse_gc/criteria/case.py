@@ -227,6 +227,15 @@ class Case(Workspace):
         return super().update_tracker(target_type, target_id, **changes)
 
     def restore_record(self, target_type: str, record_id: str, before: dict[str, Any] | None) -> None:
+        if target_type == "todo":
+            with self.lock:
+                todos = self.todos()
+                todos.todos = [
+                    Todo.model_validate(before) if t.id == record_id and before else t for t in todos.todos
+                ]
+                self._save("todos.json", todos)
+                self.after_change()
+            return None
         if target_type != "letter":
             return super().restore_record(target_type, record_id, before)
         with self.lock:

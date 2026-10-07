@@ -91,8 +91,10 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       (static page with self-hosted fonts and a first-run screenshot; pages.yml deploys once Pages is enabled)
 
 ### Part D: agent upgrade + model routing (ADR 0009)
-- [ ] D1. Every UI write action is a chat tool through the service layer with the same rules (calendar /
-      tracker auto-apply with undo; criterion-affecting -> Inbox; outreach needs approval); coverage test
+- [x] D1. Every UI write action is a chat tool through the service layer with the same rules (calendar /
+      tracker auto-apply with undo; criterion-affecting -> Inbox; outreach needs approval); coverage test.
+      agent/actions.py maps each page action to a tool or gives the reason it's yours; direct tools only in runs
+      you started (missions keep the Inbox); Undo in the chat reply; deletes, letter writers and to-dos undoable
 - [ ] D2. Three tiers from .env (hard = claude-opus-5-5, mid = claude-sonnet-5-5, mundane = small OpenAI
       model), rule-based router by task type, redaction + guardrails on every provider, .env.example
 - [ ] D3. Long chats: older turns summarized (summary saved, original kept); "cheap mode" toggle (mid tier)

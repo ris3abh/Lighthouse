@@ -338,6 +338,99 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                          proposal={"target_type": tt, "target_id": tid, "changes": changes}, rule_check=check)  # fmt: skip
         return _propose(cand)
 
+    # ---- direct page actions (ADR 0009 §1): only in runs the person started; applied, logged, undoable
+
+    def _done(verb: str, label: str) -> str:
+        change = ws.changes()[-1]
+        return f"{verb} {label}. It's on the page now; the person can undo it. undo: {change.id}"
+
+    def _clean(changes: S | None, model: Any, record: Any) -> S:
+        changes = {k: v for k, v in (changes or {}).items() if k not in ("id", "created", "moved_at")}
+        if not changes:
+            raise ValueError("changes is empty")
+        model.model_validate({**record.model_dump(), **changes})  # fail early on bad values
+        return changes
+
+    async def t_add_deadline(args: S) -> str:
+        fields = {k: args[k] for k in ("title", "due", "kind", "url") if args.get(k)}
+        Deadline.model_validate(fields)
+        ctx.svc.add_deadline(**fields)
+        return _done("Added the deadline", f"{fields['title']} ({fields['due']})")
+
+    async def t_update_deadline(args: S) -> str:
+        record = _record_of("deadline", args["id"])
+        ctx.svc.update_deadline(args["id"], **_clean(args.get("changes"), Deadline, record))
+        return _done("Updated", record.title)
+
+    async def t_delete_deadline(args: S) -> str:
+        record = _record_of("deadline", args["id"])
+        ctx.svc.delete_deadline(args["id"])
+        return _done("Deleted the deadline", record.title)
+
+    async def t_add_pipeline(args: S) -> str:
+        fields = {
+            k: args[k] for k in ("title", "stage", "criterion", "url", "notes", "follow_up") if args.get(k)
+        }
+        PipelineItem.model_validate(fields)
+        ctx.svc.add_pipeline_item(**fields)
+        return _done("Added to the pipeline", fields["title"])
+
+    async def t_update_pipeline(args: S) -> str:
+        record = _record_of("pipeline_item", args["id"])
+        changes = _clean(args.get("changes"), PipelineItem, record)
+        ctx.svc.update_pipeline_item(args["id"], **changes)
+        return _done("Moved" if changes.get("stage") not in (None, record.stage) else "Updated", record.title)
+
+    async def t_delete_pipeline(args: S) -> str:
+        record = _record_of("pipeline_item", args["id"])
+        ctx.svc.delete_pipeline_item(args["id"])
+        return _done("Removed from the pipeline", record.title)
+
+    async def _letter_text(fields: S) -> None:
+        """Letter text is petition-facing: the same guards and rule check as everywhere else."""
+        try:
+            guard.check_letter_changes(fields)
+        except guard.Refused as r:
+            raise refuse(r, str(fields)) from None
+        text = " ".join(str(fields[k]) if not isinstance(fields[k], list) else ". ".join(map(str, fields[k]))
+                        for k in ("credentials", "asks") if fields.get(k))  # fmt: skip
+        await _gate(text)
+
+    async def t_add_letter(args: S) -> str:
+        fields = {
+            k: args[k] for k in ("name", "relationship", "credentials", "criteria", "asks") if args.get(k)
+        }
+        Letter.model_validate(fields)
+        await _letter_text(fields)
+        ctx.svc.add_letter(**fields)
+        return _done("Added the letter writer", fields["name"])
+
+    async def t_update_letter(args: S) -> str:
+        record = _record_of("letter", args["id"])
+        changes = _clean(args.get("changes"), Letter, record)
+        await _letter_text(changes)
+        ctx.svc.update_letter(args["id"], **changes)
+        return _done("Updated", record.name)
+
+    async def t_delete_letter(args: S) -> str:
+        record = _record_of("letter", args["id"])
+        ctx.svc.delete_letter(args["id"])
+        return _done("Removed the letter writer", record.name)
+
+    async def t_todos(args: S) -> str:
+        return ctx.out([t.model_dump(mode="json") for t in ws.todos().todos if t.status == "open"])
+
+    async def t_update_todo(args: S) -> str:
+        todo = next((x for x in ws.todos().todos if x.id == args["id"]), None)
+        if todo is None:
+            raise ValueError(f"no to-do {args['id']!r}; list_todos first")
+        ctx.svc.update_todo(args["id"], args["status"])
+        return _done("Marked " + args["status"], todo.title)
+
+    async def t_undo(args: S) -> str:
+        change = ctx.svc.undo(args["change_id"])
+        return f"Undone: {change.summary.removeprefix('undo: ')}."
+
     async def t_metric(args: S) -> str:
         obs, text = _page(args["observation_id"], args["quote"])
         value = float(args["value"])
@@ -394,6 +487,123 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         return "Published the briefing to the Overview."
 
     criteria = [c.id for c in ws.profile().criteria]
+    direct = ctx.run.kind in ("chat", "manual")  # the person started this run; missions keep the Inbox rules
+    asked = " Only for a change the person asked for in this conversation; what you find on your own goes to the Inbox."
+    kinds = {
+        "type": "string",
+        "enum": ["application", "submission", "filing", "follow_up", "personal", "other"],
+    }
+    stages = {"type": "string", "enum": ["idea", "applied", "waiting", "done"]}
+    changes = {"type": "object", "description": "Only the fields to change."}
+    direct_tools = [
+        AgentTool(
+            "add_deadline",
+            "Add a deadline to the calendar." + asked,
+            _obj({"title": STR, "due": DATE, "kind": kinds, "url": STR}, ["title", "due"]),
+            t_add_deadline,
+            read_only=False,
+        ),
+        AgentTool(
+            "update_deadline",
+            "Change a deadline (list_deadlines for its id): title, due, kind, url, done." + asked,
+            _obj({"id": STR, "changes": changes}, ["id", "changes"]),
+            t_update_deadline,
+            read_only=False,
+        ),
+        AgentTool(
+            "delete_deadline",
+            "Delete a deadline." + asked,
+            _obj({"id": STR}, ["id"]),
+            t_delete_deadline,
+            read_only=False,
+        ),
+        AgentTool(
+            "add_pipeline_item",
+            "Add an item to the pipeline (an opportunity, application or invitation)." + asked,
+            _obj(
+                {
+                    "title": STR,
+                    "stage": stages,
+                    "criterion": {"type": "string", "enum": criteria},
+                    "url": STR,
+                    "notes": STR,
+                    "follow_up": DATE,
+                },
+                ["title"],
+            ),
+            t_add_pipeline,
+            read_only=False,
+        ),
+        AgentTool(
+            "update_pipeline_item",
+            "Change or move a pipeline item (list_pipeline for its id): stage, title, "
+            "notes, url, follow_up, criterion." + asked,
+            _obj({"id": STR, "changes": changes}, ["id", "changes"]),
+            t_update_pipeline,
+            read_only=False,
+        ),
+        AgentTool(
+            "delete_pipeline_item",
+            "Remove a pipeline item." + asked,
+            _obj({"id": STR}, ["id"]),
+            t_delete_pipeline,
+            read_only=False,
+        ),
+        AgentTool(
+            "add_letter_writer",
+            "Add a recommendation letter writer." + asked,
+            _obj(
+                {
+                    "name": STR,
+                    "relationship": {"type": "string", "enum": ["independent", "employer", "coauthor"]},
+                    "credentials": STR,
+                    "criteria": {"type": "array", "items": {"type": "string", "enum": criteria}},
+                    "asks": {"type": "array", "items": STR},
+                },
+                ["name", "relationship"],
+            ),
+            t_add_letter,
+            read_only=False,
+        ),
+        AgentTool(
+            "update_letter_writer",
+            "Change a letter writer (list_letters for the id): status, last_contact, "
+            "asks, credentials, criteria. Never mark a letter sent or signed." + asked,
+            _obj({"id": STR, "changes": changes}, ["id", "changes"]),
+            t_update_letter,
+            read_only=False,
+        ),
+        AgentTool(
+            "delete_letter_writer",
+            "Remove a letter writer." + asked,
+            _obj({"id": STR}, ["id"]),
+            t_delete_letter,
+            read_only=False,
+        ),
+        AgentTool(
+            "list_todos",
+            "Open to-dos (things only the person can do, e.g. upload proof).",
+            _obj({}, []),
+            t_todos,
+        ),
+        AgentTool(
+            "update_todo",
+            "Mark a to-do done or dismissed (list_todos for its id)." + asked,
+            _obj(
+                {"id": STR, "status": {"type": "string", "enum": ["done", "dismissed", "open"]}},
+                ["id", "status"],
+            ),
+            t_update_todo,
+            read_only=False,
+        ),
+        AgentTool(
+            "undo_change",
+            "Undo a change, by the change id in a tool result (undo: <id>), when the person asks.",
+            _obj({"change_id": STR}, ["change_id"]),
+            t_undo,
+            read_only=False,
+        ),
+    ]
     tool_list = [
         AgentTool("get_scoreboard", "Current criteria scoreboard (banked / building / gap / dropped).", _obj({}, []), t_scoreboard),
         AgentTool("list_gaps", "Criteria not yet banked: what's missing, what's in progress, what's in the Inbox.", _obj({}, []), t_gaps),
@@ -463,6 +673,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
                         "credentials": STR, "criteria": {"type": "array", "items": {"type": "string", "enum": criteria}},
                         "why": STR}, ["name", "relationship"]),
                   t_propose_letter, read_only=False),
+        *(direct_tools if direct else []),
         AgentTool("decline", "Use when you won't do something: it's off-topic (not this person's immigration case or "
                   "their professional work), it would fabricate, strengthen or misrepresent anything, or it means looking "
                   "someone up beyond public professional pages. Logs the refusal on the Agent page. Then tell the person "
@@ -484,6 +695,13 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         "publish_briefing": ("data/briefing.json",),
         "search_vault": ("vault/",),
         "decline": ("agent/refusals.jsonl",),
+        "add_deadline": ("data/deadlines.json",), "update_deadline": ("data/deadlines.json",),
+        "delete_deadline": ("data/deadlines.json",), "add_pipeline_item": ("data/pipeline.json",),
+        "update_pipeline_item": ("data/pipeline.json",), "delete_pipeline_item": ("data/pipeline.json",),
+        "add_letter_writer": ("data/letters.json",), "update_letter_writer": ("data/letters.json",),
+        "delete_letter_writer": ("data/letters.json",), "list_todos": ("data/todos.json",),
+        "update_todo": ("data/todos.json",),
+        "undo_change": ("data/pipeline.json", "data/letters.json", "data/deadlines.json", "data/todos.json"),
     }  # fmt: skip
     for t in tool_list:
         t.touches = touches.get(t.name, ())

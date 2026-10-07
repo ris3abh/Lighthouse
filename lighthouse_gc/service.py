@@ -370,8 +370,9 @@ class Service:
 
     # ------------------------------------------------------------------ undo
 
-    UNDOABLE = frozenset({"pipeline.add", "pipeline.update", "pipeline.move", "deadline.add", "deadline.update",
-                          "letter.update", "metrics.record"})  # fmt: skip
+    UNDOABLE = frozenset({"pipeline.add", "pipeline.update", "pipeline.move", "pipeline.delete", "deadline.add",
+                          "deadline.update", "deadline.delete", "letter.add", "letter.update", "letter.delete",
+                          "todo.update", "metrics.record"})  # fmt: skip
 
     def undoable(self, change: Change, changes: list[Change] | None = None) -> bool:
         changes = changes if changes is not None else self.ws.changes()
@@ -407,6 +408,8 @@ class Service:
             items = list(self.ws.deadlines().deadlines)
         elif target_type == "letter":
             items = list(self.ws.letters().letters)
+        elif target_type == "todo":
+            items = list(self.ws.todos().todos)
         else:
             raise WorkspaceError(f"can't undo changes to {target_type!r}")
         found = next((i for i in items if i.id == target_id), None)

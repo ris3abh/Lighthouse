@@ -12,10 +12,13 @@ import {
   Mail,
   Search,
   type LucideIcon,
+  Undo2,
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { Chip, cx } from "./ui";
+import { api } from "../api";
+import { useRefresh } from "../App";
+import { Button, Chip, cx, useToast } from "./ui";
 
 export type ToolView = {
   id: string;
@@ -53,6 +56,13 @@ function describe(t: ToolView): { icon: LucideIcon; text: React.ReactNode } {
     const what = n.replace("propose_", "").replace(/_/g, " ");
     return { icon: FilePlus2, text: <>Proposed {what}: {str(t.input.title) || str(t.input.name)}</> };
   }
+  const direct = /^(add|update|delete)_(deadline|pipeline_item|letter_writer)$|^update_todo$/.exec(n);
+  if (direct) {
+    const verb = { add: "Added", update: "Changed", delete: "Deleted" }[n.split("_")[0]] ?? "Changed";
+    const what = n === "update_todo" ? "to-do" : n.replace(/^(add|update|delete)_/, "").replace(/_/g, " ");
+    const name = str(t.input.title) || str(t.input.name) || str(t.input.id);
+    return { icon: n.includes("deadline") ? CalendarDays : n.includes("letter") ? Mail : ListChecks, text: <>{verb} {what}: {name}</> };
+  }
   if (/deadline|calendar/.test(n)) return { icon: CalendarDays, text: <>{n.replace(/_/g, " ")}</> };
   if (/inbox|candidate/.test(n)) return { icon: Inbox, text: <>{n.replace(/_/g, " ")}</> };
   if (/letter/.test(n)) return { icon: Mail, text: <>{n.replace(/_/g, " ")}</> };
@@ -72,8 +82,40 @@ export function DrawnCheck({ className }: { className?: string }) {
 
 /** One tool call, as shown in the chat panel and on the Agent page. The icon pulses while it runs; a check draws
  * in when it succeeds. */
+/** The change id a direct page action reports ("undo: chg_…"), so the chat can offer Undo right there. */
+export function undoId(summary?: string): string | null {
+  return /\bundo: (\S+)/.exec(summary ?? "")?.[1] ?? null;
+}
+
+function UndoButton({ id }: { id: string }) {
+  const toast = useToast();
+  const { bump } = useRefresh();
+  const [done, setDone] = useState(false);
+  return done ? (
+    <span className="mt-2 ml-6 inline-block font-mono text-[10.5px] text-muted uppercase">Undone</span>
+  ) : (
+    <Button
+      size="sm"
+      variant="ghost"
+      className="mt-1 ml-4"
+      onClick={() =>
+        api
+          .undoChange(id)
+          .then(() => {
+            setDone(true);
+            bump();
+          })
+          .catch((e: Error) => toast(e.message, "error"))
+      }
+    >
+      <Undo2 /> Undo
+    </Button>
+  );
+}
+
 export default function ToolCall({ t }: { t: ToolView }) {
   const [open, setOpen] = useState(false);
+  const undo = t.ok ? undoId(t.summary) : null;
   const { icon: Icon, text } = describe(t);
   const running = t.ok === undefined || t.ok === null;
   return (
@@ -105,6 +147,7 @@ export default function ToolCall({ t }: { t: ToolView }) {
           Review in the Inbox
         </a>
       )}
+      {undo && <UndoButton id={undo} />}
       {open && (
         <div className="mt-2 animate-rise space-y-1.5 pl-6">
           <pre className="max-h-40 overflow-auto bg-sunken p-2 font-mono text-[11px] whitespace-pre-wrap">{JSON.stringify(t.input, null, 2)}</pre>
