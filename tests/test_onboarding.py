@@ -13,14 +13,14 @@ import pytest
 from fastapi.testclient import TestClient
 from test_vault import public_dns  # noqa: F401  (fixture)
 
-from lighthouse_gc.criteria.case import Case
-from lighthouse_gc.onboarding import flow
-from lighthouse_gc.onboarding.linkedin import extract_with_model
-from lighthouse_gc.scaffold import create_workspace
-from lighthouse_gc.server.app import create_app
+from areao1.criteria.case import Case
+from areao1.onboarding import flow
+from areao1.onboarding.linkedin import extract_with_model
+from areao1.scaffold import create_workspace
+from areao1.server.app import create_app
 
 PERSONAS = Path(__file__).parent / "fixtures" / "personas"
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 
 
 def persona(pid: str) -> dict:
@@ -336,7 +336,7 @@ def test_onboarding_opens_with_a_warm_summary_and_keeps_the_conversation(fresh):
     c = client_for(fresh)
     view = upload(c, "ravi")
     [opening] = view["state"]["transcript"]
-    assert opening["who"] == "lighthouse"
+    assert opening["who"] == "areao1"
     assert opening["text"].startswith("I got quite a few things about you. Nice to meet you, Ravi!")
     assert "an award, a judging role, 2 papers and a membership" in opening["text"]
     assert "@" not in opening["text"] and "555" not in opening["text"]  # contact details never reach it
@@ -346,7 +346,7 @@ def test_onboarding_opens_with_a_warm_summary_and_keeps_the_conversation(fresh):
     view = c.post("/api/onboarding/answer", headers=W, json={"id": q2["id"], "action": "fix",
                                                              "value": {"employer": "Lakeshore AI", "role": "Scientist"}}).json()  # fmt: skip
     turns = [(t["who"], t["text"]) for t in view["state"]["transcript"]]
-    assert turns[1:] == [("lighthouse", q["text"]), ("you", "Yes"), ("lighthouse", q2["text"]),
+    assert turns[1:] == [("areao1", q["text"]), ("you", "Yes"), ("areao1", q2["text"]),
                          ("you", "Not quite: Lakeshore AI; Scientist")]  # fmt: skip
     assert (
         client_for(fresh).get("/api/onboarding").json()["state"]["transcript"] == view["state"]["transcript"]

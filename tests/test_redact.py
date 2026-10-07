@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from lighthouse_gc.agent.redact import redact
+from areao1.agent.redact import redact
 
 PLAIN = [
     "1,840 stars, 212 forks, 37 contributors, 12 releases",

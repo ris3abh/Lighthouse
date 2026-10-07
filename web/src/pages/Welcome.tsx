@@ -10,9 +10,10 @@ import { useTheme, type ThemeMode } from "../hooks";
 import { useReducedMotion } from "../lib/motion";
 import { buildThread, initiallySeen, typingIndex, type Msg } from "../lib/thread";
 import { DOTS_MS, typeDuration, typedPrefix } from "../lib/typing";
+import { PRODUCT } from "../names";
 
 /** Onboarding (ADR 0008, C15): one conversation in a window like Ask's, over the blurred dashboard. Every step is
- * a message in the same thread, so it scrolls up as it grows; each new message types in, and while Lighthouse is
+ * a message in the same thread, so it scrolls up as it grows; each new message types in, and while Area O1 is
  * working the typing dots show. The reply controls sit where Ask's composer is. One ask at a time, the profile
  * filling in beside it, nothing guessed, no web without a Yes. */
 
@@ -36,7 +37,7 @@ type Run = (fn: () => Promise<OnboardingView>, working?: string) => Promise<void
 export default function Welcome({ view, onChange }: { view: OnboardingView; onChange: (v: OnboardingView) => void }) {
   const toast = useToast();
   const { mode, setMode } = useTheme();
-  const [working, setWorking] = useState<string | null>(null); // what Lighthouse is doing while a request runs
+  const [working, setWorking] = useState<string | null>(null); // what Area O1 is doing while a request runs
   const busy = working !== null;
   const step = view.state.step;
   const stepIndex = Math.max(0, STEPS.findIndex((s) => s.id === step));
@@ -65,7 +66,7 @@ export default function Welcome({ view, onChange }: { view: OnboardingView; onCh
   seen.current ??= initiallySeen(msgs);
   const typingAt = typingIndex(msgs, seen.current);
   const shown = typingAt < 0 ? msgs : msgs.slice(0, typingAt + 1);
-  const quiet = typingAt >= 0 || busy; // the reply controls wait until Lighthouse has finished talking
+  const quiet = typingAt >= 0 || busy; // the reply controls wait until Area O1 has finished talking
 
   const back = view.nav?.back && (
     <Button size="sm" variant="ghost" className="px-2" disabled={busy} onClick={() => run(() => api.onboardingGoto(view.nav.back!.step, view.nav.back!.question))} aria-label="Back" title="Back">
@@ -77,12 +78,12 @@ export default function Welcome({ view, onChange }: { view: OnboardingView; onCh
     <section
       role="dialog"
       aria-modal
-      aria-label="Getting started with Lighthouse"
+      aria-label={`Getting started with ${PRODUCT}`}
       className="fixed inset-0 z-50 flex animate-rise flex-col bg-surface md:inset-auto md:top-1/2 md:left-1/2 md:h-[min(88vh,860px)] md:w-[min(1080px,94vw)] md:-translate-x-1/2 md:-translate-y-1/2 md:border md:border-frame"
     >
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-frame px-4 lg:h-16">
         <img src="./favicon.svg" alt="" className="size-5" />
-        <span className="display text-2xl uppercase">Lighthouse</span>
+        <span className="display text-2xl uppercase">{PRODUCT}</span>
         <span className="hidden font-mono text-[10.5px] tracking-[0.08em] text-muted uppercase sm:inline">Getting started</span>
         <div className="ml-auto flex items-center gap-2">
           <span className="hidden sm:block">
@@ -230,7 +231,7 @@ function Message({ m, typing, onTyped, children }: { m: Msg; typing: boolean; on
   if (m.who === "you")
     return <div className="ml-10 animate-rise self-end bg-ink px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-on-ink">{m.text}</div>;
   return (
-    <div className="animate-rise border-l border-ink pl-4" data-who="lighthouse">
+    <div className="animate-rise border-l border-ink pl-4" data-who="areao1">
       {typing ? (
         <Typed text={m.text} onDone={onTyped} />
       ) : (
@@ -283,7 +284,7 @@ function Typed({ text, onDone }: { text: string; onDone: () => void }) {
   );
 }
 
-/** Lighthouse is typing (or reading your PDF, or searching). */
+/** Area O1 is typing (or reading your PDF, or searching). */
 function Dots({ label, bare }: { label?: string; bare?: boolean }) {
   const dots = (
     <span className="inline-flex items-center gap-1 py-1.5" role="status" aria-label={label || "Typing"}>

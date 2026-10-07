@@ -13,14 +13,14 @@ from agent_fakes import FakeEngine
 from test_rulecheck import QUOTE, RULE, FakeJudge
 from test_vault import GENERIC, Pages, _at, public_dns  # noqa: F401  (fixture)
 
-from lighthouse_gc.agent.runner import AgentRunner
-from lighthouse_gc.agent.search_policy import SearchPolicy
-from lighthouse_gc.agent.tools import RunContext, build_tools
-from lighthouse_gc.core.models import AgentRun
-from lighthouse_gc.engine.base import EngineRequest
-from lighthouse_gc.engine.claude_code import ClaudeAgentEngine, _guard_hook
-from lighthouse_gc.vault import Vault, load_manifest
-from lighthouse_gc.vault.rulecheck import RuleChecker
+from areao1.agent.runner import AgentRunner
+from areao1.agent.search_policy import SearchPolicy
+from areao1.agent.tools import RunContext, build_tools
+from areao1.core.models import AgentRun
+from areao1.engine.base import EngineRequest
+from areao1.engine.claude_code import ClaudeAgentEngine, _guard_hook
+from areao1.vault import Vault, load_manifest
+from areao1.vault.rulecheck import RuleChecker
 
 OFFICIAL = "https://www.uscis.gov/newsroom/alerts/new-o-1-guidance"
 BLOG = "https://immigration-blog.example/o1-guide"

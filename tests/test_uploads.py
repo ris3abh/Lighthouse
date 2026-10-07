@@ -7,12 +7,12 @@ from datetime import date
 import pytest
 from fastapi.testclient import TestClient
 
-from lighthouse_gc.core.workspace import WorkspaceError
-from lighthouse_gc.criteria.classify import classify
-from lighthouse_gc.server.app import create_app
+from areao1.core.workspace import WorkspaceError
+from areao1.criteria.classify import classify
+from areao1.server.app import create_app
 
 PDF = b"%PDF-1.4\n% fictional test document\n"
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 
 
 @pytest.mark.parametrize(

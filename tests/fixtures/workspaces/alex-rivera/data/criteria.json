@@ -2,7 +2,7 @@
   "schema_version": 1,
   "profile": "o1a",
   "profile_name": "O-1A Extraordinary Ability",
-  "computed_at": "2026-10-07T00:08:43Z",
+  "computed_at": "2026-10-07T18:27:45Z",
   "threshold": 3,
   "target": 5,
   "banked": 2,
@@ -11,6 +11,7 @@
     {
       "id": "awards",
       "label": "Nationally or internationally recognized prizes or awards",
+      "short_label": "Awards",
       "status": "building",
       "exhibit_count": 1,
       "exhibit_ids": [
@@ -24,12 +25,13 @@
       ],
       "needed_exhibits": 0,
       "in_progress_count": 0,
-      "reason": "Needs 1 more strength signal(s).",
+      "reason": "Needs 1 more strength signal.",
       "overridden": false
     },
     {
       "id": "membership",
       "label": "Membership in associations requiring outstanding achievement",
+      "short_label": "Membership",
       "status": "gap",
       "exhibit_count": 0,
       "exhibit_ids": [],
@@ -46,6 +48,7 @@
     {
       "id": "press",
       "label": "Published material about you in major media or trade publications",
+      "short_label": "Press",
       "status": "gap",
       "exhibit_count": 0,
       "exhibit_ids": [],
@@ -63,6 +66,7 @@
     {
       "id": "judging",
       "label": "Judging the work of others",
+      "short_label": "Judging",
       "status": "banked",
       "exhibit_count": 2,
       "exhibit_ids": [
@@ -77,12 +81,13 @@
       "missing_signals": [],
       "needed_exhibits": 0,
       "in_progress_count": 1,
-      "reason": "2 exhibit(s) with 3 strength signal(s) meet the bar. 1 exhibit(s) not counted until completed (stage: invited).",
+      "reason": "2 exhibits with 3 strength signals meet the bar. 1 exhibit not counted until completed (stage: invited).",
       "overridden": false
     },
     {
       "id": "original_contributions",
       "label": "Original contributions of major significance",
+      "short_label": "Contributions",
       "status": "building",
       "exhibit_count": 1,
       "exhibit_ids": [
@@ -98,12 +103,13 @@
       ],
       "needed_exhibits": 1,
       "in_progress_count": 0,
-      "reason": "Needs 1 more exhibit(s).",
+      "reason": "Needs 1 more exhibit.",
       "overridden": false
     },
     {
       "id": "scholarly_articles",
       "label": "Authorship of scholarly articles",
+      "short_label": "Articles",
       "status": "banked",
       "exhibit_count": 1,
       "exhibit_ids": [
@@ -117,12 +123,13 @@
       "missing_signals": [],
       "needed_exhibits": 0,
       "in_progress_count": 1,
-      "reason": "1 exhibit(s) with 3 strength signal(s) meet the bar. 1 exhibit(s) not counted until completed (stage: preprint).",
+      "reason": "1 exhibit with 3 strength signals meets the bar. 1 exhibit not counted until completed (stage: preprint).",
       "overridden": false
     },
     {
       "id": "critical_role",
       "label": "Critical or essential role for distinguished organizations",
+      "short_label": "Critical role",
       "status": "building",
       "exhibit_count": 1,
       "exhibit_ids": [
@@ -136,12 +143,13 @@
       ],
       "needed_exhibits": 1,
       "in_progress_count": 0,
-      "reason": "Needs 1 more exhibit(s) and 1 more strength signal(s).",
+      "reason": "Needs 1 more exhibit and 1 more strength signal.",
       "overridden": false
     },
     {
       "id": "high_salary",
       "label": "High salary or remuneration",
+      "short_label": "Salary",
       "status": "dropped",
       "exhibit_count": 0,
       "exhibit_ids": [],
@@ -156,5 +164,6 @@
       "overridden": true
     }
   ],
+  "rules_digest": "a656d2794ec88827",
   "reviewer_note": null
 }

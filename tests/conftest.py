@@ -4,6 +4,7 @@ keychain is replaced with an in-memory dict."""
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from datetime import date
 from pathlib import Path
@@ -12,8 +13,8 @@ import httpx
 import pytest
 import respx
 
-from lighthouse_gc.criteria.case import Case
-from lighthouse_gc.scaffold import create_workspace
+from areao1.criteria.case import Case
+from areao1.scaffold import create_workspace
 
 FIXTURES = Path(__file__).parent / "fixtures"
 TODAY = date(2026, 10, 6)
@@ -26,11 +27,14 @@ def fixture_json(*parts: str):
 
 @pytest.fixture(autouse=True)
 def user_config(tmp_path_factory, monkeypatch):
-    """Never read or write the real ~/.config/lighthouse-gc or ~/Lighthouse."""
+    """Never read or write the real ~/.config/areao1 or ~/AreaO1."""
     d = tmp_path_factory.mktemp("userconfig")
-    monkeypatch.setenv("LIGHTHOUSE_GC_CONFIG_DIR", str(d / "config"))
-    monkeypatch.setenv("LIGHTHOUSE_GC_HOME", str(d / "Lighthouse"))
-    monkeypatch.delenv("LIGHTHOUSE_GC_WORKSPACE", raising=False)
+    monkeypatch.setenv("AREAO1_CONFIG_DIR", str(d / "config"))
+    monkeypatch.setenv("AREAO1_HOME", str(d / "AreaO1"))
+    monkeypatch.delenv("AREAO1_WORKSPACE", raising=False)
+    for name in list(os.environ):  # Lighthouse-era variables on the developer's machine never leak in
+        if name.startswith(("LIGHTHOUSE_GC_", "LIGHTHOUSE_MODEL_")):
+            monkeypatch.delenv(name)
     return d
 
 
@@ -38,7 +42,7 @@ def user_config(tmp_path_factory, monkeypatch):
 def no_real_model(monkeypatch):
     """Tests never call a real model: the real engine reports itself unavailable, whatever this machine has
     installed or logged in. Tests that need an agent inject the scripted FakeEngine."""
-    from lighthouse_gc.engine.claude_code import ClaudeAgentEngine
+    from areao1.engine.claude_code import ClaudeAgentEngine
 
     real = ClaudeAgentEngine.available
 

@@ -1,0 +1,100 @@
+{
+  "$defs": {
+    "FilingTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "default": "o1a",
+          "title": "Profile",
+          "type": "string"
+        },
+        "target_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Date"
+        }
+      },
+      "title": "FilingTarget",
+      "type": "object"
+    },
+    "Petitioner": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "default": "employer",
+          "enum": [
+            "employer",
+            "agent",
+            "self",
+            "other"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "title": "Petitioner",
+      "type": "object"
+    }
+  },
+  "$id": "https://areao1.dev/schemas/v1/person.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "aliases": {
+      "description": "Other spellings used for mention matching.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Aliases",
+      "type": "array"
+    },
+    "current_status": {
+      "default": "",
+      "description": "Current immigration status, e.g. F-1 OPT, H-1B.",
+      "title": "Current Status",
+      "type": "string"
+    },
+    "field": {
+      "default": "",
+      "title": "Field",
+      "type": "string"
+    },
+    "filing_target": {
+      "$ref": "#/$defs/FilingTarget"
+    },
+    "location": {
+      "default": "",
+      "title": "Location",
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "title": "Name",
+      "type": "string"
+    },
+    "petitioner": {
+      "$ref": "#/$defs/Petitioner"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "title": "Person",
+  "type": "object"
+}

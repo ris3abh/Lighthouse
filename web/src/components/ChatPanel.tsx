@@ -9,6 +9,7 @@ import Markdown from "./Markdown";
 import RuleCheckView from "./RuleCheck";
 import ToolCall from "./ToolCall";
 import { Button, useToast } from "./ui";
+import { PRODUCT } from "../names";
 
 const CONV_KEY = "lh-chat-conv";
 const SUGGESTIONS = ["Where do I stand, and what are the 3 things to do this week?", "Find hackathons I could judge in the next two months",
@@ -165,7 +166,7 @@ export default function ChatPanel({
 
   return (
     <aside
-      aria-label="Chat with the Lighthouse agent"
+      aria-label={`Chat with the ${PRODUCT} agent`}
       role={docked ? undefined : "dialog"}
       aria-modal={docked ? undefined : true}
       className={

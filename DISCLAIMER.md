@@ -1,10 +1,10 @@
 # Disclaimer
 
-Lighthouse is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained
+Area O1 is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained
 summaries of public regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration
 attorney.
 
-Lighthouse organizes evidence; it does not judge eligibility. A criterion marked "banked" means your accepted
+Area O1 organizes evidence; it does not judge eligibility. A criterion marked "banked" means your accepted
 exhibits meet the simple, documented rule in the profile YAML. It does not mean USCIS will agree. Any written
 assessment produced by an AI agent is an opinion and is labeled as one.
 

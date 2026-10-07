@@ -1,5 +1,5 @@
 """Every create / update / move on the Inbox, Pipeline, Letters, Calendar and Evidence pages goes through the
-service layer (lighthouse_gc/service.py). These tests fail if a page or route writes workspace files any
+service layer (areao1/service.py). These tests fail if a page or route writes workspace files any
 other way, or if a new write route appears without being covered here."""
 
 from __future__ import annotations
@@ -14,11 +14,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from lighthouse_gc.server.app import create_app
-from lighthouse_gc.service import in_service
+from areao1.server.app import create_app
+from areao1.service import in_service
 
 ROOT = Path(__file__).resolve().parent.parent
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 PDF = b"%PDF-1.4 fictional\n"
 
 # Routes the five pages write through. Every mutating route under these prefixes must be covered below.
@@ -59,7 +59,7 @@ def writes(monkeypatch, demo_ws):
             rel = Path(path).resolve().relative_to(root).as_posix()
         except (ValueError, TypeError, OSError):
             return
-        if not rel.startswith(".lighthouse/cache"):
+        if not rel.startswith(".areao1/cache"):
             log.append((rel, in_service()))
 
     real_replace, real_open = os.replace, builtins.open
@@ -111,7 +111,7 @@ def _ids(ws):
 def _todo(ws) -> str:
     from datetime import date
 
-    from lighthouse_gc.criteria.models import Todo
+    from areao1.criteria.models import Todo
 
     ws.add_todos([Todo(id="todo_test", title="Upload proof of HackSeattle 2025 judging", kind="judging",
                        item="Judge, HackSeattle 2025", criterion="judging", created=date(2026, 10, 6))])  # fmt: skip
@@ -120,7 +120,7 @@ def _todo(ws) -> str:
 
 def _onboarding(ws) -> str:
     """Put onboarding at a question so the answer route has one to answer."""
-    from lighthouse_gc.onboarding.models import OnboardingState, ProfileField
+    from areao1.onboarding.models import OnboardingState, ProfileField
 
     ws.save_onboarding(OnboardingState(status="in_progress", step="questions", reached="questions", target_profile="o1a", fields=[
         ProfileField(key="location", label="Based in", value="Pittsburgh, PA", quote="Pittsburgh, PA")]))  # fmt: skip
@@ -129,7 +129,7 @@ def _onboarding(ws) -> str:
 
 def _finding(ws) -> str:
     """An official page the agent read, so the promote route has a finding to promote."""
-    from lighthouse_gc.vault import Vault
+    from areao1.vault import Vault
 
     text = "Official guidance about petitions and evidence. " * 10
     return (
@@ -143,8 +143,8 @@ def _briefing(ws) -> str:
     """Publish a briefing so the re-check route has one to check."""
     from datetime import UTC, datetime
 
-    from lighthouse_gc.core.models import Briefing
-    from lighthouse_gc.service import Service
+    from areao1.core.models import Briefing
+    from areao1.service import Service
 
     Service(ws, actor="agent:test").publish_briefing(Briefing(generated_at=datetime.now(UTC), changed=["x"]))
     return "overview"
@@ -152,7 +152,7 @@ def _briefing(ws) -> str:
 
 def _undoable_change(ws) -> str:
     """Make one undoable change (a pipeline move) so the undo route has something to revert."""
-    from lighthouse_gc.service import Service
+    from areao1.service import Service
 
     item = ws.pipeline().items[-1]
     Service(ws).update_pipeline_item(item.id, stage="done" if item.stage != "done" else "idea")
@@ -210,7 +210,7 @@ SAMPLES = {
 
 def _at_ai(ws) -> None:
     """Put onboarding at Connect your AI."""
-    from lighthouse_gc.onboarding.models import OnboardingState
+    from areao1.onboarding.models import OnboardingState
 
     ws.save_onboarding(OnboardingState(status="in_progress", step="ai", reached="ai"))
 
@@ -279,11 +279,11 @@ def _web_sources() -> dict[str, str]:
 
 
 def test_pages_only_write_through_the_api_client():
-    """Writes need the X-Lighthouse header and a non-GET method; only web/src/api.ts may do either."""
+    """Writes need the X-AreaO1 header and a non-GET method; only web/src/api.ts may do either."""
     for name, text in _web_sources().items():
         if name == "web/src/api.ts":
             continue
-        assert "X-Lighthouse" not in text, f"{name} sends the write header itself; use api.ts"
+        assert "X-AreaO1" not in text, f"{name} sends the write header itself; use api.ts"
         assert not re.search(r"method\s*:", text), f"{name} makes a non-GET request itself; use api.ts"
 
 

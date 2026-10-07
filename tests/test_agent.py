@@ -10,14 +10,14 @@ import anyio
 import pytest
 from agent_fakes import FakeEngine
 
-from lighthouse_gc.agent import tools as agent_tools
-from lighthouse_gc.agent.redact import redact
-from lighthouse_gc.agent.runner import AgentRunner, BudgetExceeded
-from lighthouse_gc.agent.tools import RunContext, UnsafeURL, build_tools, check_url, html_to_text
-from lighthouse_gc.core.models import AgentRun
-from lighthouse_gc.engine import get_engine
-from lighthouse_gc.engine.base import AgentEvent, AgentTool, EngineRequest, EngineUnavailable
-from lighthouse_gc.engine.claude_code import BLOCKED_BUILTINS, ClaudeAgentEngine
+from areao1.agent import tools as agent_tools
+from areao1.agent.redact import redact
+from areao1.agent.runner import AgentRunner, BudgetExceeded
+from areao1.agent.tools import RunContext, UnsafeURL, build_tools, check_url, html_to_text
+from areao1.core.models import AgentRun
+from areao1.engine import get_engine
+from areao1.engine.base import AgentEvent, AgentTool, EngineRequest, EngineUnavailable
+from areao1.engine.claude_code import BLOCKED_BUILTINS, ClaudeAgentEngine
 
 PAGE = """<html><head><title>MLH Fall 2026 judges</title><script>var x=1</script></head>
 <body><nav>menu</nav><h1>Judges</h1><p>Alex Rivera will judge the ML track at MLH Fall 2026, held October 24.</p>
@@ -49,12 +49,12 @@ def test_claude_adapter_is_locked_down():
     assert opts.tools == ["WebSearch"]  # the only built-in tool
     assert set(opts.allowed_tools) == {
         "WebSearch",
-        "mcp__lighthouse__get_scoreboard",
-        "mcp__lighthouse__propose_deadline",
+        "mcp__areao1__get_scoreboard",
+        "mcp__areao1__propose_deadline",
     }
     for blocked in ("Bash", "Read", "Write", "Edit", "WebFetch", "Glob", "Grep"):
         assert blocked in opts.disallowed_tools and blocked in BLOCKED_BUILTINS
-    assert opts.strict_mcp_config is True and list(opts.mcp_servers) == ["lighthouse"]
+    assert opts.strict_mcp_config is True and list(opts.mcp_servers) == ["areao1"]
     assert opts.setting_sources == []  # no user settings, hooks or CLAUDE.md
     assert opts.permission_mode == "dontAsk"
     assert "no-session-persistence" in opts.extra_args  # no transcripts in ~/.claude
@@ -81,7 +81,7 @@ def test_claude_adapter_translates_the_sdk_stream():
     async def fake_query(*, prompt, options):
         yield StreamEvent(uuid="u1", session_id="s", event={"type": "content_block_delta",
                                                             "delta": {"type": "text_delta", "text": "Look"}})  # fmt: skip
-        tool_use = ToolUseBlock(id="t1", name="mcp__lighthouse__list_gaps", input={})
+        tool_use = ToolUseBlock(id="t1", name="mcp__areao1__list_gaps", input={})
         usage = {"input_tokens": 1000, "output_tokens": 50, "cache_read_input_tokens": 9000}
         yield AssistantMessage(content=[tool_use], model="m", usage=usage, message_id="msg1")
         yield AssistantMessage(
@@ -404,7 +404,7 @@ def test_model_per_run_type(demo_ws):
 
 
 def test_legacy_single_model_config_still_loads():
-    from lighthouse_gc.core.models import AgentConfig
+    from areao1.core.models import AgentConfig
 
     cfg = AgentConfig.model_validate({"model": "claude-opus-5", "effort": "high"})
     assert (cfg.models.chat, cfg.models.task, cfg.models.mission) == (
@@ -424,7 +424,7 @@ def _tool_defs(ws):
 
 def test_cacheable_prefix_is_byte_stable(demo_ws, tmp_path):
     """System prompt + tool definitions are the cached prefix: identical across runs, no volatile content."""
-    from lighthouse_gc.agent.prompt import SYSTEM_PROMPT
+    from areao1.agent.prompt import SYSTEM_PROMPT
 
     assert not re.search(r"\d{4}-\d{2}-\d{2}|\b(run|conv|cand|obs|clm)_[0-9a-f]{6,}", SYSTEM_PROMPT)
     assert _tool_defs(demo_ws) == _tool_defs(demo_ws)  # deterministic order and content

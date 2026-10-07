@@ -13,18 +13,18 @@ from agent_fakes import FakeEngine
 from fastapi.testclient import TestClient
 from test_vault import Pages, _at, public_dns  # noqa: F401  (fixture)
 
-from lighthouse_gc import notify
-from lighthouse_gc.agent.runner import AgentRunner
-from lighthouse_gc.agent.tools import RunContext, build_tools
-from lighthouse_gc.core.models import AgentRun, RuleCitation, utcnow
-from lighthouse_gc.core.models import RuleCheck as RuleCheckModel
-from lighthouse_gc.core.workspace import WorkspaceError
-from lighthouse_gc.server.app import create_app
-from lighthouse_gc.service import Service
-from lighthouse_gc.vault import Vault
-from lighthouse_gc.vault.rulecheck import JudgeReply, RuleChecker, candidates, decide, engine_judge, refresh
+from areao1 import notify
+from areao1.agent.runner import AgentRunner
+from areao1.agent.tools import RunContext, build_tools
+from areao1.core.models import AgentRun, RuleCitation, utcnow
+from areao1.core.models import RuleCheck as RuleCheckModel
+from areao1.core.workspace import WorkspaceError
+from areao1.server.app import create_app
+from areao1.service import Service
+from areao1.vault import Vault
+from areao1.vault.rulecheck import JudgeReply, RuleChecker, candidates, decide, engine_judge, refresh
 
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 RULE = "EB-1A requires evidence of at least three of the ten criteria."
 QUOTE = "at least three of the ten regulatory criteria"
 
@@ -105,7 +105,7 @@ def test_plain_answers_cost_nothing(vault_ws):
 
 def test_candidates_use_the_manifest_hints():
     hints = Vault.__new__(Vault)  # noqa: F841 - hints come from the manifest
-    from lighthouse_gc.vault import load_manifest
+    from areao1.vault import load_manifest
 
     found = candidates(
         "Intro.\n\n- The I-129 filing fee is $1,055.\n- Email Dr. Lee.\n" + RULE, load_manifest().rule_hints
@@ -206,7 +206,7 @@ def test_backup_retry_can_verify_and_overrides_not_a_rule(vault_ws):
 
 
 def test_backup_sentences_cant_enter_petition_text(vault_ws, http_mock):
-    from lighthouse_gc.vault.rulecheck import BACKUP, backup_reasons
+    from areao1.vault.rulecheck import BACKUP, backup_reasons
 
     assert set(BACKUP) == {
         "a CFR section",
@@ -341,7 +341,7 @@ def test_unavailable_judge_or_empty_vault_means_unverified(ws, vault_ws):
         check = _check(vault_ws, RULE, judge)
         assert [c.status for c in check.claims] == ["unverified"] and "couldn't run" in check.note
     # A workspace whose vault was never synced can't verify anything.
-    from lighthouse_gc.scaffold import create_workspace
+    from areao1.scaffold import create_workspace
 
     empty = create_workspace(ws.root.parent / "empty", name="E", git=False)
     check = _check(empty, RULE, FakeJudge())
@@ -582,8 +582,8 @@ def test_a_source_demoted_to_tier3_stops_verifying_on_refresh(vault_ws):
 
 
 def test_tier1_and_tier2_are_tied_to_official_domains(ws):
-    from lighthouse_gc.vault import load_manifest
-    from lighthouse_gc.vault.models import VaultManifest
+    from areao1.vault import load_manifest
+    from areao1.vault.models import VaultManifest
 
     m = load_manifest()
     assert {s.id for s in m.sources if s.tier == 3} >= {"wikipedia-o-1", "wikipedia-eb-1"}

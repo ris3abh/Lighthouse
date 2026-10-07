@@ -7,9 +7,9 @@ from datetime import date
 import pytest
 from conftest import mock_github, mock_hf
 
-from lighthouse_gc.core.memory import Memory, MemoryError
-from lighthouse_gc.core.models import ClaimDraft, Evidence, json_excerpt
-from lighthouse_gc.jobs import sync as jobs
+from areao1.core.memory import Memory, MemoryError
+from areao1.core.models import ClaimDraft, Evidence, json_excerpt
+from areao1.jobs import sync as jobs
 
 
 def _import(ws, http_mock, url="https://github.com/arivera-demo"):
@@ -92,7 +92,7 @@ def test_changed_value_supersedes_and_keeps_history(tmp_path):
 
     current = mem.query_claims(subject="artifact:x", predicate="downloads")
     assert [c.value for c, _ in current] == [128]
-    # Knowledge time: on Sept 15 Lighthouse hadn't recorded anything yet.
+    # Knowledge time: on Sept 15 Area O1 hadn't recorded anything yet.
     assert mem.query_claims(subject="artifact:x", predicate="downloads", as_of=date(2026, 9, 15)) == []
 
 
@@ -154,7 +154,7 @@ def test_index_is_rebuildable(ws, http_mock):
     ws.memory.index_path.unlink()
     assert ws.memory.query_claims(predicate="stars") == first
     assert ws.memory.index_path.exists()
-    assert ws.memory.index_path.is_relative_to(ws.root / ".lighthouse" / "cache")  # gitignored
+    assert ws.memory.index_path.is_relative_to(ws.root / ".areao1" / "cache")  # gitignored
 
 
 def test_metrics_snapshot_records_metric_claims(ws, http_mock):
@@ -166,7 +166,7 @@ def test_metrics_snapshot_records_metric_claims(ws, http_mock):
 
 
 def test_same_text_at_two_urls_keeps_both_sources(tmp_path):
-    from lighthouse_gc.core.models import Evidence
+    from areao1.core.models import Evidence
 
     mem = Memory(tmp_path, tmp_path / ".cache")
     a = mem.snapshot(

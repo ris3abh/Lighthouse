@@ -14,10 +14,10 @@ from agent_fakes import FakeEngine
 from fastapi.testclient import TestClient
 from test_agent import PAGE, _public_dns
 
-from lighthouse_gc.agent.guardrails import COMPLETED_STAGES
-from lighthouse_gc.server.app import create_app
+from areao1.agent.guardrails import COMPLETED_STAGES
+from areao1.server.app import create_app
 
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 EXHIBIT = "exh_475bb7c7fbe4"  # "MLH Fall 2026 judge invitation", stage invited
 URL = "https://mlh.example/judges"
 INVITE = "Alex Rivera was invited to judge the ML track at MLH Fall 2026, held October 24."
@@ -105,7 +105,7 @@ def test_no_chat_request_can_turn_an_invitation_into_a_completion(demo_ws, monke
 def test_negative_control_without_the_stage_guard_the_upgrade_is_caught(demo_ws, monkeypatch, http_mock):
     """If the invited-to-completed guard were gone, a completed proposal would reach the Inbox and this file's
     check would see it."""
-    from lighthouse_gc.agent import guardrails
+    from areao1.agent import guardrails
 
     monkeypatch.setattr(guardrails, "check_stage", lambda stage, quote: None)
     _public_dns(monkeypatch)

@@ -1,7 +1,0 @@
-# Lighthouse workspace — never commit caches or secrets.
-.lighthouse/cache/
-*.db
-*.db-journal
-.env
-.env.*
-.DS_Store

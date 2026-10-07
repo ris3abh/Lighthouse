@@ -1,6 +1,6 @@
-# Lighthouse — Alex Rivera
+# Area O1 — Alex Rivera
 
-_Generated 2026-10-06 from the files in `data/`. Do not edit by hand — run `lighthouse-gc run dashboard` to regenerate._
+_Generated 2026-10-06 from the files in `data/`. Do not edit by hand — run `areao1 run dashboard` to regenerate._
 
 **O-1A Extraordinary Ability** — 2 banked / 3 needed (target 5), 3 building. **1 more criterion(s) to bank.**
 
@@ -61,4 +61,4 @@ _Generated 2026-10-06 from the files in `data/`. Do not edit by hand — run `li
 - `huggingface:arivera-demo` — 4 tracked item(s), last sync 2026-10-07
 
 ---
-_Lighthouse is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney._
+_Area O1 is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney._

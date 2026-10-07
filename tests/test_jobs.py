@@ -9,14 +9,14 @@ from conftest import mock_github
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
-from lighthouse_gc import notify
-from lighthouse_gc.cli import app
-from lighthouse_gc.core import clock
-from lighthouse_gc.core.models import Deadline, Deadlines, Pipeline, PipelineItem
-from lighthouse_gc.core.workspace import _atomic_write, dump_model
-from lighthouse_gc.jobs import JOBS, alerts, scheduler
-from lighthouse_gc.scaffold import validate_workspace
-from lighthouse_gc.server.app import create_app
+from areao1 import notify
+from areao1.cli import app
+from areao1.core import clock
+from areao1.core.models import Deadline, Deadlines, Pipeline, PipelineItem
+from areao1.core.workspace import _atomic_write, dump_model
+from areao1.jobs import JOBS, alerts, scheduler
+from areao1.scaffold import validate_workspace
+from areao1.server.app import create_app
 
 TODAY = date(2026, 10, 6)
 
@@ -134,7 +134,7 @@ def test_scheduled_snapshot_is_biweekly(demo_ws, http_mock):
 
 
 def test_sync_job_alerts_on_new_candidates_and_errors(ws, http_mock, sent):
-    from lighthouse_gc.jobs.sync import import_source
+    from areao1.jobs.sync import import_source
 
     mock_github(http_mock)
     import_source(ws, "https://github.com/arivera-demo", sleep=lambda s: None)
@@ -213,6 +213,6 @@ def test_cli_and_api(ws, sent):
     names = {j["name"] for j in c.get("/api/jobs").json()}
     assert {"sync", "metrics-snapshot", "deadline-check", "digest", "dashboard", "mission-opportunity-scout",
             "mission-what-changed", "vault-watch"} == names  # fmt: skip
-    r = c.post("/api/jobs/dashboard/run", headers={"X-Lighthouse": "1"})
+    r = c.post("/api/jobs/dashboard/run", headers={"X-AreaO1": "1"})
     assert r.status_code == 200 and r.json()["ok"]
-    assert c.post("/api/jobs/nope/run", headers={"X-Lighthouse": "1"}).status_code == 404
+    assert c.post("/api/jobs/nope/run", headers={"X-AreaO1": "1"}).status_code == 404

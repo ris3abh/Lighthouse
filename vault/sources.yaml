@@ -1,5 +1,5 @@
 # Knowledge vault manifest (SPEC 5a). Community-maintained: URLs, tiers and freshness windows only.
-# Fetched content and embeddings live in each workspace's cache (.lighthouse/cache/vault), never here.
+# Fetched content and embeddings live in each workspace's cache (.areao1/cache/vault), never here.
 #
 # Tiers: 1 = primary law and agency pages, 2 = adjudication, 3 = secondary (context only, never the sole
 # source for a rule claim).
@@ -11,7 +11,7 @@
 # extracted text to the part that matters, e.g. one paragraph of a long regulation section.
 #
 # manual: true marks sites that usually block automated reading (uscis.gov, travel.state.gov). They're still
-# tried, but expect to import a saved copy (Knowledge page or `lighthouse-gc vault import`); vault-watch sends a
+# tried, but expect to import a saved copy (Knowledge page or `areao1 vault import`); vault-watch sends a
 # reminder with the page link when an imported copy passes its freshness window.
 # secondary_to: the primary source for the same facts. When the two disagree, the primary governs (e.g. the fee
 # regulation, 8 CFR part 106, over the USCIS fee page).

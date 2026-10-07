@@ -3,9 +3,9 @@ from __future__ import annotations
 import pytest
 from conftest import TODAY, mock_hf
 
-from lighthouse_gc.sources import huggingface
-from lighthouse_gc.sources.http import HttpClient
-from lighthouse_gc.sources.huggingface import HuggingFaceSource
+from areao1.sources import huggingface
+from areao1.sources.http import HttpClient
+from areao1.sources.huggingface import HuggingFaceSource
 
 
 def make() -> HuggingFaceSource:

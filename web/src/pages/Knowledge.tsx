@@ -67,7 +67,7 @@ export default function Knowledge() {
       />
       {!k.enabled && (
         <p className="mb-8 border border-alert bg-surface px-5 py-4 text-sm text-ink">
-          The vault is turned off (<code>vault: {"{enabled: false}"}</code> in lighthouse.yaml). Nothing is fetched, and rule statements show as unverified.
+          The vault is turned off (<code>vault: {"{enabled: false}"}</code> in areao1.yaml). Nothing is fetched, and rule statements show as unverified.
         </p>
       )}
 

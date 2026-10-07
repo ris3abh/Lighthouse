@@ -1,0 +1,45 @@
+{
+  "$id": "https://areao1.dev/schemas/v1/memory-decision.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A review record. Approval records a decision; it does not certify truth or legal sufficiency.",
+  "properties": {
+    "at": {
+      "format": "date-time",
+      "title": "At",
+      "type": "string"
+    },
+    "claim_id": {
+      "title": "Claim Id",
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "approved",
+        "rejected"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "rationale": {
+      "default": "",
+      "title": "Rationale",
+      "type": "string"
+    },
+    "reviewer": {
+      "default": "user",
+      "title": "Reviewer",
+      "type": "string"
+    }
+  },
+  "required": [
+    "claim_id",
+    "decision"
+  ],
+  "title": "Decision",
+  "type": "object"
+}

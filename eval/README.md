@@ -1,6 +1,6 @@
 # Evaluation harness (SPEC 5c) — Phase 2
 
-Scenarios, fixtures, expected answers, baselines and results will live here. Lighthouse makes no reliability
+Scenarios, fixtures, expected answers, baselines and results will live here. Area O1 makes no reliability
 claim that this harness hasn't measured; the README only quotes numbers from the latest run.
 
 Planned layout: `scenarios/` (dated update streams: judging invite → complete, preprint → published,

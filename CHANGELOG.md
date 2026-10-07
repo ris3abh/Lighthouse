@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Renamed to **Area O1** (ADR 0010): package and command `areao1`, `AREAO1_*` variables, `areao1.yaml` and
+  `.areao1/` in workspaces, keychain service `areao1`. Lighthouse-era workspaces, settings, keychain entries and
+  variables are migrated on first run with a notice; `lighthouse-gc` remains as a deprecated alias.
+- Connecting the AI takes an Anthropic API key only; the Claude Code login option is gone (ADR 0013 amendment).
+
 ### Added
 - Design system "Brutalism 2.0" (ADR 0007): semantic light and dark tokens with one muted red for attention,
   condensed Archivo headlines with JetBrains Mono for data, framed panels, a System / Light / Dark switch,

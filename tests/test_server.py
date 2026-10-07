@@ -4,10 +4,10 @@ import pytest
 from conftest import mock_github
 from fastapi.testclient import TestClient
 
-from lighthouse_gc.criteria.dashboard import render
-from lighthouse_gc.server.app import create_app
+from areao1.criteria.dashboard import render
+from areao1.server.app import create_app
 
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 
 
 @pytest.fixture
@@ -109,9 +109,9 @@ def test_remap_and_override(client):
 
 
 def test_file_preview_is_confined_to_evidence(client):
-    assert client.get("/api/files/lighthouse.yaml").status_code == 404
+    assert client.get("/api/files/areao1.yaml").status_code == 404
     assert client.get("/api/files/../../etc/passwd").status_code in (400, 404)
-    assert client.get("/api/files/evidence/%2e%2e/lighthouse.yaml").status_code in (400, 404)
+    assert client.get("/api/files/evidence/%2e%2e/areao1.yaml").status_code in (400, 404)
 
 
 def test_metrics_and_export(client):

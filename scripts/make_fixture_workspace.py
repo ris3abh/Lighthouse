@@ -22,18 +22,18 @@ sys.path.insert(0, str(ROOT / "tests"))
 
 from conftest import mock_github, mock_hf  # noqa: E402
 
-from lighthouse_gc.core.models import (  # noqa: E402
+from areao1.core.models import (  # noqa: E402
     Deadline,
     Deadlines,
     MetricRow,
     Pipeline,
     PipelineItem,
 )
-from lighthouse_gc.core.workspace import _atomic_write, dump_model  # noqa: E402
-from lighthouse_gc.criteria.models import FilingTarget, Letter, Letters, Person, Petitioner  # noqa: E402
-from lighthouse_gc.jobs.chats import import_chats  # noqa: E402
-from lighthouse_gc.jobs.sync import import_source  # noqa: E402
-from lighthouse_gc.scaffold import create_workspace  # noqa: E402
+from areao1.core.workspace import _atomic_write, dump_model  # noqa: E402
+from areao1.criteria.models import FilingTarget, Letter, Letters, Person, Petitioner  # noqa: E402
+from areao1.jobs.chats import import_chats  # noqa: E402
+from areao1.jobs.sync import import_source  # noqa: E402
+from areao1.scaffold import create_workspace  # noqa: E402
 
 TARGET = ROOT / "tests" / "fixtures" / "workspaces" / "alex-rivera"
 

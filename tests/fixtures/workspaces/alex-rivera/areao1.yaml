@@ -1,0 +1,83 @@
+# Area O1 workspace config. No secrets here — tokens live in the OS keychain.
+schema_version: 1
+workspace_name: demo-workspace
+profile: o1a
+engine: claude_code
+server:
+  host: 127.0.0.1
+  port: 7777
+vault:
+  enabled: true
+schedules:
+  sync: 0 8 * * *
+  metrics-snapshot: 0 9 * * mon
+  deadline-check: 0 7 * * *
+  digest: 0 17 * * fri
+  mission-opportunity-scout: 0 9 * * fri
+  mission-what-changed: 0 7 * * *
+  vault-watch: 0 6 * * *
+connectors:
+  include_forks: false
+  min_stars_for_candidate: 5
+  min_downloads_for_candidate: 100
+notifications:
+  channels:
+    desktop:
+      kind: desktop
+      enabled: true
+      detail: full
+      secret_ref: null
+      host: null
+      port: 587
+      starttls: true
+      username: null
+      from_addr: null
+      to_addr: null
+      server: https://ntfy.sh
+      topic: null
+  routes:
+    deadline:
+    - desktop
+    digest:
+    - desktop
+    new_candidates:
+    - desktop
+    sync_error:
+    - desktop
+    mission:
+    - desktop
+    vault:
+    - desktop
+    test:
+    - desktop
+  deadline_alert_days:
+  - 14
+  - 3
+  - 1
+  - 0
+agent:
+  models:
+    chat: claude-opus-5-5
+    task: claude-opus-5-5
+    mission: claude-sonnet-5-5
+    check: claude-sonnet-5-5
+  missions:
+    opportunity_scout: false
+    what_changed: false
+  effort: medium
+  web_search: true
+  max_turns: 25
+  budget:
+    per_run_tokens: 300000
+    per_run_usd: 2.0
+    monthly_tokens: 10000000
+    monthly_usd: 50.0
+  autopilot:
+    tracker_updates: false
+    metrics: false
+    tier1_deadlines: false
+privacy:
+  redact_before_llm: true
+overrides:
+  o1a:
+    high_salary: dropped

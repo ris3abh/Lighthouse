@@ -12,13 +12,13 @@ import pytest
 from fastapi.testclient import TestClient
 from test_memory import evidence
 
-from lighthouse_gc.agent.runner import _render_turn
-from lighthouse_gc.core import clock
-from lighthouse_gc.core.memory import Memory
-from lighthouse_gc.jobs import alerts
-from lighthouse_gc.server.app import create_app, pipeline_view
-from lighthouse_gc.service import Service
-from lighthouse_gc.vault.store import _date_values
+from areao1.agent.runner import _render_turn
+from areao1.core import clock
+from areao1.core.memory import Memory
+from areao1.jobs import alerts
+from areao1.server.app import create_app, pipeline_view
+from areao1.service import Service
+from areao1.vault.store import _date_values
 
 # (label, the instant, the person's zone, their calendar day at that instant)
 SCENARIOS = [
@@ -122,8 +122,8 @@ def test_tz_environment_variable_sets_the_zone(monkeypatch):
 
 
 def test_nothing_reads_the_date_around_the_clock():
-    """Every "today" goes through lighthouse_gc.core.clock (one place, the person's time zone)."""
-    root = Path(__file__).resolve().parents[1] / "lighthouse_gc"
+    """Every "today" goes through areao1.core.clock (one place, the person's time zone)."""
+    root = Path(__file__).resolve().parents[1] / "areao1"
     banned = re.compile(
         r"\bdate\.today\b|\bdatetime\.now\(|\bdatetime\.utcnow\(|\btime\.localtime\(|\.astimezone\(\)"
     )

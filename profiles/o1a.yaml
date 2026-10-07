@@ -1,11 +1,11 @@
 # O-1A — individuals with extraordinary ability in the sciences, education, business or athletics.
 # Community-maintained summary of 8 CFR 214.2(o)(3)(iii). NOT legal advice. Not affiliated with USCIS.
 #
-# Scoring (rule-based, see lighthouse_gc/core/criteria.py):
+# Scoring (rule-based, see areao1/core/criteria.py):
 #   banked   = accepted exhibits >= bank.min_exhibits AND distinct strength signals >= bank.min_signals
 #   building = at least one accepted exhibit
 #   gap      = no accepted exhibits
-#   dropped  = user override in lighthouse.yaml
+#   dropped  = user override in areao1.yaml
 id: o1a
 name: O-1A Extraordinary Ability
 regulation: 8 CFR 214.2(o)(3)(iii)

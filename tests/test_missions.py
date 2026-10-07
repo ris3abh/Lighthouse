@@ -5,14 +5,14 @@ from __future__ import annotations
 from agent_fakes import FakeEngine
 from fastapi.testclient import TestClient
 
-from lighthouse_gc import notify
-from lighthouse_gc.agent import missions
-from lighthouse_gc.agent.runner import AgentRunner
-from lighthouse_gc.core import clock
-from lighthouse_gc.jobs import JOBS
-from lighthouse_gc.server.app import create_app
+from areao1 import notify
+from areao1.agent import missions
+from areao1.agent.runner import AgentRunner
+from areao1.core import clock
+from areao1.jobs import JOBS
+from areao1.server.app import create_app
 
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 
 
 class _Recorder:
@@ -150,7 +150,7 @@ def test_stream_follows_a_run_started_in_another_runner(demo_ws, monkeypatch):
 
 
 def test_existing_configs_pick_up_new_jobs_and_events(tmp_path):
-    from lighthouse_gc.core.models import NotificationsConfig, WorkspaceConfig
+    from areao1.core.models import NotificationsConfig, WorkspaceConfig
 
     cfg = WorkspaceConfig.model_validate({"schedules": {"sync": "0 6 * * *", "digest": ""}})
     assert cfg.schedules["sync"] == "0 6 * * *" and cfg.schedules["digest"] == ""  # user values win
@@ -160,7 +160,7 @@ def test_existing_configs_pick_up_new_jobs_and_events(tmp_path):
 
 
 def test_a_turned_off_schedule_is_not_scheduled(demo_ws):
-    from lighthouse_gc.jobs import scheduler
+    from areao1.jobs import scheduler
 
     cfg = demo_ws.config()
     cfg.schedules["digest"] = ""

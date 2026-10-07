@@ -6,9 +6,9 @@ import httpx
 import pytest
 from conftest import TODAY, mock_github
 
-from lighthouse_gc.sources import github
-from lighthouse_gc.sources.github import GitHubSource
-from lighthouse_gc.sources.http import HttpClient, SourceError
+from areao1.sources import github
+from areao1.sources.github import GitHubSource
+from areao1.sources.http import HttpClient, SourceError
 
 
 def make(cache_dir=None, sleep=lambda s: None) -> GitHubSource:

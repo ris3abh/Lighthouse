@@ -50,7 +50,7 @@ export default function Pipeline() {
   const drop = (e: DragEvent, stage: Stage) => {
     e.preventDefault();
     setOver(null);
-    const item = items.find((i) => i.id === e.dataTransfer.getData("text/x-lighthouse-pipeline"));
+    const item = items.find((i) => i.id === e.dataTransfer.getData("text/x-areao1-pipeline"));
     if (item) move(item, stage);
   };
   const stale = items.filter((i) => i.stale).length;
@@ -71,7 +71,7 @@ export default function Pipeline() {
               key={col.id}
               aria-label={col.label}
               onDragOver={(e) => {
-                if (e.dataTransfer.types.includes("text/x-lighthouse-pipeline")) {
+                if (e.dataTransfer.types.includes("text/x-areao1-pipeline")) {
                   e.preventDefault();
                   setOver(col.id);
                 }
@@ -104,7 +104,7 @@ export default function Pipeline() {
                     key={item.id}
                     draggable
                     onDragStart={(e) => {
-                      e.dataTransfer.setData("text/x-lighthouse-pipeline", item.id);
+                      e.dataTransfer.setData("text/x-areao1-pipeline", item.id);
                       e.dataTransfer.effectAllowed = "move";
                     }}
                     style={{ viewTransitionName: `pl-${item.id}` }}

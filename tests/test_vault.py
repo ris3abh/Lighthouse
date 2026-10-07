@@ -15,14 +15,14 @@ import httpx
 import pytest
 from typer.testing import CliRunner
 
-from lighthouse_gc import notify
-from lighthouse_gc.cli import app
-from lighthouse_gc.core.models import utcnow
-from lighthouse_gc.jobs import JOBS
-from lighthouse_gc.vault import Vault, load_manifest
-from lighthouse_gc.vault import store as vault_store
-from lighthouse_gc.vault.store import chunk_text
-from lighthouse_gc.vault.watch import run_watch
+from areao1 import notify
+from areao1.cli import app
+from areao1.core.models import utcnow
+from areao1.jobs import JOBS
+from areao1.vault import Vault, load_manifest
+from areao1.vault import store as vault_store
+from areao1.vault.store import chunk_text
+from areao1.vault.watch import run_watch
 
 FIX = Path(__file__).parent / "fixtures" / "vault"
 HTML = {"content-type": "text/html; charset=utf-8"}
@@ -191,7 +191,7 @@ def test_sync_snapshots_indexes_and_logs(ws, pages):
 
     log = vault.log()
     assert {e.source_id for e in log} == set(results)  # first fetch of everything is logged
-    assert (ws.root / "vault" / "log.jsonl").exists() and not (ws.root / ".lighthouse").is_relative_to(
+    assert (ws.root / "vault" / "log.jsonl").exists() and not (ws.root / ".areao1").is_relative_to(
         ws.root / "vault"
     )
     assert (ws.cache_dir / "vault" / "vault.db").exists()

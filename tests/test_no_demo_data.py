@@ -9,9 +9,9 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-import lighthouse_gc.resources as resources
-from lighthouse_gc.cli import app
-from lighthouse_gc.scaffold import create_workspace
+import areao1.resources as resources
+from areao1.cli import app
+from areao1.scaffold import create_workspace
 
 ROOT = Path(__file__).resolve().parents[1]
 PERSONAS = Path(__file__).parent / "fixtures" / "personas"

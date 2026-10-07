@@ -49,7 +49,7 @@ export default function ChatImport({ onDone, compact }: { onDone: (summary: stri
       <div>
         {!compact && (
           <p className="mb-4 max-w-2xl text-[15px] leading-relaxed text-ink-2">
-            When you export, <strong className="font-semibold text-ink">choose the longest range you can</strong>. Lighthouse sorts it on this computer
+            When you export, <strong className="font-semibold text-ink">choose the longest range you can</strong>. Area O1 sorts it on this computer
             first, shows you what looks related to your case and why, and brings in only what you tick.
           </p>
         )}

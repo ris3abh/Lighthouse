@@ -1,4 +1,5 @@
-// Typed client for the Lighthouse API. Shapes mirror lighthouse_gc/core/models.py.
+// Typed client for the Area O1 API. Shapes mirror areao1/core/models.py.
+import { WRITE_HEADER } from "./names";
 
 export type CriterionStatus = "banked" | "building" | "gap" | "dropped";
 
@@ -575,7 +576,7 @@ export interface OnboardingView {
     step: "linkedin" | "questions" | "ai" | "lookups" | "chats" | "tour" | "done";
     source: { filename: string; chars: number; redactions: number; parser: string } | null;
     lookups: OnboardingLookup[];
-    transcript: { who: "lighthouse" | "you"; text: string }[];
+    transcript: { who: "areao1" | "you"; text: string }[];
     target_profile: string | null;
     tour: string;
     chats: string;
@@ -590,7 +591,7 @@ export interface OnboardingView {
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const init: RequestInit = { method, headers: {} };
   const headers = init.headers as Record<string, string>;
-  if (method !== "GET") headers["X-Lighthouse"] = "1"; // the server rejects writes without it
+  if (method !== "GET") headers[WRITE_HEADER] = "1"; // the server rejects writes without it
   if (body instanceof FormData) {
     init.body = body;
   } else if (body !== undefined) {

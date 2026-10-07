@@ -45,8 +45,8 @@ export default function Settings() {
         title="Settings"
         subtitle={
           <>
-            Edit <code>lighthouse.yaml</code> in your workspace to change these. Secrets go in the OS keychain:{" "}
-            <code>lighthouse-gc secret set &lt;secret_ref&gt;</code>.
+            Edit <code>areao1.yaml</code> in your workspace to change these. Secrets go in the OS keychain:{" "}
+            <code>areao1 secret set &lt;secret_ref&gt;</code>.
           </>
         }
       />
@@ -101,7 +101,7 @@ export default function Settings() {
                       <KeyRound className="size-3.5" aria-hidden /> {ch.secret_ref} in keychain
                     </span>
                   ) : (
-                    `missing secret: lighthouse-gc secret set ${ch.secret_ref}`
+                    `missing secret: areao1 secret set ${ch.secret_ref}`
                   )}
                 </span>
               )}

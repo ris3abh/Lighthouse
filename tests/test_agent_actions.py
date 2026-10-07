@@ -11,9 +11,9 @@ import pytest
 from test_agent import _run, _tools
 from test_service_layer import SAMPLES
 
-from lighthouse_gc.agent.actions import TOOL_FOR, YOURS, covered
-from lighthouse_gc.criteria.models import Todo
-from lighthouse_gc.service import Service
+from areao1.agent.actions import TOOL_FOR, YOURS, covered
+from areao1.criteria.models import Todo
+from areao1.service import Service
 
 
 def test_every_page_write_is_a_chat_tool_or_the_persons_alone(demo_ws):

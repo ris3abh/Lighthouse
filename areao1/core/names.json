@@ -1,0 +1,24 @@
+{
+  "product": "Area O1",
+  "package": "areao1",
+  "cli": "areao1",
+  "mcp_server": "areao1",
+  "env_prefix": "AREAO1_",
+  "keychain_service": "areao1",
+  "config_dir": "areao1",
+  "workspace_config": "areao1.yaml",
+  "workspace_state": ".areao1",
+  "default_home": "AreaO1",
+  "write_header": "X-AreaO1",
+  "repo": "ris3abh/areao1",
+  "previous": {
+    "product": "Lighthouse",
+    "cli": "lighthouse-gc",
+    "env_prefixes": ["LIGHTHOUSE_GC_", "LIGHTHOUSE_"],
+    "keychain_service": "lighthouse-gc",
+    "config_dir": "lighthouse-gc",
+    "workspace_config": "lighthouse.yaml",
+    "workspace_state": ".lighthouse",
+    "write_header": "X-Lighthouse"
+  }
+}

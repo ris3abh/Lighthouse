@@ -21,7 +21,7 @@ def test_workspace_template_files_are_not_gitignored():
 
     root = Path(__file__).resolve().parents[1]
     files = subprocess.run(
-        ["git", "ls-files", "lighthouse_gc/templates"], cwd=root, capture_output=True, text=True
+        ["git", "ls-files", "areao1/templates"], cwd=root, capture_output=True, text=True
     ).stdout.split()
     ignored = subprocess.run(
         ["git", "check-ignore", "--no-index", *files], cwd=root, capture_output=True, text=True

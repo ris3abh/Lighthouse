@@ -7,11 +7,11 @@ from __future__ import annotations
 from agent_fakes import FakeEngine
 from fastapi.testclient import TestClient
 
-from lighthouse_gc.agent.runner import KEEP_TURNS, AgentRunner
-from lighthouse_gc.core.models import Conversation, ConversationMessage
-from lighthouse_gc.server.app import create_app
+from areao1.agent.runner import KEEP_TURNS, AgentRunner
+from areao1.core.models import Conversation, ConversationMessage
+from areao1.server.app import create_app
 
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 SUMMARY = "Maya judged HackSeattle 2025 and wants to file an O-1A in March 2027."
 
 

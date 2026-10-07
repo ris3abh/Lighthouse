@@ -1,4 +1,4 @@
-"""`lighthouse-gc mcp`: read tools over the fixture workspace (in-process and over real stdio), and the one write
+"""`areao1 mcp`: read tools over the fixture workspace (in-process and over real stdio), and the one write
 tool, propose_context, which only ever reaches the Inbox as a self-reported note."""
 
 from __future__ import annotations
@@ -15,9 +15,9 @@ from mcp.client.client import Client
 from mcp.client.stdio import StdioServerParameters
 from typer.testing import CliRunner
 
-from lighthouse_gc.cli import app
-from lighthouse_gc.mcp import tools
-from lighthouse_gc.mcp.server import READ_TOOLS, TOOL_NAMES, build_server
+from areao1.cli import app
+from areao1.mcp import tools
+from areao1.mcp.server import READ_TOOLS, TOOL_NAMES, build_server
 
 
 def _workspace_digest(root: Path) -> dict[str, str]:
@@ -25,7 +25,7 @@ def _workspace_digest(root: Path) -> dict[str, str]:
     return {
         p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in sorted(root.rglob("*"))
-        if p.is_file() and ".lighthouse/cache" not in p.relative_to(root).as_posix()
+        if p.is_file() and ".areao1/cache" not in p.relative_to(root).as_posix()
     }
 
 
@@ -105,7 +105,7 @@ def test_what_changed(demo_ws):
 def test_what_changed_reports_superseded_values(demo_ws, http_mock):
     from conftest import fixture_json
 
-    from lighthouse_gc.jobs import sync as jobs
+    from areao1.jobs import sync as jobs
 
     repo = {**fixture_json("github", "repo_fastgrad.json"), "stargazers_count": 1900}
     http_mock.route(method="GET", host="api.github.com", path="/repos/arivera-demo/fastgrad").respond(
@@ -163,9 +163,9 @@ def test_server_exposes_the_read_tools_and_one_inbox_write(demo_ws):
 
 
 def test_mcp_over_stdio(demo_ws, tmp_path):
-    """End to end: spawn `lighthouse-gc mcp` as a subprocess and talk to it over stdio."""
-    exe = shutil.which("lighthouse-gc", path=str(Path(sys.executable).parent))
-    assert exe, "lighthouse-gc entry point not installed in this environment"
+    """End to end: spawn `areao1 mcp` as a subprocess and talk to it over stdio."""
+    exe = shutil.which("areao1", path=str(Path(sys.executable).parent))
+    assert exe, "areao1 entry point not installed in this environment"
     params = StdioServerParameters(command=exe, args=["mcp", "-w", str(demo_ws.root)])
 
     async def main():
@@ -181,7 +181,7 @@ def test_mcp_over_stdio(demo_ws, tmp_path):
 
 def test_cli_mcp_requires_workspace(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("LIGHTHOUSE_GC_WORKSPACE", raising=False)
+    monkeypatch.delenv("AREAO1_WORKSPACE", raising=False)
     result = CliRunner().invoke(app, ["mcp"])
     assert result.exit_code == 1 and "No workspace found" in result.output
 
@@ -190,8 +190,8 @@ def test_cli_mcp_requires_workspace(tmp_path, monkeypatch):
 
 
 def test_propose_context_reaches_the_inbox_as_self_reported(demo_ws):
-    from lighthouse_gc.core.workspace import WorkspaceError
-    from lighthouse_gc.service import Service
+    from areao1.core.workspace import WorkspaceError
+    from areao1.service import Service
 
     before = demo_ws.scoreboard().model_dump(exclude={"computed_at"})
 

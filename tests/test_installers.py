@@ -1,5 +1,5 @@
 """The one-line installers (ADR 0013, S4): short enough to read before running, strict, and they change
-nothing on the machine beyond uv and Lighthouse itself. CI runs them for real against a local wheel."""
+nothing on the machine beyond uv and Area O1 itself. CI runs them for real against a local wheel."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SH = ROOT / "install.sh"
 PS1 = ROOT / "install.ps1"
 
-# Anything that reaches past "install uv, install Lighthouse, run it".
+# Anything that reaches past "install uv, install Area O1, run it".
 FORBIDDEN = [
     r"\bsudo\b", r"\bsu\b", r"\bchmod\b", r"\bchown\b", r"\brm\b", r"Remove-Item",
     r"\.bashrc", r"\.zshrc", r"\.bash_profile", r"(?<![\w-])\.profile", r"\$PROFILE", r"update-shell\s*$",
@@ -44,7 +44,7 @@ def test_installer_makes_no_other_machine_changes(path):
         code = line.split(" # ")[0]
         for pattern in FORBIDDEN:
             assert not re.search(pattern, code), f"{path.name}: {pattern!r} in {line.strip()!r}"
-    # Only Astral's official uv installer and this repo's releases ($repo is ris3abh/Lighthouse).
+    # Only Astral's official uv installer and this repo's releases ($repo is ris3abh/areao1).
     urls = set(re.findall(r"https://[\w./$-]+", "\n".join(_code(path))))
     official = {
         "https://astral.sh/uv/install.sh",
@@ -59,9 +59,9 @@ def test_installer_makes_no_other_machine_changes(path):
 def test_installer_installs_a_uv_tool_on_312_with_ci_overrides(path):
     text = path.read_text()
     assert "uv tool install --force --python 3.12" in text
-    assert "LIGHTHOUSE_GC_SPEC" in text and "LIGHTHOUSE_GC_NO_RUN" in text
-    assert "releases/latest" in text and "ris3abh/Lighthouse" in text  # default: the latest release wheel
-    assert "lighthouse-gc" in text  # and then it runs Lighthouse
+    assert "AREAO1_SPEC" in text and "AREAO1_NO_RUN" in text
+    assert "releases/latest" in text and "ris3abh/areao1" in text  # default: the latest release wheel
+    assert "areao1" in text  # and then it runs Area O1
 
 
 def test_sh_is_strict_posix_and_parses():
@@ -95,12 +95,12 @@ def test_sh_installs_the_override_with_uv_and_skips_running(tmp_path):
     env = {
         "PATH": f"{bindir}{os.pathsep}/usr/bin{os.pathsep}/bin",
         "HOME": str(tmp_path),
-        "LIGHTHOUSE_GC_SPEC": "/wheels/lighthouse_gc-1.0.0-py3-none-any.whl",
-        "LIGHTHOUSE_GC_NO_RUN": "1",
+        "AREAO1_SPEC": "/wheels/areao1-1.0.0-py3-none-any.whl",
+        "AREAO1_NO_RUN": "1",
     }
     out = subprocess.run(["sh", str(SH)], env=env, capture_output=True, text=True, check=True)
     assert log.read_text().splitlines() == [
-        "tool install --force --python 3.12 /wheels/lighthouse_gc-1.0.0-py3-none-any.whl"
+        "tool install --force --python 3.12 /wheels/areao1-1.0.0-py3-none-any.whl"
     ]
     assert "Installing uv" not in out.stdout and "Installed." in out.stdout
     assert sorted(p.name for p in tmp_path.iterdir()) == ["bin", "uv.log"]  # nothing written to HOME
@@ -115,9 +115,9 @@ def test_ci_runs_both_installers_against_the_local_wheel():
         assert job["needs"] == "wheel"  # the wheel the wheel job built and smoke-tested
         cmds = "\n".join(s.get("run", "") for s in job["steps"])
         for needle in (
-            "LIGHTHOUSE_GC_SPEC",
+            "AREAO1_SPEC",
             "dist",
-            "LIGHTHOUSE_GC_NO_RUN",
+            "AREAO1_NO_RUN",
             "--help",
             "scripts/smoke_wheel.py",
         ):

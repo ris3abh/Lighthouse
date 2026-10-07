@@ -12,14 +12,14 @@ build/
 # Web
 web/node_modules/
 web/dist/
-lighthouse_gc/server/static/
-lighthouse_gc/_data/
+areao1/server/static/
+areao1/_data/
 
 # Never commit a real workspace or secrets
 .env
 .env.*
 *.db
-.lighthouse/cache/
+.areao1/cache/
 .DS_Store
 
 # local Claude Code worktrees and settings

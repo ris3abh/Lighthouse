@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from lighthouse_gc.engine.base import AgentEvent, AgentTool, Emit, EngineRequest, EngineResult, StopRun
+from areao1.engine.base import AgentEvent, AgentTool, Emit, EngineRequest, EngineResult, StopRun
 
 
 class FakeEngine:

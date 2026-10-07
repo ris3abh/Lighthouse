@@ -10,11 +10,11 @@ import httpx
 import pytest
 from conftest import TODAY
 
-from lighthouse_gc import sources
-from lighthouse_gc.jobs.sync import import_source
-from lighthouse_gc.sources import arxiv, openalex, orcid, semantic_scholar
-from lighthouse_gc.sources.base import paper_candidate
-from lighthouse_gc.sources.http import HttpClient, SourceError
+from areao1 import sources
+from areao1.jobs.sync import import_source
+from areao1.sources import arxiv, openalex, orcid, semantic_scholar
+from areao1.sources.base import paper_candidate
+from areao1.sources.http import HttpClient, SourceError
 
 FIX = Path(__file__).parent / "fixtures" / "scholarly"
 S2_ID, OA_ID, ARXIV_ID, ORCID_ID = "999999999999", "A0000000001", "rivera_a_1", "0000-0000-4242-4240"

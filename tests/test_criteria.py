@@ -4,9 +4,9 @@ from datetime import date
 
 import pytest
 
-from lighthouse_gc.core.models import Exhibit
-from lighthouse_gc.criteria.engine import load_profiles, score
-from lighthouse_gc.criteria.models import Profile
+from areao1.core.models import Exhibit
+from areao1.criteria.engine import load_profiles, score
+from areao1.criteria.models import Profile
 
 
 @pytest.fixture(scope="module")

@@ -42,7 +42,7 @@ jobs:
           python -m venv "$RUNNER_TEMP/venv"
           "$RUNNER_TEMP/venv/bin/python" -m pip install dist/*.whl
       - name: Smoke test (the same one CI runs)
-        run: python scripts/smoke_wheel.py "$RUNNER_TEMP/venv/bin/lighthouse-gc"
+        run: python scripts/smoke_wheel.py "$RUNNER_TEMP/venv/bin/areao1"
       - uses: actions/upload-artifact@v4
         with:
           name: dist

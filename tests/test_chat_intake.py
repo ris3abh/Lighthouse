@@ -12,12 +12,12 @@ import zipfile
 import pytest
 from fastapi.testclient import TestClient
 
-from lighthouse_gc.scaffold import create_workspace
-from lighthouse_gc.server.app import create_app
-from lighthouse_gc.sources import chat_intake, chat_relevance
-from lighthouse_gc.sources.chat_export import ExportError
+from areao1.scaffold import create_workspace
+from areao1.server.app import create_app
+from areao1.sources import chat_intake, chat_relevance
+from areao1.sources.chat_export import ExportError
 
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 
 
 def claude_conv(uid, name, user_texts, when="2026-08-01T10:00:00Z"):

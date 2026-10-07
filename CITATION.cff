@@ -1,12 +1,12 @@
 cff-version: 1.2.0
-title: "Lighthouse: evidence-grounded memory for long-running LLM agents"
-message: "If you use Lighthouse in research or practice, please cite it as below."
+title: "Area O1: evidence-grounded memory for long-running LLM agents"
+message: "If you use Area O1 in research or practice, please cite it as below."
 type: software
 authors:
   - family-names: Sharma
     given-names: Rishabh
 license: Apache-2.0
-repository-code: "https://github.com/ris3abh/Lighthouse"
+repository-code: "https://github.com/ris3abh/areao1"
 version: 0.1.0
 date-released: 2026-10-06
 keywords:
@@ -17,6 +17,6 @@ keywords:
   - O-1A
   - EB-1A
 abstract: >
-  Lighthouse turns changing documents into traceable claims, routes them through human review, and lets
+  Area O1 turns changing documents into traceable claims, routes them through human review, and lets
   future agents see what is supported, disputed or outdated. Its first application is organizing O-1A /
   EB-1A evidence. A Zenodo DOI is attached to each release.

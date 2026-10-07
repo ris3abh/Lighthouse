@@ -8,7 +8,7 @@ import { useLoad } from "../hooks";
 
 const TOKEN_PAGES: Record<string, string> = {
   github:
-    "https://github.com/settings/personal-access-tokens/new?name=lighthouse-gc&description=Read-only+access+for+Lighthouse&metadata=read&contents=read&administration=read",
+    "https://github.com/settings/personal-access-tokens/new?name=areao1&description=Read-only+access+for+Area O1&metadata=read&contents=read&administration=read",
   huggingface: "https://huggingface.co/settings/tokens/new?tokenType=read",
 };
 
@@ -73,7 +73,7 @@ export default function Sources() {
       <PageHeader
         eyebrow={`${plural(sources.data.length, "source")} connected`}
         title="Sources"
-        subtitle="Connected accounts and the items Lighthouse tracks. Connectors only read."
+        subtitle="Connected accounts and the items Area O1 tracks. Connectors only read."
       />
 
       <Card className="mb-8" title="Add a source">
@@ -122,7 +122,7 @@ export default function Sources() {
       <Card className="mb-8" title="Import your Claude or ChatGPT history">
         <div className="p-6">
           <p className="mb-4 max-w-3xl text-sm leading-relaxed text-ink-2">
-            Export your data (Claude: Settings, Privacy, Export data. ChatGPT: Settings, Data controls, Export). Lighthouse reads it on this
+            Export your data (Claude: Settings, Privacy, Export data. ChatGPT: Settings, Data controls, Export). Area O1 reads it on this
             computer, shows what looks related to your case and why, and imports only what you tick. From those it proposes deadlines,
             opportunities, people, asks and decisions, each quoting your own words. Self-reported: they keep you organized but never count
             toward a criterion.

@@ -25,7 +25,7 @@ def _commands(job: dict) -> str:
 def test_python_job_runs_all_checks():
     job = _workflow()["jobs"]["python"]
     cmds = _commands(job)
-    for needle in ("ruff check .", "ruff format --check .", "mypy", "pytest", "lighthouse-gc validate",
+    for needle in ("ruff check .", "ruff format --check .", "mypy", "pytest", "areao1 validate",
                    "tests/fixtures/workspaces/", "scripts/check_repo.py", "pip install -e '.[dev]'"):  # fmt: skip
         assert needle in cmds, needle
 
@@ -106,7 +106,7 @@ def test_sdist_carries_the_built_ui():
     # `python -m build` makes the wheel from the sdist, so the sdist must keep the gitignored UI build.
     hatch = tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["hatch"]["build"]["targets"]
     for target in ("wheel", "sdist"):
-        assert "lighthouse_gc/server/static/**" in hatch[target]["artifacts"], target
+        assert "areao1/server/static/**" in hatch[target]["artifacts"], target
 
 
 def test_smoke_script_needs_only_the_standard_library_and_localhost():
@@ -117,5 +117,5 @@ def test_smoke_script_needs_only_the_standard_library_and_localhost():
     text = SMOKE.read_text()
     assert "http://127.0.0.1" in text and "https://" not in text
     for needle in ("/api/health", "/api/onboarding", '<div id="root">', "--no-open", "--no-scheduler",
-                   "LIGHTHOUSE_GC_CONFIG_DIR"):  # fmt: skip
+                   "AREAO1_CONFIG_DIR"):  # fmt: skip
         assert needle in text, needle

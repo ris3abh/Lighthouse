@@ -3,14 +3,15 @@
  * widget (the PDF drop, the lookups, the chat import). Pure, so it's tested without a browser. */
 
 import type { OnboardingView } from "../api";
+import { PRODUCT } from "../names.ts";
 
 export type Widget = "linkedin" | "ai" | "lookups" | "chats";
-export type Msg = { key: string; who: "lighthouse" | "you"; text: string; quote?: string; widget?: Widget };
+export type Msg = { key: string; who: "areao1" | "you"; text: string; quote?: string; widget?: Widget };
 
 const ORDER = ["linkedin", "questions", "ai", "lookups", "chats", "tour"];
 
 export const LINKEDIN_ASK =
-  "Hi, I'm Lighthouse. I'll help you build your case, one piece at a time. Let's start with your LinkedIn profile as a PDF " +
+  `Hi, I'm ${PRODUCT}. I'll help you build your case, one piece at a time. Let's start with your LinkedIn profile as a PDF ` +
   "(on LinkedIn: Profile > More > Save to PDF). I read it on this computer and remove emails and phone numbers first.";
 export const AI_ASK =
   "One more thing before I look anything up: connect your AI. Chat and web lookups need it; everything else works " +
@@ -30,24 +31,24 @@ export const CHATS_ASK =
 export function buildThread(view: OnboardingView): Msg[] {
   const s = view.state;
   const at = Math.max(0, ORDER.indexOf(s.step));
-  const raw: Omit<Msg, "key">[] = [{ who: "lighthouse", text: LINKEDIN_ASK, widget: "linkedin" }];
+  const raw: Omit<Msg, "key">[] = [{ who: "areao1", text: LINKEDIN_ASK, widget: "linkedin" }];
   if (at >= 1) {
     raw.push({ who: "you", text: s.source ? `Here's my profile: ${s.source.filename}` : "I'll skip the PDF for now." });
     raw.push(...(s.transcript ?? []));
     if (at === 1 && view.question) {
       const q = view.question;
-      raw.push({ who: "lighthouse", text: q.text, quote: q.quote && !q.text.includes(q.quote) ? q.quote : undefined });
+      raw.push({ who: "areao1", text: q.text, quote: q.quote && !q.text.includes(q.quote) ? q.quote : undefined });
     }
   }
   if (at >= 2) {
-    raw.push({ who: "lighthouse", text: AI_ASK, widget: "ai" });
+    raw.push({ who: "areao1", text: AI_ASK, widget: "ai" });
     if (at > 2 && AI_REPLY[s.ai ?? "pending"]) raw.push({ who: "you", text: AI_REPLY[s.ai] });
   }
   if (at >= 3 && s.lookups.length) {
-    raw.push({ who: "lighthouse", text: LOOKUPS_ASK, widget: "lookups" });
+    raw.push({ who: "areao1", text: LOOKUPS_ASK, widget: "lookups" });
     if (at > 3) raw.push({ who: "you", text: "That's all for now." });
   }
-  if (at >= 4) raw.push({ who: "lighthouse", text: CHATS_ASK, widget: "chats" });
+  if (at >= 4) raw.push({ who: "areao1", text: CHATS_ASK, widget: "chats" });
   const seen = new Map<string, number>();
   return raw.map((m) => {
     const base = `${m.who}:${m.text}`;
@@ -62,11 +63,11 @@ export function buildThread(view: OnboardingView): Msg[] {
 export function initiallySeen(msgs: Msg[]): Set<string> {
   const seen = new Set(msgs.map((m) => m.key));
   const last = msgs.at(-1);
-  if (last?.who === "lighthouse") seen.delete(last.key);
+  if (last?.who === "areao1") seen.delete(last.key);
   return seen;
 }
 
 /** Index of the message typing now: the first of ours not yet shown. Everything after it waits. -1 when none. */
 export function typingIndex(msgs: Msg[], seen: Set<string>): number {
-  return msgs.findIndex((m) => m.who === "lighthouse" && !seen.has(m.key));
+  return msgs.findIndex((m) => m.who === "areao1" && !seen.has(m.key));
 }

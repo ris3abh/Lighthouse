@@ -9,11 +9,11 @@ from fastapi.testclient import TestClient
 from test_rulecheck import QUOTE, RULE, FakeJudge
 from test_vault import FIX, Pages, fixture, public_dns  # noqa: F401  (fixture)
 
-from lighthouse_gc import notify
-from lighthouse_gc.server.app import create_app
-from lighthouse_gc.vault import Vault
+from areao1 import notify
+from areao1.server.app import create_app
+from areao1.vault import Vault
 
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 
 
 class _Quiet:

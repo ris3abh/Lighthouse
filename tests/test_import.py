@@ -6,10 +6,10 @@ import pytest
 from conftest import mock_github, mock_hf
 from typer.testing import CliRunner
 
-from lighthouse_gc import sources
-from lighthouse_gc.cli import app
-from lighthouse_gc.jobs import sync as jobs
-from lighthouse_gc.sources.http import SourceError
+from areao1 import sources
+from areao1.cli import app
+from areao1.jobs import sync as jobs
+from areao1.sources.http import SourceError
 
 
 @pytest.mark.parametrize(
@@ -62,11 +62,11 @@ def test_import_with_pat_stores_token_in_keychain_only(ws, http_mock, fake_keyri
     mock_github(http_mock, authed=True)
     report = jobs.import_source(ws, "github:arivera-demo", token="github_pat_SECRET123", sleep=lambda s: None)
     assert report.items == 3  # includes the private repo
-    assert fake_keyring[("lighthouse-gc", "github:arivera-demo")] == "github_pat_SECRET123"
+    assert fake_keyring[("areao1", "github:arivera-demo")] == "github_pat_SECRET123"
     src = ws.sources().sources[0]
     assert src.auth == "token" and src.secret_ref == "github:arivera-demo"
     for path in ws.root.rglob("*"):
-        if path.is_file() and ".lighthouse/cache" not in path.as_posix():
+        if path.is_file() and ".areao1/cache" not in path.as_posix():
             assert b"github_pat_SECRET123" not in path.read_bytes(), path
     assert any(r.metric == "views" for r in ws.metrics())
 
@@ -153,6 +153,6 @@ def test_cli_run_unknown_job(ws):
 
 
 def test_cli_finds_workspace_from_env(ws, monkeypatch):
-    monkeypatch.setenv("LIGHTHOUSE_GC_WORKSPACE", str(ws.root))
+    monkeypatch.setenv("AREAO1_WORKSPACE", str(ws.root))
     result = CliRunner().invoke(app, ["validate"])
     assert result.exit_code == 0, result.output

@@ -7,9 +7,9 @@ import json
 from agent_fakes import FakeEngine
 from fastapi.testclient import TestClient
 
-from lighthouse_gc.server.app import create_app
+from areao1.server.app import create_app
 
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 
 
 def _events(text: str) -> list[dict]:

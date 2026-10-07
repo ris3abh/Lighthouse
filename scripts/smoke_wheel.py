@@ -1,8 +1,8 @@
-"""Smoke-test an installed Lighthouse (ADR 0013): the wheel must serve the dashboard with no checkout or Node.
+"""Smoke-test an installed Area O1 (ADR 0013): the wheel must serve the dashboard with no checkout or Node.
 
-    python scripts/smoke_wheel.py [path/to/lighthouse-gc]
+    python scripts/smoke_wheel.py [path/to/areao1]
 
-Uses the ``lighthouse-gc`` on PATH when no path is given. Creates a throwaway workspace and config directory,
+Uses the ``areao1`` on PATH when no path is given. Creates a throwaway workspace and config directory,
 starts ``up`` on a free localhost port, checks /api/health, that / serves the built dashboard and that
 /api/onboarding answers, then stops the server. Standard library only, no network beyond 127.0.0.1.
 """
@@ -37,7 +37,7 @@ def _wait_for_health(base: str, proc: subprocess.Popen, timeout: float = 90) -> 
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if proc.poll() is not None:
-            raise SystemExit(f"lighthouse-gc up exited early with code {proc.returncode}")
+            raise SystemExit(f"areao1 up exited early with code {proc.returncode}")
         try:
             status, body = _get(f"{base}/api/health")
             if status == 200:
@@ -49,10 +49,10 @@ def _wait_for_health(base: str, proc: subprocess.Popen, timeout: float = 90) -> 
 
 
 def smoke(exe: str) -> None:
-    tmp = Path(tempfile.mkdtemp(prefix="lighthouse-smoke-"))
+    tmp = Path(tempfile.mkdtemp(prefix="areao1-smoke-"))
     # Keep the user's config untouched: init and up remember the workspace they open.
-    env = {**os.environ, "LIGHTHOUSE_GC_CONFIG_DIR": str(tmp / "config"), "PYTHONUTF8": "1"}
-    env.pop("LIGHTHOUSE_GC_WORKSPACE", None)
+    env = {**os.environ, "AREAO1_CONFIG_DIR": str(tmp / "config"), "PYTHONUTF8": "1"}
+    env.pop("AREAO1_WORKSPACE", None)
     ws = tmp / "case"
     proc = None
     try:
@@ -88,7 +88,7 @@ def smoke(exe: str) -> None:
 
 
 if __name__ == "__main__":
-    exe = sys.argv[1] if len(sys.argv) > 1 else shutil.which("lighthouse-gc")
+    exe = sys.argv[1] if len(sys.argv) > 1 else shutil.which("areao1")
     if not exe:
-        raise SystemExit("lighthouse-gc not found on PATH; pass its path")
+        raise SystemExit("areao1 not found on PATH; pass its path")
     smoke(exe)

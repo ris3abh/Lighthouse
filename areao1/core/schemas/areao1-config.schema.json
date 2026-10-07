@@ -1,0 +1,496 @@
+{
+  "$defs": {
+    "AgentBudget": {
+      "additionalProperties": false,
+      "description": "Spend caps. Tokens counted = input + output + cache-creation (cache reads are recorded, not counted).",
+      "properties": {
+        "monthly_tokens": {
+          "default": 10000000,
+          "minimum": 1000,
+          "title": "Monthly Tokens",
+          "type": "integer"
+        },
+        "monthly_usd": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 50.0,
+          "title": "Monthly Usd"
+        },
+        "per_run_tokens": {
+          "default": 300000,
+          "minimum": 1000,
+          "title": "Per Run Tokens",
+          "type": "integer"
+        },
+        "per_run_usd": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 2.0,
+          "title": "Per Run Usd"
+        }
+      },
+      "title": "AgentBudget",
+      "type": "object"
+    },
+    "AgentConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "autopilot": {
+          "$ref": "#/$defs/AutopilotConfig"
+        },
+        "budget": {
+          "$ref": "#/$defs/AgentBudget"
+        },
+        "cheap_mode": {
+          "default": false,
+          "description": "Run chat on the mid tier instead of the hard one (ADR 0009 \u00a73).",
+          "title": "Cheap Mode",
+          "type": "boolean"
+        },
+        "effort": {
+          "default": "medium",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "title": "Effort",
+          "type": "string"
+        },
+        "max_turns": {
+          "default": 25,
+          "maximum": 200,
+          "minimum": 1,
+          "title": "Max Turns",
+          "type": "integer"
+        },
+        "missions": {
+          "$ref": "#/$defs/MissionsConfig"
+        },
+        "models": {
+          "$ref": "#/$defs/AgentModels"
+        },
+        "web_search": {
+          "default": true,
+          "title": "Web Search",
+          "type": "boolean"
+        }
+      },
+      "title": "AgentConfig",
+      "type": "object"
+    },
+    "AgentModels": {
+      "additionalProperties": false,
+      "description": "Model per run type: chat (the chat panel), task (a run started by hand), mission (scheduled).",
+      "properties": {
+        "chat": {
+          "default": "claude-opus-5-5",
+          "title": "Chat",
+          "type": "string"
+        },
+        "check": {
+          "default": "claude-sonnet-5-5",
+          "description": "Rule-check judge (one short call per checked text).",
+          "title": "Check",
+          "type": "string"
+        },
+        "mission": {
+          "default": "claude-sonnet-5-5",
+          "title": "Mission",
+          "type": "string"
+        },
+        "mundane": {
+          "default": "claude-haiku-4-5-20251001",
+          "description": "Bulk, simple reading (chat-history extraction). Part D's router sends more work here.",
+          "title": "Mundane",
+          "type": "string"
+        },
+        "task": {
+          "default": "claude-opus-5-5",
+          "title": "Task",
+          "type": "string"
+        }
+      },
+      "title": "AgentModels",
+      "type": "object"
+    },
+    "AutopilotConfig": {
+      "additionalProperties": false,
+      "description": "What the agent may apply without asking. Everything is off by default; nothing that could affect a\ncriterion (evidence, exhibits, overrides, profile) can ever be auto-applied, whatever is set here.",
+      "properties": {
+        "metrics": {
+          "default": false,
+          "description": "Metric values the agent read from a page and quoted.",
+          "title": "Metrics",
+          "type": "boolean"
+        },
+        "tier1_deadlines": {
+          "default": false,
+          "description": "New deadlines quoted from a Tier-1 source (primary law or agency pages, SPEC 5a).",
+          "title": "Tier1 Deadlines",
+          "type": "boolean"
+        },
+        "tracker_updates": {
+          "default": false,
+          "description": "Pipeline stage / follow-up / notes, letter status / contact, deadline edits.",
+          "title": "Tracker Updates",
+          "type": "boolean"
+        }
+      },
+      "title": "AutopilotConfig",
+      "type": "object"
+    },
+    "ChannelConfig": {
+      "additionalProperties": false,
+      "description": "One notification channel. Secrets (webhook URLs, SMTP password, ntfy token) live in the keychain\nunder ``secret_ref``; this file only names the entry.",
+      "properties": {
+        "detail": {
+          "default": "full",
+          "description": "minimal sends counts only (no titles), for channels that leave this machine.",
+          "enum": [
+            "full",
+            "minimal"
+          ],
+          "title": "Detail",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "from_addr": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "From Addr"
+        },
+        "host": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Host"
+        },
+        "kind": {
+          "enum": [
+            "desktop",
+            "email",
+            "slack",
+            "discord",
+            "ntfy"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "port": {
+          "default": 587,
+          "maximum": 65535,
+          "minimum": 1,
+          "title": "Port",
+          "type": "integer"
+        },
+        "secret_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Keychain entry: webhook URL, SMTP password or ntfy token.",
+          "title": "Secret Ref"
+        },
+        "server": {
+          "default": "https://ntfy.sh",
+          "title": "Server",
+          "type": "string"
+        },
+        "starttls": {
+          "default": true,
+          "title": "Starttls",
+          "type": "boolean"
+        },
+        "to_addr": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Addr"
+        },
+        "topic": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Topic"
+        },
+        "username": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Username"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "ChannelConfig",
+      "type": "object"
+    },
+    "ConnectorConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "include_forks": {
+          "default": false,
+          "title": "Include Forks",
+          "type": "boolean"
+        },
+        "min_downloads_for_candidate": {
+          "default": 100,
+          "minimum": 0,
+          "title": "Min Downloads For Candidate",
+          "type": "integer"
+        },
+        "min_stars_for_candidate": {
+          "default": 5,
+          "minimum": 0,
+          "title": "Min Stars For Candidate",
+          "type": "integer"
+        }
+      },
+      "title": "ConnectorConfig",
+      "type": "object"
+    },
+    "MissionsConfig": {
+      "additionalProperties": false,
+      "description": "Scheduled agent runs. Off by default: they spend tokens without anyone pressing a button. Schedules live\nin ``schedules`` (mission-opportunity-scout, mission-what-changed); budgets apply as for any run.",
+      "properties": {
+        "opportunity_scout": {
+          "default": false,
+          "description": "Weekly: find opportunities for the weakest criteria.",
+          "title": "Opportunity Scout",
+          "type": "boolean"
+        },
+        "what_changed": {
+          "default": false,
+          "description": "Daily: review what changed and write the briefing.",
+          "title": "What Changed",
+          "type": "boolean"
+        }
+      },
+      "title": "MissionsConfig",
+      "type": "object"
+    },
+    "NotificationsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "channels": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ChannelConfig"
+          },
+          "description": "Named channels. Desktop is on by default; add email / slack / discord / ntfy as needed.",
+          "title": "Channels",
+          "type": "object"
+        },
+        "deadline_alert_days": {
+          "description": "Alert when a deadline is this many days away.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Deadline Alert Days",
+          "type": "array"
+        },
+        "routes": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "description": "Which channels each event goes to.",
+          "propertyNames": {
+            "enum": [
+              "deadline",
+              "digest",
+              "new_candidates",
+              "sync_error",
+              "mission",
+              "vault",
+              "test"
+            ]
+          },
+          "title": "Routes",
+          "type": "object"
+        }
+      },
+      "title": "NotificationsConfig",
+      "type": "object"
+    },
+    "PrivacyConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "redact_before_llm": {
+          "default": true,
+          "title": "Redact Before Llm",
+          "type": "boolean"
+        }
+      },
+      "title": "PrivacyConfig",
+      "type": "object"
+    },
+    "ServerConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "const": "127.0.0.1",
+          "default": "127.0.0.1",
+          "title": "Host",
+          "type": "string"
+        },
+        "port": {
+          "default": 7777,
+          "maximum": 65535,
+          "minimum": 1024,
+          "title": "Port",
+          "type": "integer"
+        }
+      },
+      "title": "ServerConfig",
+      "type": "object"
+    },
+    "VaultConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": true,
+          "description": "Fetch the public sources listed in the vault manifest.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "VaultConfig",
+      "type": "object"
+    }
+  },
+  "$id": "https://areao1.dev/schemas/v1/areao1-config.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agent": {
+      "$ref": "#/$defs/AgentConfig"
+    },
+    "connectors": {
+      "$ref": "#/$defs/ConnectorConfig"
+    },
+    "engine": {
+      "default": "claude_code",
+      "enum": [
+        "claude_code",
+        "codex",
+        "api"
+      ],
+      "title": "Engine",
+      "type": "string"
+    },
+    "notifications": {
+      "$ref": "#/$defs/NotificationsConfig"
+    },
+    "overrides": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "enum": [
+            "dropped",
+            "gap"
+          ],
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "description": "User status overrides per profile: {profile_id: {criterion_id: dropped|gap}}.",
+      "title": "Overrides",
+      "type": "object"
+    },
+    "privacy": {
+      "$ref": "#/$defs/PrivacyConfig"
+    },
+    "profile": {
+      "default": "",
+      "description": "Active profile id; the domain layer supplies the default.",
+      "title": "Profile",
+      "type": "string"
+    },
+    "schedules": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Cron per job; '' turns a job off.",
+      "title": "Schedules",
+      "type": "object"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "server": {
+      "$ref": "#/$defs/ServerConfig"
+    },
+    "vault": {
+      "$ref": "#/$defs/VaultConfig"
+    },
+    "workspace_name": {
+      "default": "my-case",
+      "title": "Workspace Name",
+      "type": "string"
+    }
+  },
+  "title": "WorkspaceConfig",
+  "type": "object"
+}

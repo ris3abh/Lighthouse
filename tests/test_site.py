@@ -37,15 +37,17 @@ def test_page_shows_the_install_lines_exactly_as_the_readme():
 
 def test_page_has_the_legal_note_from_the_app_footer():
     footer = (ROOT / "web" / "src" / "App.tsx").read_text().split("<footer", 1)[1].split("</footer>", 1)[0]
-    note = " ".join(footer.split(">", 1)[1].split())
+    from areao1.core.names import PRODUCT
+
+    note = " ".join(footer.split(">", 1)[1].split()).replace("{PRODUCT}", PRODUCT)
     page = " ".join(html.unescape(PAGE.read_text()).split())
-    assert note.startswith("Lighthouse is not legal advice") and note in page
+    assert note.startswith("Area O1 is not legal advice") and note in page
 
 
 def test_page_has_what_you_need_privacy_and_a_screenshot():
     text = html.unescape(PAGE.read_text())
     assert "Claude Code login" not in text  # claude.ai login isn't offered (ADR 0013 §4)
-    for needle in ("LinkedIn profile as a PDF", "Anthropic API key", "127.0.0.1", "~/Lighthouse"):
+    for needle in ("LinkedIn profile as a PDF", "Anthropic API key", "127.0.0.1", "~/AreaO1"):
         assert needle in text, needle
     for img in re.findall(r'(?:src|srcset)="([^"]+\.png)"', text):
         assert (SITE / img).is_file(), img

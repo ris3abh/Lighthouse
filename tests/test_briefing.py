@@ -8,14 +8,14 @@ import pytest
 from agent_fakes import FakeEngine
 from fastapi.testclient import TestClient
 
-from lighthouse_gc import notify
-from lighthouse_gc.agent import missions
-from lighthouse_gc.agent.tools import RunContext, build_tools
-from lighthouse_gc.core.models import AgentRun
-from lighthouse_gc.scaffold import validate_workspace as validate
-from lighthouse_gc.server.app import create_app
+from areao1 import notify
+from areao1.agent import missions
+from areao1.agent.tools import RunContext, build_tools
+from areao1.core.models import AgentRun
+from areao1.scaffold import validate_workspace as validate
+from areao1.server.app import create_app
 
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 
 
 class _Quiet:

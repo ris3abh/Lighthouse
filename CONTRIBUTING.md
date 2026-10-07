@@ -5,18 +5,18 @@ Thanks for helping. The four contribution surfaces are **connectors**, **profile
 
 ## ⚠️ If you're also an active user: keep two separate repos
 
-If you contribute to Lighthouse and also use it for your own filing, keep **two completely separate
+If you contribute to Area O1 and also use it for your own filing, keep **two completely separate
 repositories**:
 
 | Repo | What goes in it | Visibility |
 |---|---|---|
 | **Your fork of this app repo** | code, profiles, connectors, docs, fictional fixtures only | public |
-| **Your case workspace** (created with `lighthouse-gc init`) | your evidence, letters, metrics, personal data | **private** |
+| **Your case workspace** (created with `areao1 init`) | your evidence, letters, metrics, personal data | **private** |
 
 - Never create your case workspace inside your fork, and never copy filing documents, screenshots, real
   metrics or personal data into the fork, not even into `examples/` or test fixtures.
 - Make the workspace a **fresh private repo**, not a fork: GitHub forks of a public repo can't be made private.
-- Keep them in different folders (e.g. `~/code/lighthouse` and `~/my-case`), and check `git remote -v`
+- Keep them in different folders (e.g. `~/code/areao1` and `~/my-case`), and check `git remote -v`
   before you push.
 - The workspace's gitleaks pre-commit hook blocks tokens, but it can't recognize a passport scan or a pay stub.
   Keeping the repos separate is what protects your documents.
@@ -33,13 +33,13 @@ npm --prefix web run build
 
 ## Adding a connector
 
-1. Create `lighthouse_gc/sources/<kind>.py` with a class implementing the `Source` protocol in
-   `lighthouse_gc/sources/base.py`: `detect`, `parse`, `source_url`, `discover`, `snapshot`, `candidates`.
+1. Create `areao1/sources/<kind>.py` with a class implementing the `Source` protocol in
+   `areao1/sources/base.py`: `detect`, `parse`, `source_url`, `discover`, `snapshot`, `candidates`.
    Use the provided `HttpClient` (ETag cache, backoff) for every request.
    Attach the raw response to each candidate / metric row with `.with_evidence(Evidence(...))` and make every
    `ClaimDraft.excerpt` a verbatim substring of it. The memory store rejects claims that don't quote their
    source. Set `stage` on activities (an invitation is `invited`, not `completed`).
-2. Register it in `CONNECTORS` in `lighthouse_gc/sources/__init__.py`.
+2. Register it in `CONNECTORS` in `areao1/sources/__init__.py`.
 3. Connectors **never** write evidence. `candidates()` returns proposals; the user decides in the Inbox. Give
    each candidate a stable `fingerprint` so re-imports don't create duplicates.
 4. Add recorded JSON responses under `tests/fixtures/<kind>/` (fictional or public data only, no tokens) and
@@ -47,8 +47,8 @@ npm --prefix web run build
 
 ## Adding or editing a profile
 
-Profiles are YAML in `profiles/`, validated by the `Profile` model (`lighthouse_gc/core/models.py`, schema in
-`lighthouse_gc/core/schemas/profile.schema.json`).
+Profiles are YAML in `profiles/`, validated by the `Profile` model (`areao1/core/models.py`, schema in
+`areao1/core/schemas/profile.schema.json`).
 
 - Reuse existing criterion ids (`awards`, `judging`, `press`, ...) where the meaning matches, so evidence
   carries across profiles.
@@ -58,19 +58,19 @@ Profiles are YAML in `profiles/`, validated by the `Profile` model (`lighthouse_
 
 ## Changing a workspace file shape
 
-1. Edit the model: domain-agnostic shapes in `lighthouse_gc/core/models.py`, profile/case shapes in
-   `lighthouse_gc/criteria/models.py`. `lighthouse_gc/core` must never import from the domain layer or
+1. Edit the model: domain-agnostic shapes in `areao1/core/models.py`, profile/case shapes in
+   `areao1/criteria/models.py`. `areao1/core` must never import from the domain layer or
    mention a specific profile (`tests/test_layering.py` enforces this).
-2. Regenerate schemas: `python -m lighthouse_gc.schemas`.
+2. Regenerate schemas: `python -m areao1.schemas`.
 3. Regenerate the fictional test workspace: `python scripts/make_fixture_workspace.py` (runs the real
    connectors against recorded fixtures, no network), then check
-   `lighthouse-gc validate -w tests/fixtures/workspaces/alex-rivera`.
+   `areao1 validate -w tests/fixtures/workspaces/alex-rivera`.
    A breaking change needs a new `schema_version` and a migration.
 4. Record significant design decisions as an ADR in `docs/adr/`.
 
 ## Writes go through the service layer
 
-Any create / update / move a page or the agent makes goes through `lighthouse_gc/service.py`, which records
+Any create / update / move a page or the agent makes goes through `areao1/service.py`, which records
 it in `data/changes.jsonl`. Don't call workspace write methods from a route directly.
 `tests/test_service_layer.py` fails if a route writes outside the service layer, or if a new write route
 isn't covered.

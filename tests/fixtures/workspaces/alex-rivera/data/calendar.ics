@@ -1,17 +1,17 @@
 BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Lighthouse//lighthouse-gc//EN
+PRODID:-//Area O1//areao1//EN
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
-X-WR-CALNAME:Lighthouse: demo-workspace
+X-WR-CALNAME:Area O1: demo-workspace
 BEGIN:VEVENT
-UID:dl_demo_letter@lighthouse-gc
+UID:dl_demo_letter@areao1
 DTSTAMP:20261009T000000Z
 DTSTART;VALUE=DATE:20261009
 DTEND;VALUE=DATE:20261010
 SUMMARY:Send draft letter to Dr. Priya Natarajan
 TRANSP:TRANSPARENT
-DESCRIPTION:Lighthouse deadline (follow_up).
+DESCRIPTION:Area O1 deadline (follow_up).
 CATEGORIES:follow_up
 BEGIN:VALARM
 ACTION:DISPLAY
@@ -20,13 +20,13 @@ TRIGGER:-P1D
 END:VALARM
 END:VEVENT
 BEGIN:VEVENT
-UID:dl_demo_reviews@lighthouse-gc
+UID:dl_demo_reviews@areao1
 DTSTAMP:20261014T000000Z
 DTSTART;VALUE=DATE:20261014
 DTEND;VALUE=DATE:20261015
 SUMMARY:NeurIPS 2026 workshop reviews due
 TRANSP:TRANSPARENT
-DESCRIPTION:Lighthouse deadline (submission).
+DESCRIPTION:Area O1 deadline (submission).
 URL:https://example.org/openreview
 CATEGORIES:submission
 BEGIN:VALARM
@@ -36,13 +36,13 @@ TRIGGER:-P1D
 END:VALARM
 END:VEVENT
 BEGIN:VEVENT
-UID:dl_demo_ieee@lighthouse-gc
+UID:dl_demo_ieee@areao1
 DTSTAMP:20261101T000000Z
 DTSTART;VALUE=DATE:20261101
 DTEND;VALUE=DATE:20261102
 SUMMARY:IEEE Senior Member application
 TRANSP:TRANSPARENT
-DESCRIPTION:Lighthouse deadline (application).
+DESCRIPTION:Area O1 deadline (application).
 CATEGORIES:application
 BEGIN:VALARM
 ACTION:DISPLAY
@@ -51,13 +51,13 @@ TRIGGER:-P1D
 END:VALARM
 END:VEVENT
 BEGIN:VEVENT
-UID:dl_demo_filing@lighthouse-gc
+UID:dl_demo_filing@areao1
 DTSTAMP:20270301T000000Z
 DTSTART;VALUE=DATE:20270301
 DTEND;VALUE=DATE:20270302
 SUMMARY:Target O-1A filing date
 TRANSP:TRANSPARENT
-DESCRIPTION:Lighthouse deadline (filing).
+DESCRIPTION:Area O1 deadline (filing).
 CATEGORIES:filing
 BEGIN:VALARM
 ACTION:DISPLAY
@@ -66,7 +66,7 @@ TRIGGER:-P1D
 END:VALARM
 END:VEVENT
 BEGIN:VEVENT
-UID:followup-pipe_demo_ieee@lighthouse-gc
+UID:followup-pipe_demo_ieee@areao1
 DTSTAMP:20261020T000000Z
 DTSTART;VALUE=DATE:20261020
 DTEND;VALUE=DATE:20261021
@@ -76,7 +76,7 @@ DESCRIPTION:Pipeline item\, stage applied.
 CATEGORIES:follow_up
 END:VEVENT
 BEGIN:VEVENT
-UID:followup-pipe_demo_mlh@lighthouse-gc
+UID:followup-pipe_demo_mlh@areao1
 DTSTAMP:20261008T000000Z
 DTSTART;VALUE=DATE:20261008
 DTEND;VALUE=DATE:20261009

@@ -6,6 +6,6 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: "./",
-  build: { outDir: "../lighthouse_gc/server/static", emptyOutDir: true },
+  build: { outDir: "../areao1/server/static", emptyOutDir: true },
   server: { proxy: { "/api": "http://127.0.0.1:7777" } },
 });

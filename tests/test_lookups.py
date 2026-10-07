@@ -13,10 +13,10 @@ import pytest
 from fastapi.testclient import TestClient
 from test_onboarding import W, arxiv_feed, fresh  # noqa: F401  (fixture)
 
-from lighthouse_gc.onboarding import flow
-from lighthouse_gc.onboarding.linkedin import parse_linkedin
-from lighthouse_gc.onboarding.models import OnboardingState, ProfileField
-from lighthouse_gc.server.app import create_app
+from areao1.onboarding import flow
+from areao1.onboarding.linkedin import parse_linkedin
+from areao1.onboarding.models import OnboardingState, ProfileField
+from areao1.server.app import create_app
 
 WRAPPED = Path(__file__).parent / "fixtures" / "linkedin" / "wrapped.txt"
 

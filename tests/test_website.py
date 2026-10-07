@@ -9,10 +9,10 @@ from pathlib import Path
 import pytest
 from test_vault import public_dns  # noqa: F401  (fixture)
 
-from lighthouse_gc import sources, web
-from lighthouse_gc.jobs.sync import import_source, sync_source
-from lighthouse_gc.sources.http import SourceError
-from lighthouse_gc.sources.website import WebsiteSource
+from areao1 import sources, web
+from areao1.jobs.sync import import_source, sync_source
+from areao1.sources.http import SourceError
+from areao1.sources.website import WebsiteSource
 
 FIX = Path(__file__).parent / "fixtures" / "website"
 VAULT = Path(__file__).parent / "fixtures" / "vault"

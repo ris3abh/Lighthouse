@@ -9,10 +9,10 @@ import pytest
 from fastapi.testclient import TestClient
 from test_chat_intake import CASE, RECIPE, W, _scan
 
-from lighthouse_gc.agent.routing import route, table
-from lighthouse_gc.core.models import AgentModels
-from lighthouse_gc.engine import openai_chat
-from lighthouse_gc.server.app import create_app
+from areao1.agent.routing import route, table
+from areao1.core.models import AgentModels
+from areao1.engine import openai_chat
+from areao1.server.app import create_app
 
 KEY = "sk-proj-test"
 
@@ -21,9 +21,9 @@ KEY = "sk-proj-test"
 def no_env(monkeypatch):
     for name in (
         "OPENAI_API_KEY",
-        "LIGHTHOUSE_MODEL_HARD",
-        "LIGHTHOUSE_MODEL_MID",
-        "LIGHTHOUSE_MODEL_MUNDANE",
+        "AREAO1_MODEL_HARD",
+        "AREAO1_MODEL_MID",
+        "AREAO1_MODEL_MUNDANE",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -37,20 +37,20 @@ def test_the_default_table():
 
 
 def test_tiers_come_from_the_environment_or_the_workspace_env(monkeypatch, tmp_path):
-    monkeypatch.setenv("LIGHTHOUSE_MODEL_HARD", "claude-opus-5")
+    monkeypatch.setenv("AREAO1_MODEL_HARD", "claude-opus-5")
     assert route("chat").model == "claude-opus-5"
-    (tmp_path / ".env").write_text("LIGHTHOUSE_MODEL_MID=claude-sonnet-5\n")
+    (tmp_path / ".env").write_text("AREAO1_MODEL_MID=claude-sonnet-5\n")
     assert route("scheduled", workspace=tmp_path).model == "claude-sonnet-5"
     # an OpenAI model name without an OpenAI key stays on Claude
-    monkeypatch.setenv("LIGHTHOUSE_MODEL_MUNDANE", "gpt-5-nano")
+    monkeypatch.setenv("AREAO1_MODEL_MUNDANE", "gpt-5-nano")
     assert route("summarize").provider == "anthropic"
     monkeypatch.setenv("OPENAI_API_KEY", KEY)
     assert (route("summarize").provider, route("summarize").model) == ("openai", "gpt-5-nano")
     assert route("chat").provider == "anthropic"  # only the mundane tier moves
 
 
-def test_a_model_chosen_in_lighthouse_yaml_still_wins(monkeypatch):
-    monkeypatch.setenv("LIGHTHOUSE_MODEL_HARD", "claude-opus-5")
+def test_a_model_chosen_in_areao1_yaml_still_wins(monkeypatch):
+    monkeypatch.setenv("AREAO1_MODEL_HARD", "claude-opus-5")
     assert route("chat", AgentModels()).model == "claude-opus-5"  # the shipped default doesn't block the tier
     assert route("chat", AgentModels(chat="claude-sonnet-5-5")).model == "claude-sonnet-5-5"
 
@@ -122,14 +122,14 @@ def test_chat_extraction_uses_openai_when_its_key_is_set_with_the_same_guards(ws
 
 
 def test_the_monthly_cap_stops_openai_too(ws, http_mock, monkeypatch):
-    from lighthouse_gc.core.models import AgentRun
+    from areao1.core.models import AgentRun
 
     monkeypatch.setenv("OPENAI_API_KEY", KEY)
     r = _openai(http_mock, '{"items": []}')
     app = create_app(ws, allowed_hosts=["testserver"])
     c = TestClient(app)
     cap = ws.config().agent.budget.monthly_usd
-    from lighthouse_gc.agent.runner import AgentRunner
+    from areao1.agent.runner import AgentRunner
 
     AgentRunner(ws).save(
         AgentRun(kind="manual", engine="fake", model="x", prompt="spent", status="done", cost_usd=cap)

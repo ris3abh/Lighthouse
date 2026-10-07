@@ -38,6 +38,7 @@ import Pipeline from "./pages/Pipeline";
 import Settings from "./pages/Settings";
 import Sources from "./pages/Sources";
 import Welcome from "./pages/Welcome";
+import { PRODUCT } from "./names";
 
 /** Bumping `version` makes every page and the shell re-fetch after a write. */
 const RefreshCtx = createContext<{ version: number; bump: () => void }>({ version: 0, bump: () => {} });
@@ -321,7 +322,7 @@ function Shell() {
       <aside inert={welcoming} className="lh-nav hidden w-60 shrink-0 flex-col border-r border-frame bg-surface lg:flex">
         <a href="#/overview" className="flex h-16 items-center gap-3 border-b border-frame px-5">
           <img src="./favicon.svg" alt="" className="size-6" />
-          <span className="display text-[28px] tracking-tight uppercase">Lighthouse</span>
+          <span className="display text-[28px] tracking-tight uppercase">{PRODUCT}</span>
         </a>
         {nav}
         <div className="mt-auto border-t border-line p-5 font-mono text-[10.5px] leading-relaxed tracking-[0.06em] text-muted uppercase">
@@ -334,7 +335,7 @@ function Shell() {
       {menuOpen && (
         <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-surface lg:hidden" role="dialog" aria-label="Menu">
           <div className="flex h-14 items-center justify-between border-b border-frame px-4">
-            <span className="display text-2xl uppercase">Lighthouse</span>
+            <span className="display text-2xl uppercase">{PRODUCT}</span>
             <Button variant="ghost" size="sm" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="px-2">
               <X />
             </Button>
@@ -353,7 +354,7 @@ function Shell() {
             <Menu />
           </Button>
           <a href="#/overview" className="display text-2xl uppercase lg:hidden">
-            Lighthouse
+            {PRODUCT}
           </a>
           <div className="hidden min-w-0 items-baseline gap-3 truncate lg:flex">
             <span className="text-[15px] font-semibold">{ov?.person.name || "Your case"}</span>
@@ -385,7 +386,7 @@ function Shell() {
         <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
           <div className="lh-content @container mx-auto w-full max-w-[1440px] px-4 py-8 md:px-10 md:py-12">{content}</div>
           <footer className="mx-auto max-w-[1440px] border-t border-line px-4 py-5 font-mono text-[10.5px] leading-relaxed text-muted md:px-10">
-            Lighthouse is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public
+            {PRODUCT} is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public
             regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.
           </footer>
         </main>

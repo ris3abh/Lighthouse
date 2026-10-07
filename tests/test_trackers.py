@@ -7,10 +7,10 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 
-from lighthouse_gc.core.workspace import NotFound, WorkspaceError, _atomic_write, dump_model
-from lighthouse_gc.server.app import create_app
+from areao1.core.workspace import NotFound, WorkspaceError, _atomic_write, dump_model
+from areao1.server.app import create_app
 
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 
 
 def test_moving_stage_resets_staleness_but_edits_do_not(ws):

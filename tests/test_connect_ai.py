@@ -7,9 +7,9 @@ import pytest
 from fastapi.testclient import TestClient
 from test_onboarding import W, answer_all, client_for, upload
 
-from lighthouse_gc.core.secrets import get_secret
-from lighthouse_gc.engine import claude_code, connect
-from lighthouse_gc.scaffold import create_workspace
+from areao1.core.secrets import get_secret
+from areao1.engine import claude_code, connect
+from areao1.scaffold import create_workspace
 
 KEY = "sk-ant-api03-" + "x" * 40
 REAL_AVAILABLE = claude_code.ClaudeAgentEngine.available  # before the autouse guard replaces it in each test
@@ -71,7 +71,7 @@ def test_the_bundled_cli_counts_so_path_isnt_needed(monkeypatch, tmp_path, no_in
 
 
 def test_a_saved_key_goes_to_the_cli_process_only(monkeypatch):
-    from lighthouse_gc.engine.base import EngineRequest
+    from areao1.engine.base import EngineRequest
 
     req = EngineRequest(system_prompt="s", prompt="p", model="claude-opus-5-5")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -122,8 +122,8 @@ def test_without_a_key_the_engine_is_unavailable_even_with_claude_code_here(monk
 
 def test_the_cli_process_can_never_use_a_claude_code_login(monkeypatch):
     """Its own empty config folder and no OAuth token: a login on this computer is invisible to it."""
-    from lighthouse_gc.engine.base import EngineRequest
-    from lighthouse_gc.home import config_dir
+    from areao1.engine.base import EngineRequest
+    from areao1.home import config_dir
 
     connect.save_key(KEY)
     env = (
@@ -138,7 +138,7 @@ def test_the_cli_process_can_never_use_a_claude_code_login(monkeypatch):
 
 
 def test_an_old_login_choice_asks_again(fresh):
-    from lighthouse_gc.onboarding.api import _advance
+    from areao1.onboarding.api import _advance
 
     c = client_for(fresh)
     answer_all(c, upload(c, "maya"), ai=None)  # every question answered
@@ -148,7 +148,7 @@ def test_an_old_login_choice_asks_again(fresh):
     assert state.step == "ai"
 
 
-def test_status_says_how_lighthouse_reaches_the_ai_and_what_it_costs(fresh, monkeypatch):
+def test_status_says_how_area_o1_reaches_the_ai_and_what_it_costs(fresh, monkeypatch):
     c: TestClient = client_for(fresh)
     monkeypatch.setattr(connect, "find_cli", lambda: (None, "missing"))
     s = c.get("/api/ai").json()

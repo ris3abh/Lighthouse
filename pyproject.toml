@@ -3,7 +3,7 @@ requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "lighthouse-gc"
+name = "areao1"
 version = "0.2.0.dev0"
 description = "Local-first command center for building an O-1A / EB-1A extraordinary-ability evidence file."
 readme = "README.md"
@@ -49,24 +49,25 @@ dev = [
 ]
 
 [project.scripts]
-lighthouse-gc = "lighthouse_gc.cli:app"
+areao1 = "areao1.cli:app"
+lighthouse-gc = "areao1.cli:deprecated"  # Lighthouse-era name; says the new one, then runs (ADR 0010)
 
 [project.urls]
-Homepage = "https://github.com/ris3abh/Lighthouse"
+Homepage = "https://github.com/ris3abh/areao1"
 
 [tool.hatch.build.targets.wheel]
-packages = ["lighthouse_gc"]
+packages = ["areao1"]
 # The built web UI is gitignored but must ship inside the wheel.
-artifacts = ["lighthouse_gc/server/static/**"]
+artifacts = ["areao1/server/static/**"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"profiles" = "lighthouse_gc/_data/profiles"
-"vault" = "lighthouse_gc/_data/vault"
+"profiles" = "areao1/_data/profiles"
+"vault" = "areao1/_data/vault"
 
 [tool.hatch.build.targets.sdist]
-include = ["lighthouse_gc", "profiles", "examples", "vault", "tests", "web/src", "web/*.json", "web/*.ts", "web/index.html", "*.md", "LICENSE"]
+include = ["areao1", "profiles", "examples", "vault", "tests", "web/src", "web/*.json", "web/*.ts", "web/index.html", "*.md", "LICENSE"]
 # The built UI too, so a wheel built from the sdist (the default for `python -m build`) still has it.
-artifacts = ["lighthouse_gc/server/static/**"]
+artifacts = ["areao1/server/static/**"]
 
 [tool.ruff]
 line-length = 110
@@ -82,7 +83,7 @@ extend-immutable-calls = ["fastapi.File", "fastapi.Form"]
 
 [tool.mypy]
 python_version = "3.11"
-packages = ["lighthouse_gc"]
+packages = ["areao1"]
 ignore_missing_imports = true
 check_untyped_defs = true
 plugins = ["pydantic.mypy"]

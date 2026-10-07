@@ -13,14 +13,14 @@ import pytest
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
-from lighthouse_gc.cli import app
-from lighthouse_gc.core.models import Candidate, Exhibit
-from lighthouse_gc.core.workspace import WorkspaceError
-from lighthouse_gc.criteria.engine import score
-from lighthouse_gc.jobs.chats import import_chats
-from lighthouse_gc.mcp import tools
-from lighthouse_gc.server.app import create_app
-from lighthouse_gc.sources import chat_export as ce
+from areao1.cli import app
+from areao1.core.models import Candidate, Exhibit
+from areao1.core.workspace import WorkspaceError
+from areao1.criteria.engine import score
+from areao1.jobs.chats import import_chats
+from areao1.mcp import tools
+from areao1.server.app import create_app
+from areao1.sources import chat_export as ce
 
 CHATS = Path(__file__).parent / "fixtures" / "chats"
 CLAUDE = (CHATS / "claude_conversations.json").read_bytes()
@@ -267,14 +267,14 @@ def test_cli_import_detects_an_export_file(ws, tmp_path):
 def test_api_import(demo_ws):
     c = TestClient(create_app(demo_ws, allowed_hosts=["testserver"]))
     r = c.post("/api/imports/chats", files={"file": ("claude-export.zip", _zip(CLAUDE), "application/zip")},
-               headers={"X-Lighthouse": "1"})  # fmt: skip
+               headers={"X-AreaO1": "1"})  # fmt: skip
     assert r.status_code == 200, r.text
     assert (
         r.json()["conversations"] == 3 and r.json()["skipped"] == 1 and "never counts" in r.json()["summary"]
     )
     tracker = next(x for x in c.get("/api/inbox").json() if x["kind"] == "deadline")
-    accepted = c.post(f"/api/inbox/{tracker['id']}/accept", json={}, headers={"X-Lighthouse": "1"})
+    accepted = c.post(f"/api/inbox/{tracker['id']}/accept", json={}, headers={"X-AreaO1": "1"})
     assert accepted.status_code == 200 and accepted.json()["due"] in ("2026-10-14", "2026-11-01")
     bad = c.post("/api/imports/chats", files={"file": ("x.json", b"[]", "application/json")},
-                 headers={"X-Lighthouse": "1"})  # fmt: skip
+                 headers={"X-AreaO1": "1"})  # fmt: skip
     assert bad.status_code == 400

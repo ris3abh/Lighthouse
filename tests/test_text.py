@@ -1,4 +1,4 @@
-from lighthouse_gc.core.text import plural
+from areao1.core.text import plural
 
 
 def test_plural():
@@ -11,7 +11,7 @@ def test_plural():
 
 
 def test_names_person_needs_first_and_last_name_together():
-    from lighthouse_gc.core.text import names_person
+    from areao1.core.text import names_person
 
     assert names_person("Judges: Maya Chen, Omar Haddad", ["Maya Chen"])
     assert names_person("Chen, Maya (Northwind)", ["Maya Chen"])

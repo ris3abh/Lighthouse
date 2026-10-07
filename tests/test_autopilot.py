@@ -13,16 +13,16 @@ import pytest
 from agent_fakes import FakeEngine
 from fastapi.testclient import TestClient
 
-from lighthouse_gc.agent.autopilot import AUTO_ACTIONS, CRITERION_ACTIONS, AutopilotRefused, is_tier1
-from lighthouse_gc.agent.runner import AgentRunner
-from lighthouse_gc.agent.tools import RunContext, build_tools
-from lighthouse_gc.core.models import AgentRun
-from lighthouse_gc.core.workspace import WorkspaceError
-from lighthouse_gc.server.app import create_app
-from lighthouse_gc.service import Service
+from areao1.agent.autopilot import AUTO_ACTIONS, CRITERION_ACTIONS, AutopilotRefused, is_tier1
+from areao1.agent.runner import AgentRunner
+from areao1.agent.tools import RunContext, build_tools
+from areao1.core.models import AgentRun
+from areao1.core.workspace import WorkspaceError
+from areao1.server.app import create_app
+from areao1.service import Service
 
 ROOT = Path(__file__).resolve().parent.parent
-W = {"X-Lighthouse": "1"}
+W = {"X-AreaO1": "1"}
 USCIS = "https://www.uscis.gov/forms/filing-fees"
 USCIS_PAGE = (
     "<html><body><p>The new fee schedule takes effect on November 30, 2026 for Form I-129.</p></body></html>"
@@ -68,9 +68,7 @@ def test_autopilot_actions_never_include_anything_criterion_affecting():
     assert {"pipeline.update", "pipeline.move", "letter.update", "deadline.update", "deadline.add",
                             "metrics.record"} >= AUTO_ACTIONS  # fmt: skip
     # Every action the service can perform is either explicitly auto-allowed or refused under autopilot.
-    actions = set(
-        re.findall(r'_record\(\s*"([a-z_]+\.[a-z_]+)"', (ROOT / "lighthouse_gc/service.py").read_text())
-    )
+    actions = set(re.findall(r'_record\(\s*"([a-z_]+\.[a-z_]+)"', (ROOT / "areao1/service.py").read_text()))
     assert CRITERION_ACTIONS - {"settings.autopilot"} <= actions | {"inbox.accept"}
     assert "inbox.propose" not in AUTO_ACTIONS  # proposals are normal (approval) path, not autopilot
 

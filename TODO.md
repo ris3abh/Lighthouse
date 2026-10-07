@@ -74,7 +74,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       2026-10-07. C14's real-export adapter still waits for the redacted samples
 
 ### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request
-- [x] S1. `lighthouse-gc` with no arguments: creates ~/Lighthouse on first run, remembers it, serves it and
+- [x] S1. `areao1` with no arguments: creates ~/AreaO1 on first run, remembers it, serves it and
       opens onboarding; later runs reopen it
 - [x] S2. The wheel is the product: release workflow builds the UI, attaches the wheel to the GitHub release
       (PyPI via trusted publishing once configured); CI installs the wheel in a clean venv and smoke-tests it
@@ -83,9 +83,9 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 - [x] S3. "Connect your AI" in onboarding and Settings: existing Claude login, or an Anthropic key in the
       keychain checked with a free request; cost note; bundled CLI counts as available; skippable. A new
       onboarding step ("Your AI") between the questions and the lookups, asked once; the key goes to the CLI
-      process only. Lighthouse never reads the Claude Code login itself
+      process only. Area O1 never reads the Claude Code login itself
 - [x] S4. One-line installers (install.sh, install.ps1): uv if missing, install, run; CI runs them
-      (latest release wheel by default; LIGHTHOUSE_GC_SPEC / LIGHTHOUSE_GC_NO_RUN for CI; ubuntu, macOS, Windows)
+      (latest release wheel by default; AREAO1_SPEC / AREAO1_NO_RUN for CI; ubuntu, macOS, Windows)
 - [x] S5. Landing page (docs/site, GitHub Pages) and a README that opens with the one line
       (reported with Checkpoint 3: a clean-machine install walkthrough)
       (static page with self-hosted fonts and a first-run screenshot; pages.yml deploys once Pages is enabled)
@@ -97,7 +97,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       you started (missions keep the Inbox); Undo in the chat reply; deletes, letter writers and to-dos undoable
 - [x] D2. Three tiers from .env (hard = claude-opus-5-5, mid = claude-sonnet-5-5, mundane = small OpenAI
       model), rule-based router by task type, redaction + guardrails on every provider, .env.example.
-      agent/routing.py (a lighthouse.yaml model that differs from the default still wins); OpenAI only for
+      agent/routing.py (a areao1.yaml model that differs from the default still wins); OpenAI only for
       tool-less mundane reading, redacted, capped and costed (gpt-5-mini by default; prices in openai_chat.py);
       without an OpenAI key the mundane tier is Claude Haiku. Runs record task, tier and provider
 - [x] D3. Long chats: older turns summarized (summary saved, original kept); "cheap mode" toggle (mid tier).
@@ -118,20 +118,20 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       five phrasings, every write tool aimed at the MLH invitation; only the pipeline item moves; negative control)
 - [x] F5. Status of items 7-11: C10-C13 done; C14 done except the adapter for the owner's real export layout,
       which still waits for the redacted sample (manifests and dated files are already followed generically)
-- [ ] F6. Rename to Area O1 (ADR 0010): names in one place, migration from Lighthouse-era workspaces,
-      deprecated lighthouse-gc alias, banter copy with tested rules
+- [ ] F6. Rename to Area O1 (ADR 0010): names in one place, migration from Area O1-era workspaces,
+      deprecated areao1 alias, banter copy with tested rules
 
 ### Part E: Google, CRM, outreach (ADR 0010)
 - [ ] E1. Google sign-in with the user's own OAuth client, narrowest scopes, production-mode docs, keychain
 - [ ] E2. Gmail read: threads with case contacts linked to the CRM; nothing else stored
-- [ ] E3. Two-way sync with a dedicated "Lighthouse" Google calendar (latest edit wins, logged, undoable)
+- [ ] E3. Two-way sync with a dedicated "Area O1" Google calendar (latest edit wins, logged, undoable)
 - [ ] E4. CRM page: people, relationship, threads, asks, last touch, next follow-up; linked to Letters/Pipeline
 - [ ] E5. Outreach: agent drafts, user approves / edits / rejects, sends from Gmail; proactive follow-ups
       after 7 quiet days (same approval); daily send limits; case contacts only
 - [ ] CHECKPOINT 4 (Google): OAuth client instructions first; sign-in, calendar sync both ways, one draft
 
 ### Part F: daily opportunity job
-- [ ] F1. Off-by-default 24h job over Gmail + the Lighthouse calendar (judging / reviewer / call invites)
+- [ ] F1. Off-by-default 24h job over Gmail + the Area O1 calendar (judging / reviewer / call invites)
 - [ ] F2. Verification: email auth + sender domain matches the org's site; event confirmed on its official
       page (or Devpost / MLH) with matching dates; else a confirmation reply draft (approve-tap), "unconfirmed"
 - [ ] F3. Inbox items at stage "invited" with verified / unconfirmed badge + push; phishing fixtures never
@@ -157,20 +157,20 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 
 ## Phase 0 checklist
 
-- [x] `lighthouse-gc init` creates a workspace from a template, with schemas and .gitignore
+- [x] `areao1 init` creates a workspace from a template, with schemas and .gitignore
       (+ git init, gitleaks pre-commit hook, AGENTS.md, empty `memory/`)
 - [x] O-1A and EB-1A profiles load; criteria engine computes the scoreboard from exhibits.json
 - [x] GitHub (public + PAT) and Hugging Face connectors: discover, snapshot, candidates (fixture tests)
-- [x] `lighthouse-gc import <url>` auto-detects the connector
+- [x] `areao1 import <url>` auto-detects the connector
 - [x] metrics-snapshot appends to metrics.csv (upsert per day; GitHub 14-day traffic kept)
-- [x] `lighthouse-gc up` serves Overview, Sources, Metrics, Evidence and Inbox pages (checked in Chrome,
+- [x] `areao1 up` serves Overview, Sources, Metrics, Evidence and Inbox pages (checked in Chrome,
       light + dark)
 - [x] DASHBOARD.md generated; demo workspace renders with no network (tested)
 - [x] Memory store (5b): connectors attach raw responses → observations (content-addressed snapshots);
-      claims, edges and decisions as append-only JSONL; rebuildable SQLite index in `.lighthouse/cache/`;
+      claims, edges and decisions as append-only JSONL; rebuildable SQLite index in `.areao1/cache/`;
       Inbox accept/reject records approved/rejected decisions and CITES edges
-- [x] Core/profile split: `lighthouse_gc.core` imports nothing outside core and mentions no profile
-      (`tests/test_layering.py`); profiles, scoring and views live in `lighthouse_gc/criteria/`
+- [x] Core/profile split: `areao1.core` imports nothing outside core and mentions no profile
+      (`tests/test_layering.py`); profiles, scoring and views live in `areao1/criteria/`
 - [x] Claims carry exact excerpt + offsets (refused if not verbatim), event stage and extracted_by;
       criteria count only completed / published / granted stages
 
@@ -197,7 +197,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 ## Phase 1a (product track first, SPEC 11a)
 
 - [x] GitHub Actions CI: repo guard, ruff, mypy, pytest (3.11 + 3.13), validate examples/, web build
-- [x] `lighthouse-gc mcp`: read-only MCP server (get_scoreboard, list_gaps, query_claims, get_provenance,
+- [x] `areao1 mcp`: read-only MCP server (get_scoreboard, list_gaps, query_claims, get_provenance,
       what_changed); tested in-process and over real stdio, plus a no-writes digest test
 - [x] Evidence page drag-and-drop upload → Inbox → exhibit (tested via API + real drag events in Chrome)
 - [x] Claude / ChatGPT export import → snapshots + self-reported tracker candidates (never count;
@@ -265,7 +265,7 @@ Phase 1c notes:
 
 Phase 1d notes:
 - USCIS (Akamai), travel.state.gov and egov processing times answer automated clients with 403. They show
-  as unreadable; `lighthouse-gc vault import <source> <saved page>` fills them by hand. We don't disguise the
+  as unreadable; `areao1 vault import <source> <saved page>` fills them by hand. We don't disguise the
   client.
 - uscode.house.gov was "Under Maintenance" when the manifest was written; the statute markers are unverified
   against its live text.

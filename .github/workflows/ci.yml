@@ -41,7 +41,7 @@ jobs:
       - name: Validate fixture workspaces
         run: |
           for ws in tests/fixtures/workspaces/*/; do
-            lighthouse-gc validate -w "$ws"
+            areao1 validate -w "$ws"
           done
 
   web:
@@ -87,7 +87,7 @@ jobs:
           python -m venv "$RUNNER_TEMP/venv"
           "$RUNNER_TEMP/venv/bin/python" -m pip install dist/*.whl
       - name: Smoke test (serves the dashboard, no checkout or Node)
-        run: python scripts/smoke_wheel.py "$RUNNER_TEMP/venv/bin/lighthouse-gc"
+        run: python scripts/smoke_wheel.py "$RUNNER_TEMP/venv/bin/areao1"
       - uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -109,12 +109,12 @@ jobs:
           path: dist/
       - name: Run the installer against the wheel just built
         run: |
-          LIGHTHOUSE_GC_SPEC="$(ls "$PWD"/dist/*.whl)" LIGHTHOUSE_GC_NO_RUN=1 sh install.sh
+          AREAO1_SPEC="$(ls "$PWD"/dist/*.whl)" AREAO1_NO_RUN=1 sh install.sh
       - name: Installed command works and serves the dashboard
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          lighthouse-gc --help
-          python3 scripts/smoke_wheel.py "$(command -v lighthouse-gc)"
+          areao1 --help
+          python3 scripts/smoke_wheel.py "$(command -v areao1)"
 
   install-ps1:
     name: install.ps1 on Windows
@@ -129,14 +129,14 @@ jobs:
       - name: Run the installer the way the one line does (irm | iex)
         shell: powershell
         run: |
-          $env:LIGHTHOUSE_GC_SPEC = (Get-Item dist\*.whl).FullName
-          $env:LIGHTHOUSE_GC_NO_RUN = '1'
+          $env:AREAO1_SPEC = (Get-Item dist\*.whl).FullName
+          $env:AREAO1_NO_RUN = '1'
           Get-Content install.ps1 -Raw | Invoke-Expression
       - name: Installed command works and serves the dashboard
         shell: powershell
         run: |
           $env:PYTHONUTF8 = '1'  # output is redirected here, not a console
-          $exe = Join-Path $HOME '.local\bin\lighthouse-gc.exe'
+          $exe = Join-Path $HOME '.local\bin\areao1.exe'
           & $exe --help
           if ($LASTEXITCODE -ne 0) { exit 1 }
           python scripts/smoke_wheel.py $exe

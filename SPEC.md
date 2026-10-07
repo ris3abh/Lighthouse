@@ -1,20 +1,20 @@
-# Lighthouse — Open-Source Build Spec
+# Area O1 — Open-Source Build Spec
 
 Oct 6, 2026 · @Rishabh Sharma
 
-> **Name decision.** The project ships on PyPI as **`lighthouse-gc`**, the CLI command is **`lighthouse-gc`**,
-> and the Python import package is **`lighthouse_gc`**. Wherever this spec says `lighthouse <cmd>` read
-> `lighthouse-gc <cmd>`, and `lighthouse/` (the package dir) is `lighthouse_gc/`.
+> **Name decision.** The project ships on PyPI as **`areao1`**, the CLI command is **`areao1`**,
+> and the Python import package is **`areao1`**. Wherever this spec says `areao1 <cmd>` read
+> `areao1 <cmd>`, and `areao1/` (the package dir) is `areao1/`.
 
 > **Priority: product first, research second.** The framing below is "evidence-grounded memory for agents",
-> but the build order is user-first: Lighthouse must first be a friendly tool anyone can use out of the box.
+> but the build order is user-first: Area O1 must first be a friendly tool anyone can use out of the box.
 > That means importing their Claude and ChatGPT sessions, dropping in evidence, updating trackers and getting
 > notifications. The research and experimentation work (knowledge-vault rigor, evaluation harness, ablations,
 > papers) comes after that product is solid. See section 11a.
 
-## 1. What Lighthouse is
+## 1. What Area O1 is
 
-Lighthouse is an open-source system that gives long-running LLM agents an evidence-grounded memory. It turns
+Area O1 is an open-source system that gives long-running LLM agents an evidence-grounded memory. It turns
 changing documents into traceable claims, routes them through human review, and lets future agents see what is
 supported, disputed or outdated. Its first application is O-1A / EB-1A evidence organization: you point it at
 your work (websites, GitHub repos public or private via PAT, Hugging Face, scholarly profiles, Gmail) and it
@@ -24,20 +24,20 @@ separate profile layer, and a second non-immigration profile (research portfolio
 generalizes.
 
 **The problem.** Building a case takes 6–18 months across many AI chats, inboxes and tabs. Requirements,
-metrics, deadlines and who's-doing-what scroll away. Lighthouse makes a private workspace on disk the memory,
+metrics, deadlines and who's-doing-what scroll away. Area O1 makes a private workspace on disk the memory,
 not the chat — one source of truth the agent keeps current, one screen to check.
 
 **Who it's for.** Researchers, engineers, founders and creators assembling O-1 / EB-1 evidence, with or
 without an attorney. It organizes evidence; it does not judge eligibility.
 
-**Disclaimer (ships in README + dashboard footer).** Lighthouse is not legal advice and is not affiliated with
+**Disclaimer (ships in README + dashboard footer).** Area O1 is not legal advice and is not affiliated with
 USCIS. Criteria profiles are community-maintained summaries of public regulations (8 CFR 214.2(o), 8 CFR
 204.5(h)). Always confirm strategy with an immigration attorney.
 
 ## 2. Design principles
 
 1. **Code is public, the case is private.** The app lives in the public repo. Each user's case lives in a
-   separate workspace directory (its own private Git repo) created by `lighthouse init`. No personal data ever
+   separate workspace directory (its own private Git repo) created by `areao1 init`. No personal data ever
    touches the app repo.
 2. **Files are the source of truth.** Workspace data is Markdown + JSON + CSV in Git: human-readable,
    diffable, agent-editable. A local SQLite file is only a cache/index and can always be rebuilt from the files.
@@ -50,12 +50,12 @@ USCIS. Criteria profiles are community-maintained summaries of public regulation
    to the agent engine (Claude Code / Codex / API), which is swappable.
 6. **Local-first, secrets never in Git.** Server binds to 127.0.0.1. Tokens live in the OS keychain. No
    telemetry. Optional Docker for an always-on private box.
-7. **Reusable core, domain profiles.** `lighthouse.core` knows nothing about immigration. O-1A, EB-1A and the
+7. **Reusable core, domain profiles.** `areao1.core` knows nothing about immigration. O-1A, EB-1A and the
    research-portfolio profile are YAML rubrics plus optional plugins, so the community can add domains without
    touching the core.
 8. **Measure before claiming.** Every reliability claim in the README must come from the evaluation harness
    (section 5c). Graphs, provenance and human review are established ideas (see W3C PROV); the docs describe
-   what Lighthouse implements and measures, not novelty.
+   what Area O1 implements and measures, not novelty.
 9. **Ship in phases.** A usable dashboard with GitHub + Hugging Face import comes first; Gmail and opportunity
    scans come after.
 
@@ -141,7 +141,7 @@ criteria:
 
 ## 5a. Knowledge vault: verified O-1 / EB-1A guidance
 
-Every statement Lighthouse makes about immigration rules (criteria wording, fees, forms, timelines, standards
+Every statement Area O1 makes about immigration rules (criteria wording, fees, forms, timelines, standards
 of proof) must cite a vault source fetched within its freshness window, or it is shown as unverified and
 blocked from petition-facing output. The vault cannot guarantee nothing is wrong; it guarantees every rule
 claim is cited, dated, re-checked and flagged when it goes stale or conflicts.
@@ -184,7 +184,7 @@ tiers, TTLs). Fetched content and embeddings live in each user's workspace cache
 
 ## 5b. Evidence-aware graph memory
 
-Lighthouse's memory is a provenance graph, not a notes file: every fact the system knows is a claim tied to the
+Area O1's memory is a provenance graph, not a notes file: every fact the system knows is a claim tied to the
 raw observation it came from, scored, dated, and approved by you before agents or petition documents may rely
 on it. This replaces the chat-history problem with a store any agent can query.
 
@@ -230,7 +230,7 @@ accepted → published) and memberships (applied → granted).
 a conflict is unresolved, the draft states what is unknown and opens a review item instead of filling the gap.
 
 **Temporal model (bitemporal):** valid_from/valid_to = when it was true in the world; recorded_at = when
-Lighthouse learned it. Nothing is overwritten. This answers "what were my metrics on filing day?", powers the
+Area O1 learned it. Nothing is overwritten. This answers "what were my metrics on filing day?", powers the
 trend charts, and shows exactly what changed since your last session.
 
 **Agent memory:** agents never read raw chat. They call MCP tools: `query_claims(entity, as_of)`,
@@ -245,7 +245,7 @@ only added if queries demand it.
 
 **Standards alignment.** The model maps onto W3C PROV: Source = prov:Entity, extraction and review =
 prov:Activity, connectors, models and the user = prov:Agent; DERIVED_FROM = prov:wasDerivedFrom, REVIEWED_BY =
-prov:wasAttributedTo via the review activity. `lighthouse export --prov` writes PROV-JSON so other tools can
+prov:wasAttributedTo via the review activity. `areao1 export --prov` writes PROV-JSON so other tools can
 read the graph.
 
 **Dashboard:** a Memory page renders the graph (Cytoscape.js) with filters by criterion, entity, status and
@@ -254,14 +254,14 @@ raw observation. A Knowledge page lists vault sources, freshness, recent rule ch
 
 ## 5c. Evaluation harness
 
-Lighthouse claims a reliability benefit only when this harness measures one. It compares three systems on the
+Area O1 claims a reliability benefit only when this harness measures one. It compares three systems on the
 same model, documents and token budget, using manually checked expected answers.
 
 | System | What it is |
 |---|---|
 | Document RAG | chunks of the same sources, retrieved per question |
 | Persistent-memory baseline | an off-the-shelf agent-memory approach (summaries / stored facts, no provenance or review) |
-| Lighthouse | the claim graph with provenance, time, conflicts and approval |
+| Area O1 | the claim graph with provenance, time, conflicts and approval |
 
 **Scenarios** replay dated updates in order: judging (invite → accept → complete, plus a cancelled event),
 publication (preprint → accepted → published, plus a retraction), conflicting metrics (two download counts from
@@ -280,7 +280,7 @@ subset. Every release attaches its results; the README quotes only numbers from 
 ## 6. Web dashboard
 
 The dashboard is a first-class part of v1: a local web app at http://127.0.0.1:7777, started with
-`lighthouse up`. It reads and writes the workspace through the API, so every UI change is also a Git-trackable
+`areao1 up`. It reads and writes the workspace through the API, so every UI change is also a Git-trackable
 file change. DASHBOARD.md is still generated for terminal and agent use.
 
 | Page | What it shows | Key actions |
@@ -328,8 +328,8 @@ not a crawler). Users can add custom scans from the UI.
 person's local calendar day: the machine's time zone, or `TZ` if set. One helper (`core/clock.py`) provides
 all of these.
 
-**Scheduler.** APScheduler runs inside `lighthouse up`. For machines that aren't always on,
-`lighthouse run <job>` is a headless CLI that cron / launchd / GitHub Actions can call. Default schedule (all
+**Scheduler.** APScheduler runs inside `areao1 up`. For machines that aren't always on,
+`areao1 run <job>` is a headless CLI that cron / launchd / GitHub Actions can call. Default schedule (all
 editable in Settings):
 
 | Job | Default | Does |
@@ -348,17 +348,17 @@ push. Each event type can route to a different channel.
 URL. Optional one-way push to Google Calendar via OAuth.
 
 **Agent engine.** (Design: `docs/adr/0005-agent-layer.md`.) The harness is locked down to web search
-plus Lighthouse's own tools; agent writes go through the service layer and only *propose* to the Inbox
+plus Area O1's own tools; agent writes go through the service layer and only *propose* to the Inbox
 (autopilot rules may auto-apply a narrow class of tracker updates with undo); every run is recorded in
 `agent/runs/` with its sources, proposals, changes and cost; per-run and monthly budgets live in
-`lighthouse.yaml`. One adapter interface, three implementations: Claude Code (`claude -p` headless), Codex
+`areao1.yaml`. One adapter interface, three implementations: Claude Code (`claude -p` headless), Codex
 (`codex exec`), or direct Anthropic/OpenAI API. Skills live in `skills/` and are copied into each workspace's
 `.claude/skills/` (and an AGENTS.md for Codex):
 
 - dashboard-generate, metrics-snapshot, evidence-intake, criteria-status, deadline-notify
 - opportunity-scan, gmail-triage, letter-draft, petition-outline (EB-1 final-merits narrative)
 
-**Chat.** Lighthouse ships an MCP server (`lighthouse mcp`) exposing tools like get_scoreboard, list_gaps,
+**Chat.** Area O1 ships an MCP server (`areao1 mcp`) exposing tools like get_scoreboard, list_gaps,
 add_candidate, update_pipeline, draft_letter. That gives "access to everything" in three places at once: the
 dashboard's chat panel, Claude Code / Codex in the terminal, and any MCP-capable desktop client. Writes from
 chat go through the same Inbox approval as imports.
@@ -368,10 +368,10 @@ chat go through the same Inbox approval as imports.
 Public app repo (what goes on GitHub):
 
 ```
-lighthouse/
+areao1/
 ├── README.md  LICENSE  DISCLAIMER.md  SECURITY.md  CONTRIBUTING.md
 ├── pyproject.toml
-├── lighthouse/
+├── areao1/
 │   ├── cli.py               # init, up, run <job>, import <url>, mcp
 │   ├── core/                # domain-agnostic: models, store, claims, provenance, review, retrieval
 │   ├── criteria/            # domain layer: scores profiles over approved claims
@@ -393,11 +393,11 @@ lighthouse/
 └── tests/
 ```
 
-Private workspace (created by `lighthouse init ~/my-case`, its own private Git repo):
+Private workspace (created by `areao1 init ~/my-case`, its own private Git repo):
 
 ```
 my-case/
-├── lighthouse.yaml          # profile, schedules, channels (no secrets)
+├── areao1.yaml          # profile, schedules, channels (no secrets)
 ├── DASHBOARD.md             # generated
 ├── data/
 │   ├── person.json          # name, field, status, filing target, petitioner
@@ -412,10 +412,10 @@ my-case/
 ├── memory/                  # claims, relations, reviews, outputs JSON + sources/ snapshots
 ├── drafts/letters/
 ├── .claude/skills/  AGENTS.md
-└── .gitignore               # .lighthouse/cache, *.db, any .env
+└── .gitignore               # .areao1/cache, *.db, any .env
 ```
 
-Every JSON file has a versioned JSON Schema in `lighthouse/core/schemas/`, so agents and the UI validate the
+Every JSON file has a versioned JSON Schema in `areao1/core/schemas/`, so agents and the UI validate the
 same shape. Example letter record: `{id, name, relationship: employer|independent|coauthor, credentials,
 criteria: [...], asks: [letter, membership_ref], status, draft_path, last_contact}`.
 
@@ -424,9 +424,9 @@ criteria: [...], asks: [letter, membership_ref], status, draft_path, last_contac
 | Layer | Choice | Why |
 |---|---|---|
 | Backend + CLI | Python 3.11+, FastAPI, Typer, pydantic | best client libraries for HF (huggingface_hub), GitHub (httpx/PyGithub), Gmail, scholarly APIs |
-| Scheduler | APScheduler (in-process) + `lighthouse run` for cron/launchd/Actions | no separate daemon to install |
-| Web UI | React + Vite + Tailwind + Recharts, built into the Python package | one `pipx install lighthouse` gives everything |
-| Storage | files in Git; SQLite cache in `.lighthouse/` (gitignored) | rebuildable index, fast queries for charts |
+| Scheduler | APScheduler (in-process) + `areao1 run` for cron/launchd/Actions | no separate daemon to install |
+| Web UI | React + Vite + Tailwind + Recharts, built into the Python package | one `pipx install areao1` gives everything |
+| Storage | files in Git; SQLite cache in `.areao1/` (gitignored) | rebuildable index, fast queries for charts |
 | Secrets | OS keychain via keyring; .env fallback (gitignored) | tokens never touch Git |
 | Agent | Claude Code (default) / Codex / API adapter | config-swappable |
 | Distribution | pipx, Docker image, GitHub Actions template | local, always-on box, or cloud-triggered |
@@ -435,10 +435,10 @@ Security and privacy requirements:
 
 - Server binds to 127.0.0.1 only; Docker mode requires a password and is documented as LAN/VPN-only.
 - PATs are read-only and the setup wizard links to pre-filled fine-grained token pages with minimum scopes.
-- `lighthouse init` sets up a pre-commit hook (gitleaks) that blocks commits containing tokens.
+- `areao1 init` sets up a pre-commit hook (gitleaks) that blocks commits containing tokens.
 - No telemetry. No calls except to sources the user connected and the chosen LLM.
 - "Redact before LLM" toggle strips emails, phone numbers and salary figures from text sent to the engine.
-- `lighthouse export` produces a zip of exhibits + an exhibit index for the attorney; `lighthouse purge` wipes
+- `areao1 export` produces a zip of exhibits + an exhibit index for the attorney; `areao1 purge` wipes
   cache and tokens.
 
 ## 11. Build phases
@@ -448,23 +448,23 @@ against the fictional fixture workspace and your own.
 
 ### Phase 0 — Core + dashboard (weekend 1)
 
-- [ ] `lighthouse init` creates a workspace from a template, with schemas and .gitignore
+- [ ] `areao1 init` creates a workspace from a template, with schemas and .gitignore
 - [ ] O-1A and EB-1A profiles load; criteria engine computes the scoreboard from exhibits.json
 - [ ] GitHub (public + PAT) and Hugging Face connectors: discover, snapshot, candidates
-- [ ] `lighthouse import <url>` auto-detects the connector
+- [ ] `areao1 import <url>` auto-detects the connector
 - [ ] metrics-snapshot appends to metrics.csv
-- [ ] `lighthouse up` serves Overview, Sources, Metrics, Evidence and Inbox pages
+- [ ] `areao1 up` serves Overview, Sources, Metrics, Evidence and Inbox pages
 - [ ] DASHBOARD.md generated; the fixture workspace renders with no network
 - [ ] Memory store (5b): connectors write observations; claims, edges and decisions as append-only JSONL with a
       rebuildable index; Inbox approves claims
-- [ ] Core/profile split: `lighthouse.core` imports nothing from immigration profiles (enforced by an
+- [ ] Core/profile split: `areao1.core` imports nothing from immigration profiles (enforced by an
       import-lint test)
 - [ ] Claims carry exact excerpt + offsets, event stage and extracted_by; criteria count only completed stages
 
 ### Phase 1 — Automation (weekend 2)
 
 - [x] Website + Semantic Scholar / OpenAlex / ORCID / arXiv connectors (Phase 1d)
-- [ ] Scheduler with default jobs; `lighthouse run <job>` headless
+- [ ] Scheduler with default jobs; `areao1 run <job>` headless
 - [ ] Notifications: desktop, email, Slack/Discord, ntfy
 - [ ] Deadlines + calendar.ics + Calendar page; Pipeline kanban with staleness
 - [ ] MCP server + Claude Code / Codex adapters + skills; Chat panel
@@ -476,7 +476,7 @@ against the fictional fixture workspace and your own.
 
 - [x] Agent engine: Claude Agent SDK adapter (Codex stubbed behind the same interface), web search on, the MCP
       read tools attached, plus write tools that call the service layer: they propose to the Inbox, or
-      auto-apply per autopilot rules. Per-run and monthly token budget caps in lighthouse.yaml. Model mocked
+      auto-apply per autopilot rules. Per-run and monthly token budget caps in areao1.yaml. Model mocked
       in tests.
 - [x] Chat panel docked on every page: streaming, each tool call visible (search, page read, file touched),
       proposals linked to the Inbox, conversations saved in the workspace.
@@ -521,7 +521,7 @@ against the fictional fixture workspace and your own.
 
 ## 11a. Priorities: product first, research second
 
-Lighthouse is a user-friendly tool first. Before the research and experimentation work, it must be something
+Area O1 is a user-friendly tool first. Before the research and experimentation work, it must be something
 anyone can install and use out of the box:
 
 1. **Import your AI sessions.** Bring in Claude and ChatGPT conversation exports so the context scattered
@@ -543,7 +543,7 @@ items go first. Research items stay in the spec so the data model is designed fo
   private workspace, not part of the project.
 - **Two repositories for contributor-users.** Anyone who both contributes and builds their own case keeps two
   separate repos: a public fork of the app for contributions, and a private workspace repo (created with
-  `lighthouse init`, never a fork) for their case. Filing documents must never be committed to the public fork.
+  `areao1 init`, never a fork) for their case. Filing documents must never be committed to the public fork.
   GitHub forks of a public repo can't be made private, so the case repo must be a fresh private repo.
 - Contribution surfaces: connectors, profiles, scans and skills each have a template + test fixture, so
   contributors never need real credentials (recorded API responses via respx/VCR).
@@ -571,6 +571,6 @@ Stop when every Phase 0 checkbox passes. Keep a running TODO.md and do not
 add features outside Phase 0.
 ```
 
-Open decisions: project name ("Lighthouse" may collide on PyPI; check before publishing) — **resolved:
-`lighthouse-gc`** — and whether to ship a hosted demo of the dashboard with a fictional persona (closed: no demo data ships; a new
+Open decisions: project name ("Area O1" may collide on PyPI; check before publishing) — **resolved:
+`areao1`** — and whether to ship a hosted demo of the dashboard with a fictional persona (closed: no demo data ships; a new
 workspace opens into onboarding).

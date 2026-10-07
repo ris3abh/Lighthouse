@@ -5,9 +5,9 @@ from datetime import date
 
 import pytest
 
-from lighthouse_gc.core.models import Candidate, MetricRow
-from lighthouse_gc.core.workspace import NotFound, WorkspaceError
-from lighthouse_gc.scaffold import create_workspace, validate_workspace
+from areao1.core.models import Candidate, MetricRow
+from areao1.core.workspace import NotFound, WorkspaceError
+from areao1.scaffold import create_workspace, validate_workspace
 
 
 def cand(fp="github:x/y:original_contributions", **kw) -> Candidate:
@@ -29,14 +29,14 @@ def test_init_creates_template(tmp_path):
     ws = create_workspace(tmp_path / "case", name="Test Person", profile="eb1a", git=True)
     root = ws.root
     for rel in (
-        "lighthouse.yaml",
+        "areao1.yaml",
         "DASHBOARD.md",
         "AGENTS.md",
         ".gitignore",
         "data/metrics.csv",
         "data/criteria.json",
         "data/person.json",
-        ".lighthouse/schemas/exhibits.schema.json",
+        ".areao1/schemas/exhibits.schema.json",
         ".claude/skills",
         "drafts/letters",
         "evidence/judging",
@@ -44,7 +44,7 @@ def test_init_creates_template(tmp_path):
     ):
         assert (root / rel).exists(), rel
     gitignore = (root / ".gitignore").read_text()
-    assert ".lighthouse/cache/" in gitignore and "*.db" in gitignore and ".env" in gitignore
+    assert ".areao1/cache/" in gitignore and "*.db" in gitignore and ".env" in gitignore
     assert json.loads((root / "data/person.json").read_text())["name"] == "Test Person"
     assert ws.config().profile == "eb1a"
     assert (root / "data/metrics.csv").read_text() == "date,source,item,metric,value\n"

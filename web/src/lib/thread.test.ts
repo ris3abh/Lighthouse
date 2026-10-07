@@ -16,10 +16,10 @@ function view(step: OnboardingView["state"]["step"], extra: Partial<OnboardingVi
   } as OnboardingView;
 }
 const q = (id: string, text: string) => ({ id, text, keys: [id], kind: "confirm" as const, values: {}, options: [], quote: "" });
-const opening = { who: "lighthouse" as const, text: "Nice to meet you, Maya!" };
+const opening = { who: "areao1" as const, text: "Nice to meet you, Maya!" };
 
 test("the thread starts with the PDF ask and keeps every earlier step above the current one", () => {
-  assert.deepEqual(buildThread(view("linkedin")).map((m) => [m.who, m.text, m.widget]), [["lighthouse", LINKEDIN_ASK, "linkedin"]]);
+  assert.deepEqual(buildThread(view("linkedin")).map((m) => [m.who, m.text, m.widget]), [["areao1", LINKEDIN_ASK, "linkedin"]]);
   const chats = buildThread(view("chats", { transcript: [opening], lookups: [{ id: "a", kind: "papers", prompt: "", targets: [], status: "declined", result: "" }] }));
   assert.deepEqual(chats.map((m) => m.text), [LINKEDIN_ASK, "Here's my profile: profile.pdf", opening.text, AI_ASK, "Later.", LOOKUPS_ASK, "That's all for now.", CHATS_ASK]);
   // the AI step: asked after the questions, with your choice as the reply
@@ -36,7 +36,7 @@ test("the thread starts with the PDF ask and keeps every earlier step above the 
 test("an answered question keeps its key, so it isn't typed again", () => {
   const asking = buildThread(view("questions", { transcript: [opening] }, q("name", "Is your name Maya Chen?")));
   const answered = buildThread(view("questions", {
-    transcript: [opening, { who: "lighthouse", text: "Is your name Maya Chen?" }, { who: "you", text: "Yes" }],
+    transcript: [opening, { who: "areao1", text: "Is your name Maya Chen?" }, { who: "you", text: "Yes" }],
   }, q("role", "You're a staff engineer?")));
   const key = asking.at(-1)!.key;
   assert.ok(answered.some((m) => m.key === key));

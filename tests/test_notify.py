@@ -8,10 +8,10 @@ import subprocess
 import pytest
 from typer.testing import CliRunner
 
-from lighthouse_gc import notify
-from lighthouse_gc.cli import app
-from lighthouse_gc.core.models import ChannelConfig, NotificationsConfig
-from lighthouse_gc.notify import Notification, already_sent, history, send
+from areao1 import notify
+from areao1.cli import app
+from areao1.core.models import ChannelConfig, NotificationsConfig
+from areao1.notify import Notification, already_sent, history, send
 
 SLACK = "https://hooks.slack.com/services/T000/B000/XXXX"
 DISCORD = "https://discord.com/api/webhooks/1/abc"
@@ -41,8 +41,8 @@ def channels(ws, fake_keyring):
         routes={"deadline": ["slack", "discord", "phone", "off"], "digest": ["mail"], "test": ["desktop"]},
     )
     ws.save_config(cfg)
-    fake_keyring.update({("lighthouse-gc", "notify:slack"): SLACK, ("lighthouse-gc", "notify:discord"): DISCORD,
-                         ("lighthouse-gc", "notify:ntfy"): "tk_secret", ("lighthouse-gc", "notify:smtp"): "pw"})  # fmt: skip
+    fake_keyring.update({("areao1", "notify:slack"): SLACK, ("areao1", "notify:discord"): DISCORD,
+                         ("areao1", "notify:ntfy"): "tk_secret", ("areao1", "notify:smtp"): "pw"})  # fmt: skip
     return ws
 
 
@@ -64,7 +64,7 @@ def test_routes_to_channels_and_respects_detail(channels, http_mock):
     assert "IEEE application due in 3 days" in slack_body["text"]  # detail: full
 
     discord_body = json.loads(discord.calls[0].request.content)
-    assert discord_body["content"] == "**Lighthouse**\n1 deadline in the next 3 days"  # detail: minimal
+    assert discord_body["content"] == "**Area O1**\n1 deadline in the next 3 days"  # detail: minimal
     assert "IEEE" not in discord_body["content"]
     assert discord_body["allowed_mentions"] == {"parse": []}
 
@@ -75,7 +75,7 @@ def test_routes_to_channels_and_respects_detail(channels, http_mock):
 
 
 def test_a_broken_channel_does_not_stop_the_others(channels, http_mock, fake_keyring):
-    fake_keyring[("lighthouse-gc", "notify:slack")] = "https://evil.example/collect"
+    fake_keyring[("areao1", "notify:slack")] = "https://evil.example/collect"
     http_mock.post(DISCORD).respond(204)
     http_mock.post("https://ntfy.sh/lh-test-7f3a").respond(500, text="boom")
     report = send(channels, NOTE)
@@ -86,7 +86,7 @@ def test_a_broken_channel_does_not_stop_the_others(channels, http_mock, fake_key
 
 
 def test_missing_secret_is_reported(channels, http_mock, fake_keyring):
-    del fake_keyring[("lighthouse-gc", "notify:slack")]
+    del fake_keyring[("areao1", "notify:slack")]
     report = send(channels, NOTE, only="slack")
     assert not report.ok and "keychain" in report.results[0].error
 
@@ -117,7 +117,7 @@ def test_email_uses_starttls_and_keychain_password(channels, monkeypatch):
     report = send(channels, Notification("digest", "Weekly digest", "3 things changed"))
     assert report.ok
     assert sent["server"] == ("smtp.example.org", 587) and sent["tls"] and sent["login"] == ("me", "pw")
-    assert sent["msg"]["Subject"] == "[Lighthouse] Weekly digest"
+    assert sent["msg"]["Subject"] == "[Area O1] Weekly digest"
 
 
 def test_desktop_notification_escapes_text(channels, monkeypatch):
@@ -140,9 +140,7 @@ def test_sends_are_logged_for_dedupe(channels, http_mock):
     assert already_sent(channels, NOTE.key)
     entry = history(channels)[-1]
     assert entry["event"] == "deadline" and entry["ok"]
-    assert (channels.cache_dir / "notifications.jsonl").is_relative_to(
-        channels.root / ".lighthouse" / "cache"
-    )
+    assert (channels.cache_dir / "notifications.jsonl").is_relative_to(channels.root / ".areao1" / "cache")
 
 
 def test_unknown_channel_in_route(channels):
@@ -162,15 +160,15 @@ def test_cli_notify_test_and_secret_set(channels, monkeypatch, fake_keyring):
     result = CliRunner().invoke(
         app, ["secret", "set", "notify:new", "-w", str(channels.root)], input="s3cret\n"
     )
-    assert result.exit_code == 0 and fake_keyring[("lighthouse-gc", "notify:new")] == "s3cret"
+    assert result.exit_code == 0 and fake_keyring[("areao1", "notify:new")] == "s3cret"
     assert "s3cret" not in result.output
-    assert b"s3cret" not in (channels.root / "lighthouse.yaml").read_bytes()
+    assert b"s3cret" not in (channels.root / "areao1.yaml").read_bytes()
 
 
 def test_api_settings_never_leaks_secrets(channels):
     from fastapi.testclient import TestClient
 
-    from lighthouse_gc.server.app import create_app
+    from areao1.server.app import create_app
 
     c = TestClient(create_app(channels, allowed_hosts=["testserver"]))
     text = c.get("/api/settings").text
@@ -185,11 +183,11 @@ class _Recorder:
 def test_api_notify_test_targets_one_channel(channels, monkeypatch):
     from fastapi.testclient import TestClient
 
-    from lighthouse_gc.server.app import create_app
+    from areao1.server.app import create_app
 
     monkeypatch.setattr(
         notify, "CHANNELS", lambda: {k: _Recorder() for k in ("desktop", "slack", "discord", "ntfy", "email")}
     )
     c = TestClient(create_app(channels, allowed_hosts=["testserver"]))
-    r = c.post("/api/notify/test", json={"channel": "slack"}, headers={"X-Lighthouse": "1"})
+    r = c.post("/api/notify/test", json={"channel": "slack"}, headers={"X-AreaO1": "1"})
     assert r.status_code == 200 and [x["channel"] for x in r.json()["results"]] == ["slack"]

@@ -10,11 +10,11 @@ import pytest
 import yaml
 from conftest import ALEX
 
-from lighthouse_gc.core.schemas import SCHEMA_DIR
-from lighthouse_gc.criteria.case import Case
-from lighthouse_gc.resources import profiles_dir
-from lighthouse_gc.scaffold import validate_workspace
-from lighthouse_gc.schemas import build_schemas, schema_text
+from areao1.core.schemas import SCHEMA_DIR
+from areao1.criteria.case import Case
+from areao1.resources import profiles_dir
+from areao1.scaffold import validate_workspace
+from areao1.schemas import build_schemas, schema_text
 
 FILE_SCHEMAS = {
     "person.json": "person",
@@ -37,7 +37,7 @@ def load_schema(stem: str) -> dict:
 def test_committed_schemas_match_models(name):
     committed = (SCHEMA_DIR / name).read_text()
     assert committed == schema_text(build_schemas()[name]), (
-        f"{name} is stale — run `python -m lighthouse_gc.schemas`"
+        f"{name} is stale — run `python -m areao1.schemas`"
     )
 
 
@@ -54,9 +54,7 @@ def test_demo_workspace_matches_schema(filename, stem):
 
 def test_demo_config_and_metrics_match_schema():
     root = ALEX
-    jsonschema.validate(
-        yaml.safe_load((root / "lighthouse.yaml").read_text()), load_schema("lighthouse-config")
-    )
+    jsonschema.validate(yaml.safe_load((root / "areao1.yaml").read_text()), load_schema("areao1-config"))
     row_schema = load_schema("metric-row")
     with (root / "data" / "metrics.csv").open() as fh:
         rows = list(csv.DictReader(fh))

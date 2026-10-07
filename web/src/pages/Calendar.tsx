@@ -202,7 +202,7 @@ export default function Calendar() {
             <Button size="sm" onClick={() => navigator.clipboard?.writeText(subscribe).then(() => toast("Subscribe link copied"))}>
               <Link2 /> Subscribe link
             </Button>
-            <a href={api.calendarUrl} download="lighthouse.ics">
+            <a href={api.calendarUrl} download="areao1.ics">
               <Button size="sm" tabIndex={-1}>
                 <Download /> .ics
               </Button>
