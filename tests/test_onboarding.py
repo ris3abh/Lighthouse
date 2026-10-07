@@ -536,8 +536,13 @@ def test_a_page_that_doesnt_name_you_is_flagged_as_a_possible_namesake(fresh, ht
     c, view = _finish_questions(fresh, "maya", engine)
     lk = next(x for x in view["state"]["lookups"] if x["targets"] == ["Judge, HackSeattle 2025"])
     c.post(f"/api/onboarding/lookups/{lk['id']}", headers=W, json={"accept": True})
-    _wait(c, lk["id"])
-    [cand] = [x for x in fresh.pending_candidates() if x.proposed_criterion == "judging"]
+    done = _wait(c, lk["id"])
+    found = [x for x in fresh.pending_candidates() if x.proposed_criterion == "judging"]
+    assert len(found) == 1, (
+        done,
+        engine.tool_outputs,
+    )  # says why, if this ever fails again (seen once on CI)
+    [cand] = found
     assert cand.facts["namesake_check"] == "possible namesake" and cand.confidence == 0.2
     assert "Possible namesake" in cand.summary
 
