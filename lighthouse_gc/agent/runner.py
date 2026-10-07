@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from lighthouse_gc.agent.prompt import SYSTEM_PROMPT
+from lighthouse_gc.agent.search_policy import SearchPolicy
 from lighthouse_gc.agent.tools import RunContext, build_tools
 from lighthouse_gc.core.models import AgentRun, Conversation, ConversationMessage, TimelineItem, utcnow
 from lighthouse_gc.core.workspace import NotFound, WorkspaceError, _atomic_write, dump_model
@@ -195,7 +196,9 @@ class AgentRunner:
         cfg = self.ws.config()
         b = cfg.agent.budget
         checker = self.checker()
-        ctx = RunContext(self.ws, run, redact=cfg.privacy.redact_before_llm, checker=checker)
+        policy = SearchPolicy(checker.vault.manifest)
+        request.guard = policy
+        ctx = RunContext(self.ws, run, redact=cfg.privacy.redact_before_llm, checker=checker, search=policy)
         tools = build_tools(ctx)
         meta = {t.name: {"read_only": t.read_only, "touches": list(t.touches)} for t in tools}
         meta["WebSearch"] = meta["web_search"] = {"read_only": True, "touches": []}

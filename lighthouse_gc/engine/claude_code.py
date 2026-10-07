@@ -8,7 +8,7 @@ disk. ``query`` is injectable so tests never call a model.
 from __future__ import annotations
 
 import shutil
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 
 from lighthouse_gc.engine.base import (
@@ -53,7 +53,7 @@ class ClaudeAgentEngine:
         return True, "ready"
 
     def options(self, request: EngineRequest, tools: list[AgentTool]) -> Any:
-        from claude_agent_sdk import ClaudeAgentOptions, TaskBudget, create_sdk_mcp_server, tool
+        from claude_agent_sdk import ClaudeAgentOptions, HookMatcher, TaskBudget, create_sdk_mcp_server, tool
         from mcp.types import ToolAnnotations
 
         sdk_tools = []
@@ -80,6 +80,9 @@ class ClaudeAgentEngine:
             task_budget=TaskBudget(total=request.task_budget_tokens) if request.task_budget_tokens else None,
             include_partial_messages=True,
             extra_args={"no-session-persistence": None},
+            hooks={"PreToolUse": [HookMatcher(matcher="WebSearch", hooks=[_guard_hook(request.guard)])]}
+            if request.guard
+            else None,
         )
 
     async def run(self, request: EngineRequest, tools: list[AgentTool], emit: Emit) -> EngineResult:
@@ -150,6 +153,17 @@ class ClaudeAgentEngine:
                 await close()
         result.text = texts[-1] if texts else ""
         return result
+
+
+def _guard_hook(guard: Callable[[str, dict[str, Any]], Awaitable[str | None]]) -> Any:
+    async def hook(data: Any, tool_use_id: str | None, context: Any) -> dict[str, Any]:
+        reason = await guard(str(data.get("tool_name", "")), dict(data.get("tool_input") or {}))
+        if reason is None:
+            return {}
+        return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                       "permissionDecisionReason": reason}}  # fmt: skip
+
+    return hook
 
 
 def _wrap(t: AgentTool) -> Callable[[dict[str, Any]], Any]:

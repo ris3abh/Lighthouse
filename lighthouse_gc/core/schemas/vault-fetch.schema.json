@@ -83,10 +83,11 @@
     },
     "origin": {
       "default": "fetch",
-      "description": "manual: imported from a saved page.",
+      "description": "manual: imported from a saved page; agent: an official page the agent read.",
       "enum": [
         "fetch",
-        "manual"
+        "manual",
+        "agent"
       ],
       "title": "Origin",
       "type": "string"

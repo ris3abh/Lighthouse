@@ -34,12 +34,16 @@ class VaultSource(_Model):
     ttl_days: int | None = Field(None, ge=1, description="Overrides the kind's freshness window.")
     enabled: bool = True
     notes: str = ""
+    finding: bool = Field(
+        False, description="An official page the agent read; an observation, not yet a reviewed source."
+    )
 
 
 class VaultManifest(_Model):
     version: Literal[1] = 1
     ttl_days: dict[str, int | Literal["monthly"]] = Field(default_factory=dict)
     tier1_domains: list[str] = Field(default_factory=list)
+    tier2_domains: list[str] = Field(default_factory=list)
     rule_hints: list[str] = Field(
         default_factory=list, description="Regexes for sentences that may state a rule."
     )
@@ -53,6 +57,16 @@ class VaultManifest(_Model):
         if dupes:
             raise ValueError(f"duplicate source ids: {dupes}")
         return v
+
+    def tier_of(self, url: str) -> int | None:
+        """1 or 2 when the URL is on an official domain listed in the manifest."""
+        from urllib.parse import urlparse
+
+        host = (urlparse(url).hostname or "").lower()
+        for tier, domains in ((1, self.tier1_domains), (2, self.tier2_domains)):
+            if any(host == d or host.endswith("." + d) for d in domains):
+                return tier
+        return None
 
     def source(self, source_id: str) -> VaultSource | None:
         return next((s for s in self.sources if s.id == source_id), None)
@@ -85,7 +99,9 @@ class VaultFetch(_Model):
     tier: Tier
     fetched_at: datetime = Field(default_factory=utcnow)
     status: FetchStatus
-    origin: Literal["fetch", "manual"] = Field("fetch", description="manual: imported from a saved page.")
+    origin: Literal["fetch", "manual", "agent"] = Field(
+        "fetch", description="manual: imported from a saved page; agent: an official page the agent read."
+    )
     sha256: str | None = None
     previous_sha256: str | None = None
     effective_date: date | None = None

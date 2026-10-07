@@ -492,7 +492,7 @@ against the demo workspace and your own.
 - [x] rule-check gate: rule claims in every agent answer and briefing must match a fresh vault chunk that
       entails them, else "unverified"; Tier 1 disagreements show as "conflict"; unverified claims can't enter
       letters, exhibits or exports.
-- [ ] Agent uses the vault first; web search fallback restricted to Tier 1 domains, then Tier 2; new findings
+- [x] Agent uses the vault first; web search fallback restricted to Tier 1 domains, then Tier 2; new findings
       enter as observations.
 - [ ] Knowledge page: sources, freshness, recent changes, open conflicts.
 - [ ] Scholarly connectors: Semantic Scholar, OpenAlex, arXiv, ORCID.

@@ -8,7 +8,8 @@ a test proves the two sets never overlap.
 
 from __future__ import annotations
 
-from urllib.parse import urlparse
+import functools
+from typing import Any
 
 from lighthouse_gc.core.models import AutopilotConfig
 
@@ -34,8 +35,12 @@ AUTO_FIELDS: dict[str, frozenset[str]] = {
     "deadline": frozenset({"done", "due", "title", "url", "kind"}),
 }
 
-# Tier 1 (SPEC 5a): primary law and agency sources.
-TIER1_DOMAINS = ("uscis.gov", "ecfr.gov", "federalregister.gov", "travel.state.gov", "justice.gov")
+
+@functools.cache
+def _manifest() -> Any:
+    from lighthouse_gc.vault import load_manifest
+
+    return load_manifest()
 
 
 class AutopilotRefused(PermissionError):
@@ -43,8 +48,8 @@ class AutopilotRefused(PermissionError):
 
 
 def is_tier1(url: str | None) -> bool:
-    host = (urlparse(url or "").hostname or "").lower()
-    return any(host == d or host.endswith("." + d) for d in TIER1_DOMAINS)
+    """On a Tier 1 domain of the vault manifest (SPEC 5a: primary law and agency sources)."""
+    return _manifest().tier_of(url or "") == 1
 
 
 def allowed(category: str, cfg: AutopilotConfig) -> bool:

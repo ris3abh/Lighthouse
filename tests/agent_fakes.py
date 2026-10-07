@@ -8,7 +8,8 @@ from lighthouse_gc.engine.base import AgentEvent, AgentTool, Emit, EngineRequest
 
 
 class FakeEngine:
-    """``script`` steps: ("text", str) | ("tool", name, args) | ("usage", {...}) | ("fail", message)."""
+    """``script`` steps: ("text", str) | ("tool", name, args) | ("search", args) (built-in web search, through
+    the request's guard) | ("usage", {...}) | ("fail", message)."""
 
     name = "fake"
 
@@ -42,6 +43,14 @@ class FakeEngine:
                     except Exception as exc:
                         out, ok = f"Error: {exc}", False
                     self.tool_outputs.append((name, ok, out))
+                    await emit(AgentEvent("tool_result", {"id": tid, "ok": ok, "summary": out[:300]}))
+                elif step[0] == "search":  # the built-in web search, through the request's guard
+                    _, args = step
+                    tid = f"search_{i}"
+                    await emit(AgentEvent("tool_call", {"id": tid, "name": "WebSearch", "input": args}))
+                    denied = await request.guard("WebSearch", args) if request.guard else None
+                    out, ok = (f"Denied: {denied}", False) if denied else ("3 results (fake)", True)
+                    self.tool_outputs.append(("WebSearch", ok, out))
                     await emit(AgentEvent("tool_result", {"id": tid, "ok": ok, "summary": out[:300]}))
                 elif step[0] == "usage":
                     await emit(AgentEvent("usage", step[1]))

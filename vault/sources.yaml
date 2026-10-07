@@ -27,6 +27,7 @@ ttl_days:
   decisions: 30
   case_law: 365
   secondary: 30
+  finding: 30
 
 # rule-check: sentences matching any of these (case-insensitive) may state a rule and are checked against the
 # vault. Keep them specific: plain words like "must" would send every answer to the judge.
@@ -41,8 +42,11 @@ rule_hints:
   - 'one[- ]time achievement|sustained national or international acclaim|small percentage .{0,30}top of the field'
   - '\bregulations? (?:requires?|says?|states?)|\bthe law (?:requires?|says?)|is required to (?:file|submit|show)'
 
-# Tier 1 domains: the agent's web-search fallback tries these first.
-tier1_domains: [uscis.gov, ecfr.gov, federalregister.gov, travel.state.gov, justice.gov, uscode.house.gov]
+# The agent's web-search fallback for rule questions: Tier 1 domains first, then Tier 2. Official pages it reads
+# on these domains are kept in the vault as findings (observations, not reviewed sources).
+tier1_domains: [uscis.gov, ecfr.gov, federalregister.gov, travel.state.gov, justice.gov, uscode.house.gov,
+                dhs.gov, govinfo.gov]
+tier2_domains: [uscourts.gov, supremecourt.gov, courtlistener.com]
 
 sources:
   # --------------------------------------------------------------------------- Tier 1: regulations, statute

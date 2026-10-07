@@ -20,6 +20,10 @@ All notable changes to this project are documented here. The format follows
   (Tier 1 sources disagree; also a notification). Unverified rules are refused in evidence summaries and
   letter text, and an Inbox item whose rules went stale can't be accepted until re-checked or rewritten.
   Re-check buttons on the Agent page, the briefing and Inbox items.
+- The agent searches the vault first (`search_vault`; stale sources are re-fetched before use). Web searches
+  about rules are refused unless they follow a vault search and are restricted to Tier 1 domains (Tier 2 after
+  that); other searches stay open. Official pages the agent reads are kept in the vault as findings,
+  searchable but never used to verify a rule until promoted.
 - Bot-protection and maintenance pages are recognized even when served with HTTP 200, and recorded as
   unreadable. Pages from sites that block automated reading can be imported from a saved copy.
 

@@ -37,7 +37,7 @@ from lighthouse_gc.core.models import utcnow
 from lighthouse_gc.core.workspace import Workspace, _atomic_write
 from lighthouse_gc.resources import vault_manifest_path
 from lighthouse_gc.vault.embed import Embedder, default_embedder, dot, tokens
-from lighthouse_gc.vault.extract import cut, effective_date, to_text
+from lighthouse_gc.vault.extract import cut, effective_date, normalize, to_text
 from lighthouse_gc.vault.models import DiffSummary, VaultFetch, VaultHit, VaultManifest, VaultSource
 
 _DB_LOCK = threading.RLock()
@@ -77,6 +77,7 @@ def load_manifest(override: Path | None = None) -> VaultManifest:
     return VaultManifest(
         ttl_days={**base.ttl_days, **extra.ttl_days},
         tier1_domains=sorted({*base.tier1_domains, *extra.tier1_domains}),
+        tier2_domains=sorted({*base.tier2_domains, *extra.tier2_domains}),
         rule_hints=[*base.rule_hints, *(h for h in extra.rule_hints if h not in base.rule_hints)],
         sources=list(by_id.values()),
     )
@@ -137,8 +138,47 @@ class Vault:
     @property
     def manifest(self) -> VaultManifest:
         if self._manifest is None:
-            self._manifest = load_manifest(self.ws.root / "vault" / "sources.yaml")
+            m = load_manifest(self.ws.root / "vault" / "sources.yaml")
+            known = {s.id for s in m.sources}
+            m.sources += [f for f in self.findings() if f.id not in known]
+            self._manifest = m
         return self._manifest
+
+    # ------------------------------------------------------------------ findings
+
+    @property
+    def findings_path(self) -> Path:
+        return self.ws.root / "vault" / "findings.jsonl"
+
+    def findings(self) -> list[VaultSource]:
+        """Official pages the agent read (Tier 1/2 domains): observations, searchable, not reviewed sources."""
+        if not self.findings_path.exists():
+            return []
+        out = []
+        for line in self.findings_path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                d = json.loads(line)
+                out.append(VaultSource(id=d["id"], title=d["title"][:200] or d["url"], url=d["url"], tier=d["tier"],
+                                       kind="finding", finding=True, notes=f"found by {d.get('run_id') or 'the agent'}"))  # fmt: skip
+        return out
+
+    def add_finding(self, url: str, title: str, text: str, run_id: str | None = None) -> VaultFetch | None:
+        """Keep an official page the agent read as a vault observation. Pages off the Tier 1/2 domains are ignored."""
+        tier = self.manifest.tier_of(url)
+        if tier is None or len(text.strip()) < MIN_TEXT:
+            return None
+        sid = "found-" + hashlib.sha256(url.encode()).hexdigest()[:12]
+        source = self.manifest.source(sid)
+        if source is None:
+            self.findings_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.findings_path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps({"id": sid, "url": url, "title": title or url, "tier": tier,
+                                    "found_at": utcnow().isoformat(), "run_id": run_id}) + "\n")  # fmt: skip
+            self._manifest = None
+            source = self.manifest.source(sid)
+            assert source is not None
+        text = normalize(text)
+        return self._store(source, url, title, text, effective_date(text), self.state().get(sid), "agent")
 
     @contextmanager
     def db(self) -> Iterator[sqlite3.Connection]:
@@ -236,7 +276,12 @@ class Vault:
             unknown = set(ids) - {s.id for s in sources}
             if unknown:
                 raise ValueError(f"unknown or disabled vault source(s): {sorted(unknown)}")
-        todo = [s for s in sources if force or ids or self.due(s, state.get(s.id), tier1_daily=tier1_daily)]
+        # Findings (pages the agent read) aren't watched; they refresh when the agent reads them again.
+        todo = [
+            s
+            for s in sources
+            if force or ids or (not s.finding and self.due(s, state.get(s.id), tier1_daily=tier1_daily))
+        ]
         own = client is None
         client = client or httpx.AsyncClient(timeout=30.0, headers={"User-Agent": web.user_agent("vault")})
         results: list[VaultFetch] = []
@@ -389,10 +434,11 @@ class Vault:
     # ------------------------------------------------------------------ search
 
     def search(self, query: str, k: int = 8, *, tiers: set[int] | None = None, topics: set[str] | None = None,
-               kinds: set[str] | None = None, fresh_only: bool = False) -> list[VaultHit]:  # fmt: skip
+               kinds: set[str] | None = None, fresh_only: bool = False,
+               findings: bool = True) -> list[VaultHit]:  # fmt: skip
         """Hybrid search over the current snapshot of each source: FTS5 (bm25) + embeddings, fused by rank."""
         allowed = {s.id: s for s in self.manifest.sources
-                   if (not tiers or s.tier in tiers) and (not kinds or s.kind in kinds)
+                   if (not tiers or s.tier in tiers) and (not kinds or s.kind in kinds) and (findings or not s.finding)
                    and (not topics or not s.topics or set(s.topics) & topics)}  # fmt: skip
         if not allowed:
             return []

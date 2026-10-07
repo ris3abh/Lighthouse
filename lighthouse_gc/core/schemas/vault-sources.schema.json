@@ -34,6 +34,12 @@
           "description": "Regex (multiline): stop before the first match after start.",
           "title": "End"
         },
+        "finding": {
+          "default": false,
+          "description": "An official page the agent read; an observation, not yet a reviewed source.",
+          "title": "Finding",
+          "type": "boolean"
+        },
         "format": {
           "default": "auto",
           "enum": [
@@ -152,6 +158,13 @@
         "type": "string"
       },
       "title": "Tier1 Domains",
+      "type": "array"
+    },
+    "tier2_domains": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tier2 Domains",
       "type": "array"
     },
     "ttl_days": {

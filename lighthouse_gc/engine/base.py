@@ -37,6 +37,8 @@ class EngineRequest:
     max_turns: int = 25
     max_budget_usd: float | None = None
     task_budget_tokens: int | None = None
+    # Called before a built-in tool (web search) runs: return a reason to refuse it, or None to allow.
+    guard: Callable[[str, dict[str, Any]], Awaitable[str | None]] | None = None
 
 
 @dataclass

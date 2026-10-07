@@ -69,6 +69,19 @@ claims against, with exact text and dates; item 3 needs the agent to search it f
 - **Cost:** the judge's tokens and cost are added to the run, so budgets cover them.
 - **Exports:** the attorney export (Phase 2) will use the same gate.
 
+### 8. Vault first, then Tier 1, then Tier 2 (Phase 1d item 3)
+
+The agent has a `search_vault` tool; stale sources in its results are re-fetched before they're returned.
+Its web search is guarded in code (`EngineRequest.guard`, a `PreToolUse` hook on the Claude adapter's
+`WebSearch`): a query that looks like a rule question (`rule_hints`) is refused unless the agent searched the
+vault earlier in the run, and unless it passes `allowed_domains` within the manifest's Tier 1 domains (Tier 2
+only after a Tier 1 search). Other searches (opportunities, events, people) stay open, so the opportunity
+scout still works. Official pages the agent reads with `read_page` on Tier 1/2 domains are kept in the vault
+as **findings** (`vault/findings.jsonl` + a snapshot): searchable and labelled, but observations rather than
+reviewed sources, so rule-check never cites them and vault-watch doesn't re-fetch them. Promoting a finding
+to a source is a person's decision (Knowledge page). Autopilot's "Tier 1 deadline" check now uses the same
+manifest domains.
+
 ## Consequences
 
 - Outbound requests now include the public sources in the manifest (documented in the README).

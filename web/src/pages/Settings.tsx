@@ -12,7 +12,7 @@ const MISSIONS = [
 const AUTOPILOT = [
   { id: "tracker_updates", label: "Tracker updates", detail: "Move pipeline items, set follow-ups and notes, update a letter writer's status or last contact, mark deadlines done." },
   { id: "metrics", label: "Metrics", detail: "Record a metric (e.g. citations) the agent read on a page and quoted, word for word." },
-  { id: "tier1_deadlines", label: "Tier-1 deadlines", detail: "Add a deadline quoted from a primary source (uscis.gov, ecfr.gov, federalregister.gov, travel.state.gov, justice.gov)." },
+  { id: "tier1_deadlines", label: "Tier-1 deadlines", detail: "Add a deadline quoted from a Tier 1 source (official law and agency sites in the vault manifest, e.g. uscis.gov, ecfr.gov, federalregister.gov)." },
 ] as const;
 
 export default function Settings() {

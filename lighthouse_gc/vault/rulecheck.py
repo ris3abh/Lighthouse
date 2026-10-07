@@ -213,7 +213,9 @@ class RuleChecker:
         per: dict[str, list[str]] = {}
         for cand in found:
             per[cand.id] = []
-            for hit in _diverse(self.vault.search(cand.text, k=CHUNKS_PER_CANDIDATE * 4, tiers={1, 2})):
+            for hit in _diverse(
+                self.vault.search(cand.text, k=CHUNKS_PER_CANDIDATE * 4, tiers={1, 2}, findings=False)
+            ):
                 key = next((k for k, h in chunks.items() if h.chunk_id == hit.chunk_id), None)
                 if key is None and len(chunks) < MAX_CHUNKS:
                     key = f"k{len(chunks) + 1}"

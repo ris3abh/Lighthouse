@@ -9,10 +9,12 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any
 
+import anyio
 import httpx
 
 from lighthouse_gc.agent import autopilot
 from lighthouse_gc.agent.redact import redact
+from lighthouse_gc.agent.search_policy import SearchPolicy
 from lighthouse_gc.core.models import (
     AgentRun,
     Briefing,
@@ -31,6 +33,7 @@ from lighthouse_gc.criteria.models import Letter
 from lighthouse_gc.engine.base import AgentTool
 from lighthouse_gc.mcp import tools as read
 from lighthouse_gc.service import Service
+from lighthouse_gc.vault import Vault
 from lighthouse_gc.vault.rulecheck import RuleChecker, blocking_message, briefing_text
 from lighthouse_gc.web import UnsafeURL, check_url, fetch_page, html_to_text
 
@@ -45,6 +48,7 @@ class RunContext:
     run: AgentRun
     redact: bool = True
     checker: RuleChecker | None = None
+    search: SearchPolicy | None = None
     svc: Service = field(init=False)
 
     def __post_init__(self) -> None:
@@ -118,7 +122,45 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
             Evidence(connector="agent", source_url=url, payload=text, media_type="text/plain")
         )
         ctx.run.sources.append(RunSource(url=url, title=title, observation_id=obs.id))
-        return ctx.out({"observation_id": obs.id, "url": url, "title": title, "text": text})
+        out: S = {"observation_id": obs.id, "url": url, "title": title, "text": text}
+        found = await anyio.to_thread.run_sync(lambda: vault().add_finding(url, title, text, ctx.run.id))
+        if found is not None:
+            out["vault"] = (f"Kept in the knowledge vault as a Tier {found.tier} finding (an observation, not yet a "
+                            "reviewed source).")  # fmt: skip
+        return ctx.out(out)
+
+    _vault: list[Vault] = []
+
+    def vault() -> Vault:
+        if not _vault:
+            _vault.append(ctx.checker.vault if ctx.checker else Vault(ws))
+        return _vault[0]
+
+    async def t_search_vault(args: S) -> str:
+        v = vault()
+        tiers = {int(t) for t in args.get("tiers") or [1, 2, 3]}
+        k = max(1, min(int(args.get("k") or 6), 12))
+        hits = await anyio.to_thread.run_sync(lambda: v.search(args["query"], k=k, tiers=tiers))
+        stale = sorted({h.source_id for h in hits if not h.fresh and not h.source_id.startswith("found-")})
+        refreshed: list[str] = []
+        if stale and ws.config().vault.enabled:
+            # Expired facts are re-fetched before use (SPEC 5a).
+            results = await v.sync(ids=stale)
+            refreshed = [r.source_id for r in results if r.status in ("new", "changed", "unchanged")]
+            hits = await anyio.to_thread.run_sync(lambda: v.search(args["query"], k=k, tiers=tiers))
+        if ctx.search is not None:
+            ctx.search.vault_searched = True
+        fresh = [h for h in hits if h.fresh and h.tier in (1, 2)]
+        note = ("" if fresh else
+                "Nothing fresh from a Tier 1 or 2 source. If you need this rule, search the web restricted to Tier 1 "
+                f"domains ({', '.join(v.manifest.tier1_domains)}), then Tier 2, and read the page with read_page.")  # fmt: skip
+        return ctx.out({
+            "results": [{"chunk_id": h.chunk_id, "tier": h.tier, "source": h.title, "url": h.url, "fresh": h.fresh,
+                         "checked": h.checked_at.date().isoformat(),
+                         "effective": h.effective_date.isoformat() if h.effective_date else None,
+                         "finding": h.source_id.startswith("found-"), "text": h.text} for h in hits],
+            "refreshed": refreshed, "note": note,
+        })  # fmt: skip
 
     def _page(obs_id: str, quote: str) -> tuple[Any, str]:
         obs = ws.memory.observation(obs_id)
@@ -319,6 +361,13 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         AgentTool("list_letters", "Recommendation letter writers and their status.", _obj({}, []), t_letters),
         AgentTool("read_page", "Fetch a public web page as text and save a snapshot. Returns an observation_id you "
                   "must cite when proposing evidence from it.", _obj({"url": STR}, ["url"]), t_read_page),
+        AgentTool("search_vault", "Search Lighthouse's knowledge vault of official sources (regulations, USCIS "
+                  "Policy Manual, forms, fees, processing times, Visa Bulletin, case law). Call this FIRST for any "
+                  "question about the rules. Stale sources are re-fetched automatically. Tiers: 1 primary law and "
+                  "agency, 2 adjudication, 3 secondary (context only).",
+                  _obj({"query": STR, "tiers": {"type": "array", "items": {"type": "integer", "enum": [1, 2, 3]}},
+                        "k": {"type": "integer", "minimum": 1, "maximum": 12}}, ["query"]),
+                  t_search_vault),
         AgentTool("propose_evidence", "Propose evidence for a criterion. Requires an observation_id from read_page and "
                   "a quote copied word for word from that page. Goes to the Inbox for the user to decide.",
                   _obj({"criterion": {"type": "string", "enum": criteria}, "evidence_type": STR, "title": STR,
@@ -372,12 +421,13 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         "get_provenance": ("memory/claims.jsonl", "memory/sources/"), "what_changed": ("memory/", "data/metrics.csv"),
         "list_inbox": ("data/inbox.json",), "list_deadlines": ("data/deadlines.json",),
         "list_pipeline": ("data/pipeline.json",), "list_letters": ("data/letters.json",),
-        "read_page": ("memory/sources/",), "propose_evidence": ("data/inbox.json",),
+        "read_page": ("memory/sources/", "vault/findings.jsonl"), "propose_evidence": ("data/inbox.json",),
         "propose_deadline": ("data/inbox.json",), "propose_pipeline_item": ("data/inbox.json",),
         "propose_letter_writer": ("data/inbox.json",),
         "propose_tracker_update": ("data/inbox.json", "data/pipeline.json", "data/letters.json", "data/deadlines.json"),
         "record_metric": ("data/inbox.json", "data/metrics.csv"),
         "publish_briefing": ("data/briefing.json",),
+        "search_vault": ("vault/",),
     }  # fmt: skip
     for t in tool_list:
         t.touches = touches.get(t.name, ())

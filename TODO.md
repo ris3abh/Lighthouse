@@ -98,7 +98,8 @@ Phase 1c notes:
       manual import for blocked sites
 - [x] 2. rule-check gate: answers, briefings and petition-facing agent text; verified / unverified / stale /
       conflict; write tools and Inbox acceptance refuse unverified rules (attorney export reuses it in Phase 2)
-- [ ] 3. Agent: vault first, Tier-1-then-Tier-2 web fallback
+- [x] 3. Agent: `search_vault` first (stale sources re-fetched), rule searches guarded to Tier 1 then Tier 2,
+      official pages read become vault findings
 - [ ] 4. Knowledge page
 
 Phase 1d notes:
