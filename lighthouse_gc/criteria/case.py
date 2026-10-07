@@ -49,7 +49,9 @@ class Case(Workspace):
         path = self.data_dir / "criteria.json"
         if path.exists():
             board = Scoreboard.model_validate_json(path.read_text(encoding="utf-8"))
-            if board.profile == self.profile_id():
+            if board.profile == self.profile_id() and board.rules_digest == engine.rules_digest(
+                self.profile()
+            ):
                 return board
         return self.recompute()
 

@@ -29,6 +29,7 @@ from lighthouse_gc.core.models import (
     RunSource,
     slugify,
 )
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.criteria.models import Letter
 from lighthouse_gc.engine.base import AgentTool
@@ -341,8 +342,8 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         ctx.svc.publish_briefing(briefing)
         flagged = briefing.rule_check.blocking if briefing.rule_check else []
         if flagged:
-            return (f"Published the briefing. {len(flagged)} rule statement(s) in it aren't confirmed by the knowledge "
-                    "vault and are shown as unverified: " + "; ".join(f'"{c.sentence[:100]}"' for c in flagged[:3]))  # fmt: skip
+            return (f"Published the briefing. {plural(len(flagged), 'rule statement')} in it {'isn' if len(flagged) == 1 else 'aren'}'t confirmed by the knowledge "
+                    f"vault and {'is' if len(flagged) == 1 else 'are'} shown as unverified: " + "; ".join(f'"{c.sentence[:100]}"' for c in flagged[:3]))  # fmt: skip
         return "Published the briefing to the Overview."
 
     criteria = [c.id for c in ws.profile().criteria]

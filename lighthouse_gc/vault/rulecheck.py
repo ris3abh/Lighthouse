@@ -454,7 +454,7 @@ def notify_conflicts(ws: Any, check: RuleCheck | None, page: str) -> None:
 
 def blocking_message(check: RuleCheck) -> str:
     items = "; ".join(f'"{c.sentence[:140]}" ({c.status}: {c.reason})' for c in check.blocking[:4])
-    return (f"This text states rule(s) the knowledge vault doesn't confirm: {items}. Rule statements in "
+    return (f"This text states rules the knowledge vault doesn't confirm: {items}. Rule statements in "
             "petition-facing text must cite a fresh official source. Leave the rule out, or rephrase it to match "
             "the source exactly.")  # fmt: skip
 

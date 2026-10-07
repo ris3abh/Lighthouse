@@ -2,7 +2,7 @@ import { Trash2, Check, ChevronLeft, ChevronRight, Download, Link2, Plus } from 
 import { useEffect, useMemo, useState } from "react";
 import { api, type DeadlineItem, type JobStatus, type PipelineCard } from "../api";
 import { useRefresh } from "../App";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, Modal, PageHeader, Segmented, useToast } from "../components/ui";
+import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, Modal, PageHeader, plural, Segmented, useToast } from "../components/ui";
 import { withViewTransition } from "../lib/motion";
 import { today, useLoad } from "../hooks";
 
@@ -61,7 +61,7 @@ function EventChip({
             : "border-ink text-ink";
   const body = (
     <>
-      <span className={large ? "block font-medium" : "block truncate"}>{e.title}</span>
+      <span className={large ? "block font-medium" : "line-clamp-2 break-words"}>{e.title}</span>
       {large && e.detail && <span className="mt-0.5 block font-mono text-[10px] uppercase opacity-75">{e.detail}</span>}
     </>
   );
@@ -73,7 +73,8 @@ function EventChip({
     return (
       <button
         type="button"
-        title={`${e.title}: click to edit, or drag to another day`}
+        title={e.title}
+        aria-label={`${e.title}. Click to edit, or drag to another day.`}
         onClick={() => onEdit(d)}
         draggable={!e.done}
         onDragStart={(ev) => {
@@ -193,7 +194,7 @@ export default function Calendar() {
   return (
     <div>
       <PageHeader
-        eyebrow={`${upcoming.length} open deadlines`}
+        eyebrow={plural(upcoming.length, "open deadline")}
         title="Calendar"
         subtitle="Deadlines and pipeline follow-ups. Click a deadline to edit it, or drag it to another day. calendar.ics in your workspace updates with every change."
         actions={

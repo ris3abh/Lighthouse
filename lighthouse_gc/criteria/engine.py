@@ -23,6 +23,7 @@ from pathlib import Path
 import yaml
 
 from lighthouse_gc.core.models import NON_EVIDENTIARY_TIERS, Exhibit, stage_counts, utcnow
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.criteria.models import CriterionScore, Profile, Scoreboard
 from lighthouse_gc.resources import profiles_dir
 
@@ -43,6 +44,13 @@ def load_profiles(*extra_dirs: Path) -> dict[str, Profile]:
             profile = load_profile(path)
             profiles[profile.id] = profile
     return profiles
+
+
+def rules_digest(profile: Profile) -> str:
+    """Changes whenever the profile's criteria, labels or rules change."""
+    import hashlib
+
+    return hashlib.sha256(profile.model_dump_json().encode()).hexdigest()[:16]
 
 
 def score(
@@ -82,24 +90,24 @@ def score(
             status, reason = "gap", "No accepted exhibits yet."
         elif need_exhibits == 0 and need_signals == 0:
             status = "banked"
-            reason = f"{len(counted)} exhibit(s) with {len(matched)} strength signal(s) meet the bar."
+            reason = (f"{plural(len(counted), 'exhibit')} with {plural(len(matched), 'strength signal')} "
+                      f"{'meets' if len(counted) == 1 else 'meet'} the bar.")  # fmt: skip
         else:
             status = "building"
             parts = []
             if need_exhibits:
-                parts.append(f"{need_exhibits} more exhibit(s)")
+                parts.append(f"{plural(need_exhibits, 'more exhibit')}")
             if need_signals:
-                parts.append(f"{need_signals} more strength signal(s)")
+                parts.append(f"{plural(need_signals, 'more strength signal')}")
             reason = "Needs " + " and ".join(parts) + "."
         if in_progress:
             stages = ", ".join(sorted({e.stage or "" for e in in_progress}))
-            reason += f" {len(in_progress)} exhibit(s) not counted until completed (stage: {stages})."
+            reason += f" {plural(len(in_progress), 'exhibit')} not counted until completed (stage: {stages})."
         if self_reported:
-            reason += (
-                f" {len(self_reported)} self-reported exhibit(s) ignored: self-reported items never count."
-            )
+            reason += f" {plural(len(self_reported), 'self-reported exhibit')} ignored: self-reported items never count."
         if off_type:
-            reason += f" {off_type} exhibit(s) filed here have an evidence type this profile doesn't list."
+            reason += (f" {plural(off_type, 'exhibit')} filed here {'has' if off_type == 1 else 'have'} an evidence type "
+                       "this profile doesn't list.")  # fmt: skip
 
         override = overrides.get(crit.id)
         if override in ("dropped", "gap"):
@@ -110,6 +118,7 @@ def score(
             CriterionScore(
                 id=crit.id,
                 label=crit.label,
+                short_label=crit.short_label or crit.label,
                 status=status,  # type: ignore[arg-type]
                 exhibit_count=len(counted),
                 exhibit_ids=[e.id for e in counted],
@@ -122,7 +131,7 @@ def score(
             )
         )
 
-    return Scoreboard(
+    board = Scoreboard(
         profile=profile.id,
         profile_name=profile.name,
         computed_at=utcnow(),
@@ -132,3 +141,5 @@ def score(
         building=sum(r.status == "building" for r in rows),
         criteria=rows,
     )
+    board.rules_digest = rules_digest(profile)
+    return board

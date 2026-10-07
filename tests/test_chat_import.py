@@ -258,7 +258,7 @@ def test_cli_import_detects_an_export_file(ws, tmp_path):
     export.write_bytes(CHATGPT)
     result = CliRunner().invoke(app, ["import", str(export), "-w", str(ws.root)])
     assert result.exit_code == 0, result.output
-    assert "chatgpt: 1 conversation(s)" in result.output and "never counts" in result.output
+    assert "chatgpt: 1 conversation read" in result.output and "never counts" in result.output
     bad = tmp_path / "notes.json"
     bad.write_text(json.dumps({"x": 1}))
     assert CliRunner().invoke(app, ["import", str(bad), "-w", str(ws.root)]).exit_code == 1

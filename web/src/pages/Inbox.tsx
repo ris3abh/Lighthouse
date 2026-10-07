@@ -15,7 +15,8 @@ export default function Inbox() {
   if (!inbox.data) return <Loading />;
   const [candidates, profile] = inbox.data;
 
-  const labels: Record<string, string> = { "": "Needs a criterion", ...Object.fromEntries(profile.criteria.map((c) => [c.id, c.label])) };
+  const labels: Record<string, string> = { "": "Needs a criterion", ...Object.fromEntries(profile.criteria.map((c) => [c.id, c.short_label || c.label])) };
+  const full: Record<string, string> = Object.fromEntries(profile.criteria.map((c) => [c.id, c.label]));
   const evidence = candidates.filter((c) => c.kind === "evidence");
   const trackers = candidates.filter((c) => c.kind !== "evidence");
   const groups = new Map<string, Candidate[]>();
@@ -46,7 +47,7 @@ export default function Inbox() {
             <Card
               key={crit}
               title={
-                <span className="flex items-center gap-3">
+                <span className="flex items-center gap-3" title={full[crit]}>
                   {labels[crit] ?? crit}
                   <span className="num text-ink-2">{groups.get(crit)!.length}</span>
                 </span>

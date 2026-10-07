@@ -79,6 +79,16 @@ export function Chip({ children, tone = "muted", className }: { children: ReactN
   );
 }
 
+/** A criterion's short name ("Awards") with its full regulatory wording on hover. */
+export function CriterionName({ c, className }: { c: { label: string; short_label?: string }; className?: string }) {
+  const short = c.short_label || c.label;
+  return (
+    <span className={className} title={short !== c.label ? c.label : undefined}>
+      {short}
+    </span>
+  );
+}
+
 export function Card({
   title,
   actions,
@@ -168,6 +178,20 @@ export function ErrorBox({ error, retry }: { error: Error; retry?: () => void })
       )}
     </div>
   );
+}
+
+const IRREGULAR: Record<string, string> = { criterion: "criteria", entry: "entries" };
+
+/** "1 candidate", "12 candidates", "3 criteria" (the last word of a phrase is pluralized). */
+export function plural(n: number, word: string, many?: string) {
+  if (n === 1) return `1 ${word}`;
+  if (!many) {
+    const parts = word.split(" ");
+    const last = parts.pop()!;
+    parts.push(IRREGULAR[last] ?? last + (/(s|x|ch|sh)$/.test(last) ? "es" : "s"));
+    many = parts.join(" ");
+  }
+  return `${n.toLocaleString()} ${many}`;
 }
 
 export function fmt(n: number | null | undefined) {

@@ -502,7 +502,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         coverage = []
         for crit in profile.criteria:
             writers = [lt for lt in letters if crit.id in lt.criteria and lt.status != "declined"]
-            coverage.append({"id": crit.id, "label": crit.label,
+            coverage.append({"id": crit.id, "label": crit.label, "short_label": crit.short_label or crit.label,
                              **{rel: sum(lt.relationship == rel for lt in writers)
                                 for rel in ("independent", "employer", "coauthor")}})  # fmt: skip
         return {
@@ -514,7 +514,10 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
                 for lt in letters
             ],
             "coverage": coverage,
-            "criteria": [{"id": c.id, "label": c.label} for c in profile.criteria],
+            "criteria": [
+                {"id": c.id, "label": c.label, "short_label": c.short_label or c.label}
+                for c in profile.criteria
+            ],
         }
 
     @app.post("/api/letters")

@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, Plus, X } from "lucide-react";
 import { useEffect, useState, type DragEvent } from "react";
 import { api, type PipelineCard } from "../api";
 import { useRefresh } from "../App";
-import { Button, Chip, cx, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
+import { Button, Chip, cx, ErrorBox, Loading, PageHeader, plural, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 import { withViewTransition } from "../lib/motion";
 
@@ -28,6 +28,7 @@ export default function Pipeline() {
   const [rawItems, profile] = data.data;
   const items = rawItems.map((i) => (moved[i.id] ? { ...i, stage: moved[i.id] } : i));
   const labels = Object.fromEntries(profile.criteria.map((c) => [c.id, c.label]));
+  const short = Object.fromEntries(profile.criteria.map((c) => [c.id, c.short_label || c.label]));
 
   const save = async (fn: () => Promise<unknown>, msg?: string) => {
     try {
@@ -57,7 +58,7 @@ export default function Pipeline() {
   return (
     <div>
       <PageHeader
-        eyebrow={`${items.length} items${stale ? ` · ${stale} stale` : ""}`}
+        eyebrow={`${plural(items.length, "item")}${stale ? ` · ${stale} stale` : ""}`}
         title="Pipeline"
         subtitle="In-flight work. Drag cards between columns. Items with no movement for 14+ days are flagged stale."
       />
@@ -125,7 +126,7 @@ export default function Pipeline() {
                     <div className="mt-2 flex flex-wrap items-center gap-1">
                       {item.criterion && (
                         <span title={labels[item.criterion] ?? item.criterion}>
-                          <Chip>{item.criterion}</Chip>
+                          <Chip>{short[item.criterion] ?? item.criterion}</Chip>
                         </span>
                       )}
                       {item.stale && <Chip tone="alert">stale {item.days_since_move}d</Chip>}

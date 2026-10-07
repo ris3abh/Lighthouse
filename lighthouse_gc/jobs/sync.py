@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from lighthouse_gc import sources
 from lighthouse_gc.core.models import Candidate, MetricRow, SourceRecord, utcnow
 from lighthouse_gc.core.secrets import get_secret, set_secret
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.core.workspace import Workspace
 from lighthouse_gc.sources.http import SourceError
 
@@ -29,11 +30,11 @@ class SyncReport:
 
     def line(self) -> str:
         msg = (
-            f"{self.source_id}: {self.items} item(s) ({self.new_items} new), "
-            f"{self.metrics_written} metric row(s), {self.candidates_added} new candidate(s)"
+            f"{self.source_id}: {plural(self.items, 'item')} ({self.new_items} new), "
+            f"{plural(self.metrics_written, 'metric row')}, {plural(self.candidates_added, 'new candidate')}"
         )
         if self.errors:
-            msg += f", {len(self.errors)} error(s): " + "; ".join(self.errors[:3])
+            msg += f", {plural(len(self.errors), 'error')}: " + "; ".join(self.errors[:3])
         return msg
 
 

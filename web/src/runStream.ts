@@ -101,5 +101,11 @@ export function cacheRate(u: { input_tokens: number; cache_creation_input_tokens
 }
 export const fmtPct = (r: number | null) => (r === null ? "—" : `${Math.round(r * 100)}%`);
 
-export const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n));
+/** 950, 1.2k, 18k, 1.5M, 10M. */
+export const fmtTokens = (n: number) => {
+  const short = (v: number, unit: string) => `${v >= 10 ? Math.round(v) : Number(v.toFixed(1))}${unit}`;
+  if (n >= 999_500) return short(n / 1_000_000, "M");
+  if (n >= 1000) return short(n / 1000, "k");
+  return String(n);
+};
 export const fmtUsd = (n: number | null | undefined) => (n === null || n === undefined ? "—" : n < 0.01 ? "<$0.01" : `$${n.toFixed(2)}`);

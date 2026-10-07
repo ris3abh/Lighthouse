@@ -86,6 +86,12 @@
           "title": "Regulation",
           "type": "string"
         },
+        "short_label": {
+          "default": "",
+          "description": "One or two words for tight places (\"Awards\"); falls back to label.",
+          "title": "Short Label",
+          "type": "string"
+        },
         "strength_signals": {
           "items": {
             "$ref": "#/$defs/StrengthSignal"

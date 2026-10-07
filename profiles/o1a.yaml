@@ -17,6 +17,7 @@ target: 5
 criteria:
   - id: awards
     label: Nationally or internationally recognized prizes or awards
+    short_label: Awards
     regulation: 8 CFR 214.2(o)(3)(iii)(B)(1)
     description: Prizes or awards for excellence in the field, with evidence of their selectivity and reach.
     evidence_types: [award_certificate, award_notice, fellowship, hackathon_win]
@@ -28,6 +29,7 @@ criteria:
 
   - id: membership
     label: Membership in associations requiring outstanding achievement
+    short_label: Membership
     regulation: 8 CFR 214.2(o)(3)(iii)(B)(2)
     description: Membership judged by recognized national or international experts, not open by dues alone.
     evidence_types: [membership_certificate, membership_letter, membership_bylaws]
@@ -38,6 +40,7 @@ criteria:
 
   - id: press
     label: Published material about you in major media or trade publications
+    short_label: Press
     regulation: 8 CFR 214.2(o)(3)(iii)(B)(3)
     description: Material about you and your work, with title, date and author, in professional or major media.
     evidence_types: [press_article, interview, podcast_feature, media_mention]
@@ -49,6 +52,7 @@ criteria:
 
   - id: judging
     label: Judging the work of others
+    short_label: Judging
     regulation: 8 CFR 214.2(o)(3)(iii)(B)(4)
     description: Participation on a panel, or individually, as a judge of others' work in the field.
     evidence_types: [judge_invite, reviewer_record, panel_letter, program_committee]
@@ -60,6 +64,7 @@ criteria:
 
   - id: original_contributions
     label: Original contributions of major significance
+    short_label: Contributions
     regulation: 8 CFR 214.2(o)(3)(iii)(B)(5)
     description: Original scientific, scholarly or business contributions with documented impact on the field.
     evidence_types: [open_source_project, ml_model, dataset, patent, adoption_evidence, expert_letter]
@@ -72,6 +77,7 @@ criteria:
 
   - id: scholarly_articles
     label: Authorship of scholarly articles
+    short_label: Articles
     regulation: 8 CFR 214.2(o)(3)(iii)(B)(6)
     description: Scholarly articles in professional journals or other major media.
     evidence_types: [paper, preprint, journal_article, conference_paper]
@@ -83,6 +89,7 @@ criteria:
 
   - id: critical_role
     label: Critical or essential role for distinguished organizations
+    short_label: Critical role
     regulation: 8 CFR 214.2(o)(3)(iii)(B)(7)
     description: Employment in a critical or essential capacity for organizations with a distinguished reputation.
     evidence_types: [role_letter, org_chart, offer_letter, org_reputation]
@@ -93,6 +100,7 @@ criteria:
 
   - id: high_salary
     label: High salary or remuneration
+    short_label: Salary
     regulation: 8 CFR 214.2(o)(3)(iii)(B)(8)
     description: Salary or other remuneration that is high relative to others in the field.
     evidence_types: [pay_stub, offer_letter, w2, salary_survey]

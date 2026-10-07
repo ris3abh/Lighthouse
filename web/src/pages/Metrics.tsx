@@ -3,7 +3,7 @@ import { api, type Series } from "../api";
 import { useRefresh } from "../App";
 import { Camera, Download } from "lucide-react";
 import TrendChart, { inRange, RangePicker, type Range } from "../components/TrendChart";
-import { Button, Card, Chip, cx, Delta, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
+import { Button, Card, Chip, cx, Delta, Empty, ErrorBox, Loading, PageHeader, plural, useToast } from "../components/ui";
 import { CountUp } from "../lib/motion";
 import { useLoad } from "../hooks";
 
@@ -38,7 +38,7 @@ export default function Metrics({ focus }: { focus: string | null }) {
       const { reports } = await api.snapshot();
       const rows = reports.reduce((n, r) => n + r.metrics_written, 0);
       const errors = reports.flatMap((r) => r.errors);
-      toast(errors.length ? `Snapshot: ${rows} rows, ${errors.length} error(s): ${errors[0]}` : `Snapshot: ${rows} new or changed rows`, errors.length ? "error" : "ok");
+      toast(errors.length ? `Snapshot: ${plural(rows, "row")}, ${plural(errors.length, "error")}: ${errors[0]}` : `Snapshot: ${plural(rows, "new or changed row")}`, errors.length ? "error" : "ok");
       bump();
     } catch (e) {
       toast((e as Error).message, "error");
@@ -54,7 +54,7 @@ export default function Metrics({ focus }: { focus: string | null }) {
   return (
     <div>
       <PageHeader
-        eyebrow={`${items.length} items · ${metrics.data.series.length} series`}
+        eyebrow={`${plural(items.length, "item")} · ${metrics.data.series.length} series`}
         title="Metrics"
         subtitle="Dated snapshots from data/metrics.csv. Deltas compare the last two snapshots."
         actions={

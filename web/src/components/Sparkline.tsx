@@ -1,9 +1,9 @@
 import { useRef } from "react";
 import type { Point } from "../api";
-import { cx } from "./ui";
 import { useInView, useReducedMotion } from "../lib/motion";
+import { cx } from "./ui";
 
-/** Tiny dependency-free sparkline that fades and draws in when it scrolls into view. */
+/** Tiny dependency-free sparkline that fades and draws in (left to right) when it scrolls into view. */
 export default function Sparkline({ points, className = "h-10 w-full" }: { points: Point[]; className?: string }) {
   const ref = useRef<SVGSVGElement>(null);
   const seen = useInView(ref);
@@ -21,19 +21,20 @@ export default function Sparkline({ points, className = "h-10 w-full" }: { point
   const [lx, ly] = xy[xy.length - 1];
   const on = seen || reduced;
   return (
-    <svg ref={ref} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className={cx(className, "overflow-visible")} aria-hidden>
-      <polygon points={area} className="fill-ink/[0.06] transition-opacity delay-200 duration-300" style={{ opacity: on ? 1 : 0 }} />
-      <polyline
-        points={line}
-        fill="none"
-        className="stroke-ink transition-[stroke-dashoffset] duration-[400ms] ease-out"
-        strokeWidth="1.25"
-        vectorEffect="non-scaling-stroke"
-        pathLength={1}
-        strokeDasharray="1"
-        style={{ strokeDashoffset: on ? 0 : 1 }}
+    <div className={cx("relative", className)}>
+      <svg ref={ref} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="size-full overflow-visible" aria-hidden>
+        {/* A clip that widens from the left reveals the line as if it were drawn. */}
+        <g className="transition-[clip-path,opacity] duration-[400ms] ease-out" style={{ clipPath: on ? "inset(-10% -10% -10% -2%)" : "inset(-10% 100% -10% -2%)", opacity: on ? 1 : 0 }}>
+          <polygon points={area} className="fill-ink/[0.06]" />
+          <polyline points={line} fill="none" className="stroke-ink" strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
+        </g>
+      </svg>
+      {/* The endpoint as a real square (an SVG circle would stretch with the chart). */}
+      <span
+        aria-hidden
+        className="absolute size-1.5 -translate-x-1/2 -translate-y-1/2 bg-ink transition-opacity delay-300 duration-200"
+        style={{ left: `${(lx / w) * 100}%`, top: `${(ly / h) * 100}%`, opacity: on ? 1 : 0 }}
       />
-      <circle cx={lx} cy={ly} r="1.6" className="fill-ink transition-opacity delay-300 duration-200" style={{ opacity: on ? 1 : 0 }} />
-    </svg>
+    </div>
   );
 }

@@ -7,6 +7,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from lighthouse_gc.core import clock
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.criteria import overview as views
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.notify import Notification, Report, already_sent, last_sent, send
@@ -124,8 +125,9 @@ def build_digest(ws: Case, today: date | None = None, since: date | None = None)
     )
     counts = Counter(c["change"] for c in changed["claims"])
     lines.append(
-        f"What changed: {len(changed['exhibits_accepted'])} exhibit(s) accepted, {len(changed['new_candidates'])} new "
-        f"candidate(s), {counts['new']} new and {counts['updated']} updated fact(s)."
+        f"What changed: {plural(len(changed['exhibits_accepted']), 'exhibit')} accepted, "
+        f"{plural(len(changed['new_candidates']), 'new candidate')}, {plural(counts['new'], 'new fact')} and "
+        f"{counts['updated']} updated."
     )
     movers = sorted(changed["metric_changes"], key=lambda m: -abs(m["delta"]))[:5]
     for m in movers:
@@ -138,8 +140,8 @@ def build_digest(ws: Case, today: date | None = None, since: date | None = None)
     lines += ["", "Next actions:"]
     lines += [f"  · {t['title']}" for t in tasks] or ["  · nothing needs you"]
     lines += ["", f"Inbox: {len(pending)} pending."]
-    minimal = (f"Weekly digest: {len(pending)} to review, {len(upcoming)} deadline(s) in 14 days, "
-               f"{len(stale)} stale pipeline item(s).")  # fmt: skip
+    minimal = (f"Weekly digest: {len(pending)} to review, {plural(len(upcoming), 'deadline')} in 14 days, "
+               f"{plural(len(stale), 'stale pipeline item')}.")  # fmt: skip
     return {"text": "\n".join(lines), "minimal": minimal, "upcoming": upcoming, "stale": stale,
             "pending": len(pending), "changed": changed}  # fmt: skip
 

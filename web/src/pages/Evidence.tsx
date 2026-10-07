@@ -4,7 +4,7 @@ import { api, type EvidenceCriterion, type Exhibit, STAGES, stageCounts } from "
 import ClaimsPanel, { StageChip } from "../components/Claims";
 import DropZone, { useFileDrop } from "../components/DropZone";
 import { useRefresh } from "../App";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, Modal, PageHeader, StatusBadge, useToast } from "../components/ui";
+import { Button, Card, Chip, CriterionName, cx, Empty, ErrorBox, Loading, Modal, PageHeader, plural, StatusBadge, useToast } from "../components/ui";
 import { today, useLoad } from "../hooks";
 
 export default function Evidence({ focus }: { focus: string | null }) {
@@ -42,7 +42,7 @@ export default function Evidence({ focus }: { focus: string | null }) {
   return (
     <div>
       <PageHeader
-        eyebrow={`${criteria.reduce((n, c) => n + c.exhibit_count, 0)} exhibits · ${criteria.filter((c) => c.status === "banked").length} criteria banked`}
+        eyebrow={`${plural(criteria.reduce((n, c) => n + c.exhibit_count, 0), "exhibit")} · ${plural(criteria.filter((c) => c.status === "banked").length, "criterion")} banked`}
         title="Evidence"
         subtitle="Accepted exhibits per criterion. Files live in evidence/<criterion>/ in your workspace."
       />
@@ -58,7 +58,7 @@ export default function Evidence({ focus }: { focus: string | null }) {
 
       {naming_issues.length > 0 && (
         <div className="mb-8 border border-alert bg-surface p-5 text-sm">
-          <p className="eyebrow text-alert">Naming check · {naming_issues.length} issue(s)</p>
+          <p className="eyebrow text-alert">Naming check · {plural(naming_issues.length, "issue")}</p>
           <ul className="mt-3 space-y-1 font-mono text-xs text-ink-2">
             {naming_issues.map((i) => (
               <li key={i.file}>
@@ -155,13 +155,16 @@ function CriterionSection({
     >
       {over && (
         <div className="display pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-sunken/95 text-3xl text-ink">
-          Drop to propose under “{c.label}”
+          Drop to propose under {c.short_label || c.label}
         </div>
       )}
       <header className="flex flex-wrap items-start gap-x-6 gap-y-3 border-b border-line px-6 py-5">
         <div className="min-w-0 flex-1">
           <StatusBadge status={c.status} />
-          <h2 className="display mt-2 text-3xl md:text-4xl">{c.label}</h2>
+          <h2 className="display mt-2 text-4xl md:text-5xl">
+            <CriterionName c={c} />
+          </h2>
+          {c.short_label && c.short_label !== c.label && <p className="mt-1 text-sm text-ink-2">{c.label}</p>}
         </div>
         <span className="num self-center text-xs text-ink-2 uppercase">
           have {c.exhibit_count}
@@ -303,7 +306,7 @@ function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClo
 
   return (
     <Modal title="Upload exhibit" onClose={onClose}>
-      <p className="eyebrow -mt-1 mb-4">{crit.label}</p>
+      <p className="eyebrow -mt-1 mb-4">{crit.short_label || crit.label}</p>
       <form onSubmit={submit} className="grid gap-3">
         <label>
           <span className="label">File (PDF, image, letter…)</span>

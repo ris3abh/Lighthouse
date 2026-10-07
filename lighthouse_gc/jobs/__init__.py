@@ -11,6 +11,7 @@ from collections.abc import Callable
 from datetime import timedelta
 
 from lighthouse_gc.core import clock
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.criteria.dashboard import write_dashboard
 from lighthouse_gc.jobs import alerts
@@ -29,10 +30,10 @@ def _run_sync(ws: Case, scheduled: bool = False) -> list[str]:
     if new:
         note = Notification(
             "new_candidates",
-            f"{len(new)} new candidate(s) to review",
+            f"{plural(len(new), 'new candidate')} to review",
             "\n".join(f"· {c.title}" for c in new[:10]),
             url=alerts.dashboard_url(ws, "inbox"),
-            minimal_body=f"{len(new)} new item(s) in your Inbox.",
+            minimal_body=f"{plural(len(new), 'new item')} in your Inbox.",
         )
         lines.append(send(ws, note).line())
     errors = [f"{r.source_id}: {e}" for r in reports for e in r.errors]
@@ -42,7 +43,7 @@ def _run_sync(ws: Case, scheduled: bool = False) -> list[str]:
             "Sync had errors",
             "\n".join(errors[:10]),
             url=alerts.dashboard_url(ws, "sources"),
-            minimal_body=f"{len(errors)} sync error(s). Check the Sources page.",
+            minimal_body=f"{plural(len(errors), 'sync error')}. Check the Sources page.",
         )
         lines.append(send(ws, note).line())
     return lines

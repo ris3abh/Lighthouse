@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from lighthouse_gc.core import clock
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.core.workspace import _atomic_write
 from lighthouse_gc.criteria import overview as views
 from lighthouse_gc.criteria.case import Case
@@ -48,7 +49,7 @@ def render(ws: Case, board: Scoreboard | None = None, today: date | None = None)
     w(
         f"**{board.profile_name}** — {board.banked} banked / {board.threshold} needed "
         f"(target {board.target}), {board.building} building."
-        + (f" **{need} more criterion(s) to bank.**" if need else " **Threshold met.**")
+        + (f" **{plural(need, 'more criterion')} to bank.**" if need else " **Threshold met.**")
     )
     w("")
 
@@ -116,7 +117,7 @@ def render(ws: Case, board: Scoreboard | None = None, today: date | None = None)
         tracked = sum(i.tracked for i in s.items)
         sync = clock.local_date(s.last_sync).isoformat() if s.last_sync else "never"
         err = f" — error: {s.last_error}" if s.last_error else ""
-        w(f"- `{s.id}` — {tracked} tracked item(s), last sync {sync}{err}")
+        w(f"- `{s.id}` — {plural(tracked, 'tracked item')}, last sync {sync}{err}")
     if not sources:
         w("- None yet. Run `lighthouse-gc import <url>`.")
     w("")

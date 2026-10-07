@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { api } from "../api";
+import { Square } from "lucide-react";
+import { api, type Task } from "../api";
 import { useRefresh } from "../App";
 import { useLoad } from "../hooks";
 import RuleCheckView from "./RuleCheck";
 import { Button, Card, Chip, cx, useToast } from "./ui";
 
 /** The agent-written "what changed / 3 things to do this week", refreshed by the daily mission. */
-export default function Briefing() {
+export default function Briefing({ tasks = [] }: { tasks?: Task[] }) {
   const { version, bump } = useRefresh();
   const toast = useToast();
   const brief = useLoad(() => api.briefing(), [version]);
@@ -59,23 +60,27 @@ export default function Briefing() {
   );
 
   if (!b) return null;
+  const mine = <MyTasks tasks={tasks} />;
   if (!b.generated_at)
     return (
-      <Card title="This week" actions={actions}>
-        <p className="px-5 py-6 text-[15px] text-ink-2">
-          No briefing yet. Press Refresh for one now, or turn on the daily what-changed mission in{" "}
-          <a className="link" href="#/settings">
-            Settings
-          </a>{" "}
-          to get one every morning.
-        </p>
+      <Card title="This week" actions={actions} className="@container">
+        <div className="grid gap-px bg-line @2xl:grid-cols-2">
+          <p className="bg-surface p-6 text-[15px] leading-relaxed text-ink-2">
+            No briefing yet. Press Refresh for one now, or turn on the daily what-changed mission in{" "}
+            <a className="link" href="#/settings">
+              Settings
+            </a>{" "}
+            to get one every morning.
+          </p>
+          {mine}
+        </div>
       </Card>
     );
 
   return (
-    <Card title="This week" actions={actions}>
-      <div className="grid @3xl:grid-cols-2">
-        <div className="border-b border-line p-6 @3xl:border-r @3xl:border-b-0">
+    <Card title="This week" actions={actions} className="@container">
+      <div className="grid gap-px bg-line @2xl:grid-cols-2 @5xl:grid-cols-3">
+        <div className="bg-surface p-6">
           <h3 className="eyebrow mb-4">
             What changed{b.since ? ` since ${new Date(b.since + "T00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}
           </h3>
@@ -92,7 +97,7 @@ export default function Briefing() {
             <p className="text-[15px] text-ink-2">Nothing worth noting.</p>
           )}
         </div>
-        <div className="p-6">
+        <div className="bg-surface p-6">
           <h3 className="eyebrow mb-4">Three things to do</h3>
           <ol className="space-y-5">
             {b.todos.map((t, i) => {
@@ -140,6 +145,7 @@ export default function Briefing() {
             })}
           </ol>
         </div>
+        {mine}
       </div>
       {b.rule_check && b.rule_check.claims.length > 0 && (
         <div className="border-t border-line px-6 py-4">
@@ -159,5 +165,35 @@ export default function Briefing() {
         Written by the agent from your workspace. Opinions, not legal advice.
       </p>
     </Card>
+  );
+}
+
+/** Things only the person can do (sign, send, submit): from the workspace, not the agent. */
+function MyTasks({ tasks }: { tasks: Task[] }) {
+  return (
+    <div className="bg-surface p-6">
+      <h3 className="eyebrow mb-4">Only you can do these</h3>
+      {tasks.length ? (
+        <ul className="space-y-3">
+          {tasks.slice(0, 5).map((t, i) => (
+            <li key={i} className="flex items-start gap-3 text-[15px] leading-snug">
+              <Square className="mt-1 size-3.5 shrink-0 text-ink-2" strokeWidth={1.5} aria-hidden />
+              <span className="min-w-0 flex-1">
+                {t.link ? (
+                  <a href={t.link} className="link" target={t.link.startsWith("#") ? undefined : "_blank"} rel="noreferrer">
+                    {t.title}
+                  </a>
+                ) : (
+                  t.title
+                )}
+              </span>
+              {t.due && <span className="num shrink-0 text-xs text-ink-2">{t.due.slice(5)}</span>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[15px] text-ink-2">Nothing needs you this week.</p>
+      )}
+    </div>
   );
 }

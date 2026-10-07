@@ -5,6 +5,7 @@ export type CriterionStatus = "banked" | "building" | "gap" | "dropped";
 export interface CriterionScore {
   id: string;
   label: string;
+  short_label?: string;
   status: CriterionStatus;
   exhibit_count: number;
   exhibit_ids: string[];
@@ -201,6 +202,7 @@ export interface EvidenceView {
 export interface ProfileCriterion {
   id: string;
   label: string;
+  short_label?: string;
   regulation: string;
   description: string;
   evidence_types: string[];
@@ -424,8 +426,8 @@ export interface LetterWriter {
 
 export interface LettersView {
   letters: LetterWriter[];
-  coverage: { id: string; label: string; independent: number; employer: number; coauthor: number }[];
-  criteria: { id: string; label: string }[];
+  coverage: { id: string; label: string; short_label?: string; independent: number; employer: number; coauthor: number }[];
+  criteria: { id: string; label: string; short_label?: string }[];
 }
 
 export interface AgentStatus {

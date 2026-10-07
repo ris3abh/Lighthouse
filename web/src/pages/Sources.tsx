@@ -3,7 +3,7 @@ import { useState } from "react";
 import { api, type Source } from "../api";
 import { useRefresh } from "../App";
 import DropZone from "../components/DropZone";
-import { Button, Card, Chip, Empty, ErrorBox, Loading, Modal, PageHeader, useToast } from "../components/ui";
+import { Button, Card, Chip, Empty, ErrorBox, Loading, Modal, PageHeader, plural, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 
 const TOKEN_PAGES: Record<string, string> = {
@@ -62,7 +62,7 @@ export default function Sources() {
       setInput("");
       setToken("");
       setShowToken(false);
-      return `${r.source_id}: ${r.items} item(s), ${r.candidates_added} new candidate(s) in the Inbox`;
+      return `${r.source_id}: ${plural(r.items, "item")}, ${plural(r.candidates_added, "new candidate")} in the Inbox`;
     });
   };
 
@@ -72,7 +72,7 @@ export default function Sources() {
   return (
     <div>
       <PageHeader
-        eyebrow={`${sources.data.length} connected`}
+        eyebrow={`${plural(sources.data.length, "source")} connected`}
         title="Sources"
         subtitle="Connected accounts and the items Lighthouse tracks. Connectors only read."
       />
@@ -179,8 +179,8 @@ export default function Sources() {
                       run(s.id, async () => {
                         const r = await api.syncSource(s.id);
                         return r.errors.length
-                          ? `Synced with ${r.errors.length} error(s): ${r.errors[0]}`
-                          : `Synced: ${r.metrics_written} metric rows, ${r.candidates_added} new candidate(s)`;
+                          ? `Synced with ${plural(r.errors.length, "error")}: ${r.errors[0]}`
+                          : `Synced: ${plural(r.metrics_written, "metric row")}, ${plural(r.candidates_added, "new candidate")}`;
                       })
                     }
                   >

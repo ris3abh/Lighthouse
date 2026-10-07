@@ -59,6 +59,12 @@
           "title": "Reason",
           "type": "string"
         },
+        "short_label": {
+          "default": "",
+          "description": "One or two words for tight places; the label is shown on hover.",
+          "title": "Short Label",
+          "type": "string"
+        },
         "status": {
           "enum": [
             "banked",
@@ -123,6 +129,12 @@
       "default": null,
       "description": "Agent-written 'how a reviewer would see this' note. Opinion, not a rule result.",
       "title": "Reviewer Note"
+    },
+    "rules_digest": {
+      "default": "",
+      "description": "Digest of the profile it was scored with; a profile edit rescores.",
+      "title": "Rules Digest",
+      "type": "string"
     },
     "schema_version": {
       "const": 1,

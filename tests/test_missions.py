@@ -58,14 +58,14 @@ def test_scout_runs_on_the_mission_model_and_notifies(demo_ws, monkeypatch):
         ("text", "1. Judge the Devpost AI Hackathon (judging)."),
     ])  # fmt: skip
     lines = missions.run_job(demo_ws, "opportunity_scout", scheduled=True, engine=engine)
-    assert lines[0].startswith("Opportunity scout: done, 1 proposal(s)")
+    assert lines[0].startswith("Opportunity scout: done, 1 proposal,")
     [run] = AgentRunner(demo_ws, engine=engine).runs()
     assert run.kind == "scheduled" and run.mission == "opportunity_scout"
     assert run.model == demo_ws.config().agent.models.mission == "claude-sonnet-5-5"
     assert engine.requests[0].model == "claude-sonnet-5-5"
     assert "opportunity scout" in engine.requests[0].prompt.lower()
     [note] = rec.sent
-    assert note.event == "mission" and "1 suggestion(s)" in note.title and f"run={run.id}" in note.url
+    assert note.event == "mission" and "1 suggestion " in note.title and f"run={run.id}" in note.url
     assert any(c.title == "Judge: Devpost AI Hackathon" for c in demo_ws.pending_candidates())
 
 

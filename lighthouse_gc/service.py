@@ -24,6 +24,7 @@ from pydantic import BaseModel
 
 from lighthouse_gc.agent.autopilot import AUTO_ACTIONS, AutopilotRefused
 from lighthouse_gc.core.models import Briefing, Candidate, Change, Evidence, Exhibit, MetricRow
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.core.workspace import NotFound, WorkspaceError
 from lighthouse_gc.criteria.case import Case
 
@@ -298,7 +299,7 @@ class Service:
             return briefing
 
         return self._record("briefing.publish", "briefing", apply, target_id="overview", before=before,
-                            summary=f"{len(briefing.changed)} change(s), {len(briefing.todos)} to-do(s)")  # fmt: skip
+                            summary=f"{plural(len(briefing.changed), 'change')}, {plural(len(briefing.todos), 'to-do')}")  # fmt: skip
 
     # ------------------------------------------------------------------ settings
 

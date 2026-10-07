@@ -5,7 +5,7 @@ import Markdown from "../components/Markdown";
 import RuleCheckView from "../components/RuleCheck";
 import ToolCall from "../components/ToolCall";
 import { Play } from "lucide-react";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, Progress, useToast } from "../components/ui";
+import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, plural, Progress, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 import { cacheRate, countTokens, fmtPct, fmtTokens, fmtUsd, itemsFromTimeline, useRunStream } from "../runStream";
 
@@ -72,7 +72,7 @@ export default function Agent({ focus }: { focus: string | null }) {
   return (
     <div>
       <PageHeader
-        eyebrow={`${runs.length} run${runs.length === 1 ? "" : "s"}`}
+        eyebrow={plural(runs.length, "run")}
         title="Agent"
         subtitle="Every agent run, from chat, by hand or on a schedule: what it read, what it proposed, what it cost."
       />
@@ -146,7 +146,7 @@ export default function Agent({ focus }: { focus: string | null }) {
                       <a className="link" href={`#/agent?run=${m.last_run.id}`}>
                         {new Date(m.last_run.at).toLocaleDateString()}
                       </a>
-                      {`, ${m.last_run.proposals} proposal(s), ${fmtUsd(m.last_run.cost_usd)}`}
+                      {`, ${plural(m.last_run.proposals, "proposal")}, ${fmtUsd(m.last_run.cost_usd)}`}
                     </>
                   )}
                 </p>

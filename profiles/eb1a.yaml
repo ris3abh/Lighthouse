@@ -14,6 +14,7 @@ target: 5
 criteria:
   - id: awards
     label: Lesser nationally or internationally recognized prizes or awards
+    short_label: Awards
     regulation: 8 CFR 204.5(h)(3)(i)
     evidence_types: [award_certificate, award_notice, fellowship, hackathon_win]
     strength_signals:
@@ -24,6 +25,7 @@ criteria:
 
   - id: membership
     label: Membership in associations requiring outstanding achievement
+    short_label: Membership
     regulation: 8 CFR 204.5(h)(3)(ii)
     evidence_types: [membership_certificate, membership_letter, membership_bylaws]
     strength_signals:
@@ -33,6 +35,7 @@ criteria:
 
   - id: press
     label: Published material about you in major media or trade publications
+    short_label: Press
     regulation: 8 CFR 204.5(h)(3)(iii)
     evidence_types: [press_article, interview, podcast_feature, media_mention]
     strength_signals:
@@ -43,6 +46,7 @@ criteria:
 
   - id: judging
     label: Judging the work of others
+    short_label: Judging
     regulation: 8 CFR 204.5(h)(3)(iv)
     evidence_types: [judge_invite, reviewer_record, panel_letter, program_committee]
     strength_signals:
@@ -53,6 +57,7 @@ criteria:
 
   - id: original_contributions
     label: Original contributions of major significance
+    short_label: Contributions
     regulation: 8 CFR 204.5(h)(3)(v)
     evidence_types: [open_source_project, ml_model, dataset, patent, adoption_evidence, expert_letter]
     strength_signals:
@@ -64,6 +69,7 @@ criteria:
 
   - id: scholarly_articles
     label: Authorship of scholarly articles
+    short_label: Articles
     regulation: 8 CFR 204.5(h)(3)(vi)
     evidence_types: [paper, preprint, journal_article, conference_paper]
     strength_signals:
@@ -74,6 +80,7 @@ criteria:
 
   - id: display
     label: Display of work at artistic exhibitions or showcases
+    short_label: Display
     regulation: 8 CFR 204.5(h)(3)(vii)
     evidence_types: [exhibition_record, showcase]
     strength_signals:
@@ -83,6 +90,7 @@ criteria:
 
   - id: critical_role
     label: Leading or critical role for distinguished organizations
+    short_label: Critical role
     regulation: 8 CFR 204.5(h)(3)(viii)
     evidence_types: [role_letter, org_chart, offer_letter, org_reputation]
     strength_signals:
@@ -92,6 +100,7 @@ criteria:
 
   - id: high_salary
     label: High salary or remuneration relative to others in the field
+    short_label: Salary
     regulation: 8 CFR 204.5(h)(3)(ix)
     evidence_types: [pay_stub, offer_letter, w2, salary_survey]
     strength_signals:
@@ -101,6 +110,7 @@ criteria:
 
   - id: commercial_success
     label: Commercial success in the performing arts
+    short_label: Commercial success
     regulation: 8 CFR 204.5(h)(3)(x)
     evidence_types: [box_office, sales_record]
     strength_signals:

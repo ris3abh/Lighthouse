@@ -291,7 +291,7 @@ class Vault:
         if ids:
             unknown = set(ids) - {s.id for s in sources}
             if unknown:
-                raise ValueError(f"unknown or disabled vault source(s): {sorted(unknown)}")
+                raise ValueError(f"unknown or disabled vault sources: {sorted(unknown)}")
         # Findings (pages the agent read) aren't watched; they refresh when the agent reads them again.
         todo = [
             s

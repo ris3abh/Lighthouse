@@ -8,6 +8,7 @@ from typing import Any
 
 from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import MetricRow
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.criteria.case import Case
 
 # Headline metric per source kind, used for sparklines and the dashboard table.
@@ -80,7 +81,11 @@ def human_tasks(ws: Case, today: date | None = None) -> list[dict[str, Any]]:
     pending = ws.pending_candidates(today)
     if pending:
         tasks.append(
-            {"kind": "inbox", "title": f"Review {len(pending)} candidate(s) in the Inbox", "link": "#/inbox"}
+            {
+                "kind": "inbox",
+                "title": f"Review {plural(len(pending), 'candidate')} in the Inbox",
+                "link": "#/inbox",
+            }
         )
 
     for d in sorted(ws.deadlines().deadlines, key=lambda d: d.due):
@@ -109,7 +114,11 @@ def human_tasks(ws: Case, today: date | None = None) -> list[dict[str, Any]]:
     issues = ws.naming_check()
     if issues:
         tasks.append(
-            {"kind": "evidence", "title": f"Fix {len(issues)} evidence file issue(s)", "link": "#/evidence"}
+            {
+                "kind": "evidence",
+                "title": f"Fix {plural(len(issues), 'evidence file issue')}",
+                "link": "#/evidence",
+            }
         )
     return tasks
 

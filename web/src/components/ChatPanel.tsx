@@ -2,7 +2,7 @@ import { ArrowRight, ArrowUp, Plus, Sparkles, Square, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { api, type AgentRunView, type AgentStatus, type ConversationView, type RuleCheck } from "../api";
 import { useRefresh } from "../App";
-import { countTokens, fmtTokens, fmtUsd, type Item, useRunStream } from "../runStream";
+import { countTokens, fmtTokens, fmtUsd, itemsFromTimeline, type Item, useRunStream } from "../runStream";
 import Markdown from "./Markdown";
 import RuleCheckView from "./RuleCheck";
 import ToolCall from "./ToolCall";
@@ -62,13 +62,31 @@ export default function ChatPanel({ page, onClose }: { page: string; onClose: ()
       setTurns([]);
       return;
     }
+    let cancelled = false;
     api
       .conversation(convId)
-      .then((c: ConversationView) => setTurns(c.messages.map((m) => ({ role: m.role, text: m.text, runId: m.run_id }))))
+      .then(async (c: ConversationView) => {
+        const base: Turn[] = c.messages.map((m) => ({ role: m.role, text: m.text, runId: m.run_id }));
+        if (!cancelled) setTurns(base);
+        // Earlier answers show their tool calls inline too: load each run's recorded timeline.
+        const runs = await Promise.all(
+          base.map((t) => (t.role === "assistant" && t.runId ? api.run(t.runId).catch(() => null) : Promise.resolve(null))),
+        );
+        if (cancelled) return;
+        setTurns(
+          base.map((t, i) => {
+            const run = runs[i];
+            return run ? { ...t, items: itemsFromTimeline(run.timeline), meta: meta(run), check: run.rule_check } : t;
+          }),
+        );
+      })
       .catch(() => {
         setConvId(null);
         store(CONV_KEY, null);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [convId]);
 
   useEffect(() => {

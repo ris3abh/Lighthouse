@@ -44,6 +44,9 @@ CriterionState = Literal["banked", "building", "gap", "dropped"]
 class CriterionScore(_Model):
     id: str
     label: str
+    short_label: str = Field(
+        "", description="One or two words for tight places; the label is shown on hover."
+    )
     status: CriterionState
     exhibit_count: int = 0
     exhibit_ids: list[str] = Field(default_factory=list)
@@ -66,6 +69,9 @@ class Scoreboard(_File):
     banked: int
     building: int
     criteria: list[CriterionScore]
+    rules_digest: str = Field(
+        "", description="Digest of the profile it was scored with; a profile edit rescores."
+    )
     reviewer_note: str | None = Field(
         None, description="Agent-written 'how a reviewer would see this' note. Opinion, not a rule result."
     )
@@ -106,6 +112,9 @@ class CriterionRule(_Model):
 class ProfileCriterion(_Model):
     id: Slug
     label: str
+    short_label: str = Field(
+        "", description='One or two words for tight places ("Awards"); falls back to label.'
+    )
     regulation: str = ""
     description: str = ""
     evidence_types: list[Slug]

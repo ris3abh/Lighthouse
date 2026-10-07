@@ -6,6 +6,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 from lighthouse_gc.core.models import Evidence
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.core.workspace import Workspace
 from lighthouse_gc.sources import chat_export
 
@@ -23,8 +24,8 @@ class ChatImportReport:
         added = ", ".join(f"{n} {k}" for k, n in sorted(self.candidates_added.items())) or "no new"
         kept = self.conversations - self.skipped
         skipped = f", {self.skipped} without suggestions not saved" if self.skipped else ""
-        return (f"{self.provider}: {self.conversations} conversation(s) read, {kept} snapshotted "
-                f"({self.snapshots_new} new){skipped}; {added} tracker candidate(s) in the Inbox. "
+        return (f"{self.provider}: {plural(self.conversations, 'conversation')} read, {kept} snapshotted "
+                f"({self.snapshots_new} new){skipped}; {added} tracker {'suggestion' if sum(self.candidates_added.values()) == 1 else 'suggestions'} in the Inbox. "
                 "Self-reported: never counts toward a criterion.")  # fmt: skip
 
 

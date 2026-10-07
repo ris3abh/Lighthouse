@@ -22,6 +22,7 @@ import httpx
 from lighthouse_gc import web
 from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import Candidate, ClaimDraft, ConnectorConfig, Evidence, MetricRow, TrackedItem
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.sources.http import HttpClient, SourceError
 
 API = ""
@@ -148,7 +149,7 @@ class WebsiteSource:
             signals = ["about_the_person"] if about else []
             title = f"{'Article' if about else 'Mention'}: {got.title}"
             summary = (f"{where}{' (' + got.published + ')' if got.published else ''} mentions you "
-                       f"{len(quotes)} time(s): \"{quotes[0][:200]}\". Check it's about you and that the outlet is "
+                       f"{plural(len(quotes), 'time')}: \"{quotes[0][:200]}\". Check it's about you and that the outlet is "
                        "major media or a professional publication.")  # fmt: skip
         facts: dict[str, float | int | str] = {k: v for k, v in {
             "site": where, "published": got.published, "author": got.author, "mentions": len(quotes)}.items() if v}  # fmt: skip

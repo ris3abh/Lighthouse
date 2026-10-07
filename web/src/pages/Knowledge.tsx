@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { api, type KnowledgeView, type VaultSourceStatus } from "../api";
 import { useRefresh } from "../App";
 import { RefreshCw } from "lucide-react";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, Stat, useToast } from "../components/ui";
+import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, plural, Stat, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 
 const TIER_LABEL = { 1: "Tier 1 · primary law and agency", 2: "Tier 2 · adjudication", 3: "Tier 3 · secondary (context only)" } as const;
@@ -55,7 +55,7 @@ export default function Knowledge() {
   return (
     <div>
       <PageHeader
-        eyebrow={`${official.length} official sources`}
+        eyebrow={plural(official.length, "official source")}
         title="Knowledge"
         subtitle="The official sources every rule statement is checked against: what each said, when it was checked, and what changed."
         actions={
@@ -169,7 +169,7 @@ export default function Knowledge() {
                   )}
                   {e.diff && (
                     <p className="mt-0.5 text-[11px] text-muted">
-                      {e.diff.added} line(s) added, {e.diff.removed} removed
+                      {plural(e.diff.added, "line")} added, {e.diff.removed} removed
                     </p>
                   )}
                   {e.error && <p className="mt-0.5 text-alert">{e.error}</p>}

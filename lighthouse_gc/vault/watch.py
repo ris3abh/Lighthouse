@@ -9,6 +9,7 @@ import anyio
 import httpx
 
 from lighthouse_gc.core import clock
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.core.workspace import Workspace
 from lighthouse_gc.vault.models import VaultFetch
 from lighthouse_gc.vault.store import Vault
@@ -35,7 +36,7 @@ def notify_changes(ws: Workspace, vault: Vault, results: list[VaultFetch]) -> st
              else f"{len(changed)} Tier 1 sources changed")  # fmt: skip
     port = ws.config().server.port
     note = Notification("vault", title[:120], "\n".join(lines)[:1800], url=f"http://127.0.0.1:{port}/#/knowledge",
-                        priority="high", minimal_body=f"{len(changed)} official source(s) changed. Check the Knowledge page.",
+                        priority="high", minimal_body=f"{plural(len(changed), 'official source')} changed. Check the Knowledge page.",
                         key="vault:" + ",".join(sorted(r.sha256 or "" for r in changed)))  # fmt: skip
     return send(ws, note).line()
 
@@ -61,7 +62,7 @@ def remind_manual(ws: Workspace, vault: Vault) -> str | None:
     body = ("\n".join(lines) + "\n\nThese sites block automated reading. Open each page in your browser, save it "
             f"(Save Page As, or Print to PDF) and import it on the Knowledge page: {knowledge}")  # fmt: skip
     note = Notification("vault", title[:120], body[:1800], url=vault.link(first) if len(lapsed) == 1 else knowledge,
-                        minimal_body=f"{len(lapsed)} saved official page(s) need re-importing.",
+                        minimal_body=f"{plural(len(lapsed), 'saved official page')} {'needs' if len(lapsed) == 1 else 'need'} re-importing.",
                         key=key)  # fmt: skip
     return send(ws, note).line()
 

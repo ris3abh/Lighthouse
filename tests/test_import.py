@@ -129,7 +129,7 @@ def test_cli_init_import_run(tmp_path, http_mock):
 
     result = runner.invoke(app, ["import", "https://github.com/arivera-demo", "-w", str(case)])
     assert result.exit_code == 0, result.output
-    assert "Detected github" in result.output and "2 item(s)" in result.output
+    assert "Detected github" in result.output and "2 items" in result.output
 
     result = runner.invoke(app, ["run", "metrics-snapshot", "-w", str(case)])
     assert result.exit_code == 0, result.output

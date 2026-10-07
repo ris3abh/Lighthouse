@@ -1,9 +1,9 @@
-import { ArrowRight, ArrowUp, Square } from "lucide-react";
+import { ArrowRight, ArrowUp } from "lucide-react";
 import { useRef } from "react";
 import type { Overview } from "../api";
 import Briefing from "../components/Briefing";
 import Sparkline from "../components/Sparkline";
-import { Card, cx, Delta, Empty, ErrorBox, Loading, StatusBadge, StatusMark } from "../components/ui";
+import { Card, CriterionName, cx, Delta, Empty, ErrorBox, Loading, plural, StatusBadge, StatusMark } from "../components/ui";
 import { CountUp, useInView } from "../lib/motion";
 
 const metricLabel: Record<string, string> = {
@@ -66,11 +66,11 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
   return (
     <div className="flex flex-col gap-8">
       {/* hero: where the case stands */}
-      <section className="card grid animate-rise @3xl:grid-cols-2 @5xl:grid-cols-[2fr_1fr_1fr]">
-        <div className="border-b border-line p-6 @3xl:col-span-2 md:p-8 @5xl:col-span-1 @5xl:border-r @5xl:border-b-0">
+      <section className="card grid animate-rise grid-cols-2 @2xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] @5xl:grid-cols-[2fr_1fr_1fr]">
+        <div className="col-span-2 border-b border-line p-5 md:p-8 @2xl:col-span-1 @2xl:row-span-2 @2xl:border-r @2xl:border-b-0 @5xl:row-span-1">
           <p className="eyebrow">{board.profile_name}</p>
           <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2">
-            <a href="#/evidence" className="display text-[96px] leading-[0.8] hover:text-ink-2 md:text-[132px]" aria-label={`${board.banked} banked of ${board.threshold} needed`}>
+            <a href="#/evidence" className="display text-[88px] leading-[0.8] hover:text-ink-2 md:text-[132px]" aria-label={`${board.banked} banked of ${board.threshold} needed`}>
               <CountUp value={board.banked} />
               <span className="text-muted">/{board.threshold}</span>
             </a>
@@ -83,43 +83,50 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
           </div>
           <ScoreBar banked={board.banked} building={board.building} slots={slots} threshold={board.threshold} target={board.target} />
           <p className="mt-10 text-[15px] text-ink-2">
-            {remaining ? `${remaining} more ${remaining > 1 ? "criteria" : "criterion"} to reach the threshold.` : "Threshold met. Keep building toward the target."}
+            {remaining
+              ? `${plural(remaining, "more criterion", "more criteria")} to reach the threshold.`
+              : "Threshold met. Keep building toward the target."}
           </p>
         </div>
-        <a href="#/inbox" className="group flex flex-col justify-between border-b border-line p-6 hover:bg-sunken @3xl:border-r @3xl:border-b-0 md:p-8">
+        <a
+          href="#/inbox"
+          className="group flex flex-col justify-between gap-3 border-r border-line p-4 hover:bg-sunken md:p-6 @2xl:border-r-0 @2xl:border-b @5xl:border-r @5xl:border-b-0 @5xl:p-8"
+        >
           <p className="eyebrow">Inbox</p>
-          <p className="display my-6 text-7xl md:text-8xl">
+          <p className="display text-5xl @2xl:text-7xl @5xl:my-6 @5xl:text-8xl">
             <CountUp value={data.inbox_pending} />
           </p>
-          <p className="flex items-center justify-between font-mono text-xs text-ink-2">
-            TO REVIEW <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden />
+          <p className="flex items-center justify-between font-mono text-[11px] text-ink-2 uppercase">
+            {data.inbox_pending === 1 ? "candidate" : "candidates"} to review
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden />
           </p>
         </a>
-        <div className="flex flex-col justify-between p-6 md:p-8">
+        <div className="flex flex-col justify-between gap-3 p-4 md:p-6 @5xl:p-8">
           <p className="eyebrow">Filing target</p>
-          <p className="display my-6 text-7xl md:text-8xl">
+          <p className="display text-5xl @2xl:text-7xl @5xl:my-6 @5xl:text-8xl">
             {daysToFiling !== null ? <CountUp value={daysToFiling} /> : "—"}
             {daysToFiling !== null && <span className="text-muted">d</span>}
           </p>
-          <p className="font-mono text-xs text-ink-2">{target ?? "SET IN DATA/PERSON.JSON"}</p>
+          <p className="font-mono text-[11px] text-ink-2">{target ?? "SET IN DATA/PERSON.JSON"}</p>
         </div>
       </section>
 
-      <Briefing />
+      <Briefing tasks={data.tasks} />
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @5xl:grid-cols-12">
-        <Card title="Criteria scoreboard" className="@5xl:col-span-8" actions={<More href="#/evidence">Evidence</More>}>
-          <ul className="grid @2xl:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @2xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <Card title="Criteria scoreboard" className="@container" actions={<More href="#/evidence">Evidence</More>}>
+          <ul className="grid @xl:grid-cols-2">
             {board.criteria.map((c) => (
-              <li key={c.id} className="border-b border-line @2xl:odd:border-r">
+              <li key={c.id} className="border-b border-line @xl:odd:border-r">
                 <a href={`#/evidence?c=${c.id}`} className="flex h-full items-start gap-4 px-5 py-4 transition-colors hover:bg-sunken" title={c.reason}>
                   <StatusMark status={c.status} className="mt-1.5" />
                   <span className="min-w-0 flex-1">
-                    <span className={cx("block text-[15px] leading-snug", c.status === "dropped" && "text-muted line-through")}>{c.label}</span>
+                    <CriterionName c={c} className={cx("block text-lg leading-snug font-medium", c.status === "dropped" && "text-muted line-through")} />
                     <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-ink-2">
                       <StatusBadge status={c.status} />
-                      {c.status === "building" && c.needed_exhibits > 0 && <span>· NEEDS {c.needed_exhibits} MORE</span>}
-                      {c.in_progress_count > 0 && <span>· {c.in_progress_count} IN PROGRESS</span>}
+                      {c.status === "building" && c.needed_exhibits > 0 && <span className="uppercase">· needs {plural(c.needed_exhibits, "more exhibit")}</span>}
+                      {c.in_progress_count > 0 && <span className="uppercase">· {c.in_progress_count} in progress</span>}
+                      {c.matched_signals.length > 0 && <span className="uppercase">· {plural(c.matched_signals.length, "signal")}</span>}
                     </span>
                   </span>
                   <span className="display text-4xl text-ink-2" aria-label={`${c.exhibit_count} exhibits`}>
@@ -131,30 +138,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
           </ul>
         </Card>
 
-        <div className="flex flex-col gap-8 @5xl:col-span-4">
-          <Card title="Only you can do these">
-            {data.tasks.length ? (
-              <ul>
-                {data.tasks.slice(0, 5).map((t, i) => (
-                  <li key={i} className="flex items-start gap-3 border-b border-line px-5 py-3.5 text-[15px] last:border-b-0">
-                    <Square className="mt-1 size-3.5 shrink-0 text-ink-2" strokeWidth={1.5} aria-hidden />
-                    <span className="min-w-0 flex-1 leading-snug">
-                      {t.link ? (
-                        <a href={t.link} className="link" target={t.link.startsWith("#") ? undefined : "_blank"} rel="noreferrer">
-                          {t.title}
-                        </a>
-                      ) : (
-                        t.title
-                      )}
-                    </span>
-                    {t.due && <span className="num shrink-0 text-xs text-ink-2">{t.due.slice(5)}</span>}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <Empty>Nothing needs you this week.</Empty>
-            )}
-          </Card>
+        <div className="flex flex-col gap-8">
           <Card title="Next deadlines" actions={<More href="#/calendar">Calendar</More>}>
             {data.deadlines.length ? (
               <ul>

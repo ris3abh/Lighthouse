@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api, type LetterWriter } from "../api";
 import { useRefresh } from "../App";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
+import { Button, Card, Chip, CriterionName, cx, Empty, ErrorBox, Loading, PageHeader, plural, useToast } from "../components/ui";
 import { today, useLoad } from "../hooks";
 
 const STATUSES: LetterWriter["status"][] = ["prospect", "asked", "drafting", "sent", "signed", "declined"];
@@ -24,7 +24,8 @@ export default function Letters() {
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
   if (!data.data) return <Loading />;
   const { letters, coverage, criteria } = data.data;
-  const label = Object.fromEntries(criteria.map((c) => [c.id, c.label]));
+  const label = Object.fromEntries(criteria.map((c) => [c.id, c.short_label || c.label]));
+  const full = Object.fromEntries(criteria.map((c) => [c.id, c.label]));
 
   const save = async (fn: () => Promise<unknown>, msg: string) => {
     try {
@@ -40,7 +41,7 @@ export default function Letters() {
 
   return (
     <div>
-      <PageHeader eyebrow={`${letters.length} writers`} title="Letters" subtitle="Recommendation letter writers, what each one covers, and where each letter stands." />
+      <PageHeader eyebrow={plural(letters.length, "writer")} title="Letters" subtitle="Recommendation letter writers, what each one covers, and where each letter stands." />
 
       <Card title="Writers" className="mb-8">
         {letters.length ? (
@@ -71,8 +72,8 @@ export default function Letters() {
                     <td className="px-3 py-4 align-top">
                       <div className="flex flex-wrap gap-1">
                         {lt.criteria.length ? lt.criteria.map((c) => (
-                          <span key={c} title={label[c] ?? c}>
-                            <Chip>{c}</Chip>
+                          <span key={c} title={full[c] ?? c}>
+                            <Chip>{label[c] ?? c}</Chip>
                           </span>
                         )) : <span className="text-xs text-muted">none yet</span>}
                       </div>
@@ -186,7 +187,9 @@ export default function Letters() {
           <tbody>
             {coverage.map((row) => (
               <tr key={row.id} className="border-b border-line last:border-0">
-                <td className="px-5 py-3">{row.label}</td>
+                <td className="px-5 py-3">
+                  <CriterionName c={row} />
+                </td>
                 <td className={cx("display px-3 py-3 text-right text-2xl", !row.independent && "text-muted")}>{row.independent}</td>
                 <td className={cx("display px-3 py-3 text-right text-2xl", !row.employer && "text-muted")}>{row.employer}</td>
                 <td className={cx("display px-5 py-3 text-right text-2xl", !row.coauthor && "text-muted")}>{row.coauthor}</td>

@@ -21,6 +21,7 @@ import anyio
 from lighthouse_gc.agent.runner import AgentRunner, BudgetExceeded
 from lighthouse_gc.core import clock
 from lighthouse_gc.core.models import AgentRun
+from lighthouse_gc.core.text import plural
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.engine.base import Engine, EngineUnavailable
 
@@ -108,7 +109,7 @@ def notify_result(ws: Case, run: AgentRun) -> str:
     mission = MISSIONS.get(run.mission or "")
     title = mission.title if mission else "Mission"
     auto = [c for c in ws.changes() if c.id in run.changes and c.auto]
-    counts = f"{len(run.proposals)} suggestion(s) in your Inbox" + (
+    counts = f"{plural(len(run.proposals), 'suggestion')} in your Inbox" + (
         f", {len(auto)} applied by autopilot" if auto else ""
     )
     if run.status != "done":
@@ -140,7 +141,7 @@ def run_job(ws: Case, name: str, scheduled: bool, engine: Engine | None = None) 
         run = anyio.run(go)
     except (BudgetExceeded, EngineUnavailable) as exc:
         return [f"skipped: {exc}"]
-    return [f"{MISSIONS[name].title}: {run.status}, {len(run.proposals)} proposal(s), ${run.cost_usd or 0:.2f}",
+    return [f"{MISSIONS[name].title}: {run.status}, {plural(len(run.proposals), 'proposal')}, ${run.cost_usd or 0:.2f}",
             notify_result(ws, run)]  # fmt: skip
 
 
