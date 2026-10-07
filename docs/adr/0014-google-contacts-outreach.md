@@ -64,8 +64,35 @@ they never count toward a criterion.
 - **Follow-ups**: when you wrote to a contact and 7 days pass without a reply, a daily job drafts a follow-up
   for your approval. It never sends one on its own, and it drafts at most one per thread.
 
+## Amendment (2026-10-07): Gmail with an app password, the OAuth client only for Google Calendar
+
+Creating a Google Cloud project, a consent screen and a test user (and publishing it so tokens last more than 7
+days) is too much to ask before email works. So email signs in the way mail apps do:
+
+- **Default: an app password.** Settings > Google > *Connect Gmail* asks for your Gmail address and a
+  16-character app password (2-Step Verification on, then https://myaccount.google.com/apppasswords). Area O1
+  checks it with one IMAP login before keeping it, in the OS keychain only (`google:app-password`), and says
+  plainly what went wrong: a wrong password, your normal password instead of an app password, 2-Step
+  Verification off (Google offers no app passwords then), or IMAP turned off in Gmail's settings.
+- **Reading: IMAP** (`imap.gmail.com`, SSL), mailbox opened read-only, searched with Gmail's own search
+  (`X-GM-RAW`) for your contacts' addresses only, and fetched as **headers only**
+  (`BODY.PEEK[HEADER.FIELDS (...)]`, which also leaves mail unread). Threads are grouped by Gmail's thread ID.
+  There is no snippet: IMAP has none without reading the body, so §2's one-line snippet stays empty.
+- **Sending: SMTP** (`smtp.gmail.com`, SSL) with the same password, only from Approve & send, within the daily
+  limit, to an address still on the contact. A follow-up replies in the thread (`In-Reply-To`).
+- **Opportunity mail (Part F)** keeps its own rule: bodies are read in memory only, and only the facts and one
+  quoted sentence are kept.
+- **An app password can do more than OAuth scopes would** (full mail access over IMAP and SMTP). The limits are
+  Area O1's code (the rules above, enforced by tests), not Google's scopes; you can revoke the password at any
+  time at the same page, and Disconnect forgets it here (Google has no API to revoke it for you).
+- **The OAuth client is optional**: *Advanced: also sync Google Calendar*. Without it, deadlines still live in
+  Area O1's own calendar and `calendar.ics`, which any calendar app (Google Calendar included, via
+  *Subscribe link*) can follow one way. A Gmail sign-in made through OAuth before this amendment keeps working;
+  when both exist, the app password is used for mail.
+
 ## Consequences
 
-- Nothing Google-related works until you create a client; every part of it is optional and off by default.
+- Email needs only an app password; the calendar's two-way sync still needs your own client. Every part is
+  optional and off by default.
 - Area O1 can act as you only in one way (sending a draft you approved) and see only mail with your contacts.
-- Tests use recorded Google responses; no test reaches Google.
+- Tests use recorded Google responses and fake IMAP and SMTP servers; no test reaches Google.
