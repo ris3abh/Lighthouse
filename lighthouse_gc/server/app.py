@@ -239,7 +239,14 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
 
     @app.get("/api/health")
     def health() -> dict[str, Any]:
-        return {"ok": True, "version": __version__, "workspace": ws.root.name}
+        from lighthouse_gc.home import workspace_id
+
+        return {
+            "ok": True,
+            "version": __version__,
+            "workspace": ws.root.name,
+            "workspace_id": workspace_id(ws.root),
+        }
 
     @app.get("/api/overview")
     def get_overview() -> dict[str, Any]:

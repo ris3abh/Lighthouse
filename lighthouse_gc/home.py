@@ -35,6 +35,13 @@ def remembered() -> Path | None:
     return Path(value) if isinstance(value, str) and value else None
 
 
+def workspace_id(root: Path) -> str:
+    """A short id for a workspace folder, so a second launch can tell its own server from another case's."""
+    import hashlib
+
+    return hashlib.sha256(str(Path(root).resolve()).encode()).hexdigest()[:16]
+
+
 def remember(workspace: Path) -> None:
     try:
         d = config_dir()

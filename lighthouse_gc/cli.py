@@ -229,13 +229,18 @@ def up(
     _serve(ws, port=port, scheduler=scheduler, open_browser=open_browser)
 
 
-def _running(url: str) -> bool:
+def _running(url: str) -> str | None:
+    """Who answers at url: a Lighthouse's workspace id, "other" for anything else on that port, None when free."""
     import httpx
 
     try:
-        return httpx.get(f"{url}/api/health", timeout=0.5).status_code == 200
+        r = httpx.get(f"{url}/api/health", timeout=0.5)
     except httpx.HTTPError:
-        return False
+        return None
+    try:
+        return str(r.json()["workspace_id"]) if r.status_code == 200 else "other"
+    except (ValueError, KeyError, TypeError):
+        return "other"
 
 
 def _serve(ws: Case, *, port: int | None, scheduler: bool | None, open_browser: bool) -> None:
@@ -251,13 +256,26 @@ def _serve(ws: Case, *, port: int | None, scheduler: bool | None, open_browser: 
             "Web UI not built — the API works but pages won't. Run `npm --prefix web run build`.",
             fg=typer.colors.YELLOW,
         )
-    port = port or ws.config().server.port
-    url = f"http://127.0.0.1:{port}"
-    if _running(url):  # already open (a second launch): just bring it up
-        typer.secho(f"Lighthouse is already running → {url}", fg=typer.colors.GREEN)
-        if open_browser:
-            webbrowser.open(url)
-        return
+    from lighthouse_gc.home import workspace_id
+
+    wanted = port or ws.config().server.port
+    mine = workspace_id(ws.root)
+    for port in range(wanted, wanted + 20):
+        url = f"http://127.0.0.1:{port}"
+        who = _running(url)
+        if who == mine:  # already open (a second launch): just bring it up
+            typer.secho(f"Lighthouse is already running → {url}", fg=typer.colors.GREEN)
+            if open_browser:
+                webbrowser.open(url)
+            return
+        if who is None:
+            break
+    else:
+        raise _fail(f"Ports {wanted}–{wanted + 19} are all taken. Pick one with --port.")
+    if port != wanted:  # another case's Lighthouse (or another app) has the usual port
+        typer.secho(
+            f"Port {wanted} is taken by something else, so this one uses {port}.", fg=typer.colors.YELLOW
+        )
     typer.secho(f"Lighthouse for {ws.root} → {url}", fg=typer.colors.GREEN)
     if open_browser:
         webbrowser.open(url)

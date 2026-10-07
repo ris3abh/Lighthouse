@@ -19,7 +19,7 @@ def launched(monkeypatch):
     calls = {"served": [], "opened": []}
     monkeypatch.setattr(uvicorn, "run", lambda app, **kw: calls["served"].append(kw))
     monkeypatch.setattr(cli.webbrowser, "open", lambda url: calls["opened"].append(url))
-    monkeypatch.setattr(cli, "_running", lambda url: False)
+    monkeypatch.setattr(cli, "_running", lambda url: None)
     import lighthouse_gc.jobs.scheduler as scheduler
 
     monkeypatch.setattr(scheduler, "start", lambda ws: None)
@@ -66,9 +66,34 @@ def test_a_non_empty_default_folder_is_never_taken_over(launched, tmp_path, monk
 
 def test_a_second_launch_opens_the_running_one(launched, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(cli, "_running", lambda url: True)
+    monkeypatch.setattr(cli, "_running", lambda url: home.workspace_id(home.default_workspace()))
     result = CliRunner().invoke(cli.app, [])
     assert "already running" in result.output and launched["opened"] and not launched["served"]
+
+
+def test_another_cases_lighthouse_on_the_port_is_never_opened_instead(launched, tmp_path, monkeypatch):
+    """Port 7900 answered by a Lighthouse for a different workspace (or another app): this one moves to the next
+    free port and opens itself, not the other case."""
+    monkeypatch.chdir(tmp_path)
+    from lighthouse_gc.core.models import ServerConfig
+
+    usual = ServerConfig().port
+    taken = {f"http://127.0.0.1:{usual}": "someone-elses-case", f"http://127.0.0.1:{usual + 1}": "other"}
+    monkeypatch.setattr(cli, "_running", lambda url: taken.get(url))
+    result = CliRunner().invoke(cli.app, [])
+    assert "Lighthouse is already running" not in result.output and f"uses {usual + 2}" in result.output
+    assert launched["served"][-1]["port"] == usual + 2 and launched["opened"] == [
+        f"http://127.0.0.1:{usual + 2}"
+    ]
+
+
+def test_health_names_the_workspace_so_launches_can_tell_cases_apart(ws):
+    from fastapi.testclient import TestClient
+
+    from lighthouse_gc.server.app import create_app
+
+    body = TestClient(create_app(ws, allowed_hosts=["testserver"])).get("/api/health").json()
+    assert body["workspace_id"] == home.workspace_id(ws.root) != home.workspace_id(ws.root.parent)
 
 
 def test_help_and_version_still_work():
