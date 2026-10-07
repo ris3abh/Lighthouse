@@ -40,6 +40,8 @@ SYSTEM_ROUTES = {
     ("PUT", "/api/google/client"), ("POST", "/api/google/connect"), ("DELETE", "/api/google"),
     # Gmail sync writes only data/threads.json (like a source sync); last-touch changes go through the service.
     ("POST", "/api/google/gmail/sync"),
+    # Calendar sync: its own state in data/google-calendar.json; deadline changes go through the service.
+    ("POST", "/api/google/calendar/sync"),
     # Agent runs write their own records (agent/runs, agent/conversations); anything the agent changes in
     # the workspace goes through Service(actor="agent:<run>"), covered in tests/test_agent.py.
     ("POST", "/api/agent/chat"), ("POST", "/api/agent/runs"), ("POST", "/api/agent/runs/{run_id}/stop"),

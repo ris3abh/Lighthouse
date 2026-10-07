@@ -1,4 +1,4 @@
-import { Check, ExternalLink, LogOut, Save } from "lucide-react";
+import { CalendarSync, Check, ExternalLink, LogOut, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, type GoogleStatus } from "../api";
 import { Button, Chip, useToast } from "./ui";
@@ -105,6 +105,19 @@ export default function GoogleConnect() {
             <Button variant="primary" disabled={busy || !want.size} onClick={connect}>
               <Check /> {s.connected ? "Update access" : "Connect Google"}
             </Button>
+            {s.features.some((f) => f.id === "calendar" && f.granted) && (
+              <Button
+                disabled={busy}
+                onClick={() =>
+                  api.syncCalendar().then(
+                    (r) => toast(r.lines.join(" ")),
+                    (e: Error) => toast(e.message, "error"),
+                  )
+                }
+              >
+                <CalendarSync /> Sync the calendar now
+              </Button>
+            )}
             {s.connected && (
               <Button variant="ghost" disabled={busy} onClick={() => run(() => api.disconnectGoogle(), "Disconnected; Google revoked the access.")}>
                 <LogOut /> Disconnect

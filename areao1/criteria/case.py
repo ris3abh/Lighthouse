@@ -11,6 +11,7 @@ from areao1.core.workspace import NotFound, Workspace, WorkspaceError
 from areao1.criteria import engine
 from areao1.criteria.models import (
     DEFAULT_PROFILE,
+    CalendarSync,
     Contact,
     Contacts,
     GmailThreads,
@@ -26,7 +27,8 @@ from areao1.onboarding.models import OnboardingState
 
 # Case files written on first use; validated when present.
 CASE_OPTIONAL_FILES: dict[str, type[BaseModel]] = {"onboarding.json": OnboardingState, "todos.json": Todos,
-                                                   "contacts.json": Contacts, "threads.json": GmailThreads}  # fmt: skip
+                                                   "contacts.json": Contacts, "threads.json": GmailThreads,
+                                                   "google-calendar.json": CalendarSync}  # fmt: skip
 
 DATA_FILES: dict[str, type[BaseModel]] = {
     "person.json": Person,
@@ -51,6 +53,12 @@ class Case(Workspace):
         self._save("onboarding.json", v)
 
     # ------------------------------------------------------------------ contacts (ADR 0014 §4)
+
+    def calendar_sync(self) -> CalendarSync:
+        return self._load("google-calendar.json", CalendarSync)
+
+    def save_calendar_sync(self, state: CalendarSync) -> None:
+        self._save("google-calendar.json", state)
 
     def threads(self) -> GmailThreads:
         return self._load("threads.json", GmailThreads)

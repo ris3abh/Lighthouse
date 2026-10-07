@@ -685,6 +685,7 @@ export const api = {
   addContact: (fields: ContactFields) => request<ContactView>("POST", "/contacts", fields),
   updateContact: (id: string, fields: ContactFields) => request<ContactView>("PATCH", `/contacts/${enc(id)}`, fields),
   deleteContact: (id: string) => request<unknown>("DELETE", `/contacts/${enc(id)}`),
+  syncCalendar: () => request<{ lines: string[] }>("POST", "/google/calendar/sync"),
   syncGmail: () => request<{ lines: string[] }>("POST", "/google/gmail/sync"),
   googleStatus: () => request<GoogleStatus>("GET", "/google"),
   saveGoogleClient: (client_id: string, client_secret: string) => request<GoogleStatus>("PUT", "/google/client", { client_id, client_secret }),

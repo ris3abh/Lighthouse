@@ -922,6 +922,16 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         except (auth.GoogleError, httpx.HTTPError) as exc:
             raise HTTPException(502, f"Gmail didn't answer: {exc}") from exc
 
+    @app.post("/api/google/calendar/sync")
+    def google_calendar_sync() -> dict[str, Any]:
+        """Sync deadlines with the Area O1 calendar now (the google job does it every 15 minutes)."""
+        from areao1.google import auth, calendar
+
+        try:
+            return {"lines": calendar.sync(ws)}
+        except (auth.GoogleError, httpx.HTTPError) as exc:
+            raise HTTPException(502, f"Google Calendar didn't answer: {exc}") from exc
+
     @app.delete("/api/google")
     def google_disconnect() -> dict[str, Any]:
         from areao1.google import auth

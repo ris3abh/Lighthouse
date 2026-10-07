@@ -90,9 +90,9 @@ def _vault_watch(ws: Case, scheduled: bool = False) -> list[str]:
 
 
 def _google(ws: Case, scheduled: bool = False) -> list[str]:
-    from areao1.google import gmail
+    from areao1.google import calendar, gmail
 
-    return gmail.sync(ws)
+    return gmail.sync(ws) + calendar.sync(ws)
 
 
 JOBS: dict[str, tuple[str, Callable[[Case, bool], list[str]]]] = {
