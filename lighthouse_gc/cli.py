@@ -18,7 +18,6 @@ from lighthouse_gc.sources.http import SourceError
 app = typer.Typer(
     name="lighthouse-gc",
     help="Local-first command center for an O-1A / EB-1A evidence file. Not legal advice.",
-    no_args_is_help=True,
     add_completion=False,
 )
 
@@ -27,8 +26,8 @@ WorkspaceOpt = Annotated[
     typer.Option(
         "--workspace",
         "-w",
-        help="Workspace directory. Default: $LIGHTHOUSE_GC_WORKSPACE or the "
-        "nearest parent of the current directory containing lighthouse.yaml.",
+        help="Workspace directory. Default: $LIGHTHOUSE_GC_WORKSPACE, the nearest parent of the current "
+        "directory containing lighthouse.yaml, or the workspace you opened last.",
     ),
 ]
 
@@ -43,7 +42,14 @@ def find_workspace(explicit: Path | None) -> Case:
         ws = Case(candidate)
         if ws.exists():
             return ws
-    raise WorkspaceError("No workspace found. Run `lighthouse-gc init <dir>` or pass --workspace.")
+    from lighthouse_gc.home import remembered
+
+    last = remembered()
+    if last is not None and Case(last).exists():
+        return Case(last)
+    raise WorkspaceError(
+        "No workspace found. Run `lighthouse-gc` to start, `lighthouse-gc init <dir>`, or pass --workspace."
+    )
 
 
 def _fail(msg: str) -> typer.Exit:
@@ -53,11 +59,35 @@ def _fail(msg: str) -> typer.Exit:
 
 @app.callback(invoke_without_command=True)
 def _main(
+    ctx: typer.Context,
     version: Annotated[bool, typer.Option("--version", help="Show the version and exit.")] = False,
 ) -> None:
+    """With no command: open your workspace (creating ~/Lighthouse the first time) in the browser."""
     if version:
         typer.echo(f"lighthouse-gc {__version__}")
         raise typer.Exit()
+    if ctx.invoked_subcommand is None:
+        _serve(_first_run_workspace(), port=None, scheduler=None, open_browser=True)
+
+
+def _first_run_workspace() -> Case:
+    from lighthouse_gc.home import default_workspace
+    from lighthouse_gc.scaffold import create_workspace
+
+    try:
+        return find_workspace(None)
+    except WorkspaceError:
+        pass
+    target = default_workspace()
+    if Case(target).exists():
+        return Case(target)
+    try:
+        ws = create_workspace(target)
+    except WorkspaceError as exc:
+        raise _fail(f"{exc} Pick another place with `lighthouse-gc init <dir>`.") from exc
+    typer.secho(f"Created your private workspace at {ws.root}", fg=typer.colors.GREEN)
+    typer.echo("It's a folder of plain files and its own git repo. Back it up only to a private remote.")
+    return ws
 
 
 @app.command()
@@ -76,11 +106,12 @@ def init(
         ws = create_workspace(path, name=name, profile=profile, git=git)
     except WorkspaceError as exc:
         raise _fail(str(exc)) from exc
+    from lighthouse_gc.home import remember, remembered
+
+    if remembered() is None:
+        remember(ws.root)
     typer.secho(f"Workspace created at {ws.root}", fg=typer.colors.GREEN)
-    typer.echo("Next steps:")
-    typer.echo(f"  cd {ws.root}")
-    typer.echo("  lighthouse-gc import https://github.com/<you>")
-    typer.echo("  lighthouse-gc up")
+    typer.echo(f"Next: lighthouse-gc up -w {ws.root}")
     typer.echo("Keep this directory private: push it only to a private remote.")
 
 
@@ -191,15 +222,30 @@ def up(
     workspace: WorkspaceOpt = None,
 ) -> None:
     """Serve the dashboard on http://127.0.0.1 (localhost only)."""
-    import uvicorn
-
-    from lighthouse_gc.resources import web_static_dir
-    from lighthouse_gc.server.app import create_app
-
     try:
         ws = find_workspace(workspace)
     except WorkspaceError as exc:
         raise _fail(str(exc)) from exc
+    _serve(ws, port=port, scheduler=scheduler, open_browser=open_browser)
+
+
+def _running(url: str) -> bool:
+    import httpx
+
+    try:
+        return httpx.get(f"{url}/api/health", timeout=0.5).status_code == 200
+    except httpx.HTTPError:
+        return False
+
+
+def _serve(ws: Case, *, port: int | None, scheduler: bool | None, open_browser: bool) -> None:
+    import uvicorn
+
+    from lighthouse_gc.home import remember
+    from lighthouse_gc.resources import web_static_dir
+    from lighthouse_gc.server.app import create_app
+
+    remember(ws.root)
     if not (web_static_dir() / "index.html").exists():
         typer.secho(
             "Web UI not built — the API works but pages won't. Run `npm --prefix web run build`.",
@@ -207,6 +253,11 @@ def up(
         )
     port = port or ws.config().server.port
     url = f"http://127.0.0.1:{port}"
+    if _running(url):  # already open (a second launch): just bring it up
+        typer.secho(f"Lighthouse is already running → {url}", fg=typer.colors.GREEN)
+        if open_browser:
+            webbrowser.open(url)
+        return
     typer.secho(f"Lighthouse for {ws.root} → {url}", fg=typer.colors.GREEN)
     if open_browser:
         webbrowser.open(url)

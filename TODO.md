@@ -44,7 +44,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       Approved 2026-10-07
 
 ### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request
-- [ ] S1. `lighthouse-gc` with no arguments: creates ~/Lighthouse on first run, remembers it, serves it and
+- [x] S1. `lighthouse-gc` with no arguments: creates ~/Lighthouse on first run, remembers it, serves it and
       opens onboarding; later runs reopen it
 - [ ] S2. The wheel is the product: release workflow builds the UI, attaches the wheel to the GitHub release
       (PyPI via trusted publishing once configured); CI installs the wheel in a clean venv and smoke-tests it

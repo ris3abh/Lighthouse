@@ -25,6 +25,16 @@ def fixture_json(*parts: str):
 
 
 @pytest.fixture(autouse=True)
+def user_config(tmp_path_factory, monkeypatch):
+    """Never read or write the real ~/.config/lighthouse-gc or ~/Lighthouse."""
+    d = tmp_path_factory.mktemp("userconfig")
+    monkeypatch.setenv("LIGHTHOUSE_GC_CONFIG_DIR", str(d / "config"))
+    monkeypatch.setenv("LIGHTHOUSE_GC_HOME", str(d / "Lighthouse"))
+    monkeypatch.delenv("LIGHTHOUSE_GC_WORKSPACE", raising=False)
+    return d
+
+
+@pytest.fixture(autouse=True)
 def fake_keyring(monkeypatch):
     import keyring
 
