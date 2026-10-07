@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api } from "../api";
 import { useRefresh } from "../App";
 import ConnectAI from "../components/ConnectAI";
+import GoogleConnect from "../components/GoogleConnect";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
 
@@ -78,6 +79,10 @@ export default function Settings() {
           <ConnectAI />
         </div>
         <CheapMode />
+      </Card>
+
+      <Card title="Google" className="mb-8">
+        <GoogleConnect />
       </Card>
 
       <Card title="Notification channels" className="mb-8" actions={

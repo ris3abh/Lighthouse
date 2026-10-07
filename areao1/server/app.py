@@ -20,7 +20,14 @@ from typing import Any, Literal
 
 import anyio
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    JSONResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -121,6 +128,15 @@ class LetterBody(BaseModel):
     status: str | None = None
     draft_path: str | None = None
     last_contact: dt.date | None = None
+
+
+class GoogleClientBody(BaseModel):
+    client_id: str = Field(min_length=1, max_length=300)
+    client_secret: str = Field(min_length=1, max_length=300)
+
+
+class GoogleConnectBody(BaseModel):
+    features: list[str] = Field(min_length=1)
 
 
 class AgentSettingsBody(BaseModel):
@@ -806,6 +822,59 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     @app.get("/api/agent/status")
     def agent_status() -> dict[str, Any]:
         return runner.status()
+
+    # ------------------------------------------------------------------ Google (ADR 0014 §1)
+
+    @app.get("/api/google")
+    def google_status() -> dict[str, Any]:
+        from areao1.google import auth
+
+        return auth.status()
+
+    @app.put("/api/google/client")
+    def google_client(body: GoogleClientBody) -> dict[str, Any]:
+        """Your own Desktop OAuth client; its secret goes to the keychain only."""
+        from areao1.google import auth
+
+        try:
+            auth.save_client(body.client_id, body.client_secret)
+        except auth.GoogleError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return auth.status()
+
+    @app.post("/api/google/connect")
+    def google_connect(body: GoogleConnectBody, request: Request) -> dict[str, Any]:
+        """The Google sign-in URL for the features you picked (only their scopes)."""
+        from areao1.google import auth
+
+        redirect = f"http://127.0.0.1:{request.url.port or 80}/api/google/callback"
+        try:
+            return {"url": auth.begin(body.features, redirect)}
+        except auth.GoogleError as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @app.get("/api/google/callback")
+    def google_callback(state: str = "", code: str = "", error: str = "") -> RedirectResponse:
+        """Google sends the browser back here; the state ties it to a sign-in started on this computer."""
+        from urllib.parse import quote
+
+        from areao1.google import auth
+
+        if error or not code:
+            return RedirectResponse(
+                f"/#/settings?google=error&why={quote(error or 'cancelled')}", status_code=303
+            )
+        try:
+            auth.finish(code, state)
+        except auth.GoogleError as exc:
+            return RedirectResponse(f"/#/settings?google=error&why={quote(str(exc)[:160])}", status_code=303)
+        return RedirectResponse("/#/settings?google=connected", status_code=303)
+
+    @app.delete("/api/google")
+    def google_disconnect() -> dict[str, Any]:
+        from areao1.google import auth
+
+        return auth.disconnect()
 
     @app.get("/api/ai")
     def ai_status() -> dict[str, Any]:

@@ -562,6 +562,12 @@ export interface OnboardingLookup {
   result: string;
   resolved?: Record<string, string>;
 }
+export interface GoogleStatus {
+  client: boolean;
+  connected: boolean;
+  email: string | null;
+  features: { id: "gmail_read" | "gmail_send" | "calendar"; label: string; granted: boolean }[];
+}
 export interface AiStatus {
   cli: "installed" | "bundled" | "missing";
   key: "keychain" | "environment" | null;
@@ -647,6 +653,10 @@ export const api = {
   onboardingRestart: () => request<OnboardingView>("POST", "/onboarding/restart"),
   onboardingAi: (choice: "key" | "skip") => request<OnboardingView>("POST", "/onboarding/ai", { choice }),
   aiStatus: () => request<AiStatus>("GET", "/ai"),
+  googleStatus: () => request<GoogleStatus>("GET", "/google"),
+  saveGoogleClient: (client_id: string, client_secret: string) => request<GoogleStatus>("PUT", "/google/client", { client_id, client_secret }),
+  connectGoogle: (features: string[]) => request<{ url: string }>("POST", "/google/connect", { features }),
+  disconnectGoogle: () => request<GoogleStatus>("DELETE", "/google"),
   setCheapMode: (on: boolean) => request<AgentStatus>("PUT", "/settings/agent", { cheap_mode: on }),
   saveAiKey: (key: string) => request<AiStatus>("PUT", "/ai/key", { key }),
   forgetAiKey: () => request<AiStatus>("DELETE", "/ai/key"),
