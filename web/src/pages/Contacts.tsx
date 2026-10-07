@@ -3,8 +3,9 @@ import { useState } from "react";
 import { api, type ContactFields, type ContactView, type OutreachDraftView, type OutreachView, type Relationship } from "../api";
 import { useRefresh } from "../App";
 import ChipInput from "../components/ChipInput";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, plural, useToast } from "../components/ui";
-import { today, useLoad } from "../hooks";
+import MailView from "../components/MailView";
+import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, plural, Segmented, useToast } from "../components/ui";
+import { today, useLoad, useRoute } from "../hooks";
 
 const RELATIONSHIPS: Relationship[] = ["recommender", "collaborator", "organizer", "editor", "mentor", "employer", "other"];
 
@@ -18,6 +19,11 @@ export default function Contacts() {
   const [writing, setWriting] = useState<ContactView | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
+  const { params } = useRoute();
+  const tab = params.get("view") === "mail" ? "mail" : "people";
+  const go = (view: "people" | "mail", contact = "") => {
+    window.location.hash = view === "mail" ? `#/contacts?view=mail${contact ? `&contact=${encodeURIComponent(contact)}` : ""}` : "#/contacts";
+  };
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
   if (!data.data) return <Loading />;
   const contacts = data.data;
@@ -43,15 +49,28 @@ export default function Contacts() {
         subtitle="Letter writers, organizers, editors and collaborators: what you asked, when you last spoke, when to follow up. Tracking only; never evidence."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => save(async () => toast((await api.syncGmail()).lines.join(" ")), "Threads refreshed")}>
+            <Segmented
+              label="Contacts or mail"
+              value={tab}
+              onChange={(v) => go(v)}
+              options={[
+                { value: "people", label: "People" },
+                { value: "mail", label: <><Mail /> Mail</> },
+              ]}
+            />
+            {tab === "people" && <Button onClick={() => save(async () => toast((await api.syncGmail()).lines.join(" ")), "Threads refreshed")}>
               <RefreshCw /> Refresh threads
-            </Button>
-            <Button variant="primary" onClick={() => setAdding(true)}>
+            </Button>}
+            {tab === "people" && <Button variant="primary" onClick={() => setAdding(true)}>
               <Plus /> Add a contact
-            </Button>
+            </Button>}
           </div>
         }
       />
+      {tab === "mail" ? (
+        <MailView contacts={contacts} contact={params.get("contact") ?? ""} setContact={(id) => go("mail", id)} />
+      ) : (
+      <>
       {mail.data && <Outreach view={mail.data} onChange={bump} />}
       {writing && (
         <Card title={`Email to ${writing.name}`} className="mb-8">
@@ -83,17 +102,19 @@ export default function Contacts() {
                   />
                 </li>
               ) : (
-                <ContactRow key={c.id} c={c} onEdit={() => setEditing(c.id)} onWrite={!c.virtual && c.emails.length ? () => setWriting(c) : undefined} />
+                <ContactRow key={c.id} c={c} onEdit={() => setEditing(c.id)} onWrite={!c.virtual && c.emails.length ? () => setWriting(c) : undefined} onMail={!c.virtual && c.emails.length ? () => go("mail", c.id) : undefined} />
               ),
             )}
           </ul>
         )}
       </Card>
+      </>
+      )}
     </div>
   );
 }
 
-function ContactRow({ c, onEdit, onWrite }: { c: ContactView; onEdit: () => void; onWrite?: () => void }) {
+function ContactRow({ c, onEdit, onWrite, onMail }: { c: ContactView; onEdit: () => void; onWrite?: () => void; onMail?: () => void }) {
   const overdue = !!c.next_follow_up && c.next_follow_up <= today();
   return (
     <li className="grid gap-3 border-b border-line px-5 py-5 last:border-b-0 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] md:px-6" data-contact={c.id}>
@@ -140,6 +161,11 @@ function ContactRow({ c, onEdit, onWrite }: { c: ContactView; onEdit: () => void
         <span className="text-muted">Last touch {c.last_touch ?? "—"}</span>
         <span className={cx(overdue ? "text-alert" : "text-ink-2")}>Follow up {c.next_follow_up ?? "—"}</span>
         <span className="flex gap-1">
+          {onMail && (
+            <Button size="sm" variant="ghost" onClick={onMail}>
+              <Mail /> Mail
+            </Button>
+          )}
           {onWrite && (
             <Button size="sm" variant="ghost" onClick={onWrite}>
               <Send /> Write

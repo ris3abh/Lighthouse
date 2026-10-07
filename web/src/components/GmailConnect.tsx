@@ -131,8 +131,8 @@ export default function GmailConnect({ onDone, busy }: { onDone?: () => void; bu
         </p>
       )}
       <p className="font-mono text-[10.5px] leading-relaxed text-muted uppercase">
-        Password in your keychain · reads only headers of threads with your case contacts · sends
-        only what you approve, up to 10 a day
+        Password in your keychain · read-only: headers of case mail, first lines to sort it, a message's text only
+        when you open it · sends only what you approve, up to 10 a day
       </p>
     </div>
   );

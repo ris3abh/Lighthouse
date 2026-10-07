@@ -22,6 +22,12 @@ class Stored:
     cc: str = ""
     message_id: str = ""
     body: str = "This body must never be fetched for contact threads."
+    content_type: str = "text/plain; charset=utf-8"
+    tab: str = "primary"  # Gmail's category tab: primary, promotions, social, updates
+    gm_msgid: int = 0
+
+    def __post_init__(self) -> None:
+        self.gm_msgid = self.gm_msgid or 1_800_000_000_000_000_000 + self.uid
 
     def header_bytes(self) -> bytes:
         lines = [f"From: {self.frm}", f"To: {self.to}", f"Subject: {self.subject}", f"Date: {self.date}"]
@@ -29,6 +35,7 @@ class Stored:
             lines.append(f"Cc: {self.cc}")
         if self.message_id:
             lines.append(f"Message-ID: {self.message_id}")
+        lines.append(f"Content-Type: {self.content_type}")
         return ("\r\n".join(lines) + "\r\n\r\n").encode()
 
     def addresses(self) -> set[str]:
@@ -47,6 +54,7 @@ class FakeGmail:
     commands: list[tuple] = field(default_factory=list)
     sent: list[EmailMessage] = field(default_factory=list)
     smtp_logins: list[tuple[str, str]] = field(default_factory=list)
+    bodies_ok: bool = False  # the Mail view may PEEK at text; contact threads never do
 
     def add(self, thrid: int, date: str, frm: str, to: str, subject: str, **kw) -> Stored:
         m = Stored(uid=len(self.messages) + 1, thrid=thrid, date=date, frm=frm, to=to, subject=subject, **kw)
@@ -94,22 +102,38 @@ class FakeGmail:
             def uid(self, command, *args):
                 gmail.commands.append(("UID", command, *args))
                 assert self.selected == '"[Gmail]/Alle Nachrichten"' and self.readonly
+                if command == "SEARCH" and args[0] == "X-GM-MSGID":
+                    return "OK", [
+                        " ".join(str(m.uid) for m in gmail.messages if m.gm_msgid == int(args[1])).encode()
+                    ]
                 if command == "SEARCH":
                     assert args[0] == "X-GM-RAW"
                     raw = args[1].strip('"')
                     wanted = set(re.findall(r"(?:from|to|cc):(\S+)", raw))
-                    hits = [str(m.uid) for m in gmail.messages if m.addresses() & wanted]
+                    hidden = set(re.findall(r"-category:(\w+)", raw))
+                    hits = [str(m.uid) for m in gmail.messages
+                            if (m.addresses() & wanted if wanted else m.tab not in hidden)]  # fmt: skip
                     return "OK", [" ".join(hits).encode()]
                 if command == "FETCH":
                     uids, spec = args
-                    assert "BODY.PEEK[HEADER.FIELDS" in spec and "RFC822" not in spec and "BODY[]" not in spec
+                    assert "RFC822" not in spec and "BODY[" not in spec, spec  # PEEK only: nothing turns read
+                    if "HEADER.FIELDS" not in spec:
+                        assert gmail.bodies_ok, f"a body was fetched: {spec}"
                     out: list = []
                     for u in uids.split(","):
                         m = next(x for x in gmail.messages if x.uid == int(u))
-                        h = m.header_bytes()
-                        meta = (f'{m.uid} (UID {m.uid} X-GM-THRID {m.thrid} INTERNALDATE "{m.date}" '
-                                f"BODY[HEADER.FIELDS (FROM TO CC SUBJECT DATE MESSAGE-ID)] {{{len(h)}}}")  # fmt: skip
-                        out += [(meta.encode(), h), b")"]
+                        if "HEADER.FIELDS" in spec:
+                            h = m.header_bytes()
+                            meta = (f'{m.uid} (UID {m.uid} X-GM-MSGID {m.gm_msgid} X-GM-THRID {m.thrid} INTERNALDATE '
+                                    f'"{m.date}" BODY[HEADER.FIELDS (FROM TO CC SUBJECT DATE MESSAGE-ID)] {{{len(h)}}}')  # fmt: skip
+                            out += [(meta.encode(), h), b")"]
+                        elif part := re.search(r"BODY\.PEEK\[TEXT\]<0\.(\d+)>", spec):
+                            b = m.body.encode()[: int(part.group(1))]
+                            out += [(f"{m.uid} (UID {m.uid} BODY[TEXT]<0> {{{len(b)}}}".encode(), b), b")"]
+                        else:
+                            assert spec == "(BODY.PEEK[])", spec
+                            b = m.header_bytes() + m.body.encode()
+                            out += [(f"{m.uid} (UID {m.uid} BODY[] {{{len(b)}}}".encode(), b), b")"]
                     return "OK", out
                 raise AssertionError(f"unexpected UID {command}")
 

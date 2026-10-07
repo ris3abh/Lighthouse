@@ -610,6 +610,39 @@ export interface OutreachView {
   daily_limit: number;
   can_send: boolean;
 }
+export type MailCategory = "invites" | "judging" | "reviewer" | "letters" | "press" | "awards" | "contacts";
+export interface MailItemView {
+  id: string;
+  thread_id: string;
+  at: string;
+  from_name: string;
+  from_addr: string;
+  to: string[];
+  subject: string;
+  outgoing: boolean;
+  category: MailCategory;
+  by: "rule" | "learned" | "model" | "you";
+  why: string;
+  contact_ids: string[];
+  contacts: string[];
+  candidate: { id: string; title: string } | null;
+}
+export interface MailView {
+  connected: boolean;
+  categories: { id: MailCategory; label: string; count: number }[];
+  items: MailItemView[];
+  rules: { sender: string; category: MailCategory | "hide"; at: string }[];
+  synced_at: string | null;
+  lines?: string[];
+}
+export interface MailText {
+  from: string;
+  to: string;
+  cc: string;
+  subject: string;
+  date: string;
+  text: string;
+}
 export interface GmailStatus {
   connected: boolean;
   email: string | null;
@@ -710,6 +743,10 @@ export const api = {
   rejectDraft: (id: string) => request<OutreachDraftView>("POST", `/outreach/${enc(id)}/reject`),
   sendDraft: (id: string) => request<OutreachDraftView>("POST", `/outreach/${enc(id)}/send`),
   syncGmail: () => request<{ lines: string[] }>("POST", "/gmail/sync"),
+  mail: () => request<MailView>("GET", "/mail"),
+  syncMail: () => request<MailView>("POST", "/mail/sync"),
+  moveMail: (id: string, category: MailCategory | "hide") => request<MailView>("PUT", `/mail/${enc(id)}`, { category }),
+  mailText: (id: string) => request<MailText>("GET", `/mail/${enc(id)}/text`),
   gmailStatus: () => request<GmailStatus>("GET", "/gmail"),
   connectGmail: (email: string, password: string) => request<GmailStatus>("PUT", "/gmail", { email, password }),
   disconnectGmail: () => request<GmailStatus>("DELETE", "/gmail"),

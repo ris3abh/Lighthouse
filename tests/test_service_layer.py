@@ -41,6 +41,9 @@ SYSTEM_ROUTES = {
     ("PUT", "/api/gmail"), ("DELETE", "/api/gmail"),
     # Gmail sync writes only data/threads.json (like a source sync); last-touch changes go through the service.
     ("POST", "/api/gmail/sync"),
+    # The Mail view writes only data/mail.json, a read-only cache of case mail headers and the sorting rules you
+    # teach by moving a message; nothing in the case changes (ADR 0014, Mail view amendment).
+    ("POST", "/api/mail/sync"), ("PUT", "/api/mail/{gm_id}"),
     # Agent runs write their own records (agent/runs, agent/conversations); anything the agent changes in
     # the workspace goes through Service(actor="agent:<run>"), covered in tests/test_agent.py.
     ("POST", "/api/agent/chat"), ("POST", "/api/agent/runs"), ("POST", "/api/agent/runs/{run_id}/stop"),

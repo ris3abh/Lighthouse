@@ -143,6 +143,11 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       address. The audit found it went out 4 times (clicks during a 6-second SMTP send); fixed: sends are
       serialized and re-read the draft, the button disables while sending (regression test). Refresh threads
       not yet tried live
+- [x] E7. Read-only Mail view on Contacts (ADR 0014, Mail view amendment): per-contact threads (sent and
+      received) and all case mail in 7 categories with counts; rules first (taught senders, contacts, organizer
+      domains, subject keywords), then the mundane tier on headers + first lines; moving teaches a sender rule;
+      PEEK-only reads of a read-only mailbox; text fetched on open, never written; links to Inbox candidates
+- [ ] E7 live check: Refresh mail on the owner's Gmail (sends first lines of unsorted mail to the mundane tier)
 - [ ] CHECKPOINT 4 (Gmail): connect with an app password, Refresh threads, one approved send
       Reported 2026-10-07 (built and tested with fake IMAP / SMTP); the live run waits for the owner's app password
 

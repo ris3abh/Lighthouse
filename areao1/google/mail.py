@@ -215,3 +215,148 @@ def send(msg: Any) -> None:
             conn.send_message(msg)
     except (smtplib.SMTPException, OSError) as exc:
         raise plain_error(exc, a["email"]) from exc
+
+
+# ------------------------------------------------------------------ the Mail view: case mail, still read-only
+
+VIEW_FIELDS = "FROM TO CC SUBJECT DATE MESSAGE-ID CONTENT-TYPE CONTENT-TRANSFER-ENCODING"
+_UID = re.compile(rb"UID (\d+)")
+_MSGID = re.compile(rb"X-GM-MSGID (\d+)")
+FIRST_BYTES = 2048  # "the first lines": enough for a greeting and the ask, never the whole message
+BULK = "-category:promotions -category:social"
+
+
+def recent(emails: list[str], days: int, limit: int, seen: Any = None) -> list[dict[str, Any]]:
+    """Recent mail for the Mail view: everything in the last ``days`` (minus Gmail's Promotions and Social tabs)
+    plus anything to or from ``emails``, newest first, at most ``limit``. Headers for all of them; the first bytes
+    of the text only for messages ``seen`` (a callable on the Gmail message ID) hasn't seen, so the classifier can
+    read their first lines. Read-only mailbox, PEEK fetches only: nothing turns read, nothing is moved or labelled.
+    Returned in memory; the caller decides what (if anything) is kept."""
+    from email.parser import BytesParser
+    from email.policy import default
+
+    safe = [e for e in emails if re.fullmatch(r"[^@\s\"\\()]+@[^@\s\"\\()]+", e)]
+    with session() as conn:
+        conn.select(_all_mail(conn), readonly=True)
+        uids: set[int] = set()
+        for raw in [
+            f"newer_than:{days}d {BULK}",
+            *(f"from:{e} OR to:{e} OR cc:{e} newer_than:{days}d" for e in safe),
+        ]:
+            _, data = conn.uid("SEARCH", "X-GM-RAW", f'"{raw}"')
+            uids |= {int(u) for u in (data[0] or b"").split()}
+        newest = sorted(uids, reverse=True)[:limit]
+        out: dict[int, dict[str, Any]] = {}
+        for i in range(0, len(newest), BATCH):
+            batch = ",".join(str(u) for u in newest[i : i + BATCH])
+            _, data = conn.uid(
+                "FETCH",
+                batch,
+                f"(X-GM-MSGID X-GM-THRID INTERNALDATE BODY.PEEK[HEADER.FIELDS ({VIEW_FIELDS})])",
+            )
+            for part in data or []:
+                if not isinstance(part, tuple):
+                    continue
+                uid, gm, meta = _UID.search(part[0]), _MSGID.search(part[0]), _META.search(part[0])
+                if uid is None or gm is None or meta is None:
+                    continue
+                msg = BytesParser(policy=default).parsebytes(part[1], headersonly=True)
+                headers = {k: str(msg.get(k, "")) for k in ("From", "To", "Cc", "Subject", "Content-Type",
+                                                              "Content-Transfer-Encoding")}  # fmt: skip
+                out[int(uid.group(1))] = {"id": gm.group(1).decode(), "thread_id": format(int(meta.group(1)), "x"),
+                                          "at": _internaldate(meta.group(2).decode()), "headers": headers,
+                                          "first_lines": ""}  # fmt: skip
+        unseen = [u for u, m in out.items() if seen is None or not seen(m["id"])]
+        for i in range(0, len(unseen), BATCH):
+            batch = ",".join(str(u) for u in unseen[i : i + BATCH])
+            _, data = conn.uid("FETCH", batch, f"(BODY.PEEK[TEXT]<0.{FIRST_BYTES}>)")
+            for part in data or []:
+                if isinstance(part, tuple) and (uid := _UID.search(part[0])) and int(uid.group(1)) in out:
+                    m = out[int(uid.group(1))]
+                    m["first_lines"] = first_lines(m["headers"], part[1])
+    return sorted(out.values(), key=lambda m: (m["at"], int(m["id"])), reverse=True)
+
+
+def open_message(gm_id: str) -> dict[str, str]:
+    """One message's text, fetched with PEEK when you open it in the Mail view. Held in memory and returned, never
+    written anywhere. Plain text only (HTML is turned into text), so nothing in a message can run in the page."""
+    from email.parser import BytesParser
+    from email.policy import default
+
+    if not gm_id.isdigit():
+        raise MailError("That isn't a Gmail message ID.")
+    with session() as conn:
+        conn.select(_all_mail(conn), readonly=True)
+        _, data = conn.uid("SEARCH", "X-GM-MSGID", gm_id)
+        found = (data[0] or b"").split()
+        if not found:
+            raise MailError("Gmail no longer has that message (it may have been deleted).")
+        _, data = conn.uid("FETCH", found[0].decode(), "(BODY.PEEK[])")
+    raw = next((p[1] for p in data or [] if isinstance(p, tuple)), b"")
+    msg = BytesParser(policy=default).parsebytes(raw)
+    return {"from": str(msg.get("From", "")), "to": str(msg.get("To", "")), "cc": str(msg.get("Cc", "")),
+            "subject": str(msg.get("Subject", "")), "date": str(msg.get("Date", "")), "text": _text(msg)}  # fmt: skip
+
+
+def first_lines(headers: dict[str, str], partial: bytes, chars: int = 300) -> str:
+    """The first lines of a message from the first bytes of its body (decoded best effort, MIME parts and all)."""
+    from email.parser import BytesParser
+    from email.policy import default
+
+    head = "".join(
+        f"{k}: {v}\r\n" for k in ("Content-Type", "Content-Transfer-Encoding") if (v := headers.get(k))
+    )
+    try:
+        msg = BytesParser(policy=default).parsebytes(head.encode() + b"\r\n" + partial)
+        text = _text(msg)
+    except Exception:  # noqa: BLE001  (a truncated part is normal here)
+        text = partial.decode(errors="replace")
+    return re.sub(r"\s+", " ", text).strip()[:chars]
+
+
+def _text(msg: Any) -> str:
+    part = None
+    for p in msg.walk() if msg.is_multipart() else [msg]:
+        if p.get_content_type() == "text/plain":
+            part = p
+            break
+        if part is None and p.get_content_type() == "text/html":
+            part = p
+    if part is None:
+        return ""
+    try:
+        body = part.get_content()
+    except Exception:  # noqa: BLE001  (cut off mid-encoding: decode what's there)
+        payload = part.get_payload(decode=True) or b""
+        body = payload.decode(errors="replace") if isinstance(payload, bytes) else str(payload)
+    if not isinstance(body, str):
+        body = body.decode(errors="replace") if isinstance(body, bytes) else str(body)
+    return _html_text(body) if part.get_content_type() == "text/html" else body
+
+
+def _html_text(html: str) -> str:
+    from html.parser import HTMLParser
+
+    class Text(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__()
+            self.out: list[str] = []
+            self.skip = 0
+
+        def handle_starttag(self, tag: str, attrs: Any) -> None:
+            if tag in ("script", "style", "head"):
+                self.skip += 1
+            elif tag in ("br", "p", "div", "li", "tr", "h1", "h2", "h3"):
+                self.out.append("\n")
+
+        def handle_endtag(self, tag: str) -> None:
+            if tag in ("script", "style", "head") and self.skip:
+                self.skip -= 1
+
+        def handle_data(self, data: str) -> None:
+            if not self.skip:
+                self.out.append(data)
+
+    p = Text()
+    p.feed(html)
+    return re.sub(r"\n\s*\n+", "\n\n", "".join(p.out)).strip()

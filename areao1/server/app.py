@@ -154,6 +154,10 @@ class LetterBody(BaseModel):
     last_contact: dt.date | None = None
 
 
+class MailMoveBody(BaseModel):
+    category: str = Field(min_length=3, max_length=20)
+
+
 class GmailPasswordBody(BaseModel):
     email: str = Field(min_length=3, max_length=320)
     password: str = Field(min_length=1, max_length=64)
@@ -940,6 +944,66 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
             return {"lines": gmail.sync(ws)}
         except mail.MailError as exc:
             raise HTTPException(502, str(exc)) from exc
+
+    # ------------------------------------------------------------------ the Mail view (read-only)
+
+    @app.get("/api/mail")
+    def get_mail() -> dict[str, Any]:
+        """Case-relevant mail only, by category, with counts. Headers and the redacted subject; no bodies."""
+        from areao1.google import mailview
+
+        return mailview.view(ws)
+
+    @app.post("/api/mail/sync")
+    async def mail_sync() -> dict[str, Any]:
+        """Read new mail (PEEK only: nothing turns read in Gmail), sort it by rules, then the mundane tier."""
+        from areao1.core.models import AgentRun, RunUsage
+        from areao1.google import mail, mailview
+
+        def mundane() -> Any:
+            try:
+                return runner.mundane("classify")
+            except BudgetExceeded:
+                return None, runner.route("classify")  # over the cap: rules only
+
+        try:
+            out = await mailview.sync(ws, mundane)
+        except mail.MailError as exc:
+            raise HTTPException(502, str(exc)) from exc
+        how = out.get("route")
+        if how is not None:  # the model's cost shows on the Agent page and counts toward the month
+            runner.save(AgentRun(kind="manual", engine=how.provider if how.provider == "openai" else runner.engine().name,
+                                 model=how.model, task=how.task, tier=how.tier, provider=how.provider, status="done",
+                                 prompt="Mail view: sorting new mail", text=" ".join(out["lines"]),
+                                 cost_usd=out["cost_usd"], usage=RunUsage.model_validate(out["usage"]),
+                                 finished_at=clock.utcnow()))  # fmt: skip
+        return {"lines": out["lines"], **mailview.view(ws)}
+
+    @app.put("/api/mail/{gm_id}")
+    def move_mail(gm_id: str, body: MailMoveBody) -> dict[str, Any]:
+        """Move a message to another category (or hide it); the move teaches a rule for that sender."""
+        from areao1.google import mailview
+
+        try:
+            mailview.move(ws, gm_id, body.category)
+        except KeyError as exc:
+            raise HTTPException(404, "no such message in the Mail view") from exc
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return mailview.view(ws)
+
+    @app.get("/api/mail/{gm_id}/text")
+    def mail_text(gm_id: str) -> JSONResponse:
+        """Open a message: its text, fetched from Gmail now with PEEK, returned and never written to disk."""
+        from areao1.google import mail, mailview
+
+        try:
+            text = mailview.open_item(ws, gm_id)
+        except KeyError as exc:
+            raise HTTPException(404, "no such message in the Mail view") from exc
+        except mail.MailError as exc:
+            raise HTTPException(502, str(exc)) from exc
+        return JSONResponse(text, headers={"Cache-Control": "no-store"})
 
     @app.get("/api/ai")
     def ai_status() -> dict[str, Any]:

@@ -131,6 +131,7 @@ def test_a_follow_up_is_a_draft_that_replies_in_the_thread(ws, people, fake):
     fake.add(
         0x18A1, quiet, "alex@gmail.com", "omar@mlh.example", "MLH judging", message_id="<a1@mail.gmail.com>"
     )
+    fake.bodies_ok = True  # the job also sorts mail for the Mail view, which peeks at first lines
     lines = JOBS["google"][1](ws, True)  # reads the thread, then drafts the follow-up
     assert any("waiting for your approval" in line for line in lines)
     [d] = ws.outreach().drafts

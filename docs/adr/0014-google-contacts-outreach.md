@@ -94,10 +94,40 @@ Gmail only, signed in the way mail apps do:
   Area O1's code (the rules above, enforced by tests), not Google's scopes. You can revoke the password at any
   time on the same page; Disconnect forgets it here (Google has no API to revoke it for you).
 
+## Amendment (2026-10-07): the Mail view (read-only, case mail only)
+
+Contacts gets a read-only **Mail** view: one contact's threads (sent and received), or all case-relevant mail,
+in seven categories: Invites, Judging & hackathons, Reviewer requests, Letter writers, Press & media, Awards &
+memberships, Other contact threads. This widens what Area O1 reads, so the rules are written down here:
+
+- **What's read**: the last 30 days of All Mail except Gmail's Promotions and Social tabs, plus anything to or
+  from a contact (300 newest per refresh). Headers for all of them; for messages not seen before, the **first
+  2 KB of the text**, so the first lines can be sorted. All Mail is opened read-only and every fetch is a PEEK:
+  nothing turns read, and nothing is moved, labelled, archived or deleted (tests fail on any other IMAP command).
+- **Sorting is rules first**: a sender you taught by moving a message; a contact on the message (a letter writer
+  goes to Letter writers); a known organizer or review-system domain; a keyword in the subject. Only what no rule
+  decides goes to the **mundane tier**, with the sender, subject and first 300 characters, redacted like any
+  model input, under the monthly cap, its cost recorded as a run. The model's answer can only be a category name
+  or "none"; the prompt says the mail is data, not instructions, and any other answer counts as "none". Without
+  a model (no key, or over the cap) undecided mail waits, unshown.
+- **What's kept** (`data/mail.json`): for case-relevant mail only, who, when, the redacted subject, the category
+  and why; for everything else, a one-way hash of the message ID so it isn't read twice. First lines are never
+  kept. Everything outside the categories is never shown or stored.
+- **Opening a message** fetches its text from Gmail then (PEEK), returns it as plain text (HTML turned into text,
+  so nothing in it runs), with `Cache-Control: no-store`, and never writes it to disk. Only mail the view kept can
+  be opened.
+- **Moving** a message to another category, or hiding it ("Not case mail"), teaches a rule for that sender:
+  their later mail goes there without the model, and their stored mail follows now.
+- **Opportunity-looking mail** (Invites, Judging, Reviewer requests, Press, Awards) links to its Inbox candidate
+  when one names the message or thread as its source, or has the subject as its title.
+
+The contact threads of §2 (headers only) and the opportunity-mail rule (Part F) are unchanged.
+
 ## Consequences
 
 - Gmail needs only an app password and is optional and off by default. Nothing in Area O1 needs a Google Cloud
   project; deadlines reach other calendars through `calendar.ics` only.
-- Area O1 acts as you in one way only (sending a draft you approved) and reads only the headers of mail with your
-  contacts.
+- Area O1 acts as you in one way only (sending a draft you approved). It reads headers of mail with your contacts;
+  the Mail view also reads the first lines of recent mail to sort it and a message's text when you open it, and
+  keeps only case-relevant headers.
 - Tests use fake IMAP and SMTP servers; no test reaches Google.

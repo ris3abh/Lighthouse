@@ -204,6 +204,43 @@ class GmailThreads(_File):
     synced_at: datetime | None = None
 
 
+MailCategory = Literal["invites", "judging", "reviewer", "letters", "press", "awards", "contacts"]
+
+
+class MailItem(_Model):
+    """One case-relevant message in the Mail view: who, when, the redacted subject and its category. No body: the
+    text is fetched when you open it and never kept. Mail outside the categories is never stored at all."""
+
+    id: str = Field(description="Gmail's message ID (X-GM-MSGID).")
+    thread_id: str
+    at: datetime
+    from_name: str = Field("", max_length=200)
+    from_addr: str = Field("", max_length=320)
+    to: list[str] = Field(default_factory=list)
+    subject: str = Field("", max_length=200)
+    outgoing: bool = False
+    category: MailCategory
+    by: Literal["rule", "learned", "model", "you"] = "rule"
+    why: str = Field("", max_length=200, description="Which rule (or the model, or your move) put it here.")
+    contact_ids: list[str] = Field(default_factory=list)
+
+
+class MailRule(_Model):
+    """Taught by moving a message: mail from this sender goes to this category (or is never shown: 'hide')."""
+
+    sender: str = Field(min_length=3, max_length=320)
+    category: MailCategory | Literal["hide"]
+    at: datetime = Field(default_factory=utcnow)
+
+
+class Mailbox(_File):
+    items: list[MailItem] = Field(default_factory=list)
+    rules: list[MailRule] = Field(default_factory=list)
+    seen: list[str] = Field(default_factory=list, description="Hashes of message IDs already classified, so "
+                            "nothing is read twice. Not the messages: one-way hashes.")  # fmt: skip
+    synced_at: datetime | None = None
+
+
 # --------------------------------------------------------------------------- profiles/*.yaml
 
 

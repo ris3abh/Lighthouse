@@ -89,11 +89,45 @@ def _vault_watch(ws: Case, scheduled: bool = False) -> list[str]:
     return run_watch(ws, scheduled)
 
 
+def _mail_view(ws: Case) -> list[str]:
+    """Sort new mail for the Mail view: rules, then the mundane tier (its cost is recorded like any run)."""
+    import anyio
+
+    from areao1.agent.runner import AgentRunner, BudgetExceeded
+    from areao1.core import clock
+    from areao1.core.models import AgentRun, RunUsage
+    from areao1.google import mail, mailview
+
+    if not mail.connected():
+        return []
+    runner = AgentRunner(ws)
+
+    def mundane():  # type: ignore[no-untyped-def]
+        try:
+            return runner.mundane("classify")
+        except BudgetExceeded:
+            return None, runner.route("classify")
+
+    try:
+        out = anyio.run(mailview.sync, ws, mundane)
+    except mail.MailError as exc:
+        return [f"Mail: {exc}"]
+    how = out.get("route")
+    if how is not None:
+        runner.save(AgentRun(kind="scheduled", engine=how.provider if how.provider == "openai" else runner.engine().name,
+                             model=how.model, task=how.task, tier=how.tier, provider=how.provider, status="done",
+                             prompt="Mail view: sorting new mail", text=" ".join(out["lines"]),
+                             cost_usd=out["cost_usd"], usage=RunUsage.model_validate(out["usage"]),
+                             finished_at=clock.utcnow()))  # fmt: skip
+    return list(out["lines"])
+
+
 def _google(ws: Case, scheduled: bool = False) -> list[str]:
     from areao1.google import gmail, outreach
     from areao1.service import Service
 
     lines = gmail.sync(ws)
+    lines += _mail_view(ws)
     drafts = outreach.follow_ups(ws)  # after quiet days: drafts for you to approve, never sent on their own
     for d in drafts:
         Service(ws, actor="follow-up").save_draft(d)
@@ -123,7 +157,7 @@ JOBS: dict[str, tuple[str, Callable[[Case, bool], list[str]]]] = {
         _mission("what_changed"),
     ),
     "google": (
-        "Gmail threads with your contacts and follow-up drafts (skips until Gmail is connected)",
+        "Gmail threads with your contacts, the Mail view and follow-up drafts (skips until Gmail is connected)",
         _google,
     ),
 }

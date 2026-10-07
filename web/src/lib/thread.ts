@@ -27,8 +27,8 @@ export const CHATS_ASK =
   "computer first, show you what looks related to your case and why, and bring in only what you tick.";
 export const MAIL_ASK =
   "Last one, and optional: connect Gmail so I can keep up with your letter writers and organizers and draft follow-ups. " +
-  "All it takes is your address and an app password. I read only the headers of threads with people in your contacts (who, " +
-  "when, the subject), and I send nothing until you press Approve & send.";
+  "All it takes is your address and an app password. I only read: case mail (invites, judging, reviews, letters, press, " +
+  "awards) sorted on Contacts > Mail, keeping who, when and the subject, never the rest. I send nothing until you press Approve & send.";
 const MAIL_REPLY = { pending: "", connected: "Connected my Gmail.", skipped: "Later." };
 
 /** The thread for where onboarding is now. Keys are stable across updates (who, text and which repeat), so an

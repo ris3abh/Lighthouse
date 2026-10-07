@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, type Candidate, type Profile } from "../api";
 import { useRefresh } from "../App";
 import ClaimsPanel, { StageChip } from "../components/Claims";
@@ -6,13 +6,17 @@ import RuleCheckView, { blocking } from "../components/RuleCheck";
 import TrackerCard, { TRACKER_LABEL } from "../components/TrackerCard";
 import { Paperclip } from "lucide-react";
 import { Button, Card, Chip, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
-import { today, useLoad } from "../hooks";
+import { today, useLoad, useRoute } from "../hooks";
 import Banter, { banterOk } from "../components/Banter";
 import { banterText } from "../lib/banter";
 
 export default function Inbox() {
   const { version, bump } = useRefresh();
   const inbox = useLoad(() => Promise.all([api.inbox(), api.profile()]), [version]);
+  const focus = useRoute().params.get("candidate"); // from the Mail view: "In Inbox"
+  useEffect(() => {
+    if (focus && inbox.data) document.querySelector(`[data-candidate="${CSS.escape(focus)}"]`)?.scrollIntoView({ block: "center" });
+  }, [focus, inbox.data]);
   if (inbox.error) return <ErrorBox error={inbox.error} retry={inbox.reload} />;
   if (!inbox.data) return <Loading />;
   const [candidates, profile] = inbox.data;
@@ -154,7 +158,7 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
     }, "Accepted — exhibit filed and scoreboard updated");
 
   return (
-    <article className="animate-rise border-b border-line px-5 py-6 last:border-b-0 md:px-6">
+    <article className="animate-rise border-b border-line px-5 py-6 last:border-b-0 md:px-6" data-candidate={c.id}>
       <div className="flex items-start gap-6">
         <div className="min-w-0 flex-1">
           <h3 className="text-lg leading-snug font-medium">

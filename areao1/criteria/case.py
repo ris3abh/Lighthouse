@@ -16,6 +16,7 @@ from areao1.criteria.models import (
     GmailThreads,
     Letter,
     Letters,
+    Mailbox,
     Outreach,
     OutreachDraft,
     Person,
@@ -29,7 +30,7 @@ from areao1.onboarding.models import OnboardingState
 # Case files written on first use; validated when present.
 CASE_OPTIONAL_FILES: dict[str, type[BaseModel]] = {"onboarding.json": OnboardingState, "todos.json": Todos,
                                                    "contacts.json": Contacts, "threads.json": GmailThreads,
-                                                   "outreach.json": Outreach}  # fmt: skip
+                                                   "outreach.json": Outreach, "mail.json": Mailbox}  # fmt: skip
 
 DATA_FILES: dict[str, type[BaseModel]] = {
     "person.json": Person,
@@ -67,6 +68,13 @@ class Case(Workspace):
             self._save("outreach.json", out)
             self.after_change()
             return draft
+
+    def mailbox(self) -> Mailbox:
+        return self._load("mail.json", Mailbox)
+
+    def save_mailbox(self, box: Mailbox) -> None:
+        with self.lock:
+            self._save("mail.json", box)
 
     def threads(self) -> GmailThreads:
         return self._load("threads.json", GmailThreads)

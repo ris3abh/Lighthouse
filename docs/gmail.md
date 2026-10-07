@@ -35,6 +35,14 @@ limits are Area O1's own rules, each covered by tests:
 - **Reading**: All Mail is opened read-only. Area O1 searches only for mail to or from the email addresses of your
   contacts, and fetches **headers only**: who, when, the subject and the Message-ID. It never fetches bodies or
   attachments, and nothing turns read. Each contact's last touch follows their newest thread.
+- **The Mail view** (Contacts > Mail): case-relevant mail only, in seven categories (Invites, Judging &
+  hackathons, Reviewer requests, Letter writers, Press & media, Awards & memberships, Other contact threads).
+  Press **Refresh mail** to read the last 30 days (Promotions and Social skipped): headers, plus the first lines
+  of new messages so they can be sorted. Rules sort first (your contacts, known organizer domains, subject
+  keywords, and senders you taught by moving a message); only what's left goes to the small, cheap model tier,
+  redacted. Area O1 keeps who, when and the redacted subject of case mail and nothing at all of the rest. Opening
+  a message fetches its text from Gmail right then and never saves it. Still read-only: nothing turns read,
+  moves, gets a label or is deleted in Gmail.
 - **Opportunity mail** (the daily opportunity job, coming next): bodies are read in memory only; Area O1 keeps
   only the facts and one quoted sentence.
 - **Sending**: only when you press **Approve & send** on a draft, from your Gmail (it shows up in Sent), to an
