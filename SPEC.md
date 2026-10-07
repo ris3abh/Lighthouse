@@ -489,7 +489,7 @@ against the demo workspace and your own.
 - [x] Knowledge vault (5a): `vault/sources.yaml` with Tier 1–3 sources; fetch + content-addressed snapshots +
       local embeddings (FTS5 + hashing embedder, fused); TTL registry for volatile facts; vault-watch job
       notifying on Tier 1 changes; manual import for sites that block automated reading.
-- [ ] rule-check gate: rule claims in every agent answer and briefing must match a fresh vault chunk that
+- [x] rule-check gate: rule claims in every agent answer and briefing must match a fresh vault chunk that
       entails them, else "unverified"; Tier 1 disagreements show as "conflict"; unverified claims can't enter
       letters, exhibits or exports.
 - [ ] Agent uses the vault first; web search fallback restricted to Tier 1 domains, then Tier 2; new findings

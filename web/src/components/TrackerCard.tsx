@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, type Candidate } from "../api";
 import ClaimsPanel, { StageChip } from "./Claims";
+import RuleCheckView, { blocking } from "./RuleCheck";
 import { Button, Chip, useToast } from "./ui";
 import { today } from "../hooks";
 
@@ -131,6 +132,10 @@ export default function TrackerCard({ c, onDone }: { c: Candidate; onDone: () =>
         </div>
       )}
 
+      <RuleCheckView check={c.rule_check} onRecheck={() => api.recheckCandidate(c.id).then(onDone).catch((e: Error) => toast(e.message, "error"))} />
+      {blocking(c.rule_check).length > 0 && (
+        <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">States rules the knowledge vault doesn't confirm; it can't be added as written.</p>
+      )}
       <div className="mt-3 flex flex-wrap gap-2">
         <Button variant="primary" size="sm" disabled={busy} onClick={add}>
           {editing ? `Save & ${ADD_TO[kind].toLowerCase()}` : ADD_TO[kind]}

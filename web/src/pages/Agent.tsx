@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type AgentRunView, type Candidate } from "../api";
 import { useRefresh } from "../App";
 import Markdown from "../components/Markdown";
+import RuleCheckView from "../components/RuleCheck";
 import ToolCall from "../components/ToolCall";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
@@ -310,6 +311,19 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
         </Card>
 
         <div className="flex flex-col gap-4">
+          {run.rule_check && run.rule_check.claims.length > 0 && (
+            <div>
+              <RuleCheckView
+                check={run.rule_check}
+                onRecheck={() =>
+                  api
+                    .recheckRun(run.id)
+                    .then(() => stored.reload())
+                    .catch((e: Error) => toast(e.message, "error"))
+                }
+              />
+            </div>
+          )}
           <Card title={`Sources read (${run.sources.length})`}>
             {run.sources.length ? (
               <ul className="divide-y divide-zinc-100 text-xs dark:divide-zinc-800">

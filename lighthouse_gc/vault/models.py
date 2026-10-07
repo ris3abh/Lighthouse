@@ -40,6 +40,9 @@ class VaultManifest(_Model):
     version: Literal[1] = 1
     ttl_days: dict[str, int | Literal["monthly"]] = Field(default_factory=dict)
     tier1_domains: list[str] = Field(default_factory=list)
+    rule_hints: list[str] = Field(
+        default_factory=list, description="Regexes for sentences that may state a rule."
+    )
     sources: list[VaultSource] = Field(default_factory=list)
 
     @field_validator("sources")

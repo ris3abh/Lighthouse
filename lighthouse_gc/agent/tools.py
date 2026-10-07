@@ -31,6 +31,7 @@ from lighthouse_gc.criteria.models import Letter
 from lighthouse_gc.engine.base import AgentTool
 from lighthouse_gc.mcp import tools as read
 from lighthouse_gc.service import Service
+from lighthouse_gc.vault.rulecheck import RuleChecker, blocking_message, briefing_text
 from lighthouse_gc.web import UnsafeURL, check_url, fetch_page, html_to_text
 
 __all__ = ["RunContext", "UnsafeURL", "build_tools", "check_url", "fetch_page", "html_to_text"]
@@ -43,6 +44,7 @@ class RunContext:
     ws: Case
     run: AgentRun
     redact: bool = True
+    checker: RuleChecker | None = None
     svc: Service = field(init=False)
 
     def __post_init__(self) -> None:
@@ -129,6 +131,15 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
             raise ValueError("the quote must appear word for word in the page you read; copy it exactly")
         return obs, text
 
+    async def _gate(text: str) -> Any:
+        """Rule-check agent prose bound for petition-facing records; refuse it if a rule isn't verified."""
+        if ctx.checker is None or not text.strip():
+            return None
+        check = await ctx.checker.check(text)
+        if check.blocking:
+            raise ValueError(blocking_message(check))
+        return check if check.claims else None
+
     def _propose(cand: Candidate) -> str:
         added = ctx.svc.propose_candidate(cand)
         if added is None:
@@ -143,6 +154,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         if args["evidence_type"] not in crit.evidence_types:
             raise ValueError(f"evidence_type must be one of {crit.evidence_types} for {crit.id}")
         obs, text = _page(args["observation_id"], args["quote"])
+        check = await _gate(f"{args['title']}. {args['summary']}")
         key = hashlib.sha256(f"{obs.source_url}\n{args['quote']}".encode()).hexdigest()[:16]
         evidence = Evidence(connector="agent", source_url=obs.source_url, payload=text, media_type="text/plain",
                             claims=[ClaimDraft(subject=f"page:{obs.sha256[:16]}", subject_kind="other",
@@ -153,7 +165,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         cand = Candidate(kind="evidence", fingerprint=f"agent:{crit.id}:{key}", source=f"agent:{ctx.run.id}",
                          evidence_type=args["evidence_type"], proposed_criterion=crit.id, title=args["title"][:120],
                          summary=args["summary"][:500], confidence=0.5, raw_url=obs.source_url,
-                         stage=args.get("stage"))  # fmt: skip
+                         stage=args.get("stage"), rule_check=check)  # fmt: skip
         return _propose(cand.with_evidence(evidence))
 
     async def t_propose_deadline(args: S) -> str:
@@ -195,10 +207,11 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
     async def t_propose_letter(args: S) -> str:
         proposal = {k: args[k] for k in ("name", "relationship", "credentials", "criteria") if args.get(k)}
         Letter.model_validate(proposal)
+        check = await _gate(str(proposal.get("credentials", "")))
         cand = Candidate(kind="letter", fingerprint=f"agent:letter:{args['name'].lower()}",
                          source=f"agent:{ctx.run.id}", evidence_type="agent_suggestion", proposed_criterion="",
                          title=f"Letter writer: {args['name']}", summary=args.get("why", "")[:500] or "Suggested by the agent.",
-                         proposal=proposal)  # fmt: skip
+                         proposal=proposal, rule_check=check)  # fmt: skip
         return _propose(cand)
 
     def _record_of(target_type: str, target_id: str) -> Any:
@@ -221,8 +234,15 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         record = _record_of(tt, tid)
         type(record).model_validate({**record.model_dump(), **changes})  # fail early on bad values
         label = getattr(record, "title", None) or getattr(record, "name", tid)
-        if autopilot.allowed("tracker_updates", ws.config().agent.autopilot) and autopilot.fields_allowed(
-            tt, changes
+        check = None
+        if tt == "letter":  # letter text is petition-facing
+            text = " ".join(str(changes[k]) if not isinstance(changes[k], list) else ". ".join(map(str, changes[k]))
+                            for k in ("credentials", "asks") if changes.get(k))  # fmt: skip
+            check = await _gate(text)
+        if (
+            check is None
+            and autopilot.allowed("tracker_updates", ws.config().agent.autopilot)
+            and autopilot.fields_allowed(tt, changes)
         ):
             ctx.auto_svc.update_tracker(tt, tid, **changes)
             return (f"Updated {label} automatically (autopilot: tracker updates). The person can undo it on the "
@@ -231,7 +251,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         cand = Candidate(kind="update", fingerprint=f"agent:update:{tt}:{tid}:{key}", source=f"agent:{ctx.run.id}",
                          evidence_type="agent_suggestion", proposed_criterion="", title=f"Update: {label}"[:120],
                          summary=args.get("why", "")[:500] or "Suggested by the agent.",
-                         proposal={"target_type": tt, "target_id": tid, "changes": changes})  # fmt: skip
+                         proposal={"target_type": tt, "target_id": tid, "changes": changes}, rule_check=check)  # fmt: skip
         return _propose(cand)
 
     async def t_metric(args: S) -> str:
@@ -273,7 +293,13 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         briefing = Briefing(generated_at=datetime.now(UTC), run_id=ctx.run.id,
                             since=date.fromisoformat(since) if since else None,
                             changed=[str(c)[:300] for c in args.get("changed") or []][:8], todos=todos)  # fmt: skip
+        if ctx.checker is not None:
+            briefing.rule_check = await ctx.checker.check(briefing_text(briefing.changed, briefing.todos))
         ctx.svc.publish_briefing(briefing)
+        flagged = briefing.rule_check.blocking if briefing.rule_check else []
+        if flagged:
+            return (f"Published the briefing. {len(flagged)} rule statement(s) in it aren't confirmed by the knowledge "
+                    "vault and are shown as unverified: " + "; ".join(f'"{c.sentence[:100]}"' for c in flagged[:3]))  # fmt: skip
         return "Published the briefing to the Overview."
 
     criteria = [c.id for c in ws.profile().criteria]

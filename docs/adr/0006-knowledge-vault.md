@@ -41,6 +41,34 @@ claims against, with exact text and dates; item 3 needs the agent to search it f
    event) when a Tier 1 source changed, with the first changed lines. Tier 2 / 3 changes are logged, not
    notified. `vault.enabled: false` turns all vault fetching off.
 
+### 7. rule-check gate (Phase 1d item 2)
+
+- **What is checked:** every final agent answer, every published briefing, and the agent-written text bound
+  for petition-facing records (evidence title and summary, a letter writer's credentials, letter
+  credentials / asks updates).
+- **Finding candidates:** sentences that may state a rule are found with the manifest's `rule_hints`
+  (no model call when none match).
+- **Judging:** each candidate is matched against the vault (Tier 1–2, at most two excerpts per source). One
+  judge call (`agent.models.check`, the same locked-down engine with no tools, one turn, no web search)
+  decides which candidates are rules, and which excerpts entail or contradict them, quoting the excerpt.
+- **Deciding the status:** code, not the judge, decides it:
+  - the quote must be found in the excerpt (exact, or the same words with different whitespace);
+  - the excerpt must be the source's current snapshot and inside its freshness window;
+  - Tier 3 never verifies.
+- **Statuses:**
+  - verified: a fresh Tier 1 or 2 source entails it, and no fresh Tier 1 source contradicts it;
+  - conflict: Tier 1 sources disagree, which also sends a notification;
+  - stale: the only support is stale;
+  - unverified: anything else, including when the judge or the vault is unavailable.
+- **Re-evaluation:** statuses are recomputed whenever a check is read or used, so a claim goes stale when
+  its source changes.
+- **The gate:**
+  - the agent's write tools refuse text with a non-verified rule;
+  - accepting an Inbox item re-checks freshness and refuses if a rule is no longer verified;
+  - when the person rewrites the text, the words are theirs and the check is cleared.
+- **Cost:** the judge's tokens and cost are added to the run, so budgets cover them.
+- **Exports:** the attorney export (Phase 2) will use the same gate.
+
 ## Consequences
 
 - Outbound requests now include the public sources in the manifest (documented in the README).

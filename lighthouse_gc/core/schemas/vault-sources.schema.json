@@ -132,6 +132,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "rule_hints": {
+      "description": "Regexes for sentences that may state a rule.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Rule Hints",
+      "type": "array"
+    },
     "sources": {
       "items": {
         "$ref": "#/$defs/VaultSource"

@@ -77,6 +77,7 @@ def load_manifest(override: Path | None = None) -> VaultManifest:
     return VaultManifest(
         ttl_days={**base.ttl_days, **extra.ttl_days},
         tier1_domains=sorted({*base.tier1_domains, *extra.tier1_domains}),
+        rule_hints=[*base.rule_hints, *(h for h in extra.rule_hints if h not in base.rule_hints)],
         sources=list(by_id.values()),
     )
 

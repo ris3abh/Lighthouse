@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api, type Candidate, type Profile } from "../api";
 import { useRefresh } from "../App";
 import ClaimsPanel, { StageChip } from "../components/Claims";
+import RuleCheckView, { blocking } from "../components/RuleCheck";
 import TrackerCard, { TRACKER_LABEL } from "../components/TrackerCard";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { today, useLoad } from "../hooks";
@@ -204,8 +205,15 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
         </div>
       )}
 
+      <RuleCheckView check={c.rule_check} onRecheck={() => api.recheckCandidate(c.id).then(onDone).catch((e: Error) => toast(e.message, "error"))} />
+      {blocking(c.rule_check).length > 0 && !editing && (
+        <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">
+          This states rules the knowledge vault doesn't confirm, so it can't become an exhibit as written. Re-check after
+          the vault refreshes, or edit the text into your own words.
+        </p>
+      )}
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button variant="primary" size="sm" disabled={busy || !form.proposed_criterion} onClick={accept}>
+        <Button variant="primary" size="sm" disabled={busy || !form.proposed_criterion || (blocking(c.rule_check).length > 0 && !editing)} onClick={accept}>
           {editing ? "Save & accept" : "Accept"}
         </Button>
         <Button size="sm" disabled={busy} onClick={() => setEditing(!editing)}>

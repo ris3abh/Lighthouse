@@ -21,7 +21,7 @@ import json
 import sqlite3
 import threading
 from collections.abc import Iterable, Iterator
-from datetime import date
+from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from typing import TypeVar
 
@@ -424,8 +424,10 @@ class Memory:
             sql, args = sql + " AND status = ?", [*args, status]
         if as_of:
             # Bitemporal: true in the world by then AND already known to Lighthouse by then.
-            sql += " AND (valid_from IS NULL OR valid_from <= ?) AND substr(recorded_at, 1, 10) <= ?"
-            args = [*args, as_of.isoformat(), as_of.isoformat()]
+            # "Known by then" means recorded before the end of that day where the person is (recorded_at is UTC).
+            cutoff = datetime.combine(as_of + timedelta(days=1), time.min).astimezone().astimezone(UTC)
+            sql += " AND (valid_from IS NULL OR valid_from <= ?) AND recorded_at < ?"
+            args = [*args, as_of.isoformat(), cutoff.isoformat()]
         elif current_only:
             sql += " AND current = 1"
         sql += " ORDER BY recorded_at"

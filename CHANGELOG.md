@@ -14,8 +14,17 @@ All notable changes to this project are documented here. The format follows
   kept), chunked with exact offsets and searchable with full text + local embeddings.
   `lighthouse-gc vault sync | search | status | import`. The daily `vault-watch` job re-checks Tier 1 sources
   and notifies when one changes.
+- rule-check gate (SPEC 5a): rule statements in every agent answer and briefing are checked against the
+  vault: a judge model picks the rule claims and cites excerpts, and code verifies the quote is really in a
+  fresh Tier 1/2 source. Badges: verified (with the quoted words and source), unverified, stale, conflict
+  (Tier 1 sources disagree; also a notification). Unverified rules are refused in evidence summaries and
+  letter text, and an Inbox item whose rules went stale can't be accepted until re-checked or rewritten.
+  Re-check buttons on the Agent page, the briefing and Inbox items.
 - Bot-protection and maintenance pages are recognized even when served with HTTP 200, and recorded as
   unreadable. Pages from sites that block automated reading can be imported from a saved copy.
+
+### Fixed
+- `as_of` memory queries dropped claims recorded late in the local evening (after midnight UTC).
 
 ## [0.1.0] - 2026-10-06
 

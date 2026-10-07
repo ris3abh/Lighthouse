@@ -35,6 +35,8 @@ from lighthouse_gc.engine.base import Engine, EngineUnavailable
 from lighthouse_gc.resources import web_static_dir
 from lighthouse_gc.service import Service
 from lighthouse_gc.sources.http import SourceError
+from lighthouse_gc.vault import Vault
+from lighthouse_gc.vault.rulecheck import briefing_text, refresh
 
 WRITE_HEADER = "x-lighthouse"
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -157,6 +159,13 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     svc = Service(ws)  # every user-initiated write goes through the service layer
     runner = AgentRunner(ws, engine=engine)
     app.state.runner = runner
+    vault = Vault(ws)
+
+    def checked(check: Any) -> Any:
+        """A rule check with statuses re-evaluated against the vault as it is now."""
+        fresh = refresh(check, vault)
+        return fresh.model_dump(mode="json") if fresh else None
+
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts or ["127.0.0.1", "localhost"])
 
     @app.middleware("http")
@@ -232,7 +241,8 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
             items = ws.inbox().candidates
         else:
             items = [c for c in ws.inbox().candidates if c.status == status]
-        return [c.model_dump(mode="json") for c in sorted(items, key=lambda c: (-c.confidence, c.created_at))]
+        return [{**c.model_dump(mode="json"), "rule_check": checked(c.rule_check)}
+                for c in sorted(items, key=lambda c: (-c.confidence, c.created_at))]  # fmt: skip
 
     @app.patch("/api/inbox/{candidate_id}")
     def patch_candidate(candidate_id: str, body: CandidateEdit) -> dict[str, Any]:
@@ -689,6 +699,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
                 **r.model_dump(mode="json", exclude={"timeline"}),
                 "tool_calls": sum(i.type == "tool_call" for i in r.timeline),
                 "counted_tokens": r.usage.counted,
+                "rule_check": checked(r.rule_check),
             }  # fmt: skip
             for r in runner.runs(limit)
         ]
@@ -696,7 +707,11 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     @app.get("/api/agent/runs/{run_id}")
     def agent_run(run_id: str) -> dict[str, Any]:
         r = runner.get(run_id)
-        return {**r.model_dump(mode="json"), "counted_tokens": r.usage.counted}
+        return {
+            **r.model_dump(mode="json"),
+            "counted_tokens": r.usage.counted,
+            "rule_check": checked(r.rule_check),
+        }
 
     @app.get("/api/agent/runs/{run_id}/stream")
     async def agent_stream(run_id: str) -> StreamingResponse:
@@ -731,7 +746,38 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
                 "id": c.id, "kind": c.kind, "title": c.title, "status": c.status,
                 "proposed_criterion": c.proposed_criterion, "source_tier": c.source_tier} if c else None})  # fmt: skip
         return {**b.model_dump(mode="json", exclude={"todos"}), "todos": todos,
-                "refreshing": running.id if running else None}  # fmt: skip
+                "refreshing": running.id if running else None, "rule_check": checked(b.rule_check)}  # fmt: skip
+
+    # Re-run rule-check (one judge call when the text states rules) after the vault was refreshed.
+    @app.post("/api/rulecheck/runs/{run_id}")
+    async def recheck_run(run_id: str) -> dict[str, Any]:
+        r = runner.get(run_id)
+        if r.status == "running" or not r.text.strip():
+            raise HTTPException(400, "nothing to check yet")
+        r.rule_check = await runner.checker().check(r.text)
+        runner.save(r)
+        return checked(r.rule_check)
+
+    @app.post("/api/rulecheck/briefing")
+    async def recheck_briefing() -> dict[str, Any]:
+        b = ws.briefing()
+        if not b.generated_at:
+            raise HTTPException(400, "no briefing yet")
+        check = await runner.checker().check(briefing_text(b.changed, b.todos))
+        svc.set_briefing_check(check)
+        return checked(check)
+
+    @app.post("/api/rulecheck/inbox/{candidate_id}")
+    async def recheck_candidate(candidate_id: str) -> dict[str, Any]:
+        cand = next((c for c in ws.inbox().candidates if c.id == candidate_id), None)
+        if cand is None:
+            raise HTTPException(404, f"no candidate {candidate_id!r}")
+        text = f"{cand.title}. {cand.summary}"
+        if cand.kind in ("letter", "update"):
+            text = " ".join(str(v) for v in (cand.proposal.get("changes") or cand.proposal).values())
+        check = await runner.checker().check(text)
+        svc.set_rule_check(candidate_id, check)
+        return checked(check)
 
     @app.get("/api/agent/missions")
     def agent_missions() -> list[dict[str, Any]]:

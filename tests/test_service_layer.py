@@ -24,7 +24,7 @@ PDF = b"%PDF-1.4 fictional\n"
 # Routes the five pages write through. Every mutating route under these prefixes must be covered below.
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
-                 "/api/settings/missions")  # fmt: skip
+                 "/api/settings/missions", "/api/rulecheck/briefing", "/api/rulecheck/inbox")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -35,7 +35,7 @@ SYSTEM_ROUTES = {
     # Agent runs write their own records (agent/runs, agent/conversations); anything the agent changes in
     # the workspace goes through Service(actor="agent:<run>"), covered in tests/test_agent.py.
     ("POST", "/api/agent/chat"), ("POST", "/api/agent/runs"), ("POST", "/api/agent/runs/{run_id}/stop"),
-    ("POST", "/api/agent/missions/{name}/run"),
+    ("POST", "/api/agent/missions/{name}/run"), ("POST", "/api/rulecheck/runs/{run_id}"),
 }  # fmt: skip
 
 
@@ -92,7 +92,19 @@ def _ids(ws):
         "pipeline": ws.pipeline().items[0].id,
         "letter": ws.letters().letters[0].id,
         "undo": _undoable_change(ws),
+        "briefing": _briefing(ws),
     }
+
+
+def _briefing(ws) -> str:
+    """Publish a briefing so the re-check route has one to check."""
+    from datetime import UTC, datetime
+
+    from lighthouse_gc.core.models import Briefing
+    from lighthouse_gc.service import Service
+
+    Service(ws, actor="agent:test").publish_briefing(Briefing(generated_at=datetime.now(UTC), changed=["x"]))
+    return "overview"
 
 
 def _undoable_change(ws) -> str:
@@ -133,6 +145,8 @@ SAMPLES = {
     ("PATCH", "/api/letters/{letter_id}"): ("/api/letters/{letter}", {"json": {"status": "sent"}}, "letter.update"),
     ("DELETE", "/api/letters/{letter_id}"): ("/api/letters/{letter}", {}, "letter.delete"),
     ("PUT", "/api/settings/autopilot"): ("/api/settings/autopilot", {"json": {"metrics": True}}, "settings.autopilot"),
+    ("POST", "/api/rulecheck/briefing"): ("/api/rulecheck/briefing", {}, "briefing.recheck"),
+    ("POST", "/api/rulecheck/inbox/{candidate_id}"): ("/api/rulecheck/inbox/{other}", {}, "inbox.recheck"),
     ("PUT", "/api/settings/missions"): ("/api/settings/missions", {"json": {"what_changed": True}}, "settings.missions"),
     ("POST", "/api/changes/{change_id}/undo"): ("/api/changes/{undo}/undo", {}, "pipeline_item.undo"),
 }  # fmt: skip

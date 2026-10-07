@@ -57,8 +57,8 @@ _Generated 2026-10-06 from the files in `data/`. Do not edit by hand — run `li
 
 ## Sources
 
-- `github:arivera-demo` — 2 tracked item(s), last sync 2026-10-06
-- `huggingface:arivera-demo` — 4 tracked item(s), last sync 2026-10-06
+- `github:arivera-demo` — 2 tracked item(s), last sync 2026-10-07
+- `huggingface:arivera-demo` — 4 tracked item(s), last sync 2026-10-07
 
 ---
 _Lighthouse is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney._

@@ -28,6 +28,19 @@ ttl_days:
   case_law: 365
   secondary: 30
 
+# rule-check: sentences matching any of these (case-insensitive) may state a rule and are checked against the
+# vault. Keep them specific: plain words like "must" would send every answer to the judge.
+rule_hints:
+  - '\b\d+\s*C\.?F\.?R\b|\bU\.?S\.?C\b|\bINA\b|\bUSCIS\b|Policy Manual|\bAAO\b|Kazarian|Chawathe'
+  - 'preponderance|final[- ]merits|two[- ](?:step|part) (?:analysis|review)|standard of proof'
+  - '\bForm\s+[A-Z]{1,2}-?\d|\bI-\d{3}[A-Z]?\b|\bG-1055\b|edition date'
+  - '\bfiling fees?\b|\bfees?\b.{0,40}\$\s?\d|\$\s?\d[\d,]*(?:\.\d+)?\s*(?:fee|filing)|premium processing'
+  - 'processing times?|business days|calendar days|within \d+ days'
+  - 'visa bulletin|priority dates?|final action dates?|dates? for filing'
+  - 'at least (?:three|3) of|(?:three|3) of the (?:ten|eight|10|8|following)|(?:ten|eight|10|8) criteria'
+  - 'one[- ]time achievement|sustained national or international acclaim|small percentage .{0,30}top of the field'
+  - '\bregulations? (?:requires?|says?|states?)|\bthe law (?:requires?|says?)|is required to (?:file|submit|show)'
+
 # Tier 1 domains: the agent's web-search fallback tries these first.
 tier1_domains: [uscis.gov, ecfr.gov, federalregister.gov, travel.state.gov, justice.gov, uscode.house.gov]
 

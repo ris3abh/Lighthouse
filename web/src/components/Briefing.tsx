@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { useRefresh } from "../App";
 import { useLoad } from "../hooks";
+import RuleCheckView from "./RuleCheck";
 import { Button, Card, Chip, cx, useToast } from "./ui";
 
 /** The agent-written "what changed / 3 things to do this week", refreshed by the daily mission. */
@@ -139,6 +140,20 @@ export default function Briefing() {
           </ol>
         </div>
       </div>
+      {b.rule_check && b.rule_check.claims.length > 0 && (
+        <div className="px-4 pb-3">
+          <RuleCheckView
+            check={b.rule_check}
+            compact
+            onRecheck={() =>
+              api
+                .recheckBriefing()
+                .then(() => brief.reload())
+                .catch((e: Error) => toast(e.message, "error"))
+            }
+          />
+        </div>
+      )}
       <p className="border-t border-zinc-100 px-4 py-2 text-[11px] text-zinc-400 dark:border-zinc-800">
         Written by the agent from your workspace. Opinions, not legal advice.
       </p>

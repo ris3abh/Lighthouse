@@ -188,3 +188,31 @@ def test_same_text_at_two_urls_keeps_both_sources(tmp_path):
     assert (a.source_url, b.source_url) == ("https://a.example/", "https://b.example/")
     assert a.snapshot == b.snapshot  # one file on disk
     assert mem.verify() == []
+
+
+def test_as_of_uses_the_local_day_not_the_utc_day(tmp_path, monkeypatch):
+    """recorded_at is UTC; "as of <date>" means that date where the person is."""
+    import os
+    import time as _time
+    from datetime import timedelta
+
+    mem = Memory(tmp_path, tmp_path / ".cache")
+    [claim] = mem.record(
+        evidence("hf", {"downloads": 7}, key="downloads", value=7, valid_from=date(2020, 1, 1))
+    )
+    utc = claim.recorded_at
+    # A zone where the local date differs from the UTC date at this moment.
+    zone, shift = ("Etc/GMT+12", -12) if utc.hour < 12 else ("Etc/GMT-12", 12)
+    local_day = (utc + timedelta(hours=shift)).date()
+    monkeypatch.setenv("TZ", zone)
+    _time.tzset()
+    try:
+        [(found, _)] = mem.query_claims(subject="artifact:x", predicate="downloads", as_of=local_day)
+        assert found.value == 7
+        assert (
+            mem.query_claims(subject="artifact:x", predicate="downloads", as_of=local_day - timedelta(days=1))
+            == []
+        )
+    finally:
+        os.environ.pop("TZ", None)
+        _time.tzset()

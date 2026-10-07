@@ -75,7 +75,40 @@ export interface Overview {
   sources: { id: string; kind: string; last_sync: string | null; last_error: string | null }[];
 }
 
+export type RuleStatus = "verified" | "unverified" | "stale" | "conflict";
+
+export interface RuleCitation {
+  chunk_id: string;
+  source_id: string;
+  title: string;
+  tier: number;
+  url: string;
+  quote: string;
+  sha256: string;
+  checked_at: string;
+  verdict: "entails" | "contradicts";
+  fresh: boolean;
+}
+
+export interface RuleClaim {
+  id: string;
+  text: string;
+  sentence: string;
+  kind: string;
+  status: RuleStatus;
+  reason: string;
+  citations: RuleCitation[];
+}
+
+export interface RuleCheck {
+  checked_at: string;
+  model: string | null;
+  claims: RuleClaim[];
+  note: string | null;
+}
+
 export interface Candidate {
+  rule_check?: RuleCheck | null;
   id: string;
   fingerprint: string;
   source: string;
@@ -259,6 +292,7 @@ export interface BriefingView {
     candidate: { id: string; kind: Candidate["kind"]; title: string; status: string; proposed_criterion: string; source_tier: string | null } | null;
   }[];
   refreshing: string | null;
+  rule_check: RuleCheck | null;
 }
 
 export interface Missions {
@@ -370,6 +404,7 @@ export interface TimelineItem {
 }
 
 export interface AgentRunView {
+  rule_check?: RuleCheck | null;
   id: string;
   kind: "chat" | "manual" | "scheduled";
   mission: string | null;
@@ -504,6 +539,9 @@ export const api = {
     request<{ run_id: string; conversation_id: string }>("POST", "/agent/chat", { message, conversation_id: conversation_id ?? null, page }),
   briefing: () => request<BriefingView>("GET", "/briefing"),
   missions: () => request<MissionView[]>("GET", "/agent/missions"),
+  recheckRun: (id: string) => request<RuleCheck>("POST", `/rulecheck/runs/${enc(id)}`),
+  recheckBriefing: () => request<RuleCheck>("POST", "/rulecheck/briefing"),
+  recheckCandidate: (id: string) => request<RuleCheck>("POST", `/rulecheck/inbox/${enc(id)}`),
   runMission: (name: string) => request<{ run_id: string }>("POST", `/agent/missions/${enc(name)}/run`),
   setMissions: (flags: Partial<Missions>) => request<Missions>("PUT", "/settings/missions", flags),
   startRun: (prompt: string) => request<{ run_id: string }>("POST", "/agent/runs", { prompt }),

@@ -60,6 +60,7 @@ agent:
     chat: claude-opus-5-5
     task: claude-opus-5-5
     mission: claude-sonnet-5-5
+    check: claude-sonnet-5-5
   missions:
     opportunity_scout: false
     what_changed: false

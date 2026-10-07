@@ -67,8 +67,9 @@ export function StatusBadge({ status }: { status: CriterionStatus }) {
   );
 }
 
-export function Chip({ children, tone = "zinc" }: { children: ReactNode; tone?: "zinc" | "amber" | "emerald" }) {
+export function Chip({ children, tone = "zinc" }: { children: ReactNode; tone?: "zinc" | "amber" | "emerald" | "red" }) {
   const tones = {
+    red: "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200",
     zinc: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
     amber: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200",
     emerald: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200",

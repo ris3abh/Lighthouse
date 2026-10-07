@@ -133,6 +133,7 @@ class Candidate(_Model):
     )
     status: Literal["pending", "snoozed", "rejected"] = "pending"
     snoozed_until: date | None = None
+    rule_check: RuleCheck | None = Field(None, description="Rule claims in agent-written text, checked.")
 
     # Raw evidence a connector attached; turned into an observation + claims by the sync job.
     _evidence: Evidence | None = PrivateAttr(default=None)
@@ -249,6 +250,55 @@ class Deadlines(_File):
     deadlines: list[Deadline] = Field(default_factory=list)
 
 
+# --------------------------------------------------------------------------- rule checks
+
+
+RuleStatus = Literal["verified", "unverified", "stale", "conflict"]
+
+
+class RuleCitation(_Model):
+    """A knowledge-store excerpt a rule claim was checked against, with the exact words quoted from it."""
+
+    chunk_id: str
+    source_id: str
+    title: str
+    tier: int
+    url: str
+    quote: str
+    start: int = Field(..., description="Offset of the quote in the source snapshot.")
+    end: int
+    sha256: str = Field(..., description="The snapshot the quote is from.")
+    checked_at: datetime
+    verdict: Literal["entails", "contradicts"]
+    fresh: bool = True
+
+
+class RuleClaim(_Model):
+    id: str = Field(default_factory=lambda: new_id("rc"))
+    text: str = Field(..., description="The rule as the checker restated it.")
+    sentence: str = Field(..., description="The sentence it came from.")
+    start: int = Field(0, description="Offset of the sentence in the checked text.")
+    end: int = 0
+    kind: str = "other"
+    status: RuleStatus
+    reason: str = ""
+    citations: list[RuleCitation] = Field(default_factory=list)
+
+
+class RuleCheck(_Model):
+    """Rule claims found in a piece of agent-written text and how each was verified (SPEC 5a)."""
+
+    checked_at: datetime = Field(default_factory=utcnow)
+    model: str | None = None
+    claims: list[RuleClaim] = Field(default_factory=list)
+    note: str | None = Field(None, description="Why nothing was checked, or why checking failed.")
+    cost_usd: float | None = None
+
+    @property
+    def blocking(self) -> list[RuleClaim]:
+        return [c for c in self.claims if c.status != "verified"]
+
+
 # --------------------------------------------------------------------------- briefing.json
 
 
@@ -269,6 +319,7 @@ class Briefing(_File):
     todos: list[BriefingTodo] = Field(
         default_factory=list, max_length=3, description="Three things this week."
     )
+    rule_check: RuleCheck | None = None
 
 
 # --------------------------------------------------------------------------- opportunities.json
@@ -389,6 +440,7 @@ class AgentModels(_Model):
     chat: str = "claude-opus-5-5"
     task: str = "claude-opus-5-5"
     mission: str = "claude-sonnet-5-5"
+    check: str = Field("claude-sonnet-5-5", description="Rule-check judge (one short call per checked text).")
 
 
 RUN_TYPE = {"chat": "chat", "manual": "task", "scheduled": "mission"}
@@ -528,6 +580,7 @@ class AgentRun(_File):
     id: str = Field(default_factory=lambda: new_id("run"))
     kind: Literal["chat", "manual", "scheduled"]
     mission: str | None = Field(None, description="For scheduled runs: which mission.")
+    rule_check: RuleCheck | None = Field(None, description="Rule claims in the final answer, checked.")
     status: Literal["running", "done", "error", "stopped"] = "running"
     engine: str
     model: str

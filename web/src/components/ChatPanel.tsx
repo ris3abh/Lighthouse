@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { api, type AgentRunView, type AgentStatus, type ConversationView } from "../api";
+import { api, type AgentRunView, type AgentStatus, type ConversationView, type RuleCheck } from "../api";
 import { useRefresh } from "../App";
 import { countTokens, fmtTokens, fmtUsd, type Item, useRunStream } from "../runStream";
 import Markdown from "./Markdown";
+import RuleCheckView from "./RuleCheck";
 import ToolCall from "./ToolCall";
 import { Button, cx, useToast } from "./ui";
 
@@ -10,7 +11,7 @@ const CONV_KEY = "lh-chat-conv";
 const SUGGESTIONS = ["Where do I stand, and what are the 3 things to do this week?", "Find hackathons I could judge in the next two months",
   "Which criteria are closest to banked?"]; // prettier-ignore
 
-type Turn = { role: "user" | "assistant"; text: string; runId?: string | null; items?: Item[]; meta?: string };
+type Turn = { role: "user" | "assistant"; text: string; runId?: string | null; items?: Item[]; meta?: string; check?: RuleCheck | null };
 
 function store(key: string, value: string | null) {
   try {
@@ -43,7 +44,7 @@ export default function ChatPanel({ page, onClose }: { page: string; onClose: ()
   const live = useRunStream(runId, (run: AgentRunView) => {
     setTurns((t) => [
       ...t,
-      { role: "assistant", text: run.text, runId: run.id, items: undefined, meta: meta(run) },
+      { role: "assistant", text: run.text, runId: run.id, items: undefined, meta: meta(run), check: run.rule_check },
     ]);
     setRunId(null);
     bump(); // proposals may have changed the Inbox badge
@@ -247,6 +248,7 @@ function TurnView({ t, streaming }: { t: Turn; streaming?: boolean }) {
         t.text && <Markdown text={t.text} />
       )}
       {streaming && (!items || items.length === 0) && <span className="inline-block animate-pulse text-zinc-400">●</span>}
+      <RuleCheckView check={t.check} compact />
       <div className={cx("mt-1 flex gap-2 text-[11px] text-zinc-400")}>
         {t.meta && <span>{t.meta}</span>}
         {t.runId && (

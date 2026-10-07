@@ -324,6 +324,7 @@ class Workspace:
             raise NotFound(f"no candidate {candidate_id!r}")
         return cand
 
+    TEXT_FIELDS = ("title", "summary")
     EDITABLE_CANDIDATE_FIELDS = (
         "proposed_criterion",
         "evidence_type",
@@ -343,6 +344,8 @@ class Workspace:
                     raise WorkspaceError(f"field {key!r} is not editable")
                 if value is not None:
                     setattr(cand, key, value)
+            if any(changes.get(k) is not None for k in self.TEXT_FIELDS):
+                cand.rule_check = None  # the person rewrote it: their words now, not the agent's
             self.save_inbox(inbox)
             return cand
 

@@ -21,6 +21,8 @@ from lighthouse_gc.core.workspace import NotFound, WorkspaceError, _atomic_write
 from lighthouse_gc.criteria.case import Case
 from lighthouse_gc.engine import get_engine
 from lighthouse_gc.engine.base import AgentEvent, Engine, EngineRequest, EngineUnavailable, StopRun
+from lighthouse_gc.vault import Vault
+from lighthouse_gc.vault.rulecheck import Judge, RuleChecker, engine_judge, notify_conflicts
 
 MAX_HISTORY_MESSAGES = 30
 
@@ -39,9 +41,10 @@ class _Live:
 
 
 class AgentRunner:
-    def __init__(self, ws: Case, engine: Engine | None = None):
+    def __init__(self, ws: Case, engine: Engine | None = None, judge: Judge | None = None):
         self.ws = ws
         self._engine = engine
+        self._judge = judge
         self._live: dict[str, _Live] = {}
 
     # ------------------------------------------------------------------ storage
@@ -58,6 +61,14 @@ class AgentRunner:
         if self._engine is None:
             self._engine = get_engine(self.ws.config().engine)
         return self._engine
+
+    def judge(self) -> Judge:
+        if self._judge is None:
+            self._judge = engine_judge(self.engine())
+        return self._judge
+
+    def checker(self) -> RuleChecker:
+        return RuleChecker(Vault(self.ws), self.judge(), self.ws.config().agent.models.check)
 
     def save(self, run: AgentRun) -> None:
         _atomic_write(self.runs_dir / f"{run.id}.json", dump_model(run))
@@ -183,7 +194,8 @@ class AgentRunner:
     async def _execute(self, run: AgentRun, request: EngineRequest, live: _Live, month_tokens: int) -> None:
         cfg = self.ws.config()
         b = cfg.agent.budget
-        ctx = RunContext(self.ws, run, redact=cfg.privacy.redact_before_llm)
+        checker = self.checker()
+        ctx = RunContext(self.ws, run, redact=cfg.privacy.redact_before_llm, checker=checker)
         tools = build_tools(ctx)
         meta = {t.name: {"read_only": t.read_only, "touches": list(t.touches)} for t in tools}
         meta["WebSearch"] = meta["web_search"] = {"read_only": True, "touches": []}
@@ -234,11 +246,22 @@ class AgentRunner:
                 run.status = "stopped"
             else:
                 run.status = "done"
+            if run.status == "done" and run.text.strip():
+                run.rule_check = await checker.check(run.text)
+                await self._publish(
+                    live, {"type": "rule_check", "check": run.rule_check.model_dump(mode="json")}
+                )
+                notify_conflicts(self.ws, run.rule_check, f"agent?run={run.id}")
         except asyncio.CancelledError:
             run.status, run.stop_reason = "stopped", live.stop or "cancelled"
         except Exception as exc:  # never leave a run stuck in "running"
             run.status, run.error = "error", f"{type(exc).__name__}: {exc}"
         finally:
+            for k, n in checker.usage.items():  # the judge's tokens count toward the run and the month
+                if hasattr(run.usage, k):
+                    setattr(run.usage, k, getattr(run.usage, k) + n)
+            if checker.cost_usd:
+                run.cost_usd = (run.cost_usd or 0.0) + checker.cost_usd
             run.finished_at = utcnow()
             run.changes = [c.id for c in self.ws.changes() if c.actor == f"agent:{run.id}"]
             self.save(run)

@@ -47,6 +47,204 @@
       ],
       "title": "BriefingTodo",
       "type": "object"
+    },
+    "RuleCheck": {
+      "additionalProperties": false,
+      "description": "Rule claims found in a piece of agent-written text and how each was verified (SPEC 5a).",
+      "properties": {
+        "checked_at": {
+          "format": "date-time",
+          "title": "Checked At",
+          "type": "string"
+        },
+        "claims": {
+          "items": {
+            "$ref": "#/$defs/RuleClaim"
+          },
+          "title": "Claims",
+          "type": "array"
+        },
+        "cost_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Usd"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Why nothing was checked, or why checking failed.",
+          "title": "Note"
+        }
+      },
+      "title": "RuleCheck",
+      "type": "object"
+    },
+    "RuleCitation": {
+      "additionalProperties": false,
+      "description": "A knowledge-store excerpt a rule claim was checked against, with the exact words quoted from it.",
+      "properties": {
+        "checked_at": {
+          "format": "date-time",
+          "title": "Checked At",
+          "type": "string"
+        },
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "end": {
+          "title": "End",
+          "type": "integer"
+        },
+        "fresh": {
+          "default": true,
+          "title": "Fresh",
+          "type": "boolean"
+        },
+        "quote": {
+          "title": "Quote",
+          "type": "string"
+        },
+        "sha256": {
+          "description": "The snapshot the quote is from.",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "start": {
+          "description": "Offset of the quote in the source snapshot.",
+          "title": "Start",
+          "type": "integer"
+        },
+        "tier": {
+          "title": "Tier",
+          "type": "integer"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "entails",
+            "contradicts"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "source_id",
+        "title",
+        "tier",
+        "url",
+        "quote",
+        "start",
+        "end",
+        "sha256",
+        "checked_at",
+        "verdict"
+      ],
+      "title": "RuleCitation",
+      "type": "object"
+    },
+    "RuleClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "citations": {
+          "items": {
+            "$ref": "#/$defs/RuleCitation"
+          },
+          "title": "Citations",
+          "type": "array"
+        },
+        "end": {
+          "default": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "other",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "sentence": {
+          "description": "The sentence it came from.",
+          "title": "Sentence",
+          "type": "string"
+        },
+        "start": {
+          "default": 0,
+          "description": "Offset of the sentence in the checked text.",
+          "title": "Start",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "unverified",
+            "stale",
+            "conflict"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "text": {
+          "description": "The rule as the checker restated it.",
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "sentence",
+        "status"
+      ],
+      "title": "RuleClaim",
+      "type": "object"
     }
   },
   "$id": "https://lighthouse-gc.dev/schemas/v1/briefing.schema.json",
@@ -75,6 +273,17 @@
       ],
       "default": null,
       "title": "Generated At"
+    },
+    "rule_check": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RuleCheck"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "run_id": {
       "anyOf": [

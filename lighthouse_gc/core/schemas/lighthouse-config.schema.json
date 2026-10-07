@@ -98,6 +98,12 @@
           "title": "Chat",
           "type": "string"
         },
+        "check": {
+          "default": "claude-sonnet-5-5",
+          "description": "Rule-check judge (one short call per checked text).",
+          "title": "Check",
+          "type": "string"
+        },
         "mission": {
           "default": "claude-sonnet-5-5",
           "title": "Mission",

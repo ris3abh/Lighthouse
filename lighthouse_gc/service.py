@@ -122,8 +122,50 @@ class Service:
 
     def accept_candidate(self, candidate_id: str, **edits: Any) -> Any:
         before = self._candidate(candidate_id)
+        if not any(edits.get(k) is not None for k in self.ws.TEXT_FIELDS):
+            self._rule_gate(before)
         return self._record("inbox.accept", before.kind, lambda: self.ws.accept_candidate(candidate_id, **edits),
                             before=before, summary=before.title)  # fmt: skip
+
+    def _rule_gate(self, cand: Candidate) -> None:
+        """Unverified rule claims can't enter exhibits or letters (SPEC 5a). Freshness is re-evaluated now, so a
+        claim whose source changed or went stale since it was proposed blocks too."""
+        if cand.rule_check is None:
+            return
+        from lighthouse_gc.vault import Vault
+        from lighthouse_gc.vault.rulecheck import refresh
+
+        check = refresh(cand.rule_check, Vault(self.ws))
+        if check is not None and check.blocking:
+            items = "; ".join(f'"{c.sentence[:120]}" ({c.status})' for c in check.blocking[:3])
+            raise WorkspaceError(f"This suggestion states rules the knowledge vault doesn't confirm: {items}. "
+                                 "Re-check it, or edit the text into your own words first.")  # fmt: skip
+
+    def set_rule_check(self, candidate_id: str, check: Any) -> Candidate:
+        before = self._candidate(candidate_id)
+
+        def apply() -> Candidate:
+            with self.ws.lock:
+                inbox = self.ws.inbox()
+                cand = next(c for c in inbox.candidates if c.id == candidate_id)
+                cand.rule_check = check
+                self.ws.save_inbox(inbox)
+                return cand
+
+        return self._record("inbox.recheck", "candidate", apply, target_id=candidate_id, before=before,
+                            summary=f"rule-check: {before.title}")  # fmt: skip
+
+    def set_briefing_check(self, check: Any) -> Any:
+        before = self.ws.briefing()
+
+        def apply() -> Any:
+            b = self.ws.briefing()
+            b.rule_check = check
+            self.ws.save_briefing(b)
+            return b
+
+        return self._record("briefing.recheck", "briefing", apply, target_id="overview", before=before,
+                            summary="rule-check")  # fmt: skip
 
     def reject_candidate(self, candidate_id: str) -> Candidate:
         before = self._candidate(candidate_id)

@@ -96,7 +96,8 @@ Phase 1c notes:
 
 - [x] 1. Knowledge vault: manifest (Tier 1–3), fetch + snapshots + hybrid index, TTL registry, vault-watch,
       manual import for blocked sites
-- [ ] 2. rule-check gate
+- [x] 2. rule-check gate: answers, briefings and petition-facing agent text; verified / unverified / stale /
+      conflict; write tools and Inbox acceptance refuse unverified rules (attorney export reuses it in Phase 2)
 - [ ] 3. Agent: vault first, Tier-1-then-Tier-2 web fallback
 - [ ] 4. Knowledge page
 
@@ -107,6 +108,9 @@ Phase 1d notes:
 - uscode.house.gov was "Under Maintenance" when the manifest was written; the statute markers are unverified
   against its live text.
 - The hashing embedder is weak on paraphrase; FTS carries exact terms. A dense local model is a follow-up.
+  Example: "at least three of the ten criteria" retrieves the Policy Manual chapters ahead of 8 CFR 204.5(h).
+- Fixed along the way: `as_of` memory queries compared the UTC date of recorded_at, so late-evening claims
+  (after midnight UTC) disappeared from "as of today". They now use the end of the local day.
 
 ## Later in Phase 1
 
