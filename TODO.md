@@ -69,8 +69,9 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       every step a message in one thread that scrolls up as it grows, widgets inside their messages, reply
       controls in the composer, new messages type in, typing dots while working; a chat drop with no chats says
       what arrived and what happened to each file
-- [ ] CHECKPOINT 2c: chip input, picker with real match reasons, modal with a highlighted change, both themes
-      Reported 2026-10-07 (d4d9ab1, d0d067a, b5a6dfa, 715deb5, 84a179b, 7af2ff3); waiting for approval and the export samples
+- [x] CHECKPOINT 2c: chip input, picker with real match reasons, modal with a highlighted change, both themes
+      Reported 2026-10-07 (d4d9ab1, d0d067a, b5a6dfa, 715deb5, 84a179b, 7af2ff3), plus C15 (41eb04b); approved
+      2026-10-07. C14's real-export adapter still waits for the redacted samples
 
 ### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request
 - [x] S1. `lighthouse-gc` with no arguments: creates ~/Lighthouse on first run, remembers it, serves it and
