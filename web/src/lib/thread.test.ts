@@ -25,7 +25,8 @@ test("the thread starts with the PDF ask and keeps every earlier step above the 
   // the AI step: asked after the questions, with your choice as the reply
   const ai = buildThread(view("ai", { transcript: [opening], ai: "pending" }));
   assert.deepEqual(ai.slice(-1).map((m) => [m.text, m.widget]), [[AI_ASK, "ai"]]);
-  assert.equal(buildThread(view("lookups", { transcript: [opening], ai: "login" })).find((m) => m.who === "you" && m.text.includes("login"))?.text, "Use my Claude Code login.");
+  assert.equal(buildThread(view("lookups", { transcript: [opening], ai: "key" })).find((m) => m.who === "you" && m.text.includes("key"))?.text, "Use my API key.");
+  assert.ok(!AI_ASK.includes("login"));
   // no lookups offered: that step leaves nothing in the thread
   assert.ok(!buildThread(view("chats", { transcript: [opening] })).some((m) => m.text === LOOKUPS_ASK));
   // skipped the PDF

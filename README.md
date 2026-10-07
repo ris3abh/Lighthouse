@@ -29,7 +29,7 @@ private workspace at `~/Lighthouse`.
 
 - **Your LinkedIn profile as a PDF** (on LinkedIn: Profile > More > Save to PDF). It's read on your computer,
   with emails and phone numbers removed first. You can also skip it.
-- **Optionally, an AI connection**: the Claude Code login already on your computer, or an Anthropic API key.
+- **Optionally, an Anthropic API key** for chat and web lookups (everything else works without one).
   Only chat and agent runs need it; everything else works without a model.
 
 Lighthouse runs on your computer and serves the dashboard only to it (127.0.0.1). Your case is a folder of

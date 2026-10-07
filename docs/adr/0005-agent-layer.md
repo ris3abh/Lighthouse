@@ -134,7 +134,7 @@ daily what-changed mission refreshes it; Refresh runs that mission now.
 
 - Chat history is replayed into each turn instead of resumed from a server-side session: more input tokens
   on long chats, but no transcripts outside the workspace. Compaction or summaries can come later.
-- The Claude adapter needs the `claude` CLI installed and logged in (or `ANTHROPIC_API_KEY`). CI never needs
+- The Claude adapter needs an Anthropic API key (amended by ADR 0013 §4: claude.ai login isn't offered). CI never needs
   either, because tests mock the model.
 - New tools are added in one place (`agent/tools.py`), and write tools must go through `Service`. The
   service-layer guard test covers that.

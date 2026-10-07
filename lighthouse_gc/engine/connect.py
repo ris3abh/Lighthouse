@@ -1,7 +1,8 @@
-"""Connect your AI (ADR 0013 §4): the Claude Code login already on this computer, or an Anthropic API key kept
-in the OS keychain. Lighthouse never reads the Claude Code login itself; it only checks the CLI is there (the
-one bundled with claude-agent-sdk counts, so PATH isn't needed). A pasted key is checked with the free
-model-list request before it's stored, and it's never written to the workspace."""
+"""Connect your AI (ADR 0013 §4, amended): an Anthropic API key, kept in the OS keychain. It's the only supported
+option: Anthropic's Agent SDK terms don't let third-party products offer claude.ai login, so Lighthouse never
+uses a Claude Code login, even one already on this computer (the engine runs the CLI with its own empty config
+folder). A pasted key is checked with the free model-list request before it's stored, and it's never written to
+the workspace. The CLI bundled with claude-agent-sdk is enough; PATH isn't needed."""
 
 from __future__ import annotations
 
@@ -89,11 +90,11 @@ def forget_key() -> None:
 def status() -> dict[str, Any]:
     cli, where = find_cli()
     source = key_source()
-    if source:
+    if source and cli:
         how = "Using your Anthropic API key" + (" from the environment." if source == "environment" else ".")
-    elif cli:
-        how = ("Using the Claude Code login on this computer. If you're not logged in to Claude Code, "
-               "chat will say so; add an API key instead.")  # fmt: skip
+    elif source:
+        how = "Your key is saved, but the agent runtime is missing; reinstall Lighthouse."
     else:
-        how = "No AI connected. Everything except chat and web lookups works without one."
-    return {"cli": where, "key": source, "ready": bool(cli), "how": how, "cost": COST_NOTE}
+        how = ("No AI connected. Add an Anthropic API key to use chat and web lookups; everything else works "
+               "without one.")  # fmt: skip
+    return {"cli": where, "key": source, "ready": bool(cli and source), "how": how, "cost": COST_NOTE}

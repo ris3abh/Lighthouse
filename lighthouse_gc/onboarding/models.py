@@ -74,7 +74,8 @@ class OnboardingState(_File):
     )
     ai: Literal["pending", "login", "key", "skipped"] = Field(
         "pending",
-        description="Connect your AI: the Claude Code login, an API key (in the keychain), or later.",
+        description="Connect your AI: an API key (in the keychain), or later. 'login' is from before claude.ai "
+        "login was removed (ADR 0013 §4) and reads as not connected.",
     )
     chats: Literal["pending", "imported", "skipped"] = "pending"
     tour: Literal["pending", "seen", "skipped"] = "pending"

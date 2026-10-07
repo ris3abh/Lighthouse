@@ -14,9 +14,9 @@ export const LINKEDIN_ASK =
   "(on LinkedIn: Profile > More > Save to PDF). I read it on this computer and remove emails and phone numbers first.";
 export const AI_ASK =
   "One more thing before I look anything up: connect your AI. Chat and web lookups need it; everything else works " +
-  "without one. Use the Claude Code login on this computer, or paste an Anthropic API key. A key stays in this " +
-  "computer's keychain, never in your workspace.";
-const AI_REPLY = { login: "Use my Claude Code login.", key: "Use my API key.", skipped: "Later.", pending: "" };
+  "without one. Paste an Anthropic API key (console.anthropic.com > API keys); I check it with a free request, and " +
+  "it stays in this computer's keychain, never in your workspace.";
+const AI_REPLY = { login: "", key: "Use my API key.", skipped: "Later.", pending: "" };
 export const LOOKUPS_ASK =
   "Want me to look these up? Only what you confirmed. Anything I find goes to your Inbox for you to check first, and finds " +
   "that may belong to someone with the same name are marked. Web searches use your AI, usually a few cents each.";

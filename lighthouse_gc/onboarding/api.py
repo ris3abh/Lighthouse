@@ -32,7 +32,7 @@ class StepBody(BaseModel):
 
 
 class AiBody(BaseModel):
-    choice: Literal["login", "key", "skip"]
+    choice: Literal["key", "skip"]  # an Anthropic API key; claude.ai login isn't offered (ADR 0013 §4)
 
 
 class LookupBody(BaseModel):
@@ -156,7 +156,7 @@ def _advance(state: OnboardingState, ws: Case | None = None) -> None:
             old[lk.id] if lk.id in old and old[lk.id].targets == lk.targets else lk for lk in fresh
         ]
         # Connect your AI comes before the lookups (web searches need it); once chosen, it isn't asked again.
-        state.step = "ai" if state.ai == "pending" else after_ai(state)
+        state.step = "ai" if state.ai in ("pending", "login") else after_ai(state)  # "login" is no longer offered
     # Stay on the lookups so every outcome (and Retry) stays visible; Continue moves on at any time. Only a step
     # where every lookup was declined moves on by itself.
     if state.step == "lookups" and all(lk.status == "declined" for lk in state.lookups):
@@ -337,7 +337,7 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
 
     @app.post("/api/onboarding/ai")
     def choose_ai(body: AiBody) -> dict[str, Any]:
-        """Connect your AI: the Claude Code login on this computer, the API key just saved, or later."""
+        """Connect your AI: the API key just saved, or later."""
         from lighthouse_gc.engine import connect
 
         state = ws.onboarding()
@@ -345,9 +345,7 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
             raise HTTPException(409, "this isn't the AI step")
         if body.choice == "key" and not connect.key_source():
             raise HTTPException(409, "save a key first")
-        if body.choice == "login" and connect.find_cli()[0] is None:
-            raise HTTPException(409, "there's no Claude Code on this computer; add an API key instead")
-        state.ai = {"login": "login", "key": "key", "skip": "skipped"}[body.choice]  # type: ignore[assignment]
+        state.ai = "key" if body.choice == "key" else "skipped"
         state.step = after_ai(state)
         _advance(state)
         svc.onboarding_save(state, "onboarding.ai", summary=state.ai)

@@ -44,7 +44,8 @@ def test_page_has_the_legal_note_from_the_app_footer():
 
 def test_page_has_what_you_need_privacy_and_a_screenshot():
     text = html.unescape(PAGE.read_text())
-    for needle in ("LinkedIn profile as a PDF", "AI connection", "127.0.0.1", "~/Lighthouse"):
+    assert "Claude Code login" not in text  # claude.ai login isn't offered (ADR 0013 §4)
+    for needle in ("LinkedIn profile as a PDF", "Anthropic API key", "127.0.0.1", "~/Lighthouse"):
         assert needle in text, needle
     for img in re.findall(r'(?:src|srcset)="([^"]+\.png)"', text):
         assert (SITE / img).is_file(), img

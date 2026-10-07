@@ -47,3 +47,16 @@ an update channel, and the one-line installer reaches the same audience first.
 - Releases become the distribution channel, so a tag must only be pushed from a green main.
 - The installer pins nothing beyond "latest release"; a broken release breaks new installs until the next
   one, so release CI runs the same smoke test as the installer.
+
+## Amendment (2026-10-07): an API key is the only way to connect the AI
+
+§4 offered "the Claude Code login already on the machine". Anthropic's Agent SDK terms don't allow third-party
+products to offer claude.ai login unless Anthropic approves it, so that option is removed from onboarding,
+Settings, the docs and the landing page. An Anthropic API key is the only supported option:
+
+- Onboarding's "Your AI" step and Settings > Your AI take a key, check it with the free model-list request and
+  keep it in the OS keychain (or read `ANTHROPIC_API_KEY` from the environment).
+- Without a key the engine reports itself unavailable; chat and web lookups say so, and everything else works.
+- The agent runs the CLI with its own empty config folder and no OAuth token, so it can't fall back to a Claude
+  Code login that happens to be on the computer. A test checks the process environment.
+- Onboarding files that recorded the old "login" choice ask the AI step again.

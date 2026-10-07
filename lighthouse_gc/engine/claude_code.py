@@ -26,6 +26,20 @@ BLOCKED_BUILTINS = ["Bash", "BashOutput", "KillShell", "Read", "Write", "Edit", 
                     "Glob", "Grep", "WebFetch", "Task", "TodoWrite", "Skill", "SlashCommand"]  # fmt: skip
 
 
+def cli_env(key: str | None) -> dict[str, str]:
+    """The CLI process gets the API key and its own empty config folder, so it can never fall back to a claude.ai
+    login on this computer (ADR 0013 §4: not allowed for third-party products). The key never reaches the
+    workspace."""
+    from lighthouse_gc.home import config_dir
+
+    folder = config_dir() / "agent-cli"
+    folder.mkdir(parents=True, exist_ok=True)
+    env = {"CLAUDE_CONFIG_DIR": str(folder), "CLAUDE_CODE_OAUTH_TOKEN": ""}
+    if key:
+        env["ANTHROPIC_API_KEY"] = key
+    return env
+
+
 def tool_id(name: str) -> str:
     return f"mcp__{SERVER}__{name}"
 
@@ -45,11 +59,12 @@ class ClaudeAgentEngine:
             import claude_agent_sdk  # noqa: F401
         except ImportError:
             return False, "claude-agent-sdk isn't installed (pip install claude-agent-sdk)"
-        if self._query is None and find_cli()[0] is None:
-            return (
-                False,
-                "No Claude Code found. Connect your AI in Settings > Agent (an Anthropic API key works).",
-            )
+        if self._query is not None:
+            return True, "ready"
+        if find_cli()[0] is None:
+            return False, "The agent runtime is missing; reinstall Lighthouse."
+        if not stored_key():
+            return False, "Add an Anthropic API key in Settings > Your AI to use chat and web lookups."
         return True, "ready"
 
     def options(self, request: EngineRequest, tools: list[AgentTool]) -> Any:
@@ -64,9 +79,8 @@ class ClaudeAgentEngine:
             )  # fmt: skip
         server = create_sdk_mcp_server(SERVER, tools=sdk_tools)
         builtins = ["WebSearch"] if request.web_search else []
-        key = stored_key()  # a key from Settings goes to the CLI process only, never into the workspace
         return ClaudeAgentOptions(
-            env={"ANTHROPIC_API_KEY": key} if key else {},
+            env=cli_env(stored_key()),
             system_prompt=request.system_prompt,
             model=request.model,
             effort=request.effort,  # type: ignore[arg-type]

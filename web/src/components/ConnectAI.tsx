@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import { api, type AiStatus } from "../api";
 import { Button, Chip, useToast } from "./ui";
 
-/** Connect your AI (S3, ADR 0013): the Claude Code login on this computer, or an Anthropic API key that's checked
- * with a free request and kept in the OS keychain. Shared by onboarding (with `onChoose`) and Settings. */
-export default function ConnectAI({ onChoose, busy }: { onChoose?: (choice: "login" | "key") => void; busy?: boolean }) {
+/** Connect your AI (S3, ADR 0013 §4): an Anthropic API key, checked with a free request and kept in the OS keychain.
+ * It's the only option: claude.ai login isn't allowed in third-party products. Shared by onboarding (with
+ * `onChoose`) and Settings. */
+export default function ConnectAI({ onChoose, busy }: { onChoose?: (choice: "key") => void; busy?: boolean }) {
   const toast = useToast();
   const [status, setStatus] = useState<AiStatus | null>(null);
   const [key, setKey] = useState("");
@@ -40,15 +41,13 @@ export default function ConnectAI({ onChoose, busy }: { onChoose?: (choice: "log
   return (
     <div className="grid gap-4" data-ai-ready={status.ready}>
       <div className="flex flex-wrap items-center gap-2">
-        <Chip tone={status.key || status.cli !== "missing" ? "ink" : "muted"}>
-          {status.key ? "API key" : status.cli === "missing" ? "Not connected" : "Claude Code login"}
-        </Chip>
+        <Chip tone={status.ready ? "ink" : "muted"}>{status.ready ? "API key" : "Not connected"}</Chip>
         <p className="min-w-0 flex-1 text-sm text-ink-2">{status.how}</p>
       </div>
-      {onChoose && (status.key || status.cli !== "missing") && (
+      {onChoose && status.key && (
         <div>
-          <Button variant="primary" disabled={busy} onClick={() => onChoose(status.key ? "key" : "login")}>
-            <Check /> {status.key ? "Use my API key" : "Use my Claude Code login"}
+          <Button variant="primary" disabled={busy} onClick={() => onChoose("key")}>
+            <Check /> Use my API key
           </Button>
         </div>
       )}
@@ -60,7 +59,7 @@ export default function ConnectAI({ onChoose, busy }: { onChoose?: (choice: "log
         }}
       >
         <label className="min-w-0 flex-1 basis-64">
-          <span className="label">{status.key === "keychain" ? "Replace your Anthropic API key" : "Or paste an Anthropic API key"}</span>
+          <span className="label">{status.key === "keychain" ? "Replace your Anthropic API key" : "Anthropic API key (console.anthropic.com > API keys)"}</span>
           <input
             className="input font-mono"
             type="password"

@@ -1,4 +1,4 @@
-"""Connect your AI (S3, ADR 0013 §4): the Claude Code login or an Anthropic key in the keychain, checked with the
+"""Connect your AI (S3, ADR 0013 §4 amended): an Anthropic key in the keychain only, checked with the
 free model-list request; the bundled CLI counts; skippable; the key never reaches the workspace."""
 
 from __future__ import annotations
@@ -63,19 +63,21 @@ def test_the_bundled_cli_counts_so_path_isnt_needed(monkeypatch, tmp_path, no_in
     monkeypatch.setattr(connect, "bundled_cli", lambda: fake)
     assert connect.find_cli() == (str(fake), "bundled")
     monkeypatch.setattr(claude_code, "find_cli", connect.find_cli)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", KEY)
     assert REAL_AVAILABLE(claude_code.ClaudeAgentEngine()) == (True, "ready")
     monkeypatch.setattr(connect, "bundled_cli", lambda: None)
     ok, why = REAL_AVAILABLE(claude_code.ClaudeAgentEngine())
-    assert not ok and "Settings > Agent" in why
+    assert not ok and "reinstall" in why
 
 
 def test_a_saved_key_goes_to_the_cli_process_only(monkeypatch):
     from lighthouse_gc.engine.base import EngineRequest
 
     req = EngineRequest(system_prompt="s", prompt="p", model="claude-opus-5-5")
-    assert claude_code.ClaudeAgentEngine().options(req, []).env == {}
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert "ANTHROPIC_API_KEY" not in claude_code.ClaudeAgentEngine().options(req, []).env
     connect.save_key(KEY)
-    assert claude_code.ClaudeAgentEngine().options(req, []).env == {"ANTHROPIC_API_KEY": KEY}
+    assert claude_code.ClaudeAgentEngine().options(req, []).env["ANTHROPIC_API_KEY"] == KEY
 
 
 def test_onboarding_asks_once_after_the_questions_and_can_be_skipped(fresh, http_mock):
@@ -98,14 +100,52 @@ def test_onboarding_asks_once_after_the_questions_and_can_be_skipped(fresh, http
     assert view["state"]["step"] == "lookups"
 
 
-def test_choosing_the_login_needs_claude_code_on_this_computer(fresh, monkeypatch):
+def test_claude_ai_login_is_not_offered(fresh):
+    """Anthropic's Agent SDK terms don't allow third-party products to offer claude.ai login: the onboarding step
+    takes a key or "later", nothing else."""
     c = client_for(fresh)
     answer_all(c, upload(c, "maya"), ai=None)
-    monkeypatch.setattr(connect, "find_cli", lambda: (None, "missing"))
-    r = c.post("/api/onboarding/ai", headers=W, json={"choice": "login"})
-    assert r.status_code == 409 and "API key" in r.json()["detail"]
-    monkeypatch.setattr(connect, "find_cli", lambda: ("/usr/local/bin/claude", "installed"))
-    assert c.post("/api/onboarding/ai", headers=W, json={"choice": "login"}).json()["state"]["ai"] == "login"
+    assert c.post("/api/onboarding/ai", headers=W, json={"choice": "login"}).status_code == 422
+    assert c.post("/api/onboarding/ai", headers=W, json={"choice": "skip"}).json()["state"]["ai"] == "skipped"
+
+
+def test_without_a_key_the_engine_is_unavailable_even_with_claude_code_here(monkeypatch, tmp_path):
+    fake = tmp_path / "claude"
+    fake.write_text("")
+    monkeypatch.setattr(connect, "find_cli", lambda: (str(fake), "installed"))
+    monkeypatch.setattr(claude_code, "find_cli", lambda: (str(fake), "installed"))
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    ok, why = REAL_AVAILABLE(claude_code.ClaudeAgentEngine())
+    assert not ok and "API key" in why
+    assert not connect.status()["ready"]
+
+
+def test_the_cli_process_can_never_use_a_claude_code_login(monkeypatch):
+    """Its own empty config folder and no OAuth token: a login on this computer is invisible to it."""
+    from lighthouse_gc.engine.base import EngineRequest
+    from lighthouse_gc.home import config_dir
+
+    connect.save_key(KEY)
+    env = (
+        claude_code.ClaudeAgentEngine()
+        .options(EngineRequest(system_prompt="s", prompt="p", model="m"), [])
+        .env
+    )
+    assert env["ANTHROPIC_API_KEY"] == KEY and env["CLAUDE_CODE_OAUTH_TOKEN"] == ""
+    assert (
+        env["CLAUDE_CONFIG_DIR"].startswith(str(config_dir())) and "/.claude" not in env["CLAUDE_CONFIG_DIR"]
+    )
+
+
+def test_an_old_login_choice_asks_again(fresh):
+    from lighthouse_gc.onboarding.api import _advance
+
+    c = client_for(fresh)
+    answer_all(c, upload(c, "maya"), ai=None)  # every question answered
+    state = fresh.onboarding()
+    state.step, state.ai = "questions", "login"  # a file from before the login option was removed
+    _advance(state)
+    assert state.step == "ai"
 
 
 def test_status_says_how_lighthouse_reaches_the_ai_and_what_it_costs(fresh, monkeypatch):
@@ -114,6 +154,8 @@ def test_status_says_how_lighthouse_reaches_the_ai_and_what_it_costs(fresh, monk
     s = c.get("/api/ai").json()
     assert not s["ready"] and "works without one" in s["how"] and "monthly cap" in s["cost"]
     monkeypatch.setattr(connect, "find_cli", lambda: ("/x/claude", "bundled"))
-    assert "Claude Code login" in c.get("/api/ai").json()["how"]
+    s = c.get("/api/ai").json()
+    assert not s["ready"] and "API key" in s["how"] and "login" not in s["how"].lower()
     monkeypatch.setenv("ANTHROPIC_API_KEY", KEY)
-    assert c.get("/api/ai").json()["key"] == "environment"
+    s = c.get("/api/ai").json()
+    assert s["key"] == "environment" and s["ready"]
