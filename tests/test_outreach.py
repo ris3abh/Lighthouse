@@ -103,7 +103,7 @@ def test_the_daily_limit_and_the_send_permission(ws, omar, http_mock):
     _connect("gmail_read")  # reading, but not sending
     send = http_mock.post(outreach.SEND_URL).respond(json={"id": "m1"})
     r = c.post(f"/api/outreach/{d1['id']}/send", headers=W)
-    assert r.status_code >= 400 and "Send drafts you approved" in r.json()["detail"] and not send.called
+    assert r.status_code >= 400 and "connect Gmail" in r.json()["detail"] and not send.called
     _connect("gmail_send")
     cfg = ws.config()
     cfg.outreach.daily_limit = 1

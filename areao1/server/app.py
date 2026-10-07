@@ -717,14 +717,14 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
 
     @app.get("/api/outreach")
     def get_outreach() -> dict[str, Any]:
-        from areao1.google import auth, outreach
+        from areao1.google import outreach
 
         names = {c.id: c.name for c in ws.contacts().contacts}
         cfg = ws.config().outreach
         return {"drafts": [{**d.model_dump(mode="json"), "contact": names.get(d.contact_id, "")}
                            for d in reversed(ws.outreach().drafts)],
                 "sent_today": outreach.sent_today(ws), "daily_limit": cfg.daily_limit,
-                "can_send": auth.granted("gmail_send")}  # fmt: skip
+                "can_send": outreach.can_send()}  # fmt: skip
 
     @app.post("/api/outreach")
     def post_outreach(body: OutreachBody) -> dict[str, Any]:
@@ -983,11 +983,11 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     @app.post("/api/google/gmail/sync")
     def google_gmail_sync() -> dict[str, Any]:
         """Refresh the threads with your contacts now (the google job does it every 15 minutes)."""
-        from areao1.google import auth, gmail
+        from areao1.google import auth, gmail, mail
 
         try:
             return {"lines": gmail.sync(ws)}
-        except (auth.GoogleError, httpx.HTTPError) as exc:
+        except (auth.GoogleError, mail.MailError, httpx.HTTPError) as exc:
             raise HTTPException(502, f"Gmail didn't answer: {exc}") from exc
 
     @app.post("/api/google/calendar/sync")

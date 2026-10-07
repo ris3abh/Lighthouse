@@ -278,7 +278,7 @@ function DraftRow({ d, canSend, act }: { d: OutreachDraftView; canSend: boolean;
         <Button
           variant="primary"
           disabled={!canSend || edited}
-          title={!canSend ? "Turn on sending in Settings > Google" : edited ? "Save your edits first" : undefined}
+          title={!canSend ? "Connect Gmail in Settings > Google" : edited ? "Save your edits first" : undefined}
           onClick={() => act(() => api.sendDraft(d.id), `Sent to ${d.to}`)}
         >
           <Check /> Approve & send
@@ -291,7 +291,7 @@ function DraftRow({ d, canSend, act }: { d: OutreachDraftView; canSend: boolean;
         <Button variant="ghost" onClick={() => act(() => api.rejectDraft(d.id), "Rejected; nothing was sent")}>
           <X /> Reject
         </Button>
-        {!canSend && <span className="text-xs text-ink-2">Sending is off: turn it on in Settings &gt; Google.</span>}
+        {!canSend && <span className="text-xs text-ink-2">Sending is off: connect Gmail in Settings &gt; Google.</span>}
       </div>
     </li>
   );

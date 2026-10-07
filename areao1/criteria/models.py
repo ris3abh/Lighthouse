@@ -169,6 +169,11 @@ class GmailThread(_Model):
     last_from: Literal["you", "them"]
     snippet: str = Field("", max_length=200)
     messages: int = Field(1, ge=1)
+    last_message_id: str | None = Field(
+        None,
+        max_length=998,
+        description="The last message's Message-ID, so a follow-up replies in the thread.",
+    )
 
 
 class OutreachDraft(_Model):

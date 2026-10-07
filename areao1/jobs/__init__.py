@@ -123,7 +123,7 @@ JOBS: dict[str, tuple[str, Callable[[Case, bool], list[str]]]] = {
         _mission("what_changed"),
     ),
     "google": (
-        "Gmail threads with your contacts and the calendar (skips until Google is connected)",
+        "Gmail threads with your contacts, follow-ups and the calendar (skips what isn't connected)",
         _google,
     ),
 }

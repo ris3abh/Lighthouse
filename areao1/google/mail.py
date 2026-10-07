@@ -9,7 +9,7 @@ import json
 import re
 import smtplib
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import Any
 
 IMAP_HOST = "imap.gmail.com"
@@ -128,10 +128,8 @@ def _imap(email: str, password: str) -> Iterator[Any]:
     try:
         yield conn
     finally:
-        try:
+        with suppress(imaplib.IMAP4.error, OSError):
             conn.logout()
-        except (imaplib.IMAP4.error, OSError):
-            pass
 
 
 @contextmanager
@@ -142,3 +140,78 @@ def session() -> Iterator[Any]:
         raise MailError("Gmail isn't connected (Settings > Google > Connect Gmail).")
     with _imap(a["email"], a["password"]) as conn:
         yield conn
+
+
+# ------------------------------------------------------------------ reading: headers only, over IMAP
+
+HEADER_FIELDS = "FROM TO CC SUBJECT DATE MESSAGE-ID"
+_META = re.compile(rb'X-GM-THRID (\d+).*?INTERNALDATE "([^"]+)"', re.S)
+BATCH = 200
+
+
+def _all_mail(conn: Any) -> str:
+    """Gmail's "All Mail", found by its \\All flag (its name is translated in other languages)."""
+    _, boxes = conn.list()
+    for line in boxes or []:
+        text = line.decode(errors="replace") if isinstance(line, bytes) else str(line)
+        if "\\All" in text.split(")")[0]:
+            name = text.rsplit(' "/" ', 1)[-1].strip()
+            return name if name.startswith('"') else f'"{name}"'
+    return "INBOX"
+
+
+def _internaldate(raw: str) -> int:
+    from datetime import datetime
+
+    return int(datetime.strptime(raw.strip(), "%d-%b-%Y %H:%M:%S %z").timestamp() * 1000)
+
+
+def threads(emails: list[str], days: int) -> list[tuple[str, list[tuple[int, dict[str, str]]]]]:
+    """Gmail threads with any of ``emails`` in the last ``days``, as (thread ID, [(time in ms, headers)]).
+    The mailbox is opened read-only and only header fields are fetched (with PEEK, so nothing turns read)."""
+    from email.parser import BytesParser
+    from email.policy import default
+
+    safe = [e for e in emails if re.fullmatch(r"[^@\s\"\\()]+@[^@\s\"\\()]+", e)]
+    found: dict[str, list[tuple[int, dict[str, str]]]] = {}
+    with session() as conn:
+        conn.select(_all_mail(conn), readonly=True)
+        uids: set[int] = set()
+        for e in safe:
+            _, data = conn.uid("SEARCH", "X-GM-RAW", f'"from:{e} OR to:{e} OR cc:{e} newer_than:{days}d"')
+            uids |= {int(u) for u in (data[0] or b"").split()}
+        ordered = sorted(uids)
+        for i in range(0, len(ordered), BATCH):
+            batch = ",".join(str(u) for u in ordered[i : i + BATCH])
+            _, data = conn.uid(
+                "FETCH", batch, f"(X-GM-THRID INTERNALDATE BODY.PEEK[HEADER.FIELDS ({HEADER_FIELDS})])"
+            )
+            for part in data or []:
+                if not isinstance(part, tuple):
+                    continue
+                meta = _META.search(part[0])
+                if meta is None:
+                    continue
+                msg = BytesParser(policy=default).parsebytes(part[1], headersonly=True)
+                headers = {
+                    k: str(msg.get(k, "")) for k in ("From", "To", "Cc", "Subject", "Date", "Message-ID")
+                }
+                tid = format(int(meta.group(1)), "x")  # the same thread ID Gmail's API uses
+                found.setdefault(tid, []).append((_internaldate(meta.group(2).decode()), headers))
+    return sorted(found.items())
+
+
+# ------------------------------------------------------------------ sending, over SMTP
+
+
+def send(msg: Any) -> None:
+    """Send one message you approved, from your Gmail (Gmail files it under Sent)."""
+    a = account()
+    if a is None:
+        raise MailError("Gmail isn't connected (Settings > Google > Connect Gmail).")
+    try:
+        with SMTP(SMTP_HOST, 465, timeout=TIMEOUT) as conn:
+            conn.login(a["email"], a["password"])
+            conn.send_message(msg)
+    except (smtplib.SMTPException, OSError) as exc:
+        raise plain_error(exc, a["email"]) from exc
