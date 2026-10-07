@@ -176,8 +176,9 @@ export default function Calendar() {
   const monthDays = Array.from({ length: 42 }, (_, i) => addDays(monthStart, i));
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const step = (dir: 1 | -1) =>
-    withViewTransition(() =>
-      view === "month" ? setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + dir, 1)) : setWeekStart(addDays(weekStart, 7 * dir)),
+    withViewTransition(
+      () => (view === "month" ? setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + dir, 1)) : setWeekStart(addDays(weekStart, 7 * dir))),
+      dir === 1 ? "next" : "prev",
     );
   const goToday = () =>
     withViewTransition(() => {

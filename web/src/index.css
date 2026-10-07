@@ -12,7 +12,7 @@
   --sunken: #ebe8e0;
   --ink: #0b0b0a;
   --ink-2: #45443f;
-  --muted: #7d7b74;
+  --muted: #67655f;
   --line: #d6d3ca;
   --frame: #0b0b0a;
   --alert: #a8372b;
@@ -28,7 +28,7 @@
   --sunken: #1d1d1b;
   --ink: #eceae4;
   --ink-2: #b9b7b0;
-  --muted: #85837d;
+  --muted: #8f8d87;
   --line: #2e2d2a;
   --frame: #4a4945;
   --alert: #e2705f;
@@ -183,21 +183,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
-}
 
 .recharts-active-dot circle {
   transform-box: fill-box;
@@ -208,4 +193,68 @@
 ::view-transition-new(root) {
   animation-duration: 220ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Moved items (calendar events, pipeline cards) glide to their new place. */
+::view-transition-group(*) {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Paging the calendar slides the grid and heading in the direction of travel. */
+html[data-vt-dir="next"]::view-transition-old(cal-grid),
+html[data-vt-dir="next"]::view-transition-old(cal-heading) {
+  animation: 260ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
+}
+html[data-vt-dir="next"]::view-transition-new(cal-grid),
+html[data-vt-dir="next"]::view-transition-new(cal-heading) {
+  animation: 260ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
+}
+html[data-vt-dir="prev"]::view-transition-old(cal-grid),
+html[data-vt-dir="prev"]::view-transition-old(cal-heading) {
+  animation: 260ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
+}
+html[data-vt-dir="prev"]::view-transition-new(cal-grid),
+html[data-vt-dir="prev"]::view-transition-new(cal-heading) {
+  animation: 260ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
+}
+@keyframes vt-out-left {
+  to {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+@keyframes vt-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+@keyframes vt-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+@keyframes vt-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

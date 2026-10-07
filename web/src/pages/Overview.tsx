@@ -1,9 +1,10 @@
 import { ArrowRight, ArrowUp, Square } from "lucide-react";
+import { useRef } from "react";
 import type { Overview } from "../api";
 import Briefing from "../components/Briefing";
 import Sparkline from "../components/Sparkline";
-import { Card, cx, Delta, Empty, ErrorBox, Loading, STATUS_STYLE, StatusBadge, StatusMark } from "../components/ui";
-import { CountUp } from "../lib/motion";
+import { Card, cx, Delta, Empty, ErrorBox, Loading, StatusBadge, StatusMark } from "../components/ui";
+import { CountUp, useInView } from "../lib/motion";
 
 const metricLabel: Record<string, string> = {
   stars: "stars",
@@ -15,6 +16,34 @@ const metricLabel: Record<string, string> = {
   citations: "citations",
   h_index: "h-index",
 };
+
+/** One segment per criterion slot; each fills to its level (banked full, building half) when it comes into view. */
+function ScoreBar({ banked, building, slots, threshold, target }: { banked: number; building: number; slots: number; threshold: number; target: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const seen = useInView(ref);
+  return (
+    <div ref={ref} className="relative mt-8 flex gap-1.5" role="img" aria-label={`${banked} of ${target} target criteria banked, ${building} building`}>
+      {Array.from({ length: slots }, (_, i) => {
+        const fill = i < banked ? 100 : i < banked + building ? 50 : 0;
+        return (
+          <div key={i} className="relative flex-1">
+            <div className="h-3 border border-ink">
+              <div
+                className="h-full bg-ink transition-[width] duration-[400ms] ease-out"
+                style={{ width: seen ? `${fill}%` : 0, transitionDelay: `${i * 60}ms` }}
+              />
+            </div>
+            {i === threshold - 1 && (
+              <span className="absolute top-5 right-0 inline-flex items-center gap-1 font-mono text-[10px] tracking-[0.12em] text-ink uppercase">
+                <ArrowUp className="size-3" aria-hidden /> threshold
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function More({ href, children }: { href: string; children: string }) {
   return (
@@ -52,24 +81,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
               </p>
             </div>
           </div>
-          <div className="relative mt-8 flex gap-1.5" aria-label={`${board.banked} of ${board.target} target criteria banked`}>
-            {Array.from({ length: slots }, (_, i) => {
-              const status = i < board.banked ? "banked" : i < board.banked + board.building ? "building" : "gap";
-              return (
-                <div key={i} className="relative flex-1">
-                  <div
-                    className={cx("h-3 animate-rise border border-ink", STATUS_STYLE[status].mark)}
-                    style={{ animationDelay: `${120 + i * 60}ms` }}
-                  />
-                  {i === board.threshold - 1 && (
-                    <span className="absolute top-5 right-0 inline-flex items-center gap-1 font-mono text-[10px] tracking-[0.12em] text-ink uppercase">
-                      <ArrowUp className="size-3" aria-hidden /> threshold
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <ScoreBar banked={board.banked} building={board.building} slots={slots} threshold={board.threshold} target={board.target} />
           <p className="mt-10 text-[15px] text-ink-2">
             {remaining ? `${remaining} more ${remaining > 1 ? "criteria" : "criterion"} to reach the threshold.` : "Threshold met. Keep building toward the target."}
           </p>

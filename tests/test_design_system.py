@@ -81,3 +81,81 @@ def test_no_emoji_or_glyph_icons_in_the_dashboard():
         if EMOJI.search(line)
     ]
     assert offenders == []
+
+
+def _ms(value: str, unit: str) -> float:
+    return float(value) * (1000 if unit == "s" else 1)
+
+
+def test_motion_is_short_and_respects_reduced_motion():
+    """ADR 0007: motion is 150–400ms and eased; only a running tool call's pulse loops; reduced motion = instant."""
+    css = (WEB / "index.css").read_text(encoding="utf-8")
+    durations = []
+    for path in [WEB / "index.css", *_sources(), *sorted(WEB.rglob("*.ts"))]:
+        text = path.read_text(encoding="utf-8")
+        reduced = text.find("@media (prefers-reduced-motion")
+        if reduced >= 0:
+            text = text[:reduced]
+        durations += [
+            (path.name, _ms(v, "ms")) for v in re.findall(r"(?<![\w-])duration-(\d+)(?![\w-])", text)
+        ]
+        durations += [
+            (path.name, _ms(v, u)) for v, u in re.findall(r"duration-\[(\d+(?:\.\d+)?)(ms|s)\]", text)
+        ]
+        durations += [
+            (path.name, float(v)) for v in re.findall(r"(?:animationDuration=\{|duration = )(\d+)", text)
+        ]
+        for line in text.splitlines():
+            if "tool-pulse" in line and "infinite" in line:
+                continue  # the one loop: a running tool call
+            durations += [
+                (path.name, _ms(v, u))
+                for v, u in re.findall(
+                    r"(?:--animate-[\w-]+:|animation:)\s*(?:[a-z][\w-]*\s+)?(\d+(?:\.\d+)?)(ms|s)", line
+                )
+            ]
+            durations += [
+                (path.name, _ms(v, u))
+                for v, u in re.findall(r"animation-duration:\s*(\d+(?:\.\d+)?)(ms|s)", line)
+            ]
+    assert durations, "no durations found; the regexes are stale"
+    assert [d for d in durations if not 150 <= d[1] <= 400] == []
+    assert "infinite" not in css.replace("tool-pulse 1.4s ease-in-out infinite", "")
+    block = css[css.index("@media (prefers-reduced-motion: reduce)") :]
+    for rule in (
+        "animation-duration: 0.01ms",
+        "transition-duration: 0.01ms",
+        "animation-delay: 0s",
+        "transition-delay: 0s",
+    ):
+        assert rule in block
+    assert "::view-transition-group(*)" in block
+    motion = (WEB / "lib" / "motion.tsx").read_text(encoding="utf-8")
+    assert "prefersReducedMotion()" in motion[motion.index("export function withViewTransition") :]
+    for component in ("components/TrendChart.tsx", "components/Sparkline.tsx"):
+        assert "useReducedMotion" in (WEB / component).read_text(encoding="utf-8"), component
+    assert "reduced" in motion[motion.index("export function useCountUp") : motion.index("function format")]
+
+
+def _luminance(hex_color: str) -> float:
+    channels = [int(hex_color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+
+
+def _contrast(a: str, b: str) -> float:
+    hi, lo = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def test_text_tokens_meet_wcag_aa_in_both_themes():
+    css = (WEB / "index.css").read_text(encoding="utf-8")
+    for selector in (":root {", ".dark {"):
+        start = css.index(selector)
+        tokens = dict(re.findall(r"--([\w-]+):\s*(#[0-9a-f]{6})", css[start : css.index("}", start)]))
+        for fg in ("ink", "ink-2", "muted", "alert"):
+            for bg in ("paper", "surface", "sunken"):
+                assert _contrast(tokens[fg], tokens[bg]) >= 4.5, (selector, fg, bg)
+        assert _contrast(tokens["on-ink"], tokens["ink"]) >= 4.5, selector
+        assert _contrast(tokens["on-alert"], tokens["alert"]) >= 4.5, selector
+        assert _contrast(tokens["alert"], tokens["alert-soft"]) >= 4.5, selector

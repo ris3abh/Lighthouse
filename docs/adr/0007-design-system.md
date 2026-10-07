@@ -26,10 +26,13 @@ attention, and nothing else should compete for it.
    | `sunken` | `#ebe8e0` | `#1d1d1b` | wells, hover, selected rows |
    | `ink` | `#0b0b0a` | `#eceae4` | text, frames, primary blocks |
    | `ink-2` | `#45443f` | `#b9b7b0` | secondary text |
-   | `muted` | `#7d7b74` | `#85837d` | labels, hints |
+   | `muted` | `#67655f` | `#8f8d87` | labels, hints |
    | `line` | `#d6d3ca` | `#2e2d2a` | interior grid lines |
    | `frame` | `#0b0b0a` | `#4a4945` | panel frames |
    | `alert` | `#a8372b` | `#e2705f` | the one accent |
+   | `on-ink`, `on-alert` | | | text on solid ink / red blocks |
+
+   Every text token meets WCAG AA (4.5:1) on paper, surface and sunken in both themes (tested).
 
    Tailwind's `@theme` maps them to utilities (`bg-paper`, `text-ink`, `border-line`, `text-alert`). Pages
    don't use raw palette colors (zinc, amber, emerald, red), and a test enforces it.

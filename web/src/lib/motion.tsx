@@ -94,12 +94,16 @@ export function CountUp({ value, decimals, className }: { value: number; decimal
 
 type DocWithVT = Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void> } };
 
-/** Run a state update inside a view transition when the browser supports it (and motion is allowed). */
-export function withViewTransition(update: () => void) {
+/** Run a state update inside a view transition when the browser supports it (and motion is allowed). `dir` picks
+ * a directional slide for named regions (e.g. the calendar grid when paging months). */
+export function withViewTransition(update: () => void, dir?: "next" | "prev") {
   const doc = document as DocWithVT;
   if (!doc.startViewTransition || prefersReducedMotion()) {
     update();
     return;
   }
-  doc.startViewTransition(() => flushSync(update));
+  const root = document.documentElement;
+  if (dir) root.dataset.vtDir = dir;
+  const vt = doc.startViewTransition(() => flushSync(update));
+  vt.finished.finally(() => delete root.dataset.vtDir);
 }
