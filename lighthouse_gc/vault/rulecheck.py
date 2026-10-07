@@ -2,7 +2,10 @@
 chunk that entails it.
 
 1. Sentences that may state a rule are picked out with the manifest's ``rule_hints`` (no model call when none
-   match, so ordinary answers cost nothing extra).
+   match, so ordinary answers cost nothing extra). Sentences that mention a CFR section, USCIS, a fee, a form
+   number, a day count or a criteria count (:data:`BACKUP`, in code, not configurable) are always checked:
+   if the judge skips one or calls it "not a rule", it's asked again, and if it still gives no verdict the
+   sentence is shown as unverified.
 2. Each candidate is matched against the vault (Tier 1 and 2, hybrid search).
 3. One judge call (the ``check`` model) decides which candidates are rule claims and, for each, which
    excerpts entail or contradict it, quoting the excerpt word for word.
@@ -92,6 +95,28 @@ class Candidate:
     text: str
     start: int
     end: int
+    backup: list[str] = field(default_factory=list)  # what makes it always-checked ("a fee", "a form number")
+
+
+# Always checked, whatever the manifest's hints or the judge say. Names are shown in the badge's reason.
+_N = r"(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|thirty|sixty|ninety)"
+BACKUP: dict[str, re.Pattern[str]] = {
+    "a CFR section": re.compile(r"\b\d+\s*C\.?\s?F\.?\s?R\b|§\s*\d+\.\d+", re.I),
+    "USCIS": re.compile(r"\bUSCIS\b"),
+    "a fee": re.compile(r"\bfees?\b|\$\s?\d", re.I),
+    "a form number": re.compile(r"\b[A-Z]{1,2}-\d{2,5}[A-Z]{0,2}\b"),
+    "a day count": re.compile(rf"\b{_N}[- ](?:business |calendar )?days?\b", re.I),
+    "a criteria count": re.compile(rf"\b{_N}\b[^.;\n]{{0,30}}\bcriteri(?:a|on)\b", re.I),
+}
+MAX_BACKUP = 30
+
+RETRY_SYSTEM = (
+    JUDGE_SYSTEM
+    + """
+
+Every candidate in this request mentions a regulated fact (a CFR section, USCIS, a fee, a form number, a day
+count or a criteria count). Treat each one as a rule claim (is_rule true) and check it against the excerpts."""
+)
 
 
 _ABBREV = re.compile(
@@ -121,16 +146,30 @@ def sentences(text: str) -> list[tuple[int, int]]:
     return [(s + len(text[s:e]) - len(text[s:e].lstrip()), e) for s, e in spans if text[s:e].strip()]
 
 
+def backup_reasons(sentence: str) -> list[str]:
+    return [name for name, p in BACKUP.items() if p.search(sentence)]
+
+
 def candidates(text: str, hints: list[str]) -> list[Candidate]:
+    """Hint matches (up to MAX_CANDIDATES) plus every always-checked sentence (up to MAX_BACKUP)."""
     patterns = [re.compile(h, re.I) for h in hints]
     out: list[Candidate] = []
+    hinted = backed = 0
     for s, e in sentences(text):
         sentence = text[s:e].strip()
         plain = re.sub(r"[*_`]", "", sentence)
-        if len(plain) >= 12 and any(p.search(plain) for p in patterns):
-            out.append(Candidate(id=f"c{len(out) + 1}", text=plain, start=s, end=e))
-        if len(out) >= MAX_CANDIDATES:
-            break
+        if len(plain) < 12:
+            continue
+        backup = backup_reasons(plain)
+        hint = any(p.search(plain) for p in patterns)
+        if backup and backed < MAX_BACKUP:
+            backed += 1
+        elif hint and hinted < MAX_CANDIDATES:
+            hinted += 1
+            backup = []
+        else:
+            continue
+        out.append(Candidate(id=f"c{len(out) + 1}", text=plain, start=s, end=e, backup=backup))
     return out
 
 
@@ -262,22 +301,30 @@ class RuleChecker:
             return self._unchecked(found, "the knowledge vault is empty; run `lighthouse-gc vault sync`")
         if self.judge is None:
             return self._unchecked(found, "rule-check couldn't run: no judge configured")
-        prompt = _prompt(found, per, chunks)
+        cost = 0.0
         try:
-            reply = await self.judge(JUDGE_SYSTEM, prompt, self.model)
-            for k, n in reply.usage.items():
-                self.usage[k] = self.usage.get(k, 0) + n
-            self.cost_usd += reply.cost_usd or 0.0
-            verdicts = _parse(reply.text)
+            verdicts, spent = await self._ask(JUDGE_SYSTEM, found, per, chunks)
+            cost += spent
+            # Backup: always-checked sentences the judge skipped or called "not a rule" are asked about again.
+            answered = {str(v.get("candidate")) for v in verdicts if v.get("is_rule")}
+            missed = [c for c in found if c.backup and c.id not in answered]
+            if missed:
+                again, spent = await self._ask(RETRY_SYSTEM, missed, per, chunks)
+                cost += spent
+                retried = {c.id for c in missed}
+                verdicts = [v for v in verdicts if str(v.get("candidate")) not in retried]
+                verdicts += [{**v, "is_rule": True} for v in again if str(v.get("candidate")) in retried]
         except Exception as exc:  # judge unavailable or unparseable: nothing is verified
             return self._unchecked(found, f"rule-check couldn't run: {type(exc).__name__}: {exc}"[:300])
         claims = []
         fresh = fresh_ids(self.vault)
         by_id = {c.id: c for c in found}
+        judged = set()
         for v in verdicts:
             match = by_id.get(str(v.get("candidate")))
-            if match is None or not v.get("is_rule"):
+            if match is None or not v.get("is_rule") or match.id in judged:
                 continue
+            judged.add(match.id)
             citations = []
             for ev in v.get("evidence") or []:
                 excerpt = chunks.get(str(ev.get("chunk")))
@@ -309,8 +356,22 @@ class RuleChecker:
                     citations=citations,
                 )
             )  # type: ignore[arg-type]
-        return RuleCheck(model=self.model, claims=claims, cost_usd=reply.cost_usd,
+        for c in found:
+            if c.backup and c.id not in judged:
+                claims.append(RuleClaim(text=c.text[:400], sentence=c.text[:600], start=c.start, end=c.end,
+                                        status="unverified", reason=f"the checker gave no verdict; it mentions "
+                                        f"{' and '.join(c.backup[:2])}, so it's always checked"))  # fmt: skip
+        claims.sort(key=lambda c: c.start)
+        return RuleCheck(model=self.model, claims=claims, cost_usd=round(cost, 6),
                          note=None if claims else "no rule statements")  # fmt: skip
+
+    async def _ask(self, system: str, found: list[Candidate], per: dict[str, list[str]],
+                   chunks: dict[str, VaultHit]) -> tuple[list[dict[str, Any]], float]:  # fmt: skip
+        reply = await self.judge(system, _prompt(found, per, chunks), self.model)  # type: ignore[misc]
+        for k, n in reply.usage.items():
+            self.usage[k] = self.usage.get(k, 0) + n
+        self.cost_usd += reply.cost_usd or 0.0
+        return _parse(reply.text), reply.cost_usd or 0.0
 
     def _secondary_to(self, source_id: str) -> str | None:
         src = self.vault.manifest.source(source_id)

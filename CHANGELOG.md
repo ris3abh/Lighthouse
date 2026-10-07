@@ -33,6 +33,9 @@ All notable changes to this project are documented here. The format follows
 - Fees come from the regulation: eCFR 8 CFR 106.2 and 106.4 are the primary Tier 1 fee sources and the USCIS
   fee page is secondary (`secondary_to`). The primary governs; while it is fresh, a secondary page can't verify
   a fee on its own. rule-check always shows the judge the paragraph containing a claimed amount.
+- rule-check backup: sentences mentioning a CFR section, USCIS, a fee, a form number, a day count or a
+  criteria count are always checked, even if the judge's extraction misses them or calls them "not a rule"
+  (one retry, then unverified with the reason).
 - Manual-import sources (`manual: true`: uscis.gov, travel.state.gov) send a reminder with the page link when
   an imported copy passes its freshness window (once per lapse). The Knowledge page marks them.
 

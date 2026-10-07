@@ -137,9 +137,106 @@ def test_a_quote_that_isnt_in_the_source_doesnt_count(vault_ws):
 
 
 def test_case_facts_are_not_rule_claims(vault_ws):
-    judge = FakeJudge(not_rules=["banked"])
-    check = _check(vault_ws, "You have 3 of 8 criteria banked so far.", judge)
+    judge = FakeJudge(not_rules=["Kazarian"])
+    check = _check(vault_ws, "Your notes from Tuesday mention Kazarian twice.", judge)
     assert check.claims == [] and len(judge.calls) == 1
+
+
+class SilentExtractor(FakeJudge):
+    """A judge whose extraction returns nothing (first ``silent`` calls), then answers like FakeJudge."""
+
+    def __init__(self, silent: int = 99, **kw):
+        super().__init__(**kw)
+        self.silent = silent
+        self.systems: list[str] = []
+
+    async def __call__(self, system, prompt, model):
+        self.systems.append(system)
+        if len(self.systems) <= self.silent:
+            self.calls.append(prompt)
+            return JudgeReply('{"claims": []}', {"input_tokens": 900, "output_tokens": 5}, 0.002)
+        return await super().__call__(system, prompt, model)
+
+
+BACKUP_TEXT = """Here's where things stand.
+- Per 8 CFR 214.2(o)(3)(iii), the petition needs evidence.
+- USCIS can take a while.
+- The filing fee went up this year.
+- File Form I-907 with the petition.
+- You have 30 days to answer the RFE.
+- You have 3 of 8 criteria banked so far.
+- Email Dr. Lee on Friday about the draft."""
+
+
+def test_backup_checks_regulated_sentences_even_when_extraction_returns_nothing(vault_ws):
+    judge = SilentExtractor()
+    check = _check(vault_ws, BACKUP_TEXT, judge)
+    reasons = {c.sentence: c.reason for c in check.claims}
+    assert list(reasons) == [
+        "Per 8 CFR 214.2(o)(3)(iii), the petition needs evidence.",
+        "USCIS can take a while.",
+        "The filing fee went up this year.",
+        "File Form I-907 with the petition.",
+        "You have 30 days to answer the RFE.",
+        "You have 3 of 8 criteria banked so far.",
+    ]  # the plain sentences aren't claims; "30 days" isn't in the manifest's hints but is always checked
+    assert all(c.status == "unverified" and c.citations == [] for c in check.claims)
+    assert reasons["The filing fee went up this year."] == (
+        "the checker gave no verdict; it mentions a fee, so it's always checked"
+    )
+    assert "a CFR section" in reasons["Per 8 CFR 214.2(o)(3)(iii), the petition needs evidence."]
+    assert "a form number" in reasons["File Form I-907 with the petition."]
+    assert "a day count" in reasons["You have 30 days to answer the RFE."]
+    assert "a criteria count" in reasons["You have 3 of 8 criteria banked so far."]
+    # The judge was asked twice: the retry names the missed sentences and says they must be treated as rules.
+    assert len(judge.calls) == 2 and "Treat each one as a rule claim" in judge.systems[1]
+    assert "Email Dr. Lee" not in judge.calls[1] and "30 days" in judge.calls[1]
+    assert check.cost_usd == 0.004 and len(check.blocking) == 6
+
+
+def test_backup_retry_can_verify_and_overrides_not_a_rule(vault_ws):
+    # First pass: the extractor misses the sentence. Retry: it finds the quote and the claim is verified.
+    judge = SilentExtractor(silent=1, rules=[("three of the ten", QUOTE, "entails", "Volume 6")])
+    [claim] = _check(vault_ws, RULE, judge).claims
+    assert claim.status == "verified" and len(judge.calls) == 2
+    # A judge that calls a fee sentence "not a rule" is asked again; still no verdict -> unverified.
+    judge = FakeJudge(not_rules=["fee"])
+    [claim] = _check(vault_ws, "The I-140 fee is $715.", judge).claims
+    assert claim.status == "unverified" and len(judge.calls) == 2
+
+
+def test_backup_sentences_cant_enter_petition_text(vault_ws, http_mock):
+    from lighthouse_gc.vault.rulecheck import BACKUP, backup_reasons
+
+    assert set(BACKUP) == {
+        "a CFR section",
+        "USCIS",
+        "a fee",
+        "a form number",
+        "a day count",
+        "a criteria count",
+    }
+    assert backup_reasons("An H-1B or O-1 visa holder") == []  # classifications aren't form numbers
+    assert backup_reasons("Meets at least three criteria") == ["a criteria count"]
+    assert backup_reasons("Premium processing takes fifteen business days") == ["a day count"]
+    assert backup_reasons("See § 204.5 for details") == ["a CFR section"]
+
+    # The extractor returns nothing, yet a day count in an evidence summary is still refused.
+    http_mock.get("https://scholar.example/alex").respond(
+        200, text="<html><body><p>Sparse gradient compression at scale. Cited by 71 papers.</p></body></html>",
+        headers={"content-type": "text/html"})  # fmt: skip
+    ctx, t = _tools(vault_ws, SilentExtractor())
+    out = anyio.run(t["read_page"].handler, {"url": "https://scholar.example/alex"})
+    obs = re.search(r'"observation_id": "(obs_[0-9a-f]+)"', out).group(1)
+    crit = next(c for c in vault_ws.profile().criteria)
+    base = {"criterion": crit.id, "evidence_type": crit.evidence_types[0], "title": "ICML paper",
+            "observation_id": obs, "quote": "Cited by 71 papers."}  # fmt: skip
+    with pytest.raises(ValueError, match="doesn't confirm"):
+        anyio.run(
+            t["propose_evidence"].handler,
+            {**base, "summary": "Cited 71 times; RFE answers are due in 87 days."},
+        )
+    anyio.run(t["propose_evidence"].handler, {**base, "summary": "Cited 71 times at ICML."})
 
 
 def test_tier1_disagreement_is_a_conflict(vault_ws):

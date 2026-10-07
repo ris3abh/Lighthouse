@@ -48,6 +48,13 @@ claims against, with exact text and dates; item 3 needs the agent to search it f
   credentials / asks updates).
 - **Finding candidates:** sentences that may state a rule are found with the manifest's `rule_hints`
   (no model call when none match).
+- **Backup:** sentences that mention a CFR section, USCIS, a fee, a form number, a day count or a criteria
+  count are always checked. These patterns are in code and can't be configured.
+  - If the judge skips such a sentence or calls it "not a rule", one retry asks it to treat those sentences as
+    rule claims.
+  - If the judge still gives no verdict, the sentence is unverified and says why.
+  - This means some case facts ("3 of 8 criteria banked") are badged unverified. We accept that noise; the
+    judge's extraction is not trusted to wave a regulated fact through.
 - **Judging:** each candidate is matched against the vault (Tier 1–2, at most two excerpts per source). One
   judge call (`agent.models.check`, the same locked-down engine with no tools, one turn, no web search)
   decides which candidates are rules, and which excerpts entail or contradict them, quoting the excerpt.
