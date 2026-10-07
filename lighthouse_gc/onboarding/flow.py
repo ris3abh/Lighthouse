@@ -349,7 +349,10 @@ def offer_lookups(state: OnboardingState, todos: list[Todo] | None = None) -> li
         n = len(papers)
         out.append(Lookup(id="papers", kind="papers", targets=papers,
                           prompt=f"You mentioned {plural(n, 'paper')}. Want me to find {'it' if n == 1 else 'them'} on arXiv?"))  # fmt: skip
-    for link in _confirmed(state, "links"):
+    for raw in _confirmed(state, "links"):
+        link = re.sub(r"^(?:https?://)+", "", raw.strip(), flags=re.I)  # "https://x.co" and "x.co" alike
+        if not link:
+            continue
         host = link.split("/")[0].lower()
         if host.endswith("github.com") and "/" in link:
             out.append(Lookup(id="github", kind="github", targets=[f"https://{link}"],
@@ -365,6 +368,25 @@ def offer_lookups(state: OnboardingState, todos: list[Todo] | None = None) -> li
             out.append(Lookup(id=f"find-{todo.id.removeprefix('todo_')}", kind="find", targets=[todo.item],
                               prompt=find_prompt(todo.kind, todo.item), todo_id=todo.id))  # fmt: skip
     return out
+
+
+# ----------------------------------------------------------------------------- what a paper entry points at
+
+ARXIV_ID = re.compile(r"(?:arxiv\.org/(?:abs|pdf)/|arxiv:\s*)?(\d{4}\.\d{4,5})(?:v\d+)?", re.I)
+DOI = re.compile(r"\b(10\.\d{4,9}/[^\s,;]+)", re.I)
+VENUE_TAIL = re.compile(r"\s*[,(-]\s*(?:an?\s+)?(?:arxiv(?:\s+preprint)?|preprint|under review|working paper|in submission)"
+                        r"\b.*$", re.I)  # fmt: skip
+
+
+def paper_ref(item: str) -> tuple[str, str]:
+    """("arxiv", "2609.34227") | ("doi", "10.1/x") | ("title", "Clean Title"): what to look up for a paper entry.
+    Venue tails like ", Arxiv Preprint" are dropped from titles."""
+    m = ARXIV_ID.search(item)
+    if m and ("arxiv" in item.lower() or re.fullmatch(r"\s*\d{4}\.\d{4,5}(?:v\d+)?\s*", item)):
+        return "arxiv", m.group(1)
+    if m := DOI.search(item):
+        return "doi", m.group(1).rstrip(".")
+    return "title", VENUE_TAIL.sub("", item).strip().strip(".")
 
 
 # ----------------------------------------------------------------------------- namesake checks

@@ -60,27 +60,56 @@ def view(ws: Case, runner: Any = None) -> dict[str, Any]:
             "panel": panel, "person": ws.person().model_dump(mode="json")}  # fmt: skip
 
 
-def _refresh_finds(state: OnboardingState, runner: Any) -> None:
-    """A web lookup runs as an agent run in the background; show where it got to (not saved until the next write)."""
+RETRYABLE = ("nothing_found", "unreachable", "blocked", "failed")
+
+
+def find_outcome(run: Any) -> tuple[str, str]:
+    """(status, plain result) for a finished web search."""
     from lighthouse_gc.core.text import plural
 
+    if run.status == "running":
+        return "searching", "Searching the web…"
+    if run.status == "done":
+        n = len(run.proposals)
+        if n:
+            return "found", f"Found {plural(n, 'page')} that may confirm it; check your Inbox."
+        return "nothing_found", ("I couldn't find an official page that names you, so I proposed nothing. "
+                                 "The to-do stays open for your own proof.")  # fmt: skip
+    return "failed", f"The search stopped: {run.error or run.stop_reason or run.status}."[:300]
+
+
+def _refresh_finds(state: OnboardingState, runner: Any) -> bool:
+    """Bring each web search's status up to date from its agent run. True when anything changed."""
+    changed = False
     for lk in state.lookups:
-        if lk.kind != "find" or lk.status != "accepted" or not lk.run_id:
+        if lk.kind != "find" or lk.status not in ("searching", "accepted") or not lk.run_id:
             continue
         try:
-            run = runner.get(lk.run_id)
+            status, result = find_outcome(runner.get(lk.run_id))
         except Exception:
             continue
-        if run.status == "running":
-            lk.result = "Searching the web…"
-        elif run.status == "done":
-            lk.status = "done"
-            n = len(run.proposals)
-            lk.result = (f"Found {plural(n, 'page')} that may confirm it; check your Inbox." if n else
-                         "I couldn't find an official page that names you. The to-do stays open for your own proof.")  # fmt: skip
-        else:
-            lk.status = "failed"
-            lk.result = f"The search stopped ({run.error or run.stop_reason or run.status})."[:300]
+        if (status, result) != (lk.status, lk.result):
+            lk.status, lk.result, changed = status, result, True  # type: ignore[assignment]
+    return changed
+
+
+def classify(exc: Exception) -> tuple[str, str]:
+    """A lookup error as (status, plain reason): the site couldn't be reached, it blocked us, or something else."""
+    msg = str(exc)
+    low = msg.lower()
+    if any(s in low for s in ("can't resolve", "name or service", "nodename", "timed out", "timeout", "connect",
+                              "unreachable", "no route", "ssl")):  # fmt: skip
+        return "unreachable", f"Couldn't reach the site ({msg[:160]}). Check the address, or try again later."
+    if any(
+        s in low for s in ("403", "429", "blocked", "captcha", "unreadable", "forbidden", "too many requests")
+    ):
+        return (
+            "blocked",
+            f"The site blocked automated reading ({msg[:160]}). Save the page yourself and drop it in the Inbox.",
+        )
+    if "private" in low or "not allowed" in low or "unsafe" in low:
+        return "failed", f"That address isn't a public web page ({msg[:160]})."
+    return "failed", f"Something went wrong: {msg[:200]}"
 
 
 def todos_for(ws: Case, state: OnboardingState) -> list[Any]:
@@ -93,8 +122,9 @@ def _advance(state: OnboardingState, ws: Case | None = None) -> None:
     if state.step == "questions" and flow.next_question(state) is None:
         state.lookups = flow.offer_lookups(state, todos_for(ws, state) if ws is not None else None)
         state.step = "lookups" if state.lookups else "chats"
-    # Wait while a web lookup the person approved is still running, so they see it finish (or press Continue).
-    if state.step == "lookups" and all(lk.status not in ("offered", "accepted") for lk in state.lookups):
+    # Stay on the lookups so every outcome (and Retry) stays visible; Continue moves on at any time. Only a step
+    # where every lookup was declined moves on by itself.
+    if state.step == "lookups" and all(lk.status == "declined" for lk in state.lookups):
         state.step = "chats"
 
 
@@ -237,17 +267,17 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
 
     @app.post("/api/onboarding/lookups/{lookup_id}")
     async def lookup(lookup_id: str, body: LookupBody) -> dict[str, Any]:
-        """Run a lookup the person said Yes to (or decline it). Finds go to the Inbox, never into the case."""
+        """Run a lookup the person said Yes to (or decline it), or retry one that didn't work. Finds go to the
+        Inbox, never into the case. A failure never blocks moving on."""
         state = ws.onboarding()
         lk = next((x for x in state.lookups if x.id == lookup_id), None)
         if lk is None or state.step != "lookups":
             raise HTTPException(404, f"no lookup {lookup_id!r}")
-        if lk.status != "offered":
+        if lk.status not in ("offered", *RETRYABLE):
             raise HTTPException(409, f"that lookup is already {lk.status}")
         if not body.accept:
             lk.status = "declined"
         elif lk.kind == "find":
-            lk.status = "accepted"
             person = ws.person()
             todo = next((t for t in ws.todos().todos if t.id == lk.todo_id), None)
             try:
@@ -255,52 +285,87 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
                     raise RuntimeError("the agent isn't available")
                 run = await runner.start("manual", flow.find_task(todo.kind if todo else "", lk.targets[0], person.name),
                                          namesake=[n for n in (person.name, *person.aliases) if n])  # fmt: skip
-                lk.run_id, lk.result = run.id, "Searching the web…"
+                lk.status, lk.run_id, lk.result = "searching", run.id, "Searching the web…"
             except Exception as exc:  # no AI connected, or over budget: nothing was searched
                 lk.status = "failed"
                 lk.result = (
-                    f"This one needs your AI connected (Settings > Agent). Nothing was searched. ({exc})"
-                )[:300]
+                    f"This one needs your AI connected (Settings > Agent). Nothing was searched. ({exc})"[
+                        :300
+                    ]
+                )
         else:
-            lk.status = "accepted"
             try:
-                lk.result = await anyio.to_thread.run_sync(
+                status, lk.result = await anyio.to_thread.run_sync(
                     run_lookup, ws, lk.kind, lk.targets
                 )  # sync connectors
-                lk.status = "done"
-            except Exception as exc:  # network or connector problem: say so, don't stop onboarding
-                lk.result = f"couldn't finish: {exc}"[:300]
-                lk.status = "failed"
+                lk.status = status  # type: ignore[assignment]
+            except Exception as exc:  # say what happened; onboarding carries on
+                lk.status, lk.result = classify(exc)  # type: ignore[assignment]
         _advance(state)
         svc.onboarding_save(state, "onboarding.lookup", summary=f"{lookup_id}: {lk.status}")
         return view_now()
 
+    def _search_finished(run: Any) -> None:
+        """Save a web search's outcome when its run ends, even if the person already moved on."""
+        state = ws.onboarding()
+        lk = next((x for x in state.lookups if x.kind == "find" and x.run_id == run.id), None)
+        if lk is None:
+            return
+        lk.status, lk.result = find_outcome(run)  # type: ignore[assignment]
+        _advance(state)
+        Service(ws, actor=f"agent:{run.id}").onboarding_save(state, "onboarding.lookup_result",
+                                                             summary=f"{lk.id}: {lk.status}")  # fmt: skip
 
-def run_lookup(ws: Case, kind: str, targets: list[str]) -> str:
-    """Connector imports for confirmed links; arXiv title search for confirmed papers (namesake-checked)."""
+    if runner is not None and hasattr(runner, "on_finish"):
+        runner.on_finish.append(_search_finished)
+
+
+def run_lookup(ws: Case, kind: str, targets: list[str]) -> tuple[str, str]:
+    """(status, plain result). Connector imports for confirmed links; arXiv for confirmed papers, by arXiv id when
+    the entry has one, else by its title with venue tails dropped (namesake-checked)."""
     from lighthouse_gc.core.text import plural
 
     if kind == "papers":
         from lighthouse_gc.sources import arxiv
 
         person = ws.person()
-        cands, missing = [], []
-        for title in targets:
-            hits = [e for e in arxiv.search_title(title) if flow.paper_matches(title, e.get("title", ""))]
+        cands, missing, dois = [], [], []
+        for item in targets:
+            how, ref = flow.paper_ref(item)
+            if how == "doi":
+                dois.append(ref)
+                continue
+            hits = (arxiv.by_id(ref) if how == "arxiv" else
+                    [e for e in arxiv.search_title(ref) if flow.paper_matches(ref, e.get("title", ""))])  # fmt: skip
             if not hits:
-                missing.append(title)
+                missing.append(ref)
                 continue
             cands.append(flow.paper_candidate(hits[0], person.name, person.aliases))
         new = ws.add_candidates(cands)
+        notes = []
+        if missing:
+            notes.append(f"not on arXiv: {'; '.join(missing)}")
+        if dois:
+            notes.append(f"DOIs aren't looked up yet ({'; '.join(dois)}); add the title or an arXiv link")
+        if not cands:
+            detail = "; ".join(notes)
+            return (
+                "nothing_found",
+                f"Nothing found. {detail[:1].upper()}{detail[1:]}." if notes else "Nothing found.",
+            )
         namesakes = sum(1 for c in new if c.facts.get("namesake_check") != "passed")
-        msg = f"{plural(len(new), 'paper')} found and sent to your Inbox"
+        msg = f"{plural(len(cands), 'paper')} found and sent to your Inbox"
         if namesakes:
             msg += f" ({namesakes} flagged as a possible namesake)"
-        if missing:
-            msg += f"; not on arXiv: {'; '.join(missing)}"
-        return msg + "."
+        return "found", msg + ("; " + "; ".join(notes) if notes else "") + "."
     from lighthouse_gc.jobs.sync import import_source
 
     reports = [import_source(ws, url) for url in targets]
     added = sum(r.candidates_added for r in reports)
-    return f"Imported {', '.join(r.source_id for r in reports)}: {plural(added, 'suggestion')} in your Inbox."
+    names = ", ".join(r.source_id for r in reports)
+    if not added:
+        return (
+            "nothing_found",
+            f"Read {names}, but found nothing to suggest yet. It's now a source, checked daily.",
+        )
+    return "found", f"Imported {names}: {plural(added, 'suggestion')} in your Inbox."

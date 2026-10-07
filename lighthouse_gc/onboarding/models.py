@@ -44,8 +44,10 @@ class Lookup(_Model):
     kind: Literal["papers", "github", "orcid", "website", "find"]
     prompt: str
     targets: list[str] = Field(default_factory=list)
-    status: Literal["offered", "accepted", "declined", "done", "failed"] = "offered"
-    result: str = ""
+    # searching -> found | nothing_found | unreachable | blocked | failed; "accepted" / "done" are older names.
+    status: Literal["offered", "declined", "searching", "found", "nothing_found", "unreachable", "blocked", "failed",
+                    "accepted", "done"] = "offered"  # fmt: skip
+    result: str = Field("", description="What happened, in plain words (the reason, when it didn't work).")
     todo_id: str | None = Field(None, description="find: the to-do this lookup looks for proof of.")
     run_id: str | None = Field(None, description="find: the agent run doing the search.")
 

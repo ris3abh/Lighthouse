@@ -104,3 +104,14 @@ def search_title(title: str, http: object | None = None) -> list[dict[str, Any]]
                       accept="application/atom+xml").data  # fmt: skip
     _, entries = parse_feed(text or "")
     return entries
+
+
+def by_id(arxiv_id: str, http: object | None = None) -> list[dict[str, Any]]:
+    """The arXiv entry for an id (2609.34227), via the export API's id_list."""
+    from lighthouse_gc.sources.http import HttpClient
+
+    client = http if isinstance(http, HttpClient) else HttpClient(EXPORT_API, kind="arxiv")
+    text = client.get("/api/query", params={"id_list": arxiv_id, "max_results": 1}, raw=True,
+                      accept="application/atom+xml").data  # fmt: skip
+    _, entries = parse_feed(text or "")
+    return [e for e in entries if e.get("title")]

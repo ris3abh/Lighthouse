@@ -52,6 +52,19 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 - [x] C9. A full closing moment ("That's it. I'm one click away, and at your service."), then Ask docks
 - [ ] CHECKPOINT 2b: all three personas re-run; opening, one question, to-dos on Overview, finish
       Reported 2026-10-07 (0de9c1c, bbdb583, 78e20bb, d9acdbc, e3e2239); then S2–S5, then Part D
+- [x] C10. Failed lookups (owner's run): root cause reported (double https:// on fixed links; paper titles with
+      venue tails / arXiv links never parsed, "0 found" shown as done; LinkedIn's wrapped sidebar lines split
+      into separate awards; web-search outcomes lost when moving on). Fixed with regression tests; every lookup
+      shows searching / found / nothing found / couldn't reach / blocked with the reason and Retry
+- [ ] C11. Back and forth: Back on every onboarding step and question, clickable step bar, answers kept and
+      lookups re-offered; a URL per step and question; browser back / forward across pages and dialogs
+- [ ] C12. Chip input for lists in onboarding (one shared, keyboard-accessible component)
+- [ ] C13. Chat as a centered modal over a blurred dashboard; changed panels un-blur and highlight; pin to
+      dock; Cmd/Ctrl+K, Esc; full-screen sheet on phones
+- [ ] C14. Chat-history import for real exports: format-agnostic intake with adapters, local relevance filter,
+      picker step, extraction on picked items (mundane tier), longest-range advice (needs the owner's redacted
+      Claude export sample)
+- [ ] CHECKPOINT 2c: chip input, picker with real match reasons, modal with a highlighted change, both themes
 
 ### Part S: the front door (ADR 0013), added 2026-10-07 at the owner's request
 - [x] S1. `lighthouse-gc` with no arguments: creates ~/Lighthouse on first run, remembers it, serves it and

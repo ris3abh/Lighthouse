@@ -106,6 +106,29 @@ def _education(lines: list[str]) -> list[str]:
     return items
 
 
+WRAP = 30  # the export's sidebar column holds about this many characters per line
+
+
+def _unwrap(lines: list[str]) -> list[tuple[str, str]]:
+    """Join the sidebar's wrapped lines back into entries: (entry, its first line as it appears in the text).
+    "Social Justice Hackathon" / "Philadelphia" is one award; a short line ends an entry, and so does a line
+    the next word would still have fitted on."""
+    out: list[tuple[str, str]] = []
+    parts: list[str] = []
+    for raw in [line.strip() for line in lines if line.strip()]:
+        if parts:
+            prev = parts[-1]
+            near_edge = 18 <= len(prev) <= WRAP + 2  # longer lines can't come from the narrow sidebar
+            wrapped = near_edge and (len(prev) + 1 + len(raw.split()[0]) > WRAP or raw[:1].islower())
+            if not wrapped:
+                out.append((" ".join(parts), parts[0]))
+                parts = []
+        parts.append(raw)
+    if parts:
+        out.append((" ".join(parts), parts[0]))
+    return out
+
+
 def parse_linkedin(text: str) -> dict[str, dict[str, Any]]:
     """Fields read from a LinkedIn export, each ``{"value": ..., "quote": ...}``; empty if it isn't one."""
     lines = [line.rstrip() for line in text.splitlines()]
@@ -131,11 +154,14 @@ def parse_linkedin(text: str) -> dict[str, dict[str, Any]]:
     edu = _education(sections.get("Education", []))
     if edu:
         out["education"] = {"value": edu, "quote": edu[0].split(", ", 1)[0]}
-    for key, section in (("skills", "Top Skills"), ("awards", "Honors-Awards"), ("publications", "Publications"),
+    skills = [line.strip() for line in sections.get("Top Skills", []) if line.strip()]
+    if skills:
+        out["skills"] = {"value": skills, "quote": skills[0]}
+    for key, section in (("awards", "Honors-Awards"), ("publications", "Publications"),
                          ("certifications", "Certifications")):  # fmt: skip
-        items = [line.strip() for line in sections.get(section, []) if line.strip()]
-        if items:
-            out[key] = {"value": items, "quote": items[0]}
+        entries = _unwrap(sections.get(section, []))
+        if entries:
+            out[key] = {"value": [e for e, _ in entries], "quote": entries[0][1]}
     links = []
     for line in sections.get("Contact", []):
         m = _LINK.match(line.strip())

@@ -105,7 +105,7 @@ def test_maya_software_engineer(fresh, http_mock):
     http_mock.get("https://api.github.com/users/mayachen-example/repos").respond(json=[])
     view = c.post("/api/onboarding/lookups/github", headers=W, json={"accept": True}).json()
     lk = view["state"]["lookups"][0]
-    assert lk["status"] == "done" and "github:mayachen-example" in lk["result"]
+    assert lk["status"] == "nothing_found" and "github:mayachen-example" in lk["result"]
     view = c.post(
         "/api/onboarding/step", headers=W, json={"step": "lookups_done"}
     ).json()  # not the web searches
@@ -145,7 +145,7 @@ def test_ravi_ai_researcher_papers_with_namesake_check(fresh, http_mock):
     view = c.post("/api/onboarding/lookups/papers", headers=W, json={"accept": True}).json()
     papers = view["state"]["lookups"][0]
     assert (
-        papers["status"] == "done"
+        papers["status"] == "found"
         and papers["result"].startswith("2 papers found")
         and "1 flagged as a possible namesake" in papers["result"]
     )
@@ -179,7 +179,7 @@ def test_lena_business_analytics_lead_website(fresh, http_mock):
             + "</article></body></html>")  # fmt: skip
     http_mock.get("https://lenavogel.example/").respond(200, text=page, headers={"content-type": "text/html"})
     view = c.post(f"/api/onboarding/lookups/{lk['id']}", headers=W, json={"accept": True}).json()
-    assert view["state"]["lookups"][0]["status"] == "done", view["state"]["lookups"][0]["result"]
+    assert view["state"]["lookups"][0]["status"] == "found", view["state"]["lookups"][0]["result"]
     assert any(
         c.proposed_criterion == "awards" for c in fresh.pending_candidates()
     )  # via the Inbox, not the case
@@ -487,7 +487,7 @@ def _wait(c, lookup_id):
 
     for _ in range(100):
         lk = next(x for x in c.get("/api/onboarding").json()["state"]["lookups"] if x["id"] == lookup_id)
-        if lk["status"] != "accepted":
+        if lk["status"] != "searching":
             return lk
         time.sleep(0.05)
     raise AssertionError("the lookup never finished")
@@ -512,7 +512,7 @@ def test_a_yes_runs_one_web_search_for_the_official_page(fresh, http_mock):
     view = c.post(f"/api/onboarding/lookups/{lk['id']}", headers=W, json={"accept": True}).json()
     assert view["state"]["step"] == "lookups"  # waits while the search runs (or Continue)
     done = _wait(c, lk["id"])
-    assert done["status"] == "done" and done["result"].startswith("Found 1 page that may confirm it")
+    assert done["status"] == "found" and done["result"].startswith("Found 1 page that may confirm it")
     [request] = engine.requests
     assert (
         '"Judge, HackSeattle 2025"' in request.prompt and "only if the page names Maya Chen" in request.prompt
@@ -522,7 +522,7 @@ def test_a_yes_runs_one_web_search_for_the_official_page(fresh, http_mock):
     assert fresh.exhibits().exhibits == []  # the Inbox decides, not the lookup
     view = c.post("/api/onboarding/step", headers=W, json={"step": "lookups_done"}).json()
     saved = next(x for x in view["state"]["lookups"] if x["id"] == lk["id"])
-    assert saved["status"] == "done" and view["state"]["step"] == "chats"
+    assert saved["status"] == "found" and view["state"]["step"] == "chats"
 
 
 @pytest.mark.usefixtures("public_dns")

@@ -527,10 +527,10 @@ export interface OnboardingQuestion {
 }
 export interface OnboardingLookup {
   id: string;
-  kind: "papers" | "github" | "orcid" | "website";
+  kind: "papers" | "github" | "orcid" | "website" | "find";
   prompt: string;
   targets: string[];
-  status: "offered" | "accepted" | "declined" | "done" | "failed";
+  status: "offered" | "declined" | "searching" | "found" | "nothing_found" | "unreachable" | "blocked" | "failed" | "accepted" | "done";
   result: string;
 }
 export interface OnboardingView {

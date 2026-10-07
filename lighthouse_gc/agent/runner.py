@@ -7,8 +7,9 @@ history is replayed into each turn, so no transcript lives outside the workspace
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -49,6 +50,7 @@ class AgentRunner:
         self._engine = engine
         self._judge = judge
         self._live: dict[str, _Live] = {}
+        self.on_finish: list[Callable[[AgentRun], None]] = []
 
     # ------------------------------------------------------------------ storage
 
@@ -296,6 +298,9 @@ class AgentRunner:
                     self._save_conversation(conv)
                 except NotFound:
                     pass
+            for hook in self.on_finish:  # e.g. onboarding saving a web search's outcome
+                with contextlib.suppress(Exception):  # a hook must never break the run
+                    hook(run)
             await self._publish(live, {"type": "done", "run": json.loads(dump_model(run))})
             live.done = True
 

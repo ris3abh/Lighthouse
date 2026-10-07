@@ -1,8 +1,8 @@
-import { Check, FileText, MessageSquare, Pencil, Search, SkipForward, Upload } from "lucide-react";
+import { Check, FileText, MessageSquare, Pencil, RotateCw, Search, SkipForward, Upload } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type OnboardingLookup, type OnboardingQuestion, type OnboardingView } from "../api";
 import DropZone from "../components/DropZone";
-import { Button, cx, plural, Segmented, useToast } from "../components/ui";
+import { Button, Chip, cx, plural, Segmented, useToast } from "../components/ui";
 import { useTheme, type ThemeMode } from "../hooks";
 import { Monitor, Moon, Sun } from "lucide-react";
 
@@ -276,7 +276,7 @@ function ProfilePanel({ view }: { view: OnboardingView }) {
 
 function LookupStep({ view, busy, run, onChange }: { view: OnboardingView; busy: boolean; run: Run; onChange: (v: OnboardingView) => void }) {
   const open = view.state.lookups.some((l) => l.status === "offered");
-  const searching = view.state.lookups.some((l) => l.status === "accepted");
+  const searching = view.state.lookups.some((l) => l.status === "searching" || l.status === "accepted");
   useEffect(() => {
     if (!searching) return;
     const id = setInterval(() => api.onboarding().then(onChange, () => {}), 2500); // web lookups run in the background
@@ -296,39 +296,58 @@ function LookupStep({ view, busy, run, onChange }: { view: OnboardingView; busy:
             <LookupCard key={l.id} l={l} busy={busy} run={run} />
           ))}
         </div>
-        {(open || searching) && (
-          <Button className="mt-6" variant={open ? "ghost" : "primary"} disabled={busy && open} onClick={() => run(() => api.onboardingStep("lookups_done"))}>
-            {open ? "Not now, continue" : "Continue (searches finish in the background)"}
-          </Button>
-        )}
+        <Button className="mt-6" variant={open ? "ghost" : "primary"} disabled={busy && open} onClick={() => run(() => api.onboardingStep("lookups_done"))}>
+          {open ? "Not now, continue" : searching ? "Continue (searches finish in the background)" : "Continue"}
+        </Button>
       </div>
       <ProfilePanel view={view} />
     </div>
   );
 }
 
+const LOOKUP_STATUS: Record<OnboardingLookup["status"], { label: string; tone: "ink" | "outline" | "muted" | "alert" }> = {
+  offered: { label: "", tone: "muted" },
+  declined: { label: "Skipped", tone: "muted" },
+  searching: { label: "Searching", tone: "outline" },
+  accepted: { label: "Searching", tone: "outline" },
+  found: { label: "Found", tone: "ink" },
+  done: { label: "Done", tone: "ink" },
+  nothing_found: { label: "Nothing found", tone: "muted" },
+  unreachable: { label: "Couldn't reach the site", tone: "alert" },
+  blocked: { label: "Blocked by the site", tone: "alert" },
+  failed: { label: "Didn't work", tone: "alert" },
+};
+const RETRYABLE = new Set(["nothing_found", "unreachable", "blocked", "failed"]);
+
 function LookupCard({ l, busy, run }: { l: OnboardingLookup; busy: boolean; run: Run }) {
+  const s = LOOKUP_STATUS[l.status];
+  const searching = l.status === "searching" || l.status === "accepted";
   return (
-    <div className="card animate-rise p-5">
+    <div className="card animate-rise p-5" data-lookup={l.id} data-status={l.status}>
       <div className="flex items-start gap-3">
-        <Search className={cx("mt-1 size-5 shrink-0", l.status === "accepted" && "animate-tool-pulse")} strokeWidth={1.5} aria-hidden />
+        <Search className={cx("mt-1 size-5 shrink-0", searching && "animate-tool-pulse")} strokeWidth={1.5} aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-[17px] leading-snug">{l.prompt}</p>
           <p className="mt-1 truncate font-mono text-[11px] text-muted">{l.targets.join(" · ")}</p>
-          {l.result && <p className={cx("mt-3 text-sm", l.status === "failed" ? "text-alert" : "text-ink-2")}>{l.result}</p>}
+          {s.label && (
+            <p className="mt-3 flex flex-wrap items-center gap-2" role="status">
+              <Chip tone={s.tone}>{s.label}</Chip>
+              {l.result && <span className={cx("text-sm", s.tone === "alert" ? "text-alert" : "text-ink-2")}>{l.result}</span>}
+            </p>
+          )}
         </div>
       </div>
-      {l.status === "offered" ? (
+      {(l.status === "offered" || RETRYABLE.has(l.status)) && (
         <div className="mt-4 flex gap-2 pl-8">
-          <Button variant="primary" disabled={busy} onClick={() => run(() => api.onboardingLookup(l.id, true))}>
-            Yes, look
+          <Button variant={l.status === "offered" ? "primary" : "secondary"} disabled={busy} onClick={() => run(() => api.onboardingLookup(l.id, true))}>
+            {l.status === "offered" ? "Yes, look" : <><RotateCw /> Retry</>}
           </Button>
-          <Button variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingLookup(l.id, false))}>
-            No thanks
-          </Button>
+          {l.status === "offered" && (
+            <Button variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingLookup(l.id, false))}>
+              No thanks
+            </Button>
+          )}
         </div>
-      ) : (
-        <p className="mt-3 pl-8 font-mono text-[10.5px] text-muted uppercase">{l.status === "declined" ? "Skipped" : l.status === "done" ? "Done · check your Inbox" : l.status}</p>
       )}
     </div>
   );
