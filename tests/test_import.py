@@ -27,7 +27,8 @@ def test_detect_routes_to_connector(text, kind):
 
 
 def test_detect_unknown():
-    assert sources.detect("https://linkedin.com/in/someone") == "website"  # links go through the website connector
+    # Links (LinkedIn, X, ...) go through the website connector.
+    assert sources.detect("https://linkedin.com/in/someone") == "website"
     with pytest.raises(ValueError, match="No connector"):
         sources.detect("linkedin.com/in/someone")
 
