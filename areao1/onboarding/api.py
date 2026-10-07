@@ -58,8 +58,10 @@ def nav(state: OnboardingState) -> dict[str, Any]:
         back = {"step": "ai"}
     elif state.step == "chats":
         back = {"step": "lookups"} if state.lookups else {"step": "ai"}
-    elif state.step == "tour":
+    elif state.step == "mail":
         back = {"step": "chats"}
+    elif state.step == "tour":
+        back = {"step": "mail"}
     return {"back": back, "reached": state.reached,
             "steps": [{"id": s, "reachable": i <= reached} for i, s in enumerate(flow.STEPS[:-1])]}  # fmt: skip
 
@@ -289,6 +291,13 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
             state.step = "chats"
         elif s in ("chats_done", "chats_skip") and state.step == "chats":
             state.chats = "imported" if s == "chats_done" else "skipped"
+            state.step = "mail"
+        elif s in ("mail_done", "mail_skip") and state.step == "mail":
+            from areao1.google import mail
+
+            if s == "mail_done" and not mail.connected():
+                raise HTTPException(409, "Gmail isn't connected yet")
+            state.mail = "connected" if s == "mail_done" else "skipped"
             state.step = "tour"
         elif s in ("tour_done", "tour_skip") and state.step == "tour":
             state.tour = "seen" if s == "tour_done" else "skipped"

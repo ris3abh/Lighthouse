@@ -159,7 +159,7 @@ def _list(value: str | list[str]) -> list[str]:
     return value if isinstance(value, list) else [value] if value else []
 
 
-STEPS = ("linkedin", "questions", "ai", "lookups", "chats", "tour", "done")
+STEPS = ("linkedin", "questions", "ai", "lookups", "chats", "mail", "tour", "done")
 
 
 def question_ids(state: OnboardingState) -> list[str]:

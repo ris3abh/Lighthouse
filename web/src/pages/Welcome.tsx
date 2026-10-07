@@ -5,6 +5,7 @@ import ChatImport from "../components/ChatImport";
 import ChipInput from "../components/ChipInput";
 import ConnectAI from "../components/ConnectAI";
 import DropZone from "../components/DropZone";
+import GmailConnect from "../components/GmailConnect";
 import { Button, Chip, cx, Segmented, useToast } from "../components/ui";
 import { useTheme, type ThemeMode } from "../hooks";
 import { useReducedMotion } from "../lib/motion";
@@ -23,6 +24,7 @@ const STEPS = [
   { id: "ai", label: "Your AI" },
   { id: "lookups", label: "Find your work" },
   { id: "chats", label: "Chat history" },
+  { id: "mail", label: "Email" },
   { id: "tour", label: "Tour" },
 ] as const;
 
@@ -131,6 +133,11 @@ export default function Welcome({ view, onChange }: { view: OnboardingView; onCh
                   </div>
                 )}
                 {m.widget === "chats" && step === "chats" && <ChatsWidget busy={busy} run={run} />}
+                {m.widget === "mail" && step === "mail" && (
+                  <div className="mt-4 border border-line bg-paper p-4">
+                    <GmailConnect busy={busy} onDone={() => run(() => api.onboardingStep("mail_done"))} />
+                  </div>
+                )}
               </Message>
             ))}
             {typingAt < 0 && busy && <Dots label={working || "Typing"} />}
@@ -379,6 +386,14 @@ function Composer({ view, busy, run }: { view: OnboardingView; busy: boolean; ru
       <div className="flex justify-end">
         <Button variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingStep("chats_skip"))}>
           <SkipForward /> Skip for now
+        </Button>
+      </div>
+    );
+  if (step === "mail")
+    return (
+      <div className="flex justify-end">
+        <Button variant="ghost" disabled={busy} onClick={() => run(() => api.onboardingStep("mail_skip"))}>
+          <SkipForward /> Later, in Settings
         </Button>
       </div>
     );

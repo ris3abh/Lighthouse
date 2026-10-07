@@ -3,7 +3,7 @@
 
 export type OnboardingPlace = { step: string; question?: string | null };
 
-const STEPS = new Set(["linkedin", "questions", "ai", "lookups", "chats", "tour"]);
+const STEPS = new Set(["linkedin", "questions", "ai", "lookups", "chats", "mail", "tour"]);
 
 /** "#/welcome/questions/role" for { step: "questions", question: "role" }. */
 export function onboardingHash(place: OnboardingPlace): string {

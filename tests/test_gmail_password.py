@@ -108,3 +108,13 @@ def test_settings_puts_gmail_first_and_the_client_under_advanced():
     google = (web / "components" / "GoogleConnect.tsx").read_text()
     assert "<details" in google and "Advanced: also sync Google Calendar" in google
     assert "Gmail API" not in google  # email needs no Google Cloud project
+
+
+def test_the_docs_lead_with_the_app_password():
+    from pathlib import Path
+
+    doc = (Path(__file__).parents[1] / "docs" / "google.md").read_text()
+    assert doc.index("app password") < doc.index("console.cloud.google.com")
+    assert "Advanced: also sync Google Calendar" in doc and mail.APP_PASSWORDS.removeprefix("https://") in doc
+    for problem in ("normal Google password", "2-Step Verification is off", "IMAP is turned off"):
+        assert problem in doc, problem

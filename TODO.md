@@ -135,6 +135,11 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 - [x] E5. Outreach: agent drafts, user approves / edits / rejects, sends from Gmail; proactive follow-ups
       after 7 quiet days (same approval); daily send limits; case contacts only (draft_email tool; approval on
       the Contacts page; only the person can send, gmail.send; follow-ups are a short template to edit)
+- [x] E6. Gmail with an app password by default (ADR 0014 amendment): Connect Gmail with address + 16-letter
+      app password (test login, keychain, plain errors); IMAP headers only / SMTP for approved sends; the OAuth
+      client only under "Advanced: also sync Google Calendar"; optional Email step in onboarding
+- [ ] E6 live check: the owner connects with their own app password; Refresh threads; one approved send to
+      their second address
 - [ ] CHECKPOINT 4 (Google): OAuth client instructions first; sign-in, calendar sync both ways, one draft
       Reported 2026-10-07 (built and tested with mocked Google); the live run waits for the owner's OAuth client
 

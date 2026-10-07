@@ -628,13 +628,14 @@ export interface OnboardingView {
   needed: boolean;
   state: {
     status: "new" | "in_progress" | "done" | "skipped";
-    step: "linkedin" | "questions" | "ai" | "lookups" | "chats" | "tour" | "done";
+    step: "linkedin" | "questions" | "ai" | "lookups" | "chats" | "mail" | "tour" | "done";
     source: { filename: string; chars: number; redactions: number; parser: string } | null;
     lookups: OnboardingLookup[];
     transcript: { who: "areao1" | "you"; text: string }[];
     target_profile: string | null;
     tour: string;
     chats: string;
+    mail?: "pending" | "connected" | "skipped";
     ai: "pending" | "login" | "key" | "skipped";
   };
   question: OnboardingQuestion | null;

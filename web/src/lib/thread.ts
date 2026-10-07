@@ -5,10 +5,10 @@
 import type { OnboardingView } from "../api";
 import { PRODUCT } from "../names.ts";
 
-export type Widget = "linkedin" | "ai" | "lookups" | "chats";
+export type Widget = "linkedin" | "ai" | "lookups" | "chats" | "mail";
 export type Msg = { key: string; who: "areao1" | "you"; text: string; quote?: string; widget?: Widget };
 
-const ORDER = ["linkedin", "questions", "ai", "lookups", "chats", "tour"];
+const ORDER = ["linkedin", "questions", "ai", "lookups", "chats", "mail", "tour"];
 
 export const LINKEDIN_ASK =
   `Hi, I'm ${PRODUCT}. I'll help you build your case, one piece at a time. Let's start with your LinkedIn profile as a PDF ` +
@@ -25,6 +25,11 @@ export const CHATS_ASK =
   "Quick story: the person who built me kept his context spread across Claude and ChatGPT. If you're like him, drop those " +
   "exports here and I'll pick up where they left off. Choose the longest range you can when you export: I sort it on this " +
   "computer first, show you what looks related to your case and why, and bring in only what you tick.";
+export const MAIL_ASK =
+  "Last one, and optional: connect Gmail so I can keep up with your letter writers and organizers and draft follow-ups. " +
+  "No Google Cloud setup, just an app password. I read only the headers of threads with people in your contacts (who, " +
+  "when, the subject), and I send nothing until you press Approve & send.";
+const MAIL_REPLY = { pending: "", connected: "Connected my Gmail.", skipped: "Later." };
 
 /** The thread for where onboarding is now. Keys are stable across updates (who, text and which repeat), so an
  * answered question keeps its place and a message is never typed twice. */
@@ -49,6 +54,10 @@ export function buildThread(view: OnboardingView): Msg[] {
     if (at > 3) raw.push({ who: "you", text: "That's all for now." });
   }
   if (at >= 4) raw.push({ who: "areao1", text: CHATS_ASK, widget: "chats" });
+  if (at >= 5) {
+    raw.push({ who: "areao1", text: MAIL_ASK, widget: "mail" });
+    if (at > 5 && MAIL_REPLY[s.mail ?? "pending"]) raw.push({ who: "you", text: MAIL_REPLY[s.mail ?? "pending"] });
+  }
   const seen = new Map<string, number>();
   return raw.map((m) => {
     const base = `${m.who}:${m.text}`;

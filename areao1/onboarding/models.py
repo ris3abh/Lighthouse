@@ -9,7 +9,7 @@ from pydantic import Field, field_validator
 
 from areao1.core.models import _File, _Model
 
-Step = Literal["linkedin", "questions", "ai", "lookups", "chats", "tour", "done"]
+Step = Literal["linkedin", "questions", "ai", "lookups", "chats", "mail", "tour", "done"]
 FieldStatus = Literal["pending", "confirmed", "fixed", "skipped"]
 
 
@@ -83,6 +83,9 @@ class OnboardingState(_File):
         "login was removed (ADR 0013 §4) and reads as not connected.",
     )
     chats: Literal["pending", "imported", "skipped"] = "pending"
+    mail: Literal["pending", "connected", "skipped"] = Field(
+        "pending", description="Connect Gmail with an app password (ADR 0014, amendment), or later."
+    )
     tour: Literal["pending", "seen", "skipped"] = "pending"
     started_at: datetime | None = None
     finished_at: datetime | None = None

@@ -115,6 +115,9 @@ def test_maya_software_engineer(fresh, http_mock):
         "declined"
     }
     view = c.post("/api/onboarding/step", headers=W, json={"step": "chats_skip"}).json()
+    assert view["state"]["step"] == "mail" and view["nav"]["back"] == {"step": "chats"}
+    view = c.post("/api/onboarding/step", headers=W, json={"step": "mail_skip"}).json()
+    assert view["state"]["mail"] == "skipped" and view["nav"]["back"] == {"step": "mail"}
     view = c.post("/api/onboarding/step", headers=W, json={"step": "tour_done"}).json()
     assert view["state"]["status"] == "done" and view["needed"] is False
 
@@ -221,6 +224,7 @@ def test_skip_everything(fresh, http_mock):
     assert view["state"]["step"] == "chats" and view["state"]["ai"] == "skipped"
     assert fresh.person().filing_target.target_date is None
     view = c.post("/api/onboarding/step", headers=W, json={"step": "chats_skip"}).json()
+    view = c.post("/api/onboarding/step", headers=W, json={"step": "mail_skip"}).json()
     view = c.post("/api/onboarding/step", headers=W, json={"step": "tour_skip"}).json()
     assert view["state"]["status"] == "done" and view["needed"] is False
     assert fresh.person().name == "" and view["panel"][0]["status"] == "skipped"
@@ -658,7 +662,7 @@ def test_a_skipped_answer_can_be_revisited_with_what_the_pdf_said(fresh):
 def test_the_step_bar_only_goes_to_steps_already_reached(fresh):
     c = client_for(fresh)
     view = upload(c, "maya")
-    assert [s["reachable"] for s in view["nav"]["steps"]] == [True, True, False, False, False, False]
+    assert [s["reachable"] for s in view["nav"]["steps"]] == [True, True, False, False, False, False, False]
     assert _goto(c, "chats").status_code == 409
     assert _goto(c, "questions", "awards").status_code == 409  # can't skip ahead to an unanswered question
     view, _ = answer_all(c, view)
@@ -673,3 +677,22 @@ def test_the_step_bar_only_goes_to_steps_already_reached(fresh):
     assert view["state"]["step"] == "chats"
     view = _goto(c, "questions").json()  # all answered: reopens the last question
     assert view["question"]["id"] == "when"
+
+
+def test_the_gmail_step_is_optional_and_needs_a_real_connection(fresh, monkeypatch):
+    from mail_fakes import FakeGmail
+
+    from areao1.google import mail
+
+    c = client_for(fresh)
+    c.post("/api/onboarding/step", headers=W, json={"step": "skip_linkedin"})
+    for qid in ("target", "when"):
+        c.post("/api/onboarding/answer", headers=W, json={"id": qid, "action": "skip"})
+    c.post("/api/onboarding/ai", headers=W, json={"choice": "skip"})
+    view = c.post("/api/onboarding/step", headers=W, json={"step": "chats_skip"}).json()
+    assert view["state"]["step"] == "mail"
+    assert c.post("/api/onboarding/step", headers=W, json={"step": "mail_done"}).status_code == 409  # not yet
+    g = FakeGmail().install(monkeypatch)
+    mail.connect(g.email, g.password)
+    view = c.post("/api/onboarding/step", headers=W, json={"step": "mail_done"}).json()
+    assert view["state"]["step"] == "tour" and view["state"]["mail"] == "connected"

@@ -1,4 +1,4 @@
-import { ExternalLink, LogOut, Mail, RefreshCw } from "lucide-react";
+import { Check, ExternalLink, LogOut, Mail, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, type GoogleStatus } from "../api";
 import { Button, Chip, useToast } from "./ui";
@@ -41,6 +41,13 @@ export default function GmailConnect({ onDone, busy }: { onDone?: () => void; bu
         <p className="flex flex-wrap items-center gap-2 text-sm">
           <Chip tone="ink">Gmail connected</Chip> {mail.email}
         </p>
+        {onDone && (
+          <div>
+            <Button variant="primary" disabled={busy} onClick={onDone}>
+              <Check /> Use this Gmail
+            </Button>
+          </div>
+        )}
         {!onDone && (
           <div className="flex flex-wrap gap-2">
             <Button

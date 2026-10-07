@@ -202,8 +202,13 @@ Store secrets in the keychain, never in the file: `areao1 secret set notify:slac
 
 Deadlines and pipeline follow-ups are written to `data/calendar.ics` on every change. To subscribe from
 Apple Calendar, Outlook or Thunderbird on the same machine, use `webcal://127.0.0.1:7777/calendar.ics` while
-`areao1 up` is running, or import the file. Google Calendar can't reach your laptop's localhost, so
-import the `.ics` there (a one-way Google push is planned).
+`areao1 up` is running, or import the file. Google Calendar can't reach your laptop's localhost; for it,
+use the optional two-way sync in Settings > Google > Advanced ([docs/google.md](docs/google.md)).
+
+### Gmail
+
+Connect Gmail with an app password (Settings > Google, no Google Cloud project): Area O1 reads only the headers
+of threads with your contacts and sends only drafts you approve. See [docs/google.md](docs/google.md).
 
 ### Use it from Claude Code (or any MCP client)
 
