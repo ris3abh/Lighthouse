@@ -148,3 +148,9 @@ def test_follow_ups_after_quiet_days_are_drafts_once(ws, omar, http_mock):
     assert any("waiting for your approval" in line for line in lines) and not send.called
     JOBS["google"][1](ws, True)
     assert len(ws.outreach().drafts) == 1  # once per thread
+
+
+def test_the_follow_up_has_one_line_per_paragraph():
+    """Mail clients wrap paragraphs themselves; a hard break mid-sentence reads oddly."""
+    for para in outreach.FOLLOW_UP.split("\n\n"):
+        assert "\n" not in para or para.startswith("Thank you"), para

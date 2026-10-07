@@ -94,8 +94,7 @@ def send(ws: Case, draft: OutreachDraft, client: httpx.Client | None = None) -> 
 
 FOLLOW_UP = """Hi {first},
 
-Just following up on my note about "{subject}". I know things get busy; whenever you have a moment, I'd be grateful
-for a reply.
+Just following up on my note about "{subject}". I know things get busy; whenever you have a moment, I'd be grateful for a reply.
 
 Thank you,
 {me}"""
