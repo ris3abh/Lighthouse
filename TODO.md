@@ -13,17 +13,18 @@ backup (93acafc), one clock (a2d15b9), Tier 3 never verifies (d0d4d63), scholarl
 website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (21711f0).
 
 ### Part B: design system "Brutalism 2.0" (ADR 0007)
-- [ ] B1. Tokens + primitives: off-white / black ink, 1px grid lines, framed panels, no shadows; condensed
+- [x] B1. Tokens + primitives: off-white / black ink, 1px grid lines, framed panels, no shadows; condensed
       headlines, mono for labels / numbers / data, solid black primary actions; one muted red for attention
       only; first-class dark theme; System / Light / Dark toggle in the header (default System, per browser)
-- [ ] B2. Re-layout every page (Overview, Inbox, Evidence, Metrics, Pipeline, Letters, Calendar, Agent,
+- [x] B2. Re-layout every page (Overview, Inbox, Evidence, Metrics, Pipeline, Letters, Calendar, Agent,
       Knowledge, Sources, Settings) and every dialog + the chat panel
-- [ ] B3. Lucide line icons instead of every emoji / glyph; chat tool calls pulse while running, checkmark
+- [x] B3. Lucide line icons instead of every emoji / glyph; chat tool calls pulse while running, checkmark
       draws in on success; prefers-reduced-motion respected
-- [ ] B4. Data motion: charts draw in and morph between ranges, mono crosshair, count-up numbers, sliding
+- [x] B4. Data motion: charts draw in and morph between ranges, mono crosshair, count-up numbers, sliding
       deltas, sparklines draw on scroll-in, scoreboard fills + status transitions, calendar moves and view
       switches animate; 150–400ms, never blocking, reduced motion = instant
-- [ ] CHECKPOINT 1 (design): screenshots of Overview, Inbox, Calendar, Agent, chat panel
+- [ ] CHECKPOINT 1 (design): screenshots of Overview, Inbox, Calendar, Agent, chat panel. Reported 2026-10-07
+      (cbf20d7, 7cf63fb, d4f3b9e, f8666fa, a533e9e); waiting for approval before Part C
 
 ### Part C: no demo data, onboarding, guardrails (ADR 0008)
 - [ ] C1. Delete examples/demo-workspace and --demo; README / SPEC / scripts / CI updated; personas Maya
