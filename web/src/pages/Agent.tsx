@@ -50,7 +50,7 @@ export default function Agent({ focus }: { focus: string | null }) {
     }
   };
   const shown = runs.filter((r) => kind === "all" || r.kind === kind);
-  const current = selected ?? shown[0]?.id ?? null;
+  const current = selected || shown[0]?.id || null;
 
   const start = async () => {
     setBusy(true);
@@ -72,7 +72,7 @@ export default function Agent({ focus }: { focus: string | null }) {
   return (
     <div>
       <PageHeader
-        eyebrow={`${runs.length} runs`}
+        eyebrow={`${runs.length} run${runs.length === 1 ? "" : "s"}`}
         title="Agent"
         subtitle="Every agent run, from chat, by hand or on a schedule: what it read, what it proposed, what it cost."
       />
@@ -162,6 +162,7 @@ export default function Agent({ focus }: { focus: string | null }) {
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @5xl:grid-cols-[400px_minmax(0,1fr)]">
         <Card
           title="Runs"
+          className="self-start"
           actions={
             <select aria-label="Filter runs" className="input h-8 w-auto py-0 font-mono text-[11px]" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
               <option value="all">All</option>
@@ -251,27 +252,26 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
           <p className="display text-3xl md:text-4xl">{run.prompt}</p>
           <dl className="mt-6 grid grid-cols-2 gap-px border border-line bg-line text-xs @2xl:grid-cols-5 [&>div]:bg-surface [&>div]:p-3 [&_dd]:mt-1 [&_dd]:font-mono [&_dd]:text-sm [&_dt]:eyebrow">
             <div>
-              <dt className="text-muted">Cost</dt>
+              <dt>Cost</dt>
               <dd>{fmtUsd(run.cost_usd)}</dd>
             </div>
             <div>
-              <dt className="text-muted">Tokens (counted)</dt>
+              <dt>Tokens (counted)</dt>
               <dd>{fmtTokens(tokens)}</dd>
             </div>
             <div>
-              <dt className="text-muted">Input: cached / written / uncached</dt>
+              <dt>Input</dt>
               <dd title="Cached = read from the prompt cache (system prompt, tools, earlier turns); written = added to the cache this run; uncached = billed at the full rate">
-                {fmtTokens(run.usage.cache_read_input_tokens)} / {fmtTokens(run.usage.cache_creation_input_tokens)} /{" "}
-                {fmtTokens(run.usage.input_tokens)}{" "}
+                {fmtTokens(run.usage.cache_read_input_tokens + run.usage.cache_creation_input_tokens + run.usage.input_tokens)}{" "}
                 <span className="text-muted">({fmtPct(cacheRate(run.usage))} cached)</span>
               </dd>
             </div>
             <div>
-              <dt className="text-muted">Output</dt>
+              <dt>Output</dt>
               <dd>{fmtTokens(run.usage.output_tokens)}</dd>
             </div>
             <div>
-              <dt className="text-muted">Duration</dt>
+              <dt>Duration</dt>
               <dd>{duration(run)}</dd>
             </div>
           </dl>

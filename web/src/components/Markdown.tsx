@@ -1,27 +1,36 @@
 import type { ReactNode } from "react";
 
-/** Tiny, safe Markdown subset for agent replies: paragraphs, - lists, **bold**, `code`, [links](https://…).
+/** Tiny, safe Markdown subset for agent replies: paragraphs, - and 1. lists, **bold**, *italic*, `code`, [links](https://…).
  *  Builds React nodes; never injects HTML. Only http(s) and in-app (#/...) links are rendered as links. */
 export default function Markdown({ text }: { text: string }) {
   const blocks: ReactNode[] = [];
   let list: string[] = [];
+  let ordered = false;
   const flush = () => {
     if (list.length) {
+      const items = list.map((li, i) => <li key={i}>{inline(li)}</li>);
       blocks.push(
-        <ul key={blocks.length} className="my-2 list-disc space-y-1 pl-5 marker:text-ink-2">
-          {list.map((li, i) => (
-            <li key={i}>{inline(li)}</li>
-          ))}
-        </ul>,
+        ordered ? (
+          <ol key={blocks.length} className="my-2 list-decimal space-y-1 pl-5 marker:font-mono marker:text-[12px] marker:text-ink-2">
+            {items}
+          </ol>
+        ) : (
+          <ul key={blocks.length} className="my-2 list-disc space-y-1 pl-5 marker:text-ink-2">
+            {items}
+          </ul>
+        ),
       );
       list = [];
     }
   };
   for (const raw of text.split("\n")) {
     const line = raw.trimEnd();
-    const bullet = line.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);
+    const bullet = line.match(/^\s*([-*]|\d+\.)\s+(.*)$/);
     if (bullet) {
-      list.push(bullet[1]);
+      const isOrdered = /\d/.test(bullet[1]);
+      if (list.length && isOrdered !== ordered) flush();
+      ordered = isOrdered;
+      list.push(bullet[2]);
       continue;
     }
     flush();
@@ -45,12 +54,13 @@ export default function Markdown({ text }: { text: string }) {
 
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g;
+  const re = /(\*\*[^*]+\*\*|(?<!\w)\*[^*\s][^*]*\*(?!\w)|(?<!\w)_[^_\s][^_]*_(?!\w)|`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g;
   let last = 0;
   for (const m of text.matchAll(re)) {
     if (m.index! > last) out.push(text.slice(last, m.index));
     const tok = m[0];
     if (tok.startsWith("**")) out.push(<strong key={out.length}>{tok.slice(2, -2)}</strong>);
+    else if (tok.startsWith("*") || tok.startsWith("_")) out.push(<em key={out.length}>{tok.slice(1, -1)}</em>);
     else if (tok.startsWith("`"))
       out.push(
         <code key={out.length} className="bg-sunken px-1 font-mono text-[12px]">
