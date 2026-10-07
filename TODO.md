@@ -136,6 +136,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       after 7 quiet days (same approval); daily send limits; case contacts only (draft_email tool; approval on
       the Contacts page; only the person can send, gmail.send; follow-ups are a short template to edit)
 - [ ] CHECKPOINT 4 (Google): OAuth client instructions first; sign-in, calendar sync both ways, one draft
+      Reported 2026-10-07 (built and tested with mocked Google); the live run waits for the owner's OAuth client
 
 ### Part F: daily opportunity job
 - [ ] F1. Off-by-default 24h job over Gmail + the Area O1 calendar (judging / reviewer / call invites)
