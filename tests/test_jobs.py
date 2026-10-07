@@ -203,7 +203,8 @@ def test_jobs_status_and_bad_cron(ws):
 
 
 def test_cli_and_api(ws, sent):
-    _deadlines(ws, _dl("soon", 1))
+    # The CLI uses the real date (not the fixed TODAY), so the deadline must too.
+    _deadlines(ws, Deadline(id="dl_soon", title="Deadline soon", due=date.today() + timedelta(days=1)))
     result = CliRunner().invoke(app, ["run", "deadline-check", "-w", str(ws.root)])
     assert result.exit_code == 0, result.output
     assert "Deadline soon: due in 1 day" in result.output
