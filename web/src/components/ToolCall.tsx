@@ -1,4 +1,5 @@
 import {
+  Ban,
   BookOpen,
   CalendarDays,
   ChevronDown,
@@ -32,6 +33,7 @@ const str = (v: unknown) => (typeof v === "string" ? v : "");
 function describe(t: ToolView): { icon: LucideIcon; text: React.ReactNode } {
   const n = t.name;
   if (n === "WebSearch" || n === "web_search") return { icon: Search, text: <>Searched the web: “{str(t.input.query)}”</> };
+  if (n === "decline") return { icon: Ban, text: <>Declined: {str(t.input.reason)}</> };
   if (n === "search_vault") return { icon: BookOpen, text: <>Searched the knowledge vault: “{str(t.input.query)}”</> };
   if (n === "read_page") {
     const url = str(t.input.url);

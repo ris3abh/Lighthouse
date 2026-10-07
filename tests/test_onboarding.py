@@ -227,6 +227,14 @@ def test_skipped_answers_stay_blank_and_fixes_are_kept(fresh):
     assert panel["name"]["value"] == "" and panel["name"]["status"] == "skipped"
     assert (panel["employer"]["value"], panel["employer"]["status"]) == ("Northwind", "fixed")
     assert panel["role"]["value"] == "Staff Engineer"
+    view = c.post(
+        "/api/onboarding/answer",
+        headers=W,
+        json={"id": "location", "action": "fix", "value": "Seattle, Washington, United States"},
+    ).json()
+    assert {line["key"]: line["status"] for line in view["panel"]}[
+        "location"
+    ] == "confirmed"  # unchanged: not "edited"
     bad = c.post("/api/onboarding/answer", headers=W, json={"id": "awards", "action": "yes"})
     assert bad.status_code == 400 and "isn't the current one" in bad.text
 

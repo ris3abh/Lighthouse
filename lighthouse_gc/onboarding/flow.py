@@ -175,6 +175,7 @@ def answer(state: OnboardingState, qid: str, action: str, value: Any = None) -> 
             f.value = [] if isinstance(f.value, list) else ""  # skipped stays blank; nothing guessed
             continue
         if action == "fix":
+            before = f.value
             new = (value or {}).get(f.key) if isinstance(value, dict) else value
             if new is None:
                 raise ValueError(f"send the corrected {f.label.lower()}")
@@ -187,7 +188,7 @@ def answer(state: OnboardingState, qid: str, action: str, value: Any = None) -> 
                     else str(new).strip()
                 )
             )
-            f.status = "fixed"
+            f.status = "confirmed" if f.value == before else "fixed"  # unchanged in the form: just confirmed
         else:
             f.status = "confirmed"
         if f.key == "name":
