@@ -118,10 +118,11 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       five phrasings, every write tool aimed at the MLH invitation; only the pipeline item moves; negative control)
 - [x] F5. Status of items 7-11: C10-C13 done; C14 done except the adapter for the owner's real export layout,
       which still waits for the redacted sample (manifests and dated files are already followed generically)
-- [ ] F6. Rename to Area O1 (ADR 0010): names in one place, migration from Area O1-era workspaces,
-      deprecated areao1 alias, banter copy with tested rules
+- [x] F6. Rename to Area O1 (ADR 0010): every name in areao1/core/names.json; Lighthouse-era workspaces, settings,
+      keychain entries and variables migrated once with a notice; deprecated lighthouse-gc alias (baf7966);
+      banter only where listed, rules enforced by tests/test_banter.py and checked in Chrome (d15c9df, d71bfc2)
 
-### Part E: Google, CRM, outreach (ADR 0010)
+### Part E: Google, CRM, outreach (ADR 0014)
 - [ ] E1. Google sign-in with the user's own OAuth client, narrowest scopes, production-mode docs, keychain
 - [ ] E2. Gmail read: threads with case contacts linked to the CRM; nothing else stored
 - [ ] E3. Two-way sync with a dedicated "Area O1" Google calendar (latest edit wins, logged, undoable)
