@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Design system "Brutalism 2.0" (ADR 0007): semantic light and dark tokens with one muted red for attention,
+  condensed Archivo headlines with JetBrains Mono for data, framed panels, a System / Light / Dark switch,
+  lucide line icons, and data motion (charts draw in and morph, count-ups, calendar drag-and-glide).
+  Reduced motion is respected everywhere; text tokens meet WCAG AA.
+- No demo data (ADR 0008): `--demo` and `examples/demo-workspace` are gone. The fictional Alex Rivera case is a
+  test fixture, and three onboarding personas (Maya, Ravi, Lena) with LinkedIn-style PDFs live in
+  `tests/fixtures/personas`.
 - Knowledge vault (SPEC 5a, ADR 0006): `vault/sources.yaml` lists Tier 1–3 sources (eCFR 8 CFR 214.2(o) and
   204.5(h), INA, the USCIS Policy Manual chapters, I-129 / I-140, the G-1055 fee schedule, premium
   processing, processing times, the Visa Bulletin, the Federal Register, Kazarian, Chawathe, AAO decisions,

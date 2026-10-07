@@ -1,0 +1,75 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 1336 >>
+stream
+BT
+/F1 10.5 Tf
+14 TL
+56 780 Td
+(Contact) '
+(ravi.iyer.research@example.com) '
+(+1 617 555 0199 \(Mobile\)) '
+(www.linkedin.com/in/ravi-iyer-example \(LinkedIn\)) '
+(orcid.org/0000-0000-4242-4240 \(Other\)) '
+(Top Skills) '
+(Machine Learning) '
+(Large Language Models) '
+(PyTorch) '
+(Honors-Awards) '
+(Best Paper Award, Workshop on Efficient Machine Learning 2025) '
+(Publications) '
+(Sparse Mixture Routing for Efficient Transformers) '
+(Calibrated Uncertainty in Vision-Language Models) '
+(Ravi Iyer) '
+(AI Research Scientist at Lakeshore AI Lab) '
+(Boston, Massachusetts, United States) '
+(Summary) '
+(I work on efficient and reliable large models. My papers appeared at NeurIPS and ICLR, and I review for) '
+(NeurIPS, ICML and ICLR.) '
+(Experience) '
+(Lakeshore AI Lab) '
+(AI Research Scientist) '
+(September 2023 - Present \(3 years 2 months\)) '
+(Boston, Massachusetts, United States) '
+(Lead author on mixture-of-experts routing; program committee member, NeurIPS 2025.) '
+(Lakeshore University) '
+(Graduate Research Assistant) '
+(September 2018 - August 2023 \(5 years\)) '
+(Toronto, Ontario, Canada) '
+(Education) '
+(Lakeshore University) '
+(Doctor of Philosophy - PhD, Computer Science · \(2018 - 2023\)) '
+(Indian Institute of Example Sciences) '
+(Bachelor of Technology - BTech, Electrical Engineering · \(2014 - 2018\)) '
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Title (Ravi Iyer | LinkedIn) /Producer (LinkedIn) >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000001600 00000 n 
+0000001726 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R /Info 6 0 R >>
+startxref
+1798
+%%EOF

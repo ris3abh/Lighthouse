@@ -1,0 +1,17 @@
+{
+  "id": "maya",
+  "name": "Maya Chen",
+  "kind": "software engineer",
+  "headline": "Senior Software Engineer at Northwind Cloud · Open-source maintainer of quillstream",
+  "location": "Seattle, Washington, United States",
+  "employer": "Northwind Cloud",
+  "role": "Senior Software Engineer",
+  "education": ["Pacific Northwest Institute of Technology, Bachelor of Science - BS, Computer Science"],
+  "awards": ["Northwind Engineering Excellence Award 2024"],
+  "publications": [],
+  "certifications": [],
+  "skills": ["Distributed Systems", "Rust", "Kubernetes"],
+  "links": ["github.com/mayachen-example"],
+  "redacted": ["maya.chen@example.com", "+1 206 555 0142"],
+  "lookups": ["github"]
+}

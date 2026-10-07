@@ -62,8 +62,9 @@ Profiles are YAML in `profiles/`, validated by the `Profile` model (`lighthouse_
    `lighthouse_gc/criteria/models.py`. `lighthouse_gc/core` must never import from the domain layer or
    mention a specific profile (`tests/test_layering.py` enforces this).
 2. Regenerate schemas: `python -m lighthouse_gc.schemas`.
-3. Regenerate the demo: `python scripts/make_demo.py` (runs the real connectors against recorded fixtures,
-   no network), then check `lighthouse-gc validate -w examples/demo-workspace`.
+3. Regenerate the fictional test workspace: `python scripts/make_fixture_workspace.py` (runs the real
+   connectors against recorded fixtures, no network), then check
+   `lighthouse-gc validate -w tests/fixtures/workspaces/alex-rivera`.
    A breaking change needs a new `schema_version` and a migration.
 4. Record significant design decisions as an ADR in `docs/adr/`.
 
@@ -78,6 +79,7 @@ isn't covered.
 
 - Keep to the current phase in [SPEC.md](SPEC.md) and [TODO.md](TODO.md). Product work (usable out of the box)
   comes before research work; see SPEC.md section 11a.
-- No personal data, ever: the demo persona and its numbers are fictional.
+- No personal data, ever: the fixture personas (Alex, Maya, Ravi, Lena) and their numbers are fictional, and
+  they live only in `tests/fixtures/`. The package ships no fake data.
 - No telemetry and no network calls beyond the sources a user connected.
 - By contributing you agree your work is licensed under Apache-2.0.

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import os
-import shutil
-import tempfile
 import webbrowser
 from pathlib import Path
 from typing import Annotated
@@ -180,14 +178,11 @@ def run(
 @app.command()
 def up(
     port: Annotated[int | None, typer.Option(help="Port (default from lighthouse.yaml, 7777)")] = None,
-    demo: Annotated[
-        bool, typer.Option("--demo", help="Serve a throwaway copy of the demo workspace")
-    ] = False,
     scheduler: Annotated[
         bool | None,
         typer.Option(
             "--scheduler/--no-scheduler",
-            help="Run scheduled jobs in the background (default: on; off with --demo)",
+            help="Run scheduled jobs in the background (default: on)",
         ),
     ] = None,
     open_browser: Annotated[
@@ -198,17 +193,11 @@ def up(
     """Serve the dashboard on http://127.0.0.1 (localhost only)."""
     import uvicorn
 
-    from lighthouse_gc.resources import demo_workspace_dir, web_static_dir
+    from lighthouse_gc.resources import web_static_dir
     from lighthouse_gc.server.app import create_app
 
     try:
-        if demo:
-            tmp = Path(tempfile.mkdtemp(prefix="lighthouse-demo-"))
-            shutil.copytree(demo_workspace_dir(), tmp / "demo-workspace")
-            ws = Case(tmp / "demo-workspace").require()
-            typer.echo(f"Demo workspace copied to {ws.root} (changes are thrown away).")
-        else:
-            ws = find_workspace(workspace)
+        ws = find_workspace(workspace)
     except WorkspaceError as exc:
         raise _fail(str(exc)) from exc
     if not (web_static_dir() / "index.html").exists():
@@ -222,7 +211,7 @@ def up(
     if open_browser:
         webbrowser.open(url)
     sched = None
-    if scheduler if scheduler is not None else not demo:
+    if scheduler if scheduler is not None else True:
         from lighthouse_gc.jobs.scheduler import start
 
         sched = start(ws)

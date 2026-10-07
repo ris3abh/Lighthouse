@@ -1,7 +1,7 @@
 """Repo guard run by the pre-commit hook (.githooks/pre-commit) and by the test suite.
 
 Fails if the spec loses a required section, if the README / CONTRIBUTING lose the "two separate repos"
-warning, or if something that looks like a private case workspace appears outside examples/.
+warning, or if something that looks like a private case workspace appears outside tests/fixtures/workspaces/.
 """
 
 from __future__ import annotations
@@ -25,8 +25,10 @@ REQUIRED = {
     "CONTRIBUTING.md": ["keep two separate repos", "fresh private repo"],
 }
 
-# A real workspace has a lighthouse.yaml; only the fictional demo may have one in this repo.
-ALLOWED_WORKSPACES = {ROOT / "examples" / "demo-workspace"}
+# A real workspace has a lighthouse.yaml; only the fictional fixture workspaces may have one in this repo.
+ALLOWED_WORKSPACES = {
+    p.parent for p in (ROOT / "tests" / "fixtures" / "workspaces").glob("*/lighthouse.yaml")
+}
 SKIP_DIRS = {".git", ".venv", "node_modules", "dist", "build"}
 
 

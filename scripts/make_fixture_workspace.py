@@ -1,6 +1,6 @@
-"""Regenerate examples/demo-workspace — the fictional "Alex Rivera" persona.
+"""Regenerate tests/fixtures/workspaces/alex-rivera, the fictional "Alex Rivera" test case.
 
-    .venv/bin/python scripts/make_demo.py
+    .venv/bin/python scripts/make_fixture_workspace.py
 
 Everything here is fictional. Sources are imported through the real connectors, but every HTTP response
 is served from the recorded fixtures in tests/fixtures (respx), so this never touches the network and
@@ -35,7 +35,7 @@ from lighthouse_gc.jobs.chats import import_chats  # noqa: E402
 from lighthouse_gc.jobs.sync import import_source  # noqa: E402
 from lighthouse_gc.scaffold import create_workspace  # noqa: E402
 
-TARGET = ROOT / "examples" / "demo-workspace"
+TARGET = ROOT / "tests" / "fixtures" / "workspaces" / "alex-rivera"
 
 
 def at(day: str) -> datetime:

@@ -23,11 +23,11 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 - [x] B4. Data motion: charts draw in and morph between ranges, mono crosshair, count-up numbers, sliding
       deltas, sparklines draw on scroll-in, scoreboard fills + status transitions, calendar moves and view
       switches animate; 150–400ms, never blocking, reduced motion = instant
-- [ ] CHECKPOINT 1 (design): screenshots of Overview, Inbox, Calendar, Agent, chat panel. Reported 2026-10-07
-      (cbf20d7, 7cf63fb, d4f3b9e, f8666fa, a533e9e); waiting for approval before Part C
+- [x] CHECKPOINT 1 (design): approved 2026-10-07 with nine fixes (3470388). The palette change in the request
+      arrived without a palette; still open.
 
 ### Part C: no demo data, onboarding, guardrails (ADR 0008)
-- [ ] C1. Delete examples/demo-workspace and --demo; README / SPEC / scripts / CI updated; personas Maya
+- [x] C1. Delete examples/demo-workspace and --demo; README / SPEC / scripts / CI updated; personas Maya
       (software engineer), Ravi (AI researcher), Lena (business analytics lead) as test fixtures with
       LinkedIn-style PDFs; a fresh workspace opens straight into onboarding
 - [ ] C2. Onboarding conversation (LinkedIn PDF, local extraction + redaction, one question at a time with
@@ -109,7 +109,8 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 - [x] `CITATION.cff`, `CHANGELOG.md`, `ADOPTERS.md`
 - [x] Repo guard: `scripts/check_repo.py` via `.githooks/pre-commit` and `tests/test_repo_hygiene.py`
       (enable per clone: `git config core.hooksPath .githooks`)
-- [x] Demo generator: `scripts/make_demo.py` (real connectors, recorded fixtures, in-memory keychain)
+- [x] Fixture workspace generator: `scripts/make_fixture_workspace.py` (was make_demo.py; real connectors, recorded
+      fixtures, in-memory keychain)
 - [ ] `profiles/research-portfolio.yaml` — Phase 2 per the checklist
 
 ## Known gaps / deferred

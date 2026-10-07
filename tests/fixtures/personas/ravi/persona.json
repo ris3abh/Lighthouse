@@ -1,0 +1,17 @@
+{
+  "id": "ravi",
+  "name": "Ravi Iyer",
+  "kind": "AI researcher",
+  "headline": "AI Research Scientist at Lakeshore AI Lab",
+  "location": "Boston, Massachusetts, United States",
+  "employer": "Lakeshore AI Lab",
+  "role": "AI Research Scientist",
+  "education": ["Lakeshore University, Doctor of Philosophy - PhD, Computer Science", "Indian Institute of Example Sciences, Bachelor of Technology - BTech, Electrical Engineering"],
+  "awards": ["Best Paper Award, Workshop on Efficient Machine Learning 2025"],
+  "publications": ["Sparse Mixture Routing for Efficient Transformers", "Calibrated Uncertainty in Vision-Language Models"],
+  "certifications": [],
+  "skills": ["Machine Learning", "Large Language Models", "PyTorch"],
+  "links": ["orcid.org/0000-0000-4242-4240"],
+  "redacted": ["ravi.iyer.research@example.com", "+1 617 555 0199"],
+  "lookups": ["papers", "orcid"]
+}

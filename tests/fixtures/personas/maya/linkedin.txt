@@ -1,0 +1,34 @@
+Contact
+maya.chen@example.com
++1 206 555 0142 (Mobile)
+www.linkedin.com/in/maya-chen-example (LinkedIn)
+github.com/mayachen-example (Portfolio)
+Top Skills
+Distributed Systems
+Rust
+Kubernetes
+Languages
+English (Native or Bilingual)
+Mandarin (Professional Working)
+Honors-Awards
+Northwind Engineering Excellence Award 2024
+Maya Chen
+Senior Software Engineer at Northwind Cloud · Open-source maintainer of quillstream
+Seattle, Washington, United States
+Summary
+I build streaming data infrastructure. I created quillstream, an open-source log-shipping library used by
+more than 40 companies, and I speak at systems conferences about backpressure and reliability.
+Experience
+Northwind Cloud
+Senior Software Engineer
+March 2022 - Present (4 years 8 months)
+Seattle, Washington, United States
+Lead engineer for the event-ingestion platform (2 billion events a day). Judge, HackSeattle 2025.
+Bluefin Analytics
+Software Engineer
+June 2018 - February 2022 (3 years 9 months)
+Portland, Oregon, United States
+Built the company's first real-time metrics pipeline.
+Education
+Pacific Northwest Institute of Technology
+Bachelor of Science - BS, Computer Science · (2014 - 2018)

@@ -13,11 +13,11 @@ import pytest
 import respx
 
 from lighthouse_gc.criteria.case import Case
-from lighthouse_gc.resources import demo_workspace_dir
 from lighthouse_gc.scaffold import create_workspace
 
 FIXTURES = Path(__file__).parent / "fixtures"
 TODAY = date(2026, 10, 6)
+ALEX = Path(__file__).parent / "fixtures" / "workspaces" / "alex-rivera"  # the fictional fixture case
 
 
 def fixture_json(*parts: str):
@@ -47,7 +47,7 @@ def ws(tmp_path) -> Case:
 @pytest.fixture
 def demo_ws(tmp_path) -> Case:
     target = tmp_path / "demo"
-    shutil.copytree(demo_workspace_dir(), target)
+    shutil.copytree(ALEX, target)
     return Case(target)
 
 

@@ -1,4 +1,5 @@
-"""Locate bundled data (profiles, demo workspace, workspace template, web UI).
+"""Locate bundled data (profiles, vault manifest, workspace template, web UI). No fake data ships in the package:
+the fictional fixture workspaces live in tests/fixtures.
 
 In a wheel, repo-level folders are force-included under ``lighthouse_gc/_data/``. In a source checkout
 (editable install) they are read straight from the repo root.
@@ -24,10 +25,6 @@ def profiles_dir() -> Path:
 
 def vault_manifest_path() -> Path:
     return _pick("vault", "vault") / "sources.yaml"
-
-
-def demo_workspace_dir() -> Path:
-    return _pick("demo-workspace", "examples/demo-workspace")
 
 
 def workspace_template_dir() -> Path:

@@ -1,4 +1,4 @@
-"""JSON Schemas are generated from the pydantic models; examples/ must validate against both."""
+"""JSON Schemas are generated from the pydantic models; the fixture workspaces must validate against both."""
 
 from __future__ import annotations
 
@@ -8,10 +8,11 @@ import json
 import jsonschema
 import pytest
 import yaml
+from conftest import ALEX
 
 from lighthouse_gc.core.schemas import SCHEMA_DIR
 from lighthouse_gc.criteria.case import Case
-from lighthouse_gc.resources import demo_workspace_dir, profiles_dir
+from lighthouse_gc.resources import profiles_dir
 from lighthouse_gc.scaffold import validate_workspace
 from lighthouse_gc.schemas import build_schemas, schema_text
 
@@ -47,12 +48,12 @@ def test_schemas_are_valid_json_schema(name):
 
 @pytest.mark.parametrize(("filename", "stem"), sorted(FILE_SCHEMAS.items()))
 def test_demo_workspace_matches_schema(filename, stem):
-    data = json.loads((demo_workspace_dir() / "data" / filename).read_text())
+    data = json.loads((ALEX / "data" / filename).read_text())
     jsonschema.validate(data, load_schema(stem))
 
 
 def test_demo_config_and_metrics_match_schema():
-    root = demo_workspace_dir()
+    root = ALEX
     jsonschema.validate(
         yaml.safe_load((root / "lighthouse.yaml").read_text()), load_schema("lighthouse-config")
     )
@@ -70,7 +71,7 @@ def test_profiles_match_schema(path):
 
 
 def test_demo_workspace_validates():
-    assert validate_workspace(Case(demo_workspace_dir())) == []
+    assert validate_workspace(Case(ALEX)) == []
 
 
 @pytest.mark.parametrize(
@@ -79,7 +80,7 @@ def test_demo_workspace_validates():
      ("decisions", "decision")],
 )  # fmt: skip
 def test_demo_memory_lines_match_schema(name, stem):
-    path = demo_workspace_dir() / "memory" / f"{name}.jsonl"
+    path = ALEX / "memory" / f"{name}.jsonl"
     lines = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
     assert lines, f"demo memory/{name}.jsonl is empty"
     schema = load_schema(f"memory-{stem}")

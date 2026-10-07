@@ -38,9 +38,9 @@ jobs:
         run: mypy
       - name: Pytest (recorded fixtures only, no live network)
         run: pytest -q
-      - name: Validate examples
+      - name: Validate fixture workspaces
         run: |
-          for ws in examples/*/; do
+          for ws in tests/fixtures/workspaces/*/; do
             lighthouse-gc validate -w "$ws"
           done
 

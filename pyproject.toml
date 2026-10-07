@@ -61,7 +61,6 @@ artifacts = ["lighthouse_gc/server/static/**"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "profiles" = "lighthouse_gc/_data/profiles"
-"examples/demo-workspace" = "lighthouse_gc/_data/demo-workspace"
 "vault" = "lighthouse_gc/_data/vault"
 
 [tool.hatch.build.targets.sdist]

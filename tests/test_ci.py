@@ -1,5 +1,5 @@
 """The CI workflow runs every check the spec requires (SPEC 12: lint, type-check, tests, web build,
-schema validation of examples/), on the oldest and a current supported Python."""
+schema validation of the fixture workspaces), on the oldest and a current supported Python."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def test_python_job_runs_all_checks():
     job = _workflow()["jobs"]["python"]
     cmds = _commands(job)
     for needle in ("ruff check .", "ruff format --check .", "mypy", "pytest", "lighthouse-gc validate",
-                   "examples/", "scripts/check_repo.py", "pip install -e '.[dev]'"):  # fmt: skip
+                   "tests/fixtures/workspaces/", "scripts/check_repo.py", "pip install -e '.[dev]'"):  # fmt: skip
         assert needle in cmds, needle
 
 

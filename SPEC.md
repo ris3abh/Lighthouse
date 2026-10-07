@@ -386,7 +386,7 @@ lighthouse/
 ├── profiles/                # o1a.yaml eb1a.yaml research-portfolio.yaml (+ community)
 ├── scans/                   # default scan jobs + awards.yaml
 ├── skills/                  # agent skills copied into workspaces
-├── examples/demo-workspace/ # fictional persona "Alex Rivera" with seeded data
+├── tests/fixtures/workspaces/ # fictional test cases ("Alex Rivera"); personas/ holds onboarding personas
 ├── eval/                    # scenarios, fixtures, expected answers, baselines, results
 ├── docs/adr/                # dated architecture decision records
 ├── CITATION.cff  CHANGELOG.md  ADOPTERS.md
@@ -444,7 +444,7 @@ Security and privacy requirements:
 ## 11. Build phases
 
 Each phase ends with something usable. Don't start the next phase until the current one's checklist passes
-against the demo workspace and your own.
+against the fictional fixture workspace and your own.
 
 ### Phase 0 — Core + dashboard (weekend 1)
 
@@ -454,7 +454,7 @@ against the demo workspace and your own.
 - [ ] `lighthouse import <url>` auto-detects the connector
 - [ ] metrics-snapshot appends to metrics.csv
 - [ ] `lighthouse up` serves Overview, Sources, Metrics, Evidence and Inbox pages
-- [ ] DASHBOARD.md generated; demo workspace renders with no network
+- [ ] DASHBOARD.md generated; the fixture workspace renders with no network
 - [ ] Memory store (5b): connectors write observations; claims, edges and decisions as append-only JSONL with a
       rebuildable index; Inbox approves claims
 - [ ] Core/profile split: `lighthouse.core` imports nothing from immigration profiles (enforced by an
@@ -510,11 +510,11 @@ against the demo workspace and your own.
 - [ ] EB-1A final-merits narrative layer; attorney export
 - [ ] Memory page (graph view, time slider, provenance drill-down) + session context packs + MCP memory tools
 - [ ] Evaluation harness (5c): three systems, five scenarios, metrics, ablations; research-portfolio profile +
-      demo workspace
+      fixture workspace
 
 ### Phase 3 — Open-source launch
 
-- [ ] Docs site, setup wizard screenshots, 3-minute demo video using the demo persona
+- [ ] Docs site, setup wizard screenshots, 3-minute video walking through onboarding with a fictional persona
 - [ ] pipx release, Docker image, GitHub Actions template
 - [ ] Contributor guides for new connectors, profiles and scans
 - [ ] Each release attaches eval/ results and a Zenodo DOI; PROV-JSON export documented
@@ -539,8 +539,8 @@ items go first. Research items stay in the spec so the data model is designed fo
 - License: Apache-2.0 (patent grant, friendly to companies and law firms adopting it).
 - Fresh history: start a new repo; never fork from a private case repo. Run `gitleaks detect` before the first
   push.
-- Demo data only: the demo persona, employer and metrics are fictional. Your own case becomes your private
-  workspace, not part of the project.
+- No demo data in the product: fictional personas live only in tests/fixtures. Your own case becomes your
+  private workspace, not part of the project.
 - **Two repositories for contributor-users.** Anyone who both contributes and builds their own case keeps two
   separate repos: a public fork of the app for contributions, and a private workspace repo (created with
   `lighthouse init`, never a fork) for their case. Filing documents must never be committed to the public fork.
@@ -566,10 +566,11 @@ Read SPEC.md. Build Phase 0 only.
    recorded-fixture tests (no live network in tests).
 4. Implement the criteria engine against profiles/o1a.yaml and eb1a.yaml.
 5. Build the FastAPI server and React pages: Overview, Sources, Metrics, Evidence, Inbox.
-6. Create examples/demo-workspace with a fictional persona.
+6. Create a fictional fixture workspace for tests (now tests/fixtures/workspaces/alex-rivera).
 Stop when every Phase 0 checkbox passes. Keep a running TODO.md and do not
 add features outside Phase 0.
 ```
 
 Open decisions: project name ("Lighthouse" may collide on PyPI; check before publishing) — **resolved:
-`lighthouse-gc`** — and whether to ship a hosted demo of the dashboard with the fictional persona (open).
+`lighthouse-gc`** — and whether to ship a hosted demo of the dashboard with a fictional persona (closed: no demo data ships; a new
+workspace opens into onboarding).

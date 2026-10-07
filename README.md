@@ -42,7 +42,8 @@ git clone https://github.com/ris3abh/Lighthouse && cd Lighthouse
 pipx install -e .                 # or: uv tool install -e .  /  pip install -e .
 npm --prefix web install && npm --prefix web run build   # builds the dashboard into the package
 
-lighthouse-gc up --demo           # try it on the fictional "Alex Rivera" workspace, no network needed
+lighthouse-gc init ~/my-case      # an empty, private workspace (a git repo of plain files)
+lighthouse-gc up -w ~/my-case     # opens onboarding: start from your LinkedIn PDF, or skip
 ```
 
 Your own case:
@@ -114,7 +115,7 @@ about immigration. Profiles and scoring live in a separate layer, so other domai
 | `lighthouse-gc run sync` | refresh all sources, push new candidates to the Inbox |
 | `lighthouse-gc run metrics-snapshot` | append today's metrics (and GitHub's 14-day traffic) to `metrics.csv` |
 | `lighthouse-gc run dashboard` | re-score and regenerate `DASHBOARD.md` |
-| `lighthouse-gc up [--demo]` | serve the dashboard on `127.0.0.1:7777` |
+| `lighthouse-gc up` | serve the dashboard on `127.0.0.1:7777`; a new workspace opens into onboarding |
 | `lighthouse-gc validate` | check every workspace file against its schema and naming rules |
 | `lighthouse-gc notify test` | send a test notification to every routed channel |
 | `lighthouse-gc secret set <ref>` | store a token / webhook URL / SMTP password in the OS keychain |
