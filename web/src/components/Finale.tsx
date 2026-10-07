@@ -2,6 +2,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "../lib/motion";
 import { Button, plural } from "./ui";
+import Banter from "./Banter";
 
 const duration = 380; // ms, ADR 0007
 
@@ -42,7 +43,7 @@ export default function Finale({ name, todos, onDone }: { name: string; todos: n
       <div className="relative mx-auto w-full max-w-4xl px-6">
         <div className={`transition-opacity duration-200 ${leaving ? "opacity-0" : "animate-rise"}`}>
           <p className="eyebrow">{name ? `All set, ${name}` : "All set"}</p>
-          <h1 className="display mt-5 text-6xl md:text-8xl">That's it. I'm one click away, and at your service.</h1>
+          <Banter id="finish" className="display mt-5 text-6xl md:text-8xl" fallback="That's it. I'm one click away, and at your service." />
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-2">
             {todos
               ? `${plural(todos, "next step")} from what you told me ${todos === 1 ? "is" : "are"} waiting on your Overview. Ask me anything, any time, from the button at the top.`

@@ -56,6 +56,7 @@
     h1 { font-size: clamp(48px, 9vw, 104px); max-width: 12ch; }
     h2 { font-size: clamp(32px, 5vw, 48px); margin-bottom: 16px; }
     .hero { padding: 56px 0 40px; }
+    .taglines { margin: 20px 0 0; font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em; color: var(--ink-2); line-height: 1.9; }
     .lede { max-width: 62ch; color: var(--ink-2); font-size: 19px; margin: 24px 0 0; }
     .card { border: 1px solid var(--frame); background: var(--surface); }
     .install { margin-top: 40px; }
@@ -100,9 +101,13 @@
   <main class="wrap">
     <section class="hero">
       <p class="eyebrow">O-1A · EB-1A · Local-first · Open source</p>
-      <h1>Your evidence file, built on your own computer.</h1>
+      <div data-banter="hero">
+        <h1>Area O1: where extraordinary aliens get their paperwork done.</h1>
+        <p class="taglines">O-1 gets you a visit. EB-1 lets you keep the spaceship.<br>Never bills you a single six minutes.</p>
+      </div>
       <p class="lede">
-        Area O1 turns your work (papers, code, talks, press, judging) into a living evidence file for an
+        Your evidence file, built on your own computer. Area O1 turns your work (papers, code, talks, press,
+        judging) into a living evidence file for an
         O-1A or EB-1A extraordinary-ability case: a criteria scoreboard, an evidence inbox, metrics, deadlines,
         letters and a dashboard. Start from your LinkedIn PDF; it takes a few minutes.
       </p>
@@ -164,7 +169,8 @@
   <footer>
     <div class="wrap">
       <p>Area O1 is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public
-        regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.</p>
+        regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.
+        <span data-banter="disclaimer">Not affiliated with USCIS, the U.S. Air Force, or anything in Nevada.</span></p>
       <p><a href="https://github.com/ris3abh/areao1">Source on GitHub</a> ·
         <a href="https://github.com/ris3abh/areao1/blob/main/DISCLAIMER.md">Disclaimer</a> · Apache-2.0</p>
     </div>

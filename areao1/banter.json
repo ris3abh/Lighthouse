@@ -1,0 +1,15 @@
+{
+  "_note": "ADR 0010 §4: every line of banter, and where it may appear. Tests enforce the rules; nothing else in the product jokes.",
+  "hero": {"text": "Area O1: where extraordinary aliens get their paperwork done.", "where": "landing hero"},
+  "tagline_visit": {"text": "O-1 gets you a visit. EB-1 lets you keep the spaceship.", "where": "landing hero"},
+  "tagline_billing": {"text": "Never bills you a single six minutes.", "where": "landing hero"},
+  "disclaimer": {"text": "Not affiliated with USCIS, the U.S. Air Force, or anything in Nevada.", "where": "footer (landing page and app)"},
+  "eb1a_first_switch": {"text": "Ready to stop being a visitor? EB-1A is the long game: same evidence, stricter bar.", "where": "first switch to EB-1A"},
+  "empty_inbox": {"text": "Nothing to review. The skies are clear.", "where": "empty Inbox"},
+  "constellation_loading": {"text": "Aligning the stars...", "where": "constellation loading"},
+  "banked": {"text": "Contact confirmed.", "where": "a criterion turning banked"},
+  "finish": {"text": "That's it. I'm one click away, and at your service. Welcome to Area O1.", "where": "onboarding finish"},
+  "signal_verified": {"text": "New signal detected: {what}, verified.", "where": "verified opportunity notification"},
+  "signal_unverified": {"text": "Unidentified signal. Couldn't confirm the sender, so I drafted a check-in.", "where": "unverified opportunity notification"},
+  "not_found": {"text": "This page has been abducted.", "where": "404 page"}
+}

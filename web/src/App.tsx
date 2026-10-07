@@ -39,6 +39,9 @@ import Settings from "./pages/Settings";
 import Sources from "./pages/Sources";
 import Welcome from "./pages/Welcome";
 import { PRODUCT } from "./names";
+import Banter, { banterOk } from "./components/Banter";
+import { banterText, SERIOUS_PAGES } from "./lib/banter";
+import NotFound from "./pages/NotFound";
 
 /** Bumping `version` makes every page and the shell re-fetch after a write. */
 const RefreshCtx = createContext<{ version: number; bump: () => void }>({ version: 0, bump: () => {} });
@@ -63,6 +66,22 @@ const THEMES: { value: ThemeMode; label: ReactNode; title: string }[] = [
   { value: "light", label: <Sun aria-label="Light" />, title: "Theme: light" },
   { value: "dark", label: <Moon aria-label="Dark" />, title: "Theme: dark" },
 ];
+
+/** Visitor mode (O-1A) / Resident mode (EB-1A): control labels that keep the legal names (ADR 0010 §4). */
+function profileLabel(id: string): ReactNode {
+  const short = id === "o1a" ? "O-1A" : id === "eb1a" ? "EB-1A" : id;
+  const mode = id === "o1a" ? "Visitor mode" : id === "eb1a" ? "Resident mode" : "";
+  return mode ? (
+    <>
+      <span className="hidden xl:inline">
+        {mode} ({short})
+      </span>
+      <span className="xl:hidden">{short}</span>
+    </>
+  ) : (
+    short
+  );
+}
 
 function placeOf(v: OnboardingView): OnboardingPlace {
   return { step: v.state.step, question: v.state.step === "questions" ? (v.question?.id ?? null) : null };
@@ -224,7 +243,21 @@ function Shell() {
     setSwitching(true);
     try {
       const board = await api.setProfile(id);
-      toast(`Re-scored for ${board.profile_name}: ${board.banked} banked`);
+      const plain = `Re-scored for ${board.profile_name}: ${board.banked} banked`;
+      let first = false;
+      try {
+        first = id === "eb1a" && !localStorage.getItem("lh-eb1a-hello");
+      } catch {
+        /* storage unavailable */
+      }
+      if (first && banterOk()) {
+        toast(`${banterText("eb1a_first_switch")} ${plain}.`);
+        try {
+          localStorage.setItem("lh-eb1a-hello", "1");
+        } catch {
+          /* storage unavailable */
+        }
+      } else toast(plain);
       bump();
     } catch (e) {
       toast((e as Error).message, "error");
@@ -265,8 +298,13 @@ function Shell() {
     case "settings":
       content = <Settings />;
       break;
-    default:
+    case "overview":
+    case "welcome":
+    case "":
       content = <OverviewPage data={ov} error={overview.error} retry={overview.reload} />;
+      break;
+    default:
+      content = <NotFound />;
   }
 
   const touring = !!onboarding?.needed && onboarding.state.step === "tour";
@@ -313,7 +351,9 @@ function Shell() {
       size="sm"
       value={ov.profile}
       onChange={(id) => !switching && switchProfile(id)}
-      options={ov.profiles.map((p) => ({ value: p.id, label: p.id === "o1a" ? "O-1A" : p.id === "eb1a" ? "EB-1A" : p.id, title: p.name }))}
+      options={[...ov.profiles]
+        .sort((a, b) => (a.id === "o1a" ? -1 : b.id === "o1a" ? 1 : 0)) // Visitor before Resident
+        .map((p) => ({ value: p.id, label: profileLabel(p.id), title: p.name }))}
     />
   );
 
@@ -384,10 +424,13 @@ function Shell() {
         </header>
 
         <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-          <div className="lh-content @container mx-auto w-full max-w-[1440px] px-4 py-8 md:px-10 md:py-12">{content}</div>
+          <div className="lh-content @container mx-auto w-full max-w-[1440px] px-4 py-8 md:px-10 md:py-12" data-serious={SERIOUS_PAGES.has(page) || undefined}>
+            {content}
+          </div>
           <footer className="mx-auto max-w-[1440px] border-t border-line px-4 py-5 font-mono text-[10.5px] leading-relaxed text-muted md:px-10">
             {PRODUCT} is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public
             regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.
+            <Banter id="disclaimer" as="span" className="ml-1" />
           </footer>
         </main>
       </div>

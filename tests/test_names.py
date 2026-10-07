@@ -16,7 +16,7 @@ OLD_NAME_ALLOWED = re.compile(
     r"^(CHANGELOG\.md|docs/adr/(?!0010).*|TODO\.md|areao1/core/names\.json|areao1/core/migrate\.py|"
     r"areao1/core/secrets\.py|areao1/core/workspace\.py|areao1/home\.py|areao1/agent/routing\.py|areao1/server/app\.py|areao1/onboarding/models\.py|areao1/onboarding/api\.py|"
     r"areao1/cli\.py|pyproject\.toml|scripts/check_repo\.py|tests/test_(migration|names|connect_ai)\.py|"
-    r"tests/conftest\.py|docs/adr/0010-area-o1\.md|SPEC\.md)$"
+    r"tests/conftest\.py|docs/adr/0010-area-o1\.md|SPEC\.md|README\.md)$"
 )
 
 

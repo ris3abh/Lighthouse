@@ -7,6 +7,8 @@ import TrackerCard, { TRACKER_LABEL } from "../components/TrackerCard";
 import { Paperclip } from "lucide-react";
 import { Button, Card, Chip, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { today, useLoad } from "../hooks";
+import Banter, { banterOk } from "../components/Banter";
+import { banterText } from "../lib/banter";
 
 export default function Inbox() {
   const { version, bump } = useRefresh();
@@ -38,7 +40,11 @@ export default function Inbox() {
       {candidates.length === 0 ? (
         <Card panel="inbox">
           <Empty>
-            Inbox zero. New candidates arrive when you <a href="#/sources" className="link">add or sync a source</a>.
+            <Banter id="empty_inbox" as="span" fallback="Nothing to review." /> New candidates arrive when you{" "}
+            <a href="#/sources" className="link">
+              add or sync a source
+            </a>
+            .
           </Empty>
         </Card>
       ) : (
@@ -138,7 +144,14 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
     summary: form.summary,
   });
   const accept = () =>
-    act(() => api.accept(c.id, { ...(editing ? edits() : {}), date: form.date }), "Accepted — exhibit filed and scoreboard updated");
+    act(async () => {
+      const banked = (o: { scoreboard: { criteria: { id: string; status: string }[] } }) =>
+        new Set(o.scoreboard.criteria.filter((x) => x.status === "banked").map((x) => x.id));
+      const before = banked(await api.overview());
+      await api.accept(c.id, { ...(editing ? edits() : {}), date: form.date });
+      const now = banked(await api.overview());
+      if ([...now].some((id) => !before.has(id)) && banterOk()) toast(`${banterText("banked")} A criterion is now banked.`); // ADR 0010 §4
+    }, "Accepted — exhibit filed and scoreboard updated");
 
   return (
     <article className="animate-rise border-b border-line px-5 py-6 last:border-b-0 md:px-6">

@@ -175,7 +175,7 @@ export function Loading() {
 
 export function ErrorBox({ error, retry }: { error: Error; retry?: () => void }) {
   return (
-    <div className="border border-alert bg-surface p-5 text-sm">
+    <div className="border border-alert bg-surface p-5 text-sm" data-serious>
       <p className="eyebrow text-alert">Couldn't load this page</p>
       <p className="mt-2 text-ink-2">{error.message}</p>
       {retry && (

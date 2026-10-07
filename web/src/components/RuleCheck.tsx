@@ -23,7 +23,7 @@ export default function RuleCheckView({
   const counts = check.claims.reduce<Record<string, number>>((acc, c) => ({ ...acc, [c.status]: (acc[c.status] ?? 0) + 1 }), {});
   const summary = (["verified", "unverified", "stale", "conflict"] as RuleStatus[]).filter((s) => counts[s]).map((s) => `${counts[s]} ${s}`);
   return (
-    <div className="mt-3 border border-line text-xs">
+    <div className="mt-3 border border-line text-xs" data-serious>
       <div className="flex items-center gap-2 px-3 py-2">
         <button type="button" className="flex flex-1 items-center gap-2 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
           <ShieldCheck className="size-3.5 text-ink-2" aria-hidden />

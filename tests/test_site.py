@@ -40,6 +40,9 @@ def test_page_has_the_legal_note_from_the_app_footer():
     from areao1.core.names import PRODUCT
 
     note = " ".join(footer.split(">", 1)[1].split()).replace("{PRODUCT}", PRODUCT)
+    note = re.sub(
+        r"\s*<Banter[^>]*/>", "", note
+    ).strip()  # the tagged disclaimer line is checked in test_banter
     page = " ".join(html.unescape(PAGE.read_text()).split())
     assert note.startswith("Area O1 is not legal advice") and note in page
 
