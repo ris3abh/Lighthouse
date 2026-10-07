@@ -24,7 +24,7 @@ AUTO_ACTIONS: frozenset[str] = frozenset().union(*CATEGORY_ACTIONS.values())
 # Actions that can change what counts toward a criterion. Never auto-applied, whatever the settings.
 CRITERION_ACTIONS: frozenset[str] = frozenset({
     "inbox.accept", "inbox.edit", "inbox.upload", "evidence.upload", "evidence.remap", "criterion.override",
-    "profile.set", "settings.autopilot", "settings.missions",
+    "profile.set", "settings.autopilot", "settings.missions", "vault.promote",
 })  # fmt: skip
 
 # Fields autopilot may change on each tracker. Anything else (e.g. a pipeline item's criterion, a letter's

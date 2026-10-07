@@ -37,6 +37,7 @@ from lighthouse_gc.service import Service
 from lighthouse_gc.sources.http import SourceError
 from lighthouse_gc.vault import Vault
 from lighthouse_gc.vault.rulecheck import briefing_text, refresh
+from lighthouse_gc.vault.store import MAX_VAULT_BYTES
 
 WRITE_HEADER = "x-lighthouse"
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -131,6 +132,15 @@ class AutopilotBody(BaseModel):
 class MissionsBody(BaseModel):
     opportunity_scout: bool | None = None
     what_changed: bool | None = None
+
+
+class VaultSyncBody(BaseModel):
+    sources: list[str] | None = None
+    force: bool = False
+
+
+class PromoteBody(BaseModel):
+    kind: str
 
 
 class NotifyTestBody(BaseModel):
@@ -747,6 +757,86 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
                 "proposed_criterion": c.proposed_criterion, "source_tier": c.source_tier} if c else None})  # fmt: skip
         return {**b.model_dump(mode="json", exclude={"todos"}), "todos": todos,
                 "refreshing": running.id if running else None, "rule_check": checked(b.rule_check)}  # fmt: skip
+
+    # ------------------------------------------------------------------ knowledge (SPEC 5a)
+
+    def open_conflicts() -> list[dict[str, Any]]:
+        """Rule claims where Tier 1 sources disagree, wherever they appeared (answers, briefing, Inbox)."""
+        found: dict[str, dict[str, Any]] = {}
+
+        def add(check: Any, where: dict[str, Any], at: Any) -> None:
+            fresh = refresh(check, vault)
+            for c in fresh.claims if fresh else []:
+                if c.status == "conflict" and c.text not in found:
+                    found[c.text] = {"claim": c.model_dump(mode="json"), "where": where, "at": str(at)}
+
+        for r in runner.runs(limit=200):
+            add(r.rule_check, {"type": "run", "id": r.id, "label": r.prompt[:80]}, r.started_at)
+        b = ws.briefing()
+        add(b.rule_check, {"type": "briefing", "id": None, "label": "This week's briefing"}, b.generated_at)
+        for cand in ws.pending_candidates():
+            add(cand.rule_check, {"type": "candidate", "id": cand.id, "label": cand.title}, cand.created_at)
+        return list(found.values())
+
+    @app.get("/api/knowledge")
+    def knowledge() -> dict[str, Any]:
+        sources = vault.status()
+        titles = {s["id"]: s["title"] for s in sources}
+        recent = [{**e.model_dump(mode="json"), "title": titles.get(e.source_id, e.source_id)}
+                  for e in reversed(vault.log()[-60:])]  # fmt: skip
+        return {"enabled": ws.config().vault.enabled, "sources": sources, "recent": recent,
+                "conflicts": open_conflicts(), "tier1_domains": vault.manifest.tier1_domains,
+                "tier2_domains": vault.manifest.tier2_domains,
+                "kinds": sorted(k for k in vault.manifest.ttl_days if k != "finding")}  # fmt: skip
+
+    @app.get("/api/knowledge/sources/{source_id}")
+    def knowledge_source(source_id: str) -> dict[str, Any]:
+        src = vault.manifest.source(source_id)
+        if src is None:
+            raise HTTPException(404, f"no vault source {source_id!r}")
+        return {
+            "source": src.model_dump(),
+            "snapshots": vault.history(source_id),
+            "log": [e.model_dump(mode="json") for e in reversed(vault.log()) if e.source_id == source_id][
+                :30
+            ],
+        }
+
+    @app.get("/api/knowledge/snapshots/{sha}")
+    def knowledge_snapshot(sha: str) -> PlainTextResponse:
+        if not vault.has_snapshot(sha):
+            raise HTTPException(404, "no such snapshot")
+        return PlainTextResponse(vault.snapshot_text(sha))
+
+    @app.post("/api/knowledge/sync")
+    async def knowledge_sync(body: VaultSyncBody | None = None) -> list[dict[str, Any]]:
+        if not ws.config().vault.enabled:
+            raise HTTPException(400, "the vault is turned off (vault.enabled in lighthouse.yaml)")
+        body = body or VaultSyncBody()
+        try:
+            results = await vault.sync(body.sources or None, force=body.force)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return [r.model_dump(mode="json") for r in results]
+
+    @app.post("/api/knowledge/import/{source_id}")
+    async def knowledge_import(source_id: str, file: UploadFile = File(...)) -> dict[str, Any]:
+        content = await file.read(MAX_VAULT_BYTES + 1)
+        if len(content) > MAX_VAULT_BYTES:
+            raise HTTPException(413, "file is too large")
+        try:
+            entry = vault.import_file(source_id, content, file.filename or "", file.content_type or "")
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return entry.model_dump(mode="json")
+
+    @app.post("/api/knowledge/findings/{source_id}/promote")
+    def knowledge_promote(source_id: str, body: PromoteBody) -> dict[str, Any]:
+        try:
+            promoted = svc.promote_finding(source_id, body.kind)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return promoted.model_dump()
 
     # Re-run rule-check (one judge call when the text states rules) after the vault was refreshed.
     @app.post("/api/rulecheck/runs/{run_id}")

@@ -7,6 +7,7 @@ import Agent from "./pages/Agent";
 import Calendar from "./pages/Calendar";
 import Evidence from "./pages/Evidence";
 import Inbox from "./pages/Inbox";
+import Knowledge from "./pages/Knowledge";
 import Letters from "./pages/Letters";
 import Metrics from "./pages/Metrics";
 import OverviewPage from "./pages/Overview";
@@ -27,6 +28,7 @@ const NAV = [
   { id: "letters", label: "Letters", icon: "✉" },
   { id: "calendar", label: "Calendar", icon: "▦" },
   { id: "agent", label: "Agent", icon: "✦" },
+  { id: "knowledge", label: "Knowledge", icon: "§" },
   { id: "sources", label: "Sources", icon: "⛁" },
   { id: "settings", label: "Settings", icon: "⚙" },
 ] as const;
@@ -102,6 +104,9 @@ function Shell() {
       break;
     case "agent":
       content = <Agent focus={params.get("run")} />;
+      break;
+    case "knowledge":
+      content = <Knowledge />;
       break;
     case "calendar":
       content = <Calendar />;

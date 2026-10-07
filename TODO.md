@@ -100,7 +100,12 @@ Phase 1c notes:
       conflict; write tools and Inbox acceptance refuse unverified rules (attorney export reuses it in Phase 2)
 - [x] 3. Agent: `search_vault` first (stale sources re-fetched), rule searches guarded to Tier 1 then Tier 2,
       official pages read become vault findings
-- [ ] 4. Knowledge page
+- [x] 4. Knowledge page: sources by tier with freshness, recent changes with diffs, open conflicts, re-fetch,
+      import a saved page, promote agent findings to sources
+- [ ] 5. Scholarly connectors (next)
+- [ ] 6. Website connector (next)
+- The demo workspace has no vault content (fetched pages live in the cache, which isn't shipped), so its
+  Knowledge page lists the sources as never fetched.
 
 Phase 1d notes:
 - USCIS (Akamai), travel.state.gov and egov processing times answer automated clients with 403. They show

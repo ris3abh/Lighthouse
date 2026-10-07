@@ -24,6 +24,9 @@ All notable changes to this project are documented here. The format follows
   about rules are refused unless they follow a vault search and are restricted to Tier 1 domains (Tier 2 after
   that); other searches stay open. Official pages the agent reads are kept in the vault as findings,
   searchable but never used to verify a rule until promoted.
+- Knowledge page: every vault source by tier with freshness (checked, expires, page date, versions kept),
+  recent changes with the changed lines, open conflicts with both citations and where they appeared, and
+  per-source Re-fetch / Import saved page. Official pages the agent found can be added as sources.
 - Bot-protection and maintenance pages are recognized even when served with HTTP 200, and recorded as
   unreadable. Pages from sites that block automated reading can be imported from a saved copy.
 

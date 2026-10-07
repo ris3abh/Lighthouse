@@ -127,6 +127,8 @@ class Vault:
     ):
         self.ws = ws
         self._manifest = manifest
+        self._fixed = manifest is not None  # an explicit manifest (tests) is never reloaded
+        self._key: tuple[int, int] = (0, 0)
         self.embedder = embedder or default_embedder()
         self.dir = ws.cache_dir / "vault"
         self.snapshots = self.dir / "snapshots"
@@ -135,9 +137,18 @@ class Vault:
 
     # ------------------------------------------------------------------ manifest + db
 
+    def _files_key(self) -> tuple[int, int]:
+        paths = (self.ws.root / "vault" / "sources.yaml", self.ws.root / "vault" / "findings.jsonl")
+        return tuple(p.stat().st_mtime_ns if p.exists() else 0 for p in paths)  # type: ignore[return-value]
+
     @property
     def manifest(self) -> VaultManifest:
-        if self._manifest is None:
+        if self._fixed:
+            assert self._manifest is not None
+            return self._manifest
+        key = self._files_key()
+        if self._manifest is None or key != self._key:
+            self._key = key
             m = load_manifest(self.ws.root / "vault" / "sources.yaml")
             known = {s.id for s in m.sources}
             m.sources += [f for f in self.findings() if f.id not in known]
@@ -174,7 +185,6 @@ class Vault:
             with self.findings_path.open("a", encoding="utf-8") as f:
                 f.write(json.dumps({"id": sid, "url": url, "title": title or url, "tier": tier,
                                     "found_at": utcnow().isoformat(), "run_id": run_id}) + "\n")  # fmt: skip
-            self._manifest = None
             source = self.manifest.source(sid)
             assert source is not None
         text = normalize(text)
@@ -509,6 +519,36 @@ class Vault:
                         effective_date=date.fromisoformat(r["eff"]) if r["eff"] else None,
                         fresh=utcnow() < expires and r["sha"] == r["current"], score=0.0)  # fmt: skip
 
+    def history(self, source_id: str) -> list[dict[str, Any]]:
+        """Every snapshot kept for a source, newest first (what the page said, and when)."""
+        with self.db() as con:
+            rows = con.execute("select sha, url, fetched_at, effective_date, chars from snapshots where source_id=? "
+                               "order by fetched_at desc", (source_id,)).fetchall()  # fmt: skip
+        return [dict(r) for r in rows]
+
+    def has_snapshot(self, sha: str) -> bool:
+        return bool(re.fullmatch(r"[0-9a-f]{64}", sha)) and self._snapshot_path(sha).exists()
+
+    def promote(self, finding_id: str, kind: str) -> VaultSource:
+        """Make a finding a reviewed source (written to the workspace's vault/sources.yaml)."""
+        f = self.manifest.source(finding_id)
+        if f is None or not f.finding:
+            raise ValueError(f"{finding_id!r} isn't a finding")
+        if kind not in self.manifest.ttl_days or kind == "finding":
+            raise ValueError(
+                f"kind must be one of {sorted(k for k in self.manifest.ttl_days if k != 'finding')}"
+            )
+        path = self.ws.root / "vault" / "sources.yaml"
+        data = (yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else None) or {"version": 1}
+        data.setdefault("sources", [])
+        data["sources"] = [s for s in data["sources"] if s.get("id") != finding_id]
+        promoted = VaultSource(id=f.id, title=f.title, url=f.url, tier=f.tier, kind=kind,
+                               notes="promoted from an agent finding")  # fmt: skip
+        data["sources"].append(promoted.model_dump(exclude_defaults=True))
+        VaultManifest.model_validate({**data, "sources": data["sources"]})
+        _atomic_write(path, yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
+        return promoted
+
     # ------------------------------------------------------------------ status
 
     def status(self) -> list[dict[str, Any]]:
@@ -535,6 +575,7 @@ class Vault:
                 "checked_at": _iso(checked), "expires_at": _iso(expires),
                 "fresh": bool(expires and now < expires), "effective_date": st.get("effective_date"),
                 "snapshots": counts.get(s.id, 0), "last_changed": _iso(changed.get(s.id)), "sha256": st.get("sha"),
+                "finding": s.finding,
             })  # fmt: skip
         return out
 

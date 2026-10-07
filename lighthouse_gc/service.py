@@ -334,6 +334,17 @@ class Service:
         return self._record("settings.missions", "settings", apply, target_id="missions", before=before,
                             summary=", ".join(f"{k}={'on' if v else 'off'}" for k, v in flags.items()))  # fmt: skip
 
+    def promote_finding(self, finding_id: str, kind: str) -> Any:
+        """A person decides an official page the agent found is a source the vault should rely on."""
+        if self.auto:
+            raise AutopilotRefused("autopilot can't change what counts as a source")
+        from lighthouse_gc.vault import Vault
+
+        vault = Vault(self.ws)
+        before = vault.manifest.source(finding_id)
+        return self._record("vault.promote", "vault_source", lambda: vault.promote(finding_id, kind),
+                            target_id=finding_id, before=before, summary=f"{before.title if before else finding_id} → {kind}")  # fmt: skip
+
     # ------------------------------------------------------------------ undo
 
     UNDOABLE = frozenset({"pipeline.add", "pipeline.update", "pipeline.move", "deadline.add", "deadline.update",

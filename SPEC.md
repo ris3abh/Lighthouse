@@ -494,7 +494,7 @@ against the demo workspace and your own.
       letters, exhibits or exports.
 - [x] Agent uses the vault first; web search fallback restricted to Tier 1 domains, then Tier 2; new findings
       enter as observations.
-- [ ] Knowledge page: sources, freshness, recent changes, open conflicts.
+- [x] Knowledge page: sources, freshness, recent changes, open conflicts.
 - [ ] Scholarly connectors: Semantic Scholar, OpenAlex, arXiv, ORCID.
 - [ ] Website connector (readability extraction, bot-blocked pages unreadable, shared private-network guard).
 

@@ -24,7 +24,7 @@ PDF = b"%PDF-1.4 fictional\n"
 # Routes the five pages write through. Every mutating route under these prefixes must be covered below.
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
-                 "/api/settings/missions", "/api/rulecheck/briefing", "/api/rulecheck/inbox")  # fmt: skip
+                 "/api/settings/missions", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -36,6 +36,8 @@ SYSTEM_ROUTES = {
     # the workspace goes through Service(actor="agent:<run>"), covered in tests/test_agent.py.
     ("POST", "/api/agent/chat"), ("POST", "/api/agent/runs"), ("POST", "/api/agent/runs/{run_id}/stop"),
     ("POST", "/api/agent/missions/{name}/run"), ("POST", "/api/rulecheck/runs/{run_id}"),
+    # The vault's fetched content lives in the cache; its fetch log is append-only (like source syncs).
+    ("POST", "/api/knowledge/sync"), ("POST", "/api/knowledge/import/{source_id}"),
 }  # fmt: skip
 
 
@@ -93,7 +95,20 @@ def _ids(ws):
         "letter": ws.letters().letters[0].id,
         "undo": _undoable_change(ws),
         "briefing": _briefing(ws),
+        "finding": _finding(ws),
     }
+
+
+def _finding(ws) -> str:
+    """An official page the agent read, so the promote route has a finding to promote."""
+    from lighthouse_gc.vault import Vault
+
+    text = "Official guidance about petitions and evidence. " * 10
+    return (
+        Vault(ws)
+        .add_finding("https://www.uscis.gov/newsroom/alerts/x", "USCIS alert", text, "run_x")
+        .source_id
+    )
 
 
 def _briefing(ws) -> str:
@@ -145,6 +160,8 @@ SAMPLES = {
     ("PATCH", "/api/letters/{letter_id}"): ("/api/letters/{letter}", {"json": {"status": "sent"}}, "letter.update"),
     ("DELETE", "/api/letters/{letter_id}"): ("/api/letters/{letter}", {}, "letter.delete"),
     ("PUT", "/api/settings/autopilot"): ("/api/settings/autopilot", {"json": {"metrics": True}}, "settings.autopilot"),
+    ("POST", "/api/knowledge/findings/{source_id}/promote"): ("/api/knowledge/findings/{finding}/promote",
+                                                             {"json": {"kind": "guidance"}}, "vault.promote"),
     ("POST", "/api/rulecheck/briefing"): ("/api/rulecheck/briefing", {}, "briefing.recheck"),
     ("POST", "/api/rulecheck/inbox/{candidate_id}"): ("/api/rulecheck/inbox/{other}", {}, "inbox.recheck"),
     ("PUT", "/api/settings/missions"): ("/api/settings/missions", {"json": {"what_changed": True}}, "settings.missions"),

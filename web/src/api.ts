@@ -295,6 +295,50 @@ export interface BriefingView {
   rule_check: RuleCheck | null;
 }
 
+export interface VaultSourceStatus {
+  id: string;
+  title: string;
+  tier: 1 | 2 | 3;
+  kind: string;
+  topics: string[];
+  url: string;
+  enabled: boolean;
+  notes: string;
+  ttl: number | "monthly";
+  status: string;
+  error: string | null;
+  checked_at: string | null;
+  expires_at: string | null;
+  fresh: boolean;
+  effective_date: string | null;
+  snapshots: number;
+  last_changed: string | null;
+  finding: boolean;
+}
+
+export interface VaultFetch {
+  id: string;
+  source_id: string;
+  title: string;
+  url: string;
+  tier: number;
+  fetched_at: string;
+  status: "new" | "changed" | "unchanged" | "unreadable" | "error";
+  origin: "fetch" | "manual" | "agent";
+  error: string | null;
+  diff: { added: number; removed: number; sample: string[] } | null;
+}
+
+export interface KnowledgeView {
+  enabled: boolean;
+  sources: VaultSourceStatus[];
+  recent: VaultFetch[];
+  conflicts: { claim: RuleClaim; where: { type: "run" | "briefing" | "candidate"; id: string | null; label: string }; at: string }[];
+  tier1_domains: string[];
+  tier2_domains: string[];
+  kinds: string[];
+}
+
 export interface Missions {
   opportunity_scout: boolean;
   what_changed: boolean;
@@ -539,6 +583,14 @@ export const api = {
     request<{ run_id: string; conversation_id: string }>("POST", "/agent/chat", { message, conversation_id: conversation_id ?? null, page }),
   briefing: () => request<BriefingView>("GET", "/briefing"),
   missions: () => request<MissionView[]>("GET", "/agent/missions"),
+  knowledge: () => request<KnowledgeView>("GET", "/knowledge"),
+  knowledgeSync: (sources?: string[], force = false) => request<VaultFetch[]>("POST", "/knowledge/sync", { sources, force }),
+  knowledgeImport: (sourceId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<VaultFetch>("POST", `/knowledge/import/${enc(sourceId)}`, form);
+  },
+  promoteFinding: (sourceId: string, kind: string) => request<unknown>("POST", `/knowledge/findings/${enc(sourceId)}/promote`, { kind }),
   recheckRun: (id: string) => request<RuleCheck>("POST", `/rulecheck/runs/${enc(id)}`),
   recheckBriefing: () => request<RuleCheck>("POST", "/rulecheck/briefing"),
   recheckCandidate: (id: string) => request<RuleCheck>("POST", `/rulecheck/inbox/${enc(id)}`),
