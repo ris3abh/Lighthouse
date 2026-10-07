@@ -1,0 +1,271 @@
+"""The onboarding conversation: which question comes next, what each answer changes, and the lookups that
+the person can say Yes to. State transitions only; writes go through the service layer."""
+
+from __future__ import annotations
+
+import difflib
+import hashlib
+import re
+import unicodedata
+from dataclasses import dataclass, field
+from typing import Any
+
+from lighthouse_gc.core.models import Candidate, ClaimDraft, Evidence, json_excerpt
+from lighthouse_gc.core.text import plural
+from lighthouse_gc.onboarding.linkedin import extract_text, parse_linkedin, redact_contact
+from lighthouse_gc.onboarding.models import Lookup, OnboardingState, ProfileField
+
+LABELS = {"name": "Name", "headline": "Field", "location": "Based in", "employer": "Employer", "role": "Role",
+          "education": "Education", "awards": "Awards", "publications": "Papers", "judging": "Judging",
+          "certifications": "Certifications", "links": "Links", "skills": "Skills", "summary": "Summary"}  # fmt: skip
+# Asked in this order; skills and summary only fill the panel.
+ORDER = ("name", "role", "location", "headline", "education", "awards", "publications", "judging",
+         "certifications", "links")  # fmt: skip
+PROFILES = {
+    "o1a": "O-1A (temporary, extraordinary ability)",
+    "eb1a": "EB-1A (green card, extraordinary ability)",
+}
+
+
+@dataclass
+class Question:
+    id: str
+    text: str
+    keys: list[str]
+    kind: str = "confirm"  # confirm: Yes / No, let me fix it / Skip; choice: pick one or Skip
+    values: dict[str, Any] = field(default_factory=dict)
+    options: list[dict[str, str]] = field(default_factory=list)
+    quote: str = ""
+
+    def as_dict(self) -> dict[str, Any]:
+        return self.__dict__.copy()
+
+
+def read_pdf(pdf: bytes) -> tuple[str, int, dict[str, dict[str, Any]]]:
+    """(redacted text, redaction count, parsed fields). Local only: pypdf, then redaction, then the parser."""
+    text, count = redact_contact(extract_text(pdf))
+    return text, count, parse_linkedin(text)
+
+
+def fields_from(parsed: dict[str, dict[str, Any]]) -> list[ProfileField]:
+    return [
+        ProfileField(key=k, label=LABELS[k], value=v["value"], quote=v["quote"])
+        for k, v in parsed.items()
+        if k in LABELS
+    ]
+
+
+def evidence_for(pdf: bytes, filename: str, text: str, fields: list[ProfileField]) -> Evidence:
+    """The redacted PDF text as a self-reported observation, with one quoted claim per field read from it."""
+    name = next((str(f.value) for f in fields if f.key == "name"), "")
+    claims = []
+    for f in fields:
+        if f.key in ("summary",) or not f.quote or f.quote not in text:
+            continue
+        claims.append(ClaimDraft(subject="person:self", subject_kind="person", subject_name=name or "You",
+                                 predicate=f"linkedin_{f.key}", value=f.value if isinstance(f.value, str) else "; ".join(f.value),
+                                 excerpt=f.quote, confidence="medium"))  # fmt: skip
+    digest = hashlib.sha256(pdf).hexdigest()
+    return Evidence(connector="linkedin", source_url=f"upload://linkedin/{digest[:12]}/{filename or 'profile.pdf'}",
+                    payload=text, media_type="text/plain", tier="self_reported", filename=filename or "profile.pdf",
+                    claims=claims)  # fmt: skip
+
+
+def _first(state: OnboardingState) -> str:
+    name = state.field("name")
+    if name and name.status in ("confirmed", "fixed") and str(name.value).strip():
+        return str(name.value).split()[0]
+    return ""
+
+
+def _list(value: str | list[str]) -> list[str]:
+    return value if isinstance(value, list) else [value] if value else []
+
+
+def next_question(state: OnboardingState) -> Question | None:
+    """The next unanswered question, built from the PDF and earlier answers; None when all are answered."""
+    hi = f"Thanks, {_first(state)}. " if _first(state) else ""
+    for key in ORDER:
+        if key == "role":
+            emp, role = state.field("employer"), state.field("role")
+            pending = [f for f in (emp, role) if f and f.status == "pending"]
+            if not pending:
+                continue
+            if emp and role:
+                text = f"Looks like you're at {emp.value} working as {role.value}. Is that right?"
+            else:
+                only = emp or role
+                assert only is not None
+                text = (
+                    f"Looks like you work at {only.value}. Is that right?"
+                    if emp
+                    else f"Looks like your role is {only.value}. Is that right?"
+                )
+            keys = [f.key for f in (emp, role) if f]
+            present = [f for f in (emp, role) if f]
+            return Question(id="role", text=hi + text, keys=keys, values={f.key: f.value for f in present},
+                            quote=" / ".join(f.quote for f in present))  # fmt: skip
+        f = state.field(key)
+        if not f or f.status != "pending":
+            continue
+        items = _list(f.value)
+        text = {
+            "name": f"Let's start with your name as it should appear on your case: {f.value}. Is that right?",
+            "location": f"You're based in {f.value}?",
+            "headline": f"For your field, I'd use your headline: “{f.value}”. Does that describe your work?",
+            "education": f"Your education: {'; '.join(items)}. Is that right?",
+            "awards": f"You list {plural(len(items), 'award')}: {'; '.join(items)}. Is that right?",
+            "publications": f"You mentioned {plural(len(items), 'paper')}: {'; '.join(items)}. Is that right?",
+            "judging": f"You mention judging or reviewing: {'; '.join(items)}. Is that right?",
+            "certifications": f"You list {plural(len(items), 'certification')}: {'; '.join(items)}. Is that right?",
+            "links": f"Your profile links to {', '.join(items)}. {'Is this yours' if len(items) == 1 else 'Are these yours'}?",
+        }[key]
+        return Question(
+            id=key,
+            text=(hi + text) if key != "name" else text,
+            keys=[key],
+            values={key: f.value},
+            quote=f.quote,
+        )
+    if state.target_profile is None:
+        return Question(id="target", kind="choice", keys=["target"], text=hi + "Which petition are you working toward?",
+                        options=[{"value": k, "label": v} for k, v in PROFILES.items()] + [{"value": "unsure", "label": "Not sure yet"}])  # fmt: skip
+    if state.target_date is None:
+        return Question(
+            id="when", kind="month", keys=["when"], text="When do you hope to file? A rough month is fine."
+        )
+    return None
+
+
+def answer(state: OnboardingState, qid: str, action: str, value: Any = None) -> dict[str, Any]:
+    """Apply one answer. Returns what to write elsewhere: {"person": {...}, "profile": "o1a"|None}."""
+    writes: dict[str, Any] = {"person": {}, "profile": None}
+    if action not in ("yes", "fix", "skip"):
+        raise ValueError("answer must be yes, fix or skip")
+    if qid == "when":
+        if action == "skip" or not value:
+            state.target_date = "skipped"
+            return writes
+        if not re.fullmatch(r"20\d\d-(0[1-9]|1[0-2])", str(value)):
+            raise ValueError("send a month like 2027-03")
+        state.target_date = str(value)
+        writes["filing_date"] = f"{value}-01"
+        return writes
+    if qid == "target":
+        if action == "skip" or value in (None, "", "unsure"):
+            state.target_profile = "unsure"
+        else:
+            if value not in PROFILES:
+                raise ValueError(f"unknown petition {value!r}")
+            state.target_profile = str(value)
+            writes["profile"] = value
+        return writes
+    q = next_question(state)
+    keys = ["employer", "role"] if qid == "role" else [qid]
+    targets = [f for k in keys if (f := state.field(k))]
+    if not targets:
+        raise ValueError(f"no question {qid!r}")
+    if q is None or q.id != qid:
+        raise ValueError(f"question {qid!r} isn't the current one")
+    for f in targets:
+        if action == "skip":
+            f.status = "skipped"
+            f.value = [] if isinstance(f.value, list) else ""  # skipped stays blank; nothing guessed
+            continue
+        if action == "fix":
+            new = (value or {}).get(f.key) if isinstance(value, dict) else value
+            if new is None:
+                raise ValueError(f"send the corrected {f.label.lower()}")
+            f.value = (
+                [x.strip() for x in new if str(x).strip()]
+                if isinstance(f.value, list) and isinstance(new, list)
+                else (
+                    [x.strip() for x in str(new).split(";") if x.strip()]
+                    if isinstance(f.value, list)
+                    else str(new).strip()
+                )
+            )
+            f.status = "fixed"
+        else:
+            f.status = "confirmed"
+        if f.key == "name":
+            writes["person"]["name"] = f.value
+        elif f.key == "location":
+            writes["person"]["location"] = f.value
+        elif f.key == "headline":
+            writes["person"]["field"] = f.value
+    return writes
+
+
+def _confirmed(state: OnboardingState, key: str) -> list[str]:
+    f = state.field(key)
+    return _list(f.value) if f and f.status in ("confirmed", "fixed") else []
+
+
+def offer_lookups(state: OnboardingState) -> list[Lookup]:
+    """Lookups only for what was confirmed; nothing runs until the person says Yes."""
+    out: list[Lookup] = []
+    papers = _confirmed(state, "publications")
+    if papers:
+        n = len(papers)
+        out.append(Lookup(id="papers", kind="papers", targets=papers,
+                          prompt=f"You mentioned {plural(n, 'paper')}. Want me to find {'it' if n == 1 else 'them'} on arXiv?"))  # fmt: skip
+    for link in _confirmed(state, "links"):
+        host = link.split("/")[0].lower()
+        if host.endswith("github.com") and "/" in link:
+            out.append(Lookup(id="github", kind="github", targets=[f"https://{link}"],
+                              prompt=f"You linked {link}. Want me to import your public repositories?"))  # fmt: skip
+        elif host.endswith("orcid.org"):
+            out.append(Lookup(id="orcid", kind="orcid", targets=[f"https://{link}"],
+                              prompt="You linked your ORCID record. Want me to read your works from it?"))  # fmt: skip
+        elif not host.endswith(("linkedin.com", "twitter.com", "x.com", "facebook.com", "instagram.com")):
+            out.append(Lookup(id=f"website-{len(out)}", kind="website", targets=[f"https://{link}"],
+                              prompt=f"You linked {link}. Want me to read it for press, talks and awards?"))  # fmt: skip
+    return out
+
+
+# ----------------------------------------------------------------------------- namesake checks
+
+
+def _tokens(name: str) -> list[str]:
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z ]", " ", plain.lower()).split()
+
+
+def is_author(person: str, aliases: list[str], authors: str) -> bool:
+    """True when the person's first and last name (or an alias) appear together as one listed author."""
+    listed = [_tokens(a) for a in re.split(r",| and ", authors) if a.strip()]
+    for candidate in [person, *aliases]:
+        want = _tokens(candidate)
+        if len(want) < 2:
+            continue
+        first, last = want[0], want[-1]
+        for a in listed:
+            if a and a[-1] == last and (a[0] == first or (len(a[0]) == 1 and a[0] == first[0])):
+                return True
+    return False
+
+
+def paper_matches(title: str, entry_title: str) -> bool:
+    a, b = " ".join(_tokens(title)), " ".join(_tokens(entry_title))
+    return a == b or difflib.SequenceMatcher(None, a, b).ratio() >= 0.9
+
+
+def paper_candidate(entry: dict[str, Any], person: str, aliases: list[str]) -> Candidate:
+    """An arXiv hit for a paper the person confirmed, with a namesake check on the author list."""
+    from lighthouse_gc.sources.scholarly import arxiv_id
+
+    aid = arxiv_id(entry["id"]) or entry["id"]
+    own = is_author(person, aliases, entry.get("authors", ""))
+    summary = (f"{entry['title']}, on arXiv ({entry.get('published', '')[:4]}). Authors: {entry.get('authors', '')}. "
+               + ("You're listed as an author. Confirm and add the venue if it was published." if own else
+                  "Possible namesake: you aren't listed by this exact name. Accept only if this is your paper."))  # fmt: skip
+    evidence = Evidence(connector="arxiv", tier="platform", source_url=f"https://export.arxiv.org/abs/{aid}", payload=entry,
+                        claims=[ClaimDraft(subject=f"artifact:arxiv:{aid}", subject_name=entry["title"],
+                                           subject_url=f"https://arxiv.org/abs/{aid}", predicate="title",
+                                           value=entry["title"], excerpt=json_excerpt("title", entry["title"]))])  # fmt: skip
+    return Candidate(fingerprint=f"paper:arxiv:{aid}:scholarly_articles", source="onboarding:arxiv", evidence_type="preprint",
+                     proposed_criterion="scholarly_articles", title=f"Paper: {entry['title']}"[:200], summary=summary,
+                     confidence=0.5 if own else 0.2, raw_url=f"https://arxiv.org/abs/{aid}", stage="preprint",
+                     facts={"authors": entry.get("authors", "")[:300], "namesake_check": "passed" if own else "possible namesake"},
+                     ).with_evidence(evidence)  # fmt: skip

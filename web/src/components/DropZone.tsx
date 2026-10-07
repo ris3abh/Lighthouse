@@ -38,7 +38,19 @@ export function useFileDrop(onFiles: (files: File[]) => void) {
 }
 
 /** The big "drop files here" bar with a click-to-choose fallback (keyboard accessible). */
-export default function DropZone({ onFiles, busy, children }: { onFiles: (files: File[]) => void; busy?: boolean; children: ReactNode }) {
+export default function DropZone({
+  onFiles,
+  busy,
+  children,
+  accept,
+  label = "Upload files to the Inbox",
+}: {
+  onFiles: (files: File[]) => void;
+  busy?: boolean;
+  children: ReactNode;
+  accept?: string;
+  label?: string;
+}) {
   const input = useRef<HTMLInputElement>(null);
   const { over, bind } = useFileDrop(onFiles);
   return (
@@ -46,7 +58,7 @@ export default function DropZone({ onFiles, busy, children }: { onFiles: (files:
       {...bind}
       role="button"
       tabIndex={0}
-      aria-label="Upload files to the Inbox"
+      aria-label={label}
       onClick={() => input.current?.click()}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), input.current?.click())}
       className={cx(
@@ -59,7 +71,8 @@ export default function DropZone({ onFiles, busy, children }: { onFiles: (files:
       <input
         ref={input}
         type="file"
-        multiple
+        multiple={!accept}
+        accept={accept}
         hidden
         onChange={(e) => {
           const files = Array.from(e.target.files ?? []);

@@ -18,8 +18,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { api } from "./api";
+import { api, type OnboardingView } from "./api";
 import ChatPanel from "./components/ChatPanel";
+import Tour from "./components/Tour";
 import { Button, cx, Segmented, ToastProvider, useToast } from "./components/ui";
 import { useLoad, useRoute, useTheme, type ThemeMode } from "./hooks";
 import Agent from "./pages/Agent";
@@ -33,6 +34,7 @@ import OverviewPage from "./pages/Overview";
 import Pipeline from "./pages/Pipeline";
 import Settings from "./pages/Settings";
 import Sources from "./pages/Sources";
+import Welcome from "./pages/Welcome";
 
 /** Bumping `version` makes every page and the shell re-fetch after a write. */
 const RefreshCtx = createContext<{ version: number; bump: () => void }>({ version: 0, bump: () => {} });
@@ -86,6 +88,14 @@ function Shell() {
     }
   });
   useEffect(() => setMenuOpen(false), [page]);
+  const [onboarding, setOnboarding] = useState<OnboardingView | null>(null);
+  const [finished, setFinished] = useState(false);
+  useEffect(() => {
+    api
+      .onboarding()
+      .then(setOnboarding)
+      .catch(() => setOnboarding(null));
+  }, [version]);
   const toggleChat = (open: boolean) => {
     setChatOpen(open);
     try {
@@ -145,6 +155,29 @@ function Shell() {
     default:
       content = <OverviewPage data={ov} error={overview.error} retry={overview.reload} />;
   }
+
+  if (onboarding?.needed && onboarding.state.step !== "tour")
+    return (
+      <Welcome
+        view={onboarding}
+        onChange={(v) => {
+          setOnboarding(v);
+          if (!v.needed) setFinished(v.state.status === "done");
+          bump();
+        }}
+      />
+    );
+  const touring = !!onboarding?.needed && onboarding.state.step === "tour";
+  const endTour = async (skipped: boolean) => {
+    try {
+      setOnboarding(await api.onboardingStep(skipped ? "tour_skip" : "tour_done"));
+      setFinished(true);
+      window.location.hash = "#/overview";
+      bump();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
 
   const nav = (
     <nav className="flex flex-col" aria-label="Main">
@@ -230,7 +263,17 @@ function Shell() {
             <div className="hidden sm:block">
               <Segmented label="Theme" size="sm" value={mode} onChange={setMode} options={THEMES} />
             </div>
-            <Button variant={chatOpen ? "primary" : "secondary"} size="sm" onClick={() => toggleChat(!chatOpen)} aria-pressed={chatOpen} title="Chat with the agent">
+            <Button
+              variant={chatOpen ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => {
+                setFinished(false);
+                toggleChat(!chatOpen);
+              }}
+              aria-pressed={chatOpen}
+              title="Chat with the agent"
+              className={cx(finished && "outline-2 outline-offset-4 outline-ink")}
+            >
               <Sparkles strokeWidth={1.5} />
               Ask
             </Button>
@@ -246,6 +289,17 @@ function Shell() {
         </main>
       </div>
       {chatOpen && <ChatPanel page={page} onClose={() => toggleChat(false)} />}
+      {touring && <Tour overview={ov} onDone={endTour} />}
+      {finished && !chatOpen && (
+        <div role="status" className="fixed top-16 right-4 z-40 w-[320px] animate-rise border border-ink bg-surface lg:top-20">
+          <div className="flex items-start gap-3 px-5 py-4">
+            <p className="display flex-1 text-2xl">That's it. I'm one click away, and at your service.</p>
+            <Button size="sm" variant="ghost" className="px-2" aria-label="Dismiss" onClick={() => setFinished(false)}>
+              <X />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

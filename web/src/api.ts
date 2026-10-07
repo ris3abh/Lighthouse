@@ -498,6 +498,43 @@ export class ApiError extends Error {
   }
 }
 
+
+// ---------------------------------------------------------------- onboarding (ADR 0008)
+
+export type FieldStatus = "pending" | "confirmed" | "fixed" | "skipped";
+export interface OnboardingQuestion {
+  id: string;
+  text: string;
+  keys: string[];
+  kind: "confirm" | "choice" | "month";
+  values: Record<string, string | string[]>;
+  options: { value: string; label: string }[];
+  quote: string;
+}
+export interface OnboardingLookup {
+  id: string;
+  kind: "papers" | "github" | "orcid" | "website";
+  prompt: string;
+  targets: string[];
+  status: "offered" | "accepted" | "declined" | "done" | "failed";
+  result: string;
+}
+export interface OnboardingView {
+  needed: boolean;
+  state: {
+    status: "new" | "in_progress" | "done" | "skipped";
+    step: "linkedin" | "questions" | "lookups" | "chats" | "tour" | "done";
+    source: { filename: string; chars: number; redactions: number; parser: string } | null;
+    lookups: OnboardingLookup[];
+    target_profile: string | null;
+    tour: string;
+    chats: string;
+  };
+  question: OnboardingQuestion | null;
+  panel: { key: string; label: string; value: string | string[]; status: FieldStatus; quote?: string }[];
+  person: { name: string; field: string; location: string };
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const init: RequestInit = { method, headers: {} };
   const headers = init.headers as Record<string, string>;
@@ -542,6 +579,17 @@ export const api = {
     if (criterion) form.append("criterion", criterion);
     return request<Candidate[]>("POST", "/inbox/upload", form);
   },
+  onboarding: () => request<OnboardingView>("GET", "/onboarding"),
+  onboardingLinkedin: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<OnboardingView>("POST", "/onboarding/linkedin", form);
+  },
+  onboardingAnswer: (id: string, action: "yes" | "fix" | "skip", value?: unknown) =>
+    request<OnboardingView>("POST", "/onboarding/answer", { id, action, value }),
+  onboardingStep: (step: string) => request<OnboardingView>("POST", "/onboarding/step", { step }),
+  onboardingLookup: (id: string, accept: boolean) => request<OnboardingView>("POST", `/onboarding/lookups/${id}`, { accept }),
+  onboardingRestart: () => request<OnboardingView>("POST", "/onboarding/restart"),
   importChats: (file: File, keepAll = false) => {
     const form = new FormData();
     form.append("file", file);

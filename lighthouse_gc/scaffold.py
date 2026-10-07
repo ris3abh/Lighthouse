@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from lighthouse_gc.core.models import WorkspaceConfig
 from lighthouse_gc.core.schemas import schema_files
 from lighthouse_gc.core.workspace import OPTIONAL_FILES, WorkspaceError, _atomic_write, dump_model
-from lighthouse_gc.criteria.case import DATA_FILES, Case
+from lighthouse_gc.criteria.case import CASE_OPTIONAL_FILES, DATA_FILES, Case
 from lighthouse_gc.criteria.models import DEFAULT_PROFILE, Person
 from lighthouse_gc.resources import workspace_template_dir
 
@@ -90,7 +90,7 @@ def validate_workspace(ws: Case) -> list[str]:
             model.model_validate_json(path.read_text(encoding="utf-8"))
         except ValidationError as exc:
             problems.append(f"data/{filename}: {exc}")
-    for filename, model in OPTIONAL_FILES.items():
+    for filename, model in {**OPTIONAL_FILES, **CASE_OPTIONAL_FILES}.items():
         path = ws.data_dir / filename
         if path.exists():
             try:

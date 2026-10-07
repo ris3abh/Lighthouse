@@ -10,6 +10,10 @@ from lighthouse_gc.core.workspace import DATA_FILES as CORE_DATA_FILES
 from lighthouse_gc.core.workspace import NotFound, Workspace, WorkspaceError
 from lighthouse_gc.criteria import engine
 from lighthouse_gc.criteria.models import DEFAULT_PROFILE, Letter, Letters, Person, Profile, Scoreboard
+from lighthouse_gc.onboarding.models import OnboardingState
+
+# Case files written on first use; validated when present.
+CASE_OPTIONAL_FILES: dict[str, type[BaseModel]] = {"onboarding.json": OnboardingState}
 
 DATA_FILES: dict[str, type[BaseModel]] = {
     "person.json": Person,
@@ -26,6 +30,19 @@ class Case(Workspace):
 
     def save_person(self, v: Person) -> None:
         self._save("person.json", v)
+
+    def onboarding(self) -> OnboardingState:
+        return self._load("onboarding.json", OnboardingState)
+
+    def save_onboarding(self, v: OnboardingState) -> None:
+        self._save("onboarding.json", v)
+
+    def needs_onboarding(self) -> bool:
+        """A brand-new workspace (no onboarding file, no name, nothing collected) or one mid-onboarding."""
+        state = self.onboarding()
+        if (self.data_dir / "onboarding.json").exists():
+            return state.status in ("new", "in_progress")
+        return not self.person().name and not self.inbox().candidates and not self.exhibits().exhibits
 
     def letters(self) -> Letters:
         return self._load("letters.json", Letters)

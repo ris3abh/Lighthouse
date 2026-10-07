@@ -30,7 +30,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 - [x] C1. Delete examples/demo-workspace and --demo; README / SPEC / scripts / CI updated; personas Maya
       (software engineer), Ravi (AI researcher), Lena (business analytics lead) as test fixtures with
       LinkedIn-style PDFs; a fresh workspace opens straight into onboarding
-- [ ] C2. Onboarding conversation (LinkedIn PDF, local extraction + redaction, one question at a time with
+- [x] C2. Onboarding conversation (LinkedIn PDF, local extraction + redaction, one question at a time with
       a live profile panel, lookups only after an explicit Yes and through the Inbox with namesake checks,
       chat-history step, guided tour on the user's data, finish line, resumable, re-run from Settings;
       all three personas end to end incl. skipping everything)

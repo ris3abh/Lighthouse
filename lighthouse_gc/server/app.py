@@ -169,6 +169,13 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     )
     svc = Service(ws)  # every user-initiated write goes through the service layer
     runner = AgentRunner(ws, engine=engine)
+    from lighthouse_gc.onboarding.api import mount as mount_onboarding
+
+    def _onboarding_judge():  # the model fallback for PDFs that aren't LinkedIn exports
+        ok, _ = runner.engine().available()
+        return runner.judge() if ok else None
+
+    mount_onboarding(app, ws, svc, judge=_onboarding_judge)
     app.state.runner = runner
     vault = Vault(ws)
 

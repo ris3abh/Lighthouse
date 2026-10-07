@@ -10,6 +10,15 @@ All notable changes to this project are documented here. The format follows
   condensed Archivo headlines with JetBrains Mono for data, framed panels, a System / Light / Dark switch,
   lucide line icons, and data motion (charts draw in and morph, count-ups, calendar drag-and-glide).
   Reduced motion is respected everywhere; text tokens meet WCAG AA.
+- Onboarding (ADR 0008): a new workspace opens into a short conversation.
+  - It starts from your LinkedIn PDF, which is read on this computer. Emails and phone numbers are removed
+    first, and the PDF itself isn't kept.
+  - It asks one question at a time (Yes / No, let me fix it / Skip), with your profile filling in beside it.
+    Skipped fields stay blank.
+  - Lookups (arXiv, GitHub, ORCID, your website) run only after you say Yes. Finds go to the Inbox, with a
+    namesake check on papers.
+  - Then come the chat-history import, a guided tour on your own data and a finish note by the Ask button.
+  - Onboarding is resumable and can be run again from Settings.
 - No demo data (ADR 0008): `--demo` and `examples/demo-workspace` are gone. The fictional Alex Rivera case is a
   test fixture, and three onboarding personas (Maya, Ravi, Lena) with LinkedIn-style PDFs live in
   `tests/fixtures/personas`.

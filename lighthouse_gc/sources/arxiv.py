@@ -89,3 +89,18 @@ class ArxivSource(ScholarlySource):
                              claim_fields={"title": "title", "published": "published"},
                              extra={"journal_ref": ref} if ref else {}))  # fmt: skip
         return out
+
+
+EXPORT_API = "https://export.arxiv.org"
+
+
+def search_title(title: str, http: object | None = None) -> list[dict[str, Any]]:
+    """arXiv entries whose title matches ``title`` (the export API's title search), newest first."""
+    from lighthouse_gc.sources.http import HttpClient
+
+    client = http if isinstance(http, HttpClient) else HttpClient(EXPORT_API, kind="arxiv")
+    phrase = re.sub(r"[^\w\s-]", " ", title).strip()
+    text = client.get("/api/query", params={"search_query": f'ti:"{phrase}"', "max_results": 5}, raw=True,
+                      accept="application/atom+xml").data  # fmt: skip
+    _, entries = parse_feed(text or "")
+    return entries

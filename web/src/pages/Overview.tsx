@@ -107,7 +107,7 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
             {daysToFiling !== null ? <CountUp value={daysToFiling} /> : "—"}
             {daysToFiling !== null && <span className="text-muted">d</span>}
           </p>
-          <p className="font-mono text-[11px] text-ink-2">{target ?? "SET IN DATA/PERSON.JSON"}</p>
+          <p className="font-mono text-[11px] text-ink-2 uppercase">{target ?? "Not set yet"}</p>
         </div>
       </section>
 

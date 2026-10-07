@@ -1,4 +1,4 @@
-import { KeyRound } from "lucide-react";
+import { KeyRound, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api";
 import { useRefresh } from "../App";
@@ -49,6 +49,28 @@ export default function Settings() {
           </>
         }
       />
+
+      <Card title="Setup" className="mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 p-6">
+          <p className="max-w-2xl text-sm leading-relaxed text-ink-2">
+            Run onboarding again: re-read your LinkedIn PDF, answer the questions, look up what you confirm and import chats. What it added
+            before stays in your workspace.
+          </p>
+          <Button
+            onClick={() =>
+              api
+                .onboardingRestart()
+                .then(() => {
+                  window.location.hash = "#/overview";
+                  bump();
+                })
+                .catch((e: Error) => toast(e.message, "error"))
+            }
+          >
+            <RotateCcw /> Run onboarding again
+          </Button>
+        </div>
+      </Card>
 
       <Card title="Notification channels" className="mb-8" actions={
         <Button size="sm" disabled={!!busy} onClick={() => test()}>

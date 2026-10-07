@@ -408,6 +408,30 @@ class Service:
         self._record("metrics.undo", "metric", revert, target_id=change.target_id,
                      before=current, summary=f"undo: {change.summary}", undoes=change.id)  # fmt: skip
 
+    # ------------------------------------------------------------------ onboarding (ADR 0008)
+
+    def onboarding_save(self, state: Any, action: str, summary: str = "", person: dict[str, Any] | None = None,
+                        evidence: Evidence | None = None) -> Any:  # fmt: skip
+        """Save onboarding progress, plus the person fields an answer confirmed and the PDF observation."""
+        before = self.ws.onboarding()
+
+        def do() -> Any:
+            if evidence is not None:
+                claims = self.ws.memory.record(evidence)
+                if state.source is not None and claims:
+                    state.source.observation_id = claims[0].observation_id
+                elif state.source is not None:
+                    state.source.observation_id = None
+            if person:
+                p = self.ws.person()
+                for key, value in person.items():
+                    setattr(p, key, value)
+                self.ws.save_person(p)
+            self.ws.save_onboarding(state)
+            return state
+
+        return self._record(action, "onboarding", do, before=before, summary=summary)
+
 
 def _same_record(current: dict[str, Any] | None, after: dict[str, Any] | None) -> bool:
     if current is None or after is None:

@@ -24,7 +24,8 @@ PDF = b"%PDF-1.4 fictional\n"
 # Routes the five pages write through. Every mutating route under these prefixes must be covered below.
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
-                 "/api/settings/missions", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings")  # fmt: skip
+                 "/api/settings/missions", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
+                 "/api/onboarding")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -39,6 +40,9 @@ SYSTEM_ROUTES = {
     # The vault's fetched content lives in the cache; its fetch log is append-only (like source syncs).
     ("POST", "/api/knowledge/sync"), ("POST", "/api/knowledge/import/{source_id}"),
 }  # fmt: skip
+# Onboarding lookups run connectors the person approved (like adding a source); their status is saved through
+# the service layer (tests/test_onboarding.py checks it).
+ONBOARDING_LOOKUP = ("POST", "/api/onboarding/lookups/{lookup_id}")
 
 
 @pytest.fixture
@@ -96,7 +100,17 @@ def _ids(ws):
         "undo": _undoable_change(ws),
         "briefing": _briefing(ws),
         "finding": _finding(ws),
+        "onboarding": _onboarding(ws),
     }
+
+
+def _onboarding(ws) -> str:
+    """Put onboarding at a question so the answer route has one to answer."""
+    from lighthouse_gc.onboarding.models import OnboardingState, ProfileField
+
+    ws.save_onboarding(OnboardingState(status="in_progress", step="questions", target_profile="o1a", fields=[
+        ProfileField(key="location", label="Based in", value="Pittsburgh, PA", quote="Pittsburgh, PA")]))  # fmt: skip
+    return "location"
 
 
 def _finding(ws) -> str:
@@ -166,6 +180,13 @@ SAMPLES = {
     ("POST", "/api/rulecheck/inbox/{candidate_id}"): ("/api/rulecheck/inbox/{other}", {}, "inbox.recheck"),
     ("PUT", "/api/settings/missions"): ("/api/settings/missions", {"json": {"what_changed": True}}, "settings.missions"),
     ("POST", "/api/changes/{change_id}/undo"): ("/api/changes/{undo}/undo", {}, "pipeline_item.undo"),
+    ("POST", "/api/onboarding/linkedin"): ("/api/onboarding/linkedin", {"files": {"file": (
+        "linkedin.pdf", (Path(__file__).parent / "fixtures" / "personas" / "maya" / "linkedin.pdf").read_bytes(),
+        "application/pdf")}}, "onboarding.linkedin"),
+    ("POST", "/api/onboarding/answer"): ("/api/onboarding/answer", {"json": {"id": "{onboarding}", "action": "yes"}},
+                                        "onboarding.answer"),
+    ("POST", "/api/onboarding/step"): ("/api/onboarding/step", {"json": {"step": "skip_all"}}, "onboarding.step"),
+    ("POST", "/api/onboarding/restart"): ("/api/onboarding/restart", {}, "onboarding.restart"),
 }  # fmt: skip
 
 
@@ -180,11 +201,11 @@ def _mutating_routes(app) -> set[tuple[str, str]]:
 
 def test_every_page_write_route_is_covered(demo_ws):
     routes = _mutating_routes(create_app(demo_ws, allowed_hosts=["testserver"]))
-    page_routes = {r for r in routes if r[1].startswith(PAGE_PREFIXES)}
+    page_routes = {r for r in routes if r[1].startswith(PAGE_PREFIXES)} - {ONBOARDING_LOOKUP}
     assert page_routes == set(SAMPLES), (
         "a write route was added or removed: cover it in SAMPLES (and route it through the service layer)"
     )
-    unknown = routes - page_routes - SYSTEM_ROUTES
+    unknown = routes - page_routes - SYSTEM_ROUTES - {ONBOARDING_LOOKUP}
     assert not unknown, f"unclassified write routes: {sorted(unknown)}"
 
 
@@ -192,7 +213,10 @@ def test_every_page_write_route_is_covered(demo_ws):
 def test_page_writes_only_happen_inside_the_service_layer(route, demo_ws, writes):
     client = TestClient(create_app(demo_ws, allowed_hosts=["testserver"]))
     path, kwargs, action = SAMPLES[route]
-    path = path.format(**_ids(demo_ws))
+    ids = _ids(demo_ws)
+    path = path.format(**ids)
+    if "json" in kwargs and isinstance(kwargs["json"].get("id"), str):
+        kwargs = {**kwargs, "json": {**kwargs["json"], "id": kwargs["json"]["id"].format(**ids)}}
     before = len(demo_ws.changes())
     writes.clear()
     resp = client.request(route[0], path, headers=W, **kwargs)
@@ -241,7 +265,7 @@ def test_api_client_writes_map_to_known_routes(demo_ws):
     api_ts = _web_sources()["web/src/api.ts"]
     calls = re.findall(r'request<[^>]*>\(\s*"(POST|PUT|PATCH|DELETE)",\s*[`"]([^`"]+)[`"]', api_ts, re.S)
     assert calls
-    known = set(SAMPLES) | SYSTEM_ROUTES
+    known = set(SAMPLES) | SYSTEM_ROUTES | {ONBOARDING_LOOKUP}
 
     def matches(method: str, path: str) -> bool:
         concrete = "/api" + re.sub(r"\$\{[^}]+\}", "X", path)
