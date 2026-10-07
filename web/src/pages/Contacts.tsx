@@ -1,4 +1,4 @@
-import { Mail, Plus, Trash2, UserRound } from "lucide-react";
+import { Mail, Plus, RefreshCw, Trash2, UserRound } from "lucide-react";
 import { useState } from "react";
 import { api, type ContactFields, type ContactView, type Relationship } from "../api";
 import { useRefresh } from "../App";
@@ -40,9 +40,14 @@ export default function Contacts() {
         title="Contacts"
         subtitle="Letter writers, organizers, editors and collaborators: what you asked, when you last spoke, when to follow up. Tracking only; never evidence."
         actions={
-          <Button variant="primary" onClick={() => setAdding(true)}>
-            <Plus /> Add a contact
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => save(async () => toast((await api.syncGmail()).lines.join(" ")), "Threads refreshed")}>
+              <RefreshCw /> Refresh threads
+            </Button>
+            <Button variant="primary" onClick={() => setAdding(true)}>
+              <Plus /> Add a contact
+            </Button>
+          </div>
         }
       />
       {adding && (

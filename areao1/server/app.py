@@ -19,6 +19,7 @@ from collections.abc import AsyncIterator
 from typing import Any, Literal
 
 import anyio
+import httpx
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import (
     FileResponse,
@@ -910,6 +911,16 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         except auth.GoogleError as exc:
             return RedirectResponse(f"/#/settings?google=error&why={quote(str(exc)[:160])}", status_code=303)
         return RedirectResponse("/#/settings?google=connected", status_code=303)
+
+    @app.post("/api/google/gmail/sync")
+    def google_gmail_sync() -> dict[str, Any]:
+        """Refresh the threads with your contacts now (the google job does it every 15 minutes)."""
+        from areao1.google import auth, gmail
+
+        try:
+            return {"lines": gmail.sync(ws)}
+        except (auth.GoogleError, httpx.HTTPError) as exc:
+            raise HTTPException(502, f"Gmail didn't answer: {exc}") from exc
 
     @app.delete("/api/google")
     def google_disconnect() -> dict[str, Any]:

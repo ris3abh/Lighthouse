@@ -89,6 +89,12 @@ def _vault_watch(ws: Case, scheduled: bool = False) -> list[str]:
     return run_watch(ws, scheduled)
 
 
+def _google(ws: Case, scheduled: bool = False) -> list[str]:
+    from areao1.google import gmail
+
+    return gmail.sync(ws)
+
+
 JOBS: dict[str, tuple[str, Callable[[Case, bool], list[str]]]] = {
     "sync": ("refresh all sources, push new candidates to the Inbox", _run_sync),
     "metrics-snapshot": ("append dated rows to data/metrics.csv (biweekly when scheduled)", _run_snapshot),
@@ -106,5 +112,9 @@ JOBS: dict[str, tuple[str, Callable[[Case, bool], list[str]]]] = {
     "mission-what-changed": (
         "agent: daily what-changed check (off until enabled in Settings)",
         _mission("what_changed"),
+    ),
+    "google": (
+        "Gmail threads with your contacts and the calendar (skips until Google is connected)",
+        _google,
     ),
 }

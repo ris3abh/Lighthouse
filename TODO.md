@@ -125,7 +125,8 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 ### Part E: Google, CRM, outreach (ADR 0014)
 - [x] E1. Google sign-in with the user's own OAuth client, narrowest scopes, production-mode docs, keychain
       (areao1/google/auth.py: PKCE, loopback redirect, scopes per feature; Settings > Google; docs/google.md)
-- [ ] E2. Gmail read: threads with case contacts linked to the CRM; nothing else stored
+- [x] E2. Gmail read: threads with case contacts linked to the CRM; nothing else stored (headers only,
+      one redacted line per thread, last touch follows the newest thread; the google job every 15 minutes)
 - [ ] E3. Two-way sync with a dedicated "Area O1" Google calendar (latest edit wins, logged, undoable)
 - [x] E4. CRM page: people, relationship, threads, asks, last touch, next follow-up; linked to Letters/Pipeline
       (Contacts page; data/contacts.json via the service layer, undoable; letter writers appear until added;
