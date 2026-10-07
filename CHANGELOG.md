@@ -19,6 +19,9 @@ All notable changes to this project are documented here. The format follows
     namesake check on papers.
   - Then come the chat-history import, a guided tour on your own data and a finish note by the Ask button.
   - Onboarding is resumable and can be run again from Settings.
+- MCP `propose_context` (C3): Claude Code, Claude desktop and other MCP tools can send important context to your
+  Inbox. It's self-reported: kept as a note when you accept it, and never counts toward a criterion. Setup guide in
+  `docs/mcp.md`.
 - No demo data (ADR 0008): `--demo` and `examples/demo-workspace` are gone. The fictional Alex Rivera case is a
   test fixture, and three onboarding personas (Maya, Ravi, Lena) with LinkedIn-style PDFs live in
   `tests/fixtures/personas`.

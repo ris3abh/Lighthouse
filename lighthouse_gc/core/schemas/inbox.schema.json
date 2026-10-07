@@ -81,14 +81,15 @@
         },
         "kind": {
           "default": "evidence",
-          "description": "evidence becomes an exhibit; pipeline / deadline / letter add tracker entries; update changes an existing tracker entry; metric records a metric value. Only evidence can ever become an exhibit.",
+          "description": "evidence becomes an exhibit; pipeline / deadline / letter add tracker entries; update changes an existing tracker entry; metric records a metric value; context (from an AI tool over MCP) is kept as a self-reported note. Only evidence can ever become an exhibit.",
           "enum": [
             "evidence",
             "pipeline",
             "deadline",
             "letter",
             "update",
-            "metric"
+            "metric",
+            "context"
           ],
           "title": "Kind",
           "type": "string"

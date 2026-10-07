@@ -29,6 +29,7 @@ from lighthouse_gc.core.workspace import NotFound, WorkspaceError
 from lighthouse_gc.criteria.case import Case
 
 T = TypeVar("T")
+MAX_CONTEXT_CHARS = 4000
 _ACTIVE: ContextVar[str | None] = ContextVar("lighthouse_service_call", default=None)
 
 
@@ -192,6 +193,26 @@ class Service:
             return added[0] if added else None
 
         return self._record("inbox.propose", cand.kind, add, target_id=cand.id, summary=cand.title)
+
+    def propose_context(
+        self, text: str, title: str = "", client: str = "", topic: str = ""
+    ) -> Candidate | None:
+        """Context an AI tool sends over MCP (C3): an Inbox note, tier self_reported. Accepting it keeps it as a
+        self-reported observation; it can never become evidence or count toward a criterion."""
+        import hashlib
+
+        text = text.strip()
+        if not text:
+            raise WorkspaceError("send some context")
+        if len(text) > MAX_CONTEXT_CHARS:
+            raise WorkspaceError(f"context is limited to {MAX_CONTEXT_CHARS:,} characters; send a summary")
+        digest = hashlib.sha256(text.encode()).hexdigest()[:16]
+        who = (client or "an AI tool").strip()[:60]
+        cand = Candidate(kind="context", fingerprint=f"context:{digest}", source=f"mcp:{who}", evidence_type="context_note",
+                         proposed_criterion="", title=(title.strip() or text.splitlines()[0])[:120], source_tier="self_reported",
+                         summary=text[:600], proposal={"id": digest, "text": text, "client": who, "topic": topic[:80]},
+                         confidence=0.3)  # fmt: skip
+        return self.propose_candidate(cand)
 
     # ------------------------------------------------------------------ evidence + scoring
 

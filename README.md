@@ -119,11 +119,11 @@ about immigration. Profiles and scoring live in a separate layer, so other domai
 | `lighthouse-gc validate` | check every workspace file against its schema and naming rules |
 | `lighthouse-gc notify test` | send a test notification to every routed channel |
 | `lighthouse-gc secret set <ref>` | store a token / webhook URL / SMTP password in the OS keychain |
-| `lighthouse-gc mcp` | read-only MCP server over stdio for Claude Code, Codex or any MCP client |
+| `lighthouse-gc mcp` | MCP server over stdio for Claude Code, Claude desktop or any MCP client: read tools plus `propose_context`, which sends notes to your Inbox ([setup](docs/mcp.md)) |
 
 ### Ask the agent
 
-Click **✦ Ask** on any page to open the chat panel. The agent (Claude, through the Claude Agent SDK) reads
+Click **Ask** on any page to open the chat panel. The agent (Claude, through the Claude Agent SDK) reads
 your workspace and the web. Each step is shown as it happens: searches, pages read, which workspace files
 a tool touched. It can't change anything itself. Suggestions land in your **Inbox** and link there, and
 evidence it proposes must quote the page it read, word for word. Conversations are saved in your

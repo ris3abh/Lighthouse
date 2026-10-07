@@ -112,10 +112,11 @@ class SourcesFile(_File):
 
 class Candidate(_Model):
     id: str = Field(default_factory=lambda: new_id("cand"))
-    kind: Literal["evidence", "pipeline", "deadline", "letter", "update", "metric"] = Field(
+    kind: Literal["evidence", "pipeline", "deadline", "letter", "update", "metric", "context"] = Field(
         "evidence",
         description="evidence becomes an exhibit; pipeline / deadline / letter add tracker entries; update changes "
-        "an existing tracker entry; metric records a metric value. Only evidence can ever become an exhibit.",
+        "an existing tracker entry; metric records a metric value; context (from an AI tool over MCP) is kept as a "
+        "self-reported note. Only evidence can ever become an exhibit.",
     )
     fingerprint: str = Field(description="Stable de-duplication key; re-imports never duplicate a candidate.")
     source: str = Field(description="Source record id that produced this candidate (or 'manual').")

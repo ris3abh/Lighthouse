@@ -11,6 +11,7 @@ export const TRACKER_LABEL = {
   letter: "Letter writers",
   update: "Tracker updates",
   metric: "Metrics",
+  context: "Context from your AI tools",
 } as const;
 const ADD_TO = {
   deadline: "Add to deadlines",
@@ -18,6 +19,7 @@ const ADD_TO = {
   letter: "Add to letters",
   update: "Apply update",
   metric: "Record metric",
+  context: "Keep as a note",
 } as const;
 const PIPELINE_STAGES = ["idea", "applied", "waiting", "done"];
 const LETTER_STATUSES = ["prospect", "asked", "drafting", "sent", "signed", "declined"];
@@ -55,7 +57,7 @@ export default function TrackerCard({ c, onDone }: { c: Candidate; onDone: () =>
     <article className="animate-rise border-b border-line px-5 py-5 last:border-b-0 md:px-6">
       <div className="flex flex-wrap items-start gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] leading-snug font-medium">{kind === "letter" ? String(p.name) : kind === "update" || kind === "metric" ? c.title : String(p.title)}</h3>
+          <h3 className="text-[15px] leading-snug font-medium">{kind === "letter" ? String(p.name) : kind === "update" || kind === "metric" || kind === "context" ? c.title : String(p.title)}</h3>
           {kind === "update" && (
             <p className="mt-1 text-xs text-ink-2">
               {String(p.target_type).replace("_", " ")}:{" "}

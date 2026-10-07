@@ -465,6 +465,16 @@ class Workspace:
                 return self.update_tracker(
                     proposal["target_type"], proposal["target_id"], **proposal["changes"]
                 )
+            if kind == "context":
+                # A note an AI tool sent over MCP: kept as a self-reported observation, never evidence.
+                from lighthouse_gc.core.models import Evidence
+
+                text = str(proposal.get("text", ""))
+                client = str(proposal.get("client") or "an AI tool")
+                url = f"mcp://{client}/{proposal.get('id', 'note')}"
+                self.memory.record(Evidence(connector="mcp", source_url=url, payload=text, media_type="text/markdown",
+                                            tier="self_reported"))  # fmt: skip
+                return next(o for o in reversed(self.memory.observations()) if o.source_url == url)
             if kind == "metric":
                 row = MetricRow.model_validate(proposal)
                 self.append_metrics([row])

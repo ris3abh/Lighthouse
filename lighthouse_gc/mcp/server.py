@@ -1,10 +1,10 @@
-"""``lighthouse-gc mcp``: a read-only MCP server over one workspace (stdio by default).
+"""``lighthouse-gc mcp``: an MCP server over one workspace (stdio by default).
 
     claude mcp add lighthouse -- lighthouse-gc mcp -w ~/my-case
 
-Every tool is annotated read-only. Agents can query the scoreboard, gaps and the claim graph with full
-provenance; they cannot change anything. Proposing claims or candidates (always through the Inbox)
-comes in a later phase.
+Read tools are annotated read-only: the scoreboard, gaps and the claim graph with full provenance. The one write
+tool, ``propose_context``, sends a note to the Inbox (tier self_reported). The person decides; nothing an AI tool
+sends can become evidence or count toward a criterion (ADR 0008, C3).
 """
 
 from __future__ import annotations
@@ -20,19 +20,27 @@ from lighthouse_gc.mcp import tools
 
 INSTRUCTIONS = """\
 Lighthouse is the user's private, file-based memory for an O-1A / EB-1A evidence case.
-All tools are read-only.
+All tools are read-only except propose_context.
 - Start a session with what_changed(since=<last session date>) and get_scoreboard().
 - Every fact is a claim that quotes its source verbatim; check get_provenance(claim_id) before relying on one.
 - Draft only from claims whose status is 'approved' and that are current. If proof is missing, say what is
   unknown. Don't fill the gap.
 - An invitation is not a completion: respect each claim's and exhibit's stage.
-- Lighthouse is not legal advice; any judgment you add is an opinion and must be labeled as one."""
+- Lighthouse is not legal advice; any judgment you add is an opinion and must be labeled as one.
+- When the person shares something important for their case (a deadline, an invitation, a letter writer, a
+  result), offer to save it with propose_context. It goes to their Inbox for review and never counts as evidence.
+  Send facts in their words, not your conclusions."""
 
 READ_ONLY = ToolAnnotations(
     read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False
 )
 
-TOOL_NAMES = ("get_scoreboard", "list_gaps", "query_claims", "get_provenance", "what_changed")
+WRITE_TO_INBOX = ToolAnnotations(
+    read_only_hint=False, destructive_hint=False, idempotent_hint=True, open_world_hint=False
+)
+
+READ_TOOLS = ("get_scoreboard", "list_gaps", "query_claims", "get_provenance", "what_changed")
+TOOL_NAMES = (*READ_TOOLS, "propose_context")
 
 
 def build_server(ws: Case) -> MCPServer:
@@ -69,6 +77,21 @@ def build_server(ws: Case) -> MCPServer:
     def what_changed(since: str) -> dict[str, Any]:
         """Claims, reviews, exhibits, Inbox candidates and metric changes recorded on or after since=YYYY-MM-DD."""
         return tools.what_changed(ws, since)
+
+    @server.tool(annotations=WRITE_TO_INBOX)
+    def propose_context(text: str, title: str = "", topic: str = "", client: str = "") -> dict[str, Any]:
+        """Send important context about the case to the person's Lighthouse Inbox (e.g. "Accepted to judge HackMIT
+        on Nov 8"). It's self-reported: the person reviews it, and it never counts toward a criterion. Up to 4,000
+        characters. ``client`` names the tool sending it (e.g. "Claude Code")."""
+        from lighthouse_gc.service import Service
+
+        cand = Service(ws, actor=f"mcp:{(client or 'client').strip()[:40]}").propose_context(
+            text, title, client, topic
+        )
+        if cand is None:
+            return {"status": "duplicate", "note": "That context is already in the Inbox."}
+        return {"status": "proposed", "candidate_id": cand.id, "tier": "self_reported",
+                "note": "Sent to the Inbox for review. It won't count toward any criterion."}  # fmt: skip
 
     return server
 

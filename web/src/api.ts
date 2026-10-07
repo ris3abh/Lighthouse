@@ -127,7 +127,7 @@ export interface Candidate {
   snoozed_until: string | null;
   stage: string | null;
   claim_ids: string[];
-  kind: "evidence" | "pipeline" | "deadline" | "letter" | "update" | "metric";
+  kind: "evidence" | "pipeline" | "deadline" | "letter" | "update" | "metric" | "context";
   attachment: string | null;
   source_tier: string | null;
   proposal: Record<string, unknown>;

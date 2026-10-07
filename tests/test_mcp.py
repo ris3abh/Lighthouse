@@ -1,4 +1,5 @@
-"""`lighthouse-gc mcp`: read-only tools over the demo workspace, in-process and over real stdio."""
+"""`lighthouse-gc mcp`: read tools over the fixture workspace (in-process and over real stdio), and the one write
+tool, propose_context, which only ever reaches the Inbox as a self-reported note."""
 
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ from typer.testing import CliRunner
 
 from lighthouse_gc.cli import app
 from lighthouse_gc.mcp import tools
-from lighthouse_gc.mcp.server import TOOL_NAMES, build_server
+from lighthouse_gc.mcp.server import READ_TOOLS, TOOL_NAMES, build_server
 
 
 def _workspace_digest(root: Path) -> dict[str, str]:
@@ -133,13 +134,19 @@ def test_tools_never_write_the_workspace(demo_ws):
 # ----------------------------------------------------------------------------- over MCP
 
 
-def test_server_exposes_exactly_the_read_only_tools(demo_ws):
+def test_server_exposes_the_read_tools_and_one_inbox_write(demo_ws):
     async def main():
         async with Client(build_server(demo_ws)) as client:
-            listed = (await client.list_tools()).tools
-            assert sorted(t.name for t in listed) == sorted(TOOL_NAMES)
-            assert all(t.annotations and t.annotations.read_only_hint for t in listed)
-            assert all(t.annotations.destructive_hint is False for t in listed)
+            listed = {t.name: t for t in (await client.list_tools()).tools}
+            assert sorted(listed) == sorted(TOOL_NAMES)
+            assert all(listed[n].annotations.read_only_hint for n in READ_TOOLS)
+            write = listed["propose_context"].annotations
+            assert (
+                write.read_only_hint is False
+                and write.destructive_hint is False
+                and write.open_world_hint is False
+            )
+            assert all(t.annotations.destructive_hint is False for t in listed.values())
 
             board = _structured(await client.call_tool("get_scoreboard", {}))
             assert board["banked"] == 2
@@ -177,3 +184,49 @@ def test_cli_mcp_requires_workspace(tmp_path, monkeypatch):
     monkeypatch.delenv("LIGHTHOUSE_GC_WORKSPACE", raising=False)
     result = CliRunner().invoke(app, ["mcp"])
     assert result.exit_code == 1 and "No workspace found" in result.output
+
+
+# ----------------------------------------------------------------------------- propose_context (C3)
+
+
+def test_propose_context_reaches_the_inbox_as_self_reported(demo_ws):
+    from lighthouse_gc.core.workspace import WorkspaceError
+    from lighthouse_gc.service import Service
+
+    before = demo_ws.scoreboard().model_dump(exclude={"computed_at"})
+
+    async def main():
+        async with Client(build_server(demo_ws)) as client:
+            text = "Accepted an invitation to judge the HackMIT finals on Nov 8, 2026."
+            first = _structured(
+                await client.call_tool("propose_context", {"text": text, "client": "Claude Code"})
+            )
+            again = _structured(
+                await client.call_tool("propose_context", {"text": text, "client": "Claude Code"})
+            )
+            too_long = await client.call_tool("propose_context", {"text": "x" * 4001})
+            return first, again, too_long
+
+    first, again, too_long = anyio.run(main)
+    assert (
+        first["status"] == "proposed" and first["tier"] == "self_reported" and again["status"] == "duplicate"
+    )
+    assert too_long.is_error
+    cand = next(c for c in demo_ws.inbox().candidates if c.id == first["candidate_id"])
+    assert (cand.kind, cand.source_tier, cand.source, cand.proposed_criterion) == (
+        "context",
+        "self_reported",
+        "mcp:Claude Code",
+        "",
+    )
+    change = demo_ws.changes()[-1]
+    assert change.action == "inbox.propose" and change.actor == "mcp:Claude Code"
+
+    import pytest as _pytest
+
+    with _pytest.raises(WorkspaceError):
+        demo_ws.edit_candidate(cand.id, kind="evidence")  # a note can't be turned into evidence
+    obs = Service(demo_ws).accept_candidate(cand.id)
+    assert obs.tier == "self_reported" and obs.connector == "mcp"
+    assert not any(e.candidate_id == cand.id for e in demo_ws.exhibits().exhibits)  # never an exhibit
+    assert demo_ws.scoreboard().model_dump(exclude={"computed_at"}) == before  # never counts

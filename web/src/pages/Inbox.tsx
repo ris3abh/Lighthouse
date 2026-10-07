@@ -21,7 +21,7 @@ export default function Inbox() {
   const trackers = candidates.filter((c) => c.kind !== "evidence");
   const groups = new Map<string, Candidate[]>();
   for (const c of evidence) groups.set(c.proposed_criterion, [...(groups.get(c.proposed_criterion) ?? []), c]);
-  const trackerGroups = (["deadline", "pipeline", "letter", "update", "metric"] as const)
+  const trackerGroups = (["deadline", "pipeline", "letter", "update", "metric", "context"] as const)
     .map((k) => [k, trackers.filter((c) => c.kind === k)] as const)
     .filter(([, list]) => list.length);
   const order = [...groups.keys()].sort(
