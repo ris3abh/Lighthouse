@@ -39,6 +39,7 @@ SYSTEM_ROUTES = {
     ("PUT", "/api/ai/key"), ("DELETE", "/api/ai/key"),
     # Google: the client secret and tokens live in the keychain; nothing in the workspace (ADR 0014).
     ("PUT", "/api/google/client"), ("POST", "/api/google/connect"), ("DELETE", "/api/google"),
+    ("PUT", "/api/google/mail"), ("DELETE", "/api/google/mail"),  # the Gmail app password, keychain only
     # Gmail sync writes only data/threads.json (like a source sync); last-touch changes go through the service.
     ("POST", "/api/google/gmail/sync"),
     # Calendar sync: its own state in data/google-calendar.json; deadline changes go through the service.

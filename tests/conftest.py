@@ -78,6 +78,18 @@ def fake_keyring(monkeypatch):
     return store
 
 
+@pytest.fixture(autouse=True)
+def no_real_mail(monkeypatch):
+    """No test reaches Gmail over IMAP or SMTP: tests that need it install the fakes in tests/mail_fakes.py."""
+    from areao1.google import mail
+
+    def refuse(*a, **k):
+        raise AssertionError("a test tried to reach a real mail server")
+
+    monkeypatch.setattr(mail, "IMAP", refuse)
+    monkeypatch.setattr(mail, "SMTP", refuse)
+
+
 @pytest.fixture
 def ws(tmp_path) -> Case:
     return create_workspace(tmp_path / "case", name="Test Person", git=False)

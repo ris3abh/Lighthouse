@@ -76,9 +76,12 @@ def granted(feature: str) -> bool:
 
 
 def status() -> dict[str, Any]:
+    from areao1.google import mail
+
     t = token() or {}
     scopes = str(t.get("scope", "")).split()
     return {
+        "mail": mail.status(),
         "client": bool(client_config()),
         "connected": bool(t.get("refresh_token")),
         "email": t.get("email"),

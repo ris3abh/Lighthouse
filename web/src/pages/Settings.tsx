@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api } from "../api";
 import { useRefresh } from "../App";
 import ConnectAI from "../components/ConnectAI";
+import GmailConnect from "../components/GmailConnect";
 import GoogleConnect from "../components/GoogleConnect";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { useLoad } from "../hooks";
@@ -82,6 +83,9 @@ export default function Settings() {
       </Card>
 
       <Card title="Google" className="mb-8">
+        <div className="border-b border-line p-6">
+          <GmailConnect />
+        </div>
         <GoogleConnect />
       </Card>
 

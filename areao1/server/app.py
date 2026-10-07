@@ -156,6 +156,11 @@ class LetterBody(BaseModel):
     last_contact: dt.date | None = None
 
 
+class GmailPasswordBody(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=1, max_length=64)
+
+
 class GoogleClientBody(BaseModel):
     client_id: str = Field(min_length=1, max_length=300)
     client_secret: str = Field(min_length=1, max_length=300)
@@ -916,6 +921,24 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     def google_status() -> dict[str, Any]:
         from areao1.google import auth
 
+        return auth.status()
+
+    @app.put("/api/google/mail")
+    def gmail_connect(body: GmailPasswordBody) -> dict[str, Any]:
+        """Gmail with an app password: one test login, then the keychain only (ADR 0014, amendment)."""
+        from areao1.google import auth, mail
+
+        try:
+            mail.connect(body.email, body.password)
+        except mail.MailError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return auth.status()
+
+    @app.delete("/api/google/mail")
+    def gmail_disconnect() -> dict[str, Any]:
+        from areao1.google import auth, mail
+
+        mail.disconnect()
         return auth.status()
 
     @app.put("/api/google/client")

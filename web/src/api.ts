@@ -611,6 +611,7 @@ export interface OutreachView {
   can_send: boolean;
 }
 export interface GoogleStatus {
+  mail: { connected: boolean; email: string | null };
   client: boolean;
   connected: boolean;
   email: string | null;
@@ -713,6 +714,8 @@ export const api = {
   syncCalendar: () => request<{ lines: string[] }>("POST", "/google/calendar/sync"),
   syncGmail: () => request<{ lines: string[] }>("POST", "/google/gmail/sync"),
   googleStatus: () => request<GoogleStatus>("GET", "/google"),
+  connectGmail: (email: string, password: string) => request<GoogleStatus>("PUT", "/google/mail", { email, password }),
+  disconnectGmail: () => request<GoogleStatus>("DELETE", "/google/mail"),
   saveGoogleClient: (client_id: string, client_secret: string) => request<GoogleStatus>("PUT", "/google/client", { client_id, client_secret }),
   connectGoogle: (features: string[]) => request<{ url: string }>("POST", "/google/connect", { features }),
   disconnectGoogle: () => request<GoogleStatus>("DELETE", "/google"),
