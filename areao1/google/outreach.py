@@ -13,7 +13,7 @@ from areao1.agent.guardrails import guard_answer
 from areao1.core import clock
 from areao1.core.workspace import WorkspaceError
 from areao1.criteria.case import Case
-from areao1.criteria.models import OutreachDraft
+from areao1.criteria.models import OutreachDraft, SendAttempt
 from areao1.google import mail
 
 
@@ -49,18 +49,51 @@ def can_send() -> bool:
 
 
 def sent_today(ws: Case) -> int:
+    """Emails that actually went out today (each send Gmail accepted), not drafts marked sent."""
     today = clock.today()
-    return sum(
-        1
-        for d in ws.outreach().drafts
-        if d.status == "sent" and d.sent_at and clock.local_date(d.sent_at) == today
-    )
+    out = ws.outreach()
+    logged = {a.draft_id for a in out.attempts}
+    went = sum(1 for a in out.attempts if a.ok and clock.local_date(a.at) == today)
+    # Sends from before the log: every one left an outreach.send change (even a duplicate of the same draft).
+    before_the_log = sum(1 for ch in ws.changes() if ch.action == "outreach.send" and ch.target_id not in logged
+                         and clock.local_date(ch.at) == today)  # fmt: skip
+    return went + before_the_log
+
+
+def failures(ws: Case, days: int = 7) -> list[SendAttempt]:
+    """Sends that didn't go out in the last ``days``, newest first, unless the same email went out later."""
+    since = clock.utcnow().timestamp() - days * 86400
+    attempts = ws.outreach().attempts
+    sent = {a.draft_id for a in attempts if a.ok}
+    return [
+        a for a in reversed(attempts) if not a.ok and a.at.timestamp() >= since and a.draft_id not in sent
+    ]
 
 
 def send(ws: Case, draft: OutreachDraft) -> dict[str, Any]:
     """Send an approved draft from your Gmail over SMTP. Returns its Message-ID and thread."""
     if draft.status != "draft":
         raise WorkspaceError(f"this email is already {draft.status}")
+    try:
+        msg = _checked(ws, draft)
+        mail.send(msg)
+    except (WorkspaceError, mail.MailError) as exc:
+        error = (
+            f"Gmail didn't send it: {exc} It's still a draft."
+            if isinstance(exc, mail.MailError)
+            else str(exc)
+        )
+        ws.log_attempt(
+            SendAttempt(draft_id=draft.id, to=draft.to, subject=draft.subject, ok=False, error=error[:500])
+        )
+        raise WorkspaceError(error) from exc
+    ws.log_attempt(SendAttempt(draft_id=draft.id, to=draft.to, subject=draft.subject, ok=True,
+                               message_id=msg["Message-ID"]))  # fmt: skip
+    return {"id": msg["Message-ID"], "threadId": draft.thread_id}
+
+
+def _checked(ws: Case, draft: OutreachDraft) -> EmailMessage:
+    """The message to send, after every rule: a case contact, Gmail connected, under today's limit."""
     contact = next((c for c in ws.contacts().contacts if c.id == draft.contact_id), None)
     if contact is None or draft.to.lower() not in contact.emails:
         raise WorkspaceError(
@@ -87,11 +120,7 @@ def send(ws: Case, draft: OutreachDraft) -> dict[str, Any]:
         msg["In-Reply-To"] = thread.last_message_id
         msg["References"] = thread.last_message_id
     msg.set_content(draft.body)
-    try:
-        mail.send(msg)
-    except mail.MailError as exc:
-        raise WorkspaceError(f"Gmail didn't send it: {exc} It's still a draft.") from exc
-    return {"id": msg["Message-ID"], "threadId": draft.thread_id}
+    return msg
 
 
 FOLLOW_UP = """Hi {first},

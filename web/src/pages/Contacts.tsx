@@ -256,7 +256,8 @@ function Outreach({ view, onChange }: { view: OutreachView; onChange: () => void
   const toast = useToast();
   const waiting = view.drafts.filter((d) => d.status === "draft");
   const sent = view.drafts.filter((d) => d.status === "sent").slice(0, 5);
-  if (!waiting.length && !sent.length) return null;
+  const failed = view.failures ?? [];
+  if (!waiting.length && !sent.length && !failed.length) return null;
   const act = async (fn: () => Promise<unknown>, msg: string) => {
     try {
       await fn();
@@ -273,6 +274,19 @@ function Outreach({ view, onChange }: { view: OutreachView; onChange: () => void
       panel="outreach"
       actions={<span className="font-mono text-[10.5px] text-muted uppercase">{view.sent_today} of {view.daily_limit} sent today</span>}
     >
+      {failed.length > 0 && (
+        <div role="alert" className="border-b border-alert bg-alert-soft px-5 py-4 md:px-6" data-send-failures>
+          <p className="font-mono text-[10.5px] text-alert uppercase">{plural(failed.length, "send")} didn't go out (last 7 days)</p>
+          <ul className="mt-2 grid gap-1.5 text-sm">
+            {failed.map((f) => (
+              <li key={`${f.draft_id}-${f.at}`}>
+                <span className="font-mono text-[11px] text-ink-2">{f.at.slice(0, 16).replace("T", " ")}</span> · To {f.contact ? `${f.contact} <${f.to}>` : f.to} · {f.subject}
+                <span className="block text-ink-2">{f.error}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {waiting.length === 0 && <Empty>Nothing waiting. Drafts from you, the agent or a follow-up land here first.</Empty>}
       <ul>
         {waiting.map((d) => (

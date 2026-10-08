@@ -195,8 +195,22 @@ class OutreachDraft(_Model):
     gmail_id: str | None = None
 
 
+class SendAttempt(_Model):
+    """One try at sending an approved email, whether Gmail took it or not. The daily limit counts the ones that
+    went out; failures show on the Contacts page."""
+
+    at: datetime = Field(default_factory=utcnow)
+    draft_id: str
+    to: str
+    subject: str = Field("", max_length=200)
+    ok: bool
+    error: str = Field("", max_length=500)
+    message_id: str | None = Field(None, max_length=998)
+
+
 class Outreach(_File):
     drafts: list[OutreachDraft] = Field(default_factory=list)
+    attempts: list[SendAttempt] = Field(default_factory=list)
 
 
 class GmailThreads(_File):

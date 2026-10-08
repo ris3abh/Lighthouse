@@ -22,6 +22,7 @@ from areao1.criteria.models import (
     Person,
     Profile,
     Scoreboard,
+    SendAttempt,
     Todo,
     Todos,
 )
@@ -68,6 +69,12 @@ class Case(Workspace):
             self._save("outreach.json", out)
             self.after_change()
             return draft
+
+    def log_attempt(self, attempt: SendAttempt) -> None:
+        with self.lock:
+            out = self.outreach()
+            out.attempts = [*out.attempts, attempt][-500:]
+            self._save("outreach.json", out)
 
     def mailbox(self) -> Mailbox:
         return self._load("mail.json", Mailbox)

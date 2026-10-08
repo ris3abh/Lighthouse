@@ -604,11 +604,20 @@ export interface OutreachDraftView {
   created_at: string;
   sent_at: string | null;
 }
+export interface SendFailure {
+  at: string;
+  draft_id: string;
+  to: string;
+  subject: string;
+  error: string;
+  contact: string;
+}
 export interface OutreachView {
   drafts: OutreachDraftView[];
   sent_today: number;
   daily_limit: number;
   can_send: boolean;
+  failures: SendFailure[];
 }
 export type MailCategory = "invites" | "judging" | "reviewer" | "letters" | "press" | "awards" | "contacts";
 export interface MailItemView {

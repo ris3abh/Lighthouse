@@ -720,7 +720,11 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         return {"drafts": [{**d.model_dump(mode="json"), "contact": names.get(d.contact_id, "")}
                            for d in reversed(ws.outreach().drafts)],
                 "sent_today": outreach.sent_today(ws), "daily_limit": cfg.daily_limit,
-                "can_send": outreach.can_send()}  # fmt: skip
+                "can_send": outreach.can_send(),
+                "failures": [{**a.model_dump(mode="json"), "contact": next((names[d.contact_id] for d in
+                                                                            ws.outreach().drafts if d.id == a.draft_id
+                                                                            and d.contact_id in names), "")}
+                             for a in outreach.failures(ws)[:5]]}  # fmt: skip
 
     @app.post("/api/outreach")
     def post_outreach(body: OutreachBody) -> dict[str, Any]:

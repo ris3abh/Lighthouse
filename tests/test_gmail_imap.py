@@ -191,3 +191,34 @@ def test_approving_twice_while_gmail_is_slow_sends_once(ws, people, fake, monkey
     assert len(fake.sent) == 1 and sorted(codes) == [200, 400, 400, 400]
     assert [ch.action for ch in ws.changes()].count("outreach.send") == 1
     assert c.get("/api/outreach").json()["sent_today"] == 1
+
+
+def test_every_send_attempt_is_logged_and_the_limit_counts_actual_sends(ws, people, fake):
+    from areao1.criteria.models import SendAttempt
+
+    omar, _ = people
+    c = _app(ws)
+    d1, d2 = _draft(c, omar.id), _draft(c, omar.id)
+    fake.password = "zzzzzzzzzzzzzzzz"  # Gmail refuses
+    assert c.post(f"/api/outreach/{d1['id']}/send", headers=W).status_code == 400
+    [fail] = ws.outreach().attempts
+    assert (fail.ok, fail.to, fail.draft_id) == (False, "omar@mlh.example", d1["id"]) and fail.at is not None
+    assert "didn't accept that app password" in fail.error
+    view = c.get("/api/outreach").json()
+    assert view["sent_today"] == 0 and view["failures"][0]["contact"] == "Omar Haddad"
+    assert view["failures"][0]["error"] == fail.error
+    fake.password = "abcdefghijklmnop"
+    assert c.post(f"/api/outreach/{d1['id']}/send", headers=W).status_code == 200
+    view = c.get("/api/outreach").json()
+    assert view["sent_today"] == 1 and view["failures"] == []  # it went out on the retry
+    assert [a.ok for a in ws.outreach().attempts] == [False, True]
+    assert ws.outreach().attempts[-1].message_id == fake.sent[0]["Message-ID"]
+    ws.log_attempt(
+        SendAttempt(draft_id=d1["id"], to="omar@mlh.example", ok=True)
+    )  # a duplicate that went out
+    assert outreach.sent_today(ws) == 2  # counted: sends, not drafts
+    cfg = ws.config()
+    cfg.outreach.daily_limit = 2
+    ws.save_config(cfg)
+    r = c.post(f"/api/outreach/{d2['id']}/send", headers=W)
+    assert "limit of 2" in r.json()["detail"] and ws.outreach().attempts[-1].error.startswith("today's limit")
