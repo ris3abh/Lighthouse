@@ -217,7 +217,8 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] J2. docs/filming.md: window size, theme, hiding bookmarks, keys and the events they trigger
 
 #### Part K: final
-- [ ] K1. Walkthrough as Maya, Ravi and Lena from an empty workspace to the constellation; screenshots, both themes
+- [x] K1. Walkthrough as Maya, Ravi and Lena from an empty workspace to the constellation; screenshots, both themes
+      (2026-10-08: LinkedIn onboarding, two fictional web pages and a .eml, three accepts each; 14-16 stars, 4 approved)
 - [ ] K2. Live checks on the owner's setup: one daily opportunity run on Gmail, one vault sync, one chat; costs
 - [ ] K3. SPEC.md, README, landing page, CHANGELOG, ADRs; prepare v0.2.0 (not published)
 - [ ] K4. Final report: per part, screenshots, costs, open issues, "Needs you"

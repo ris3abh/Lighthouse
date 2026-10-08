@@ -262,8 +262,8 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
         g.fillStyle = cssVar("--star-trail");
         g.fillRect(q.sx - 3, q.sy - 3, 6, 6);
         g.fillStyle = cssVar("--sky-ink");
-        g.textAlign = "left";
-        g.fillText(i === 0 ? "SOURCE" : "EXHIBIT", q.sx + 6, q.sy + 3);
+        g.textAlign = "center";
+        g.fillText(i === 0 ? "SOURCE" : "EXHIBIT", q.sx, q.sy + 15); // below the node: cluster labels sit above
       });
       const first = pts[0];
       if (first) {
