@@ -271,6 +271,10 @@ class OpenAIEngine:
         out = data.get("output") or []
         searches = sum(1 for i in out if i.get("type") == "web_search_call")
         self._add_cost(result, request.model, usage, searches)
+        result.searches += searches
+        result.search_usd = round(
+            result.search_usd + (cost(request.model, usage, searches) or searches * SEARCH_USD), 6
+        )
         await emit(AgentEvent("usage", usage))
         text, sources = "", []
         for item in out:

@@ -561,3 +561,21 @@ def test_cache_usage_is_reported(demo_ws):
     month = runner.month_usage()
     assert month["cache_read"] == 9000 and month["uncached_input"] == 40
     assert month["cache_hit_rate"] == pytest.approx(9000 / 9040, rel=1e-3)
+
+
+def test_searches_are_counted_and_priced_in_the_run(demo_ws):
+    """Web search is OpenAI's hosted search, on the same key: $10 per 1,000 searches plus the sub-request's tokens.
+    Every run records how many ran and what they cost, inside cost_usd."""
+    api = ScriptedResponses([("search", {"query": "NeurIPS 2026 reviewer call"}), ("text", "Found it.")])
+    engine = OpenAIEngine(transport=httpx.MockTransport(api), key="sk-test")
+    result = anyio.run(lambda: engine.run(EngineRequest("s", "p", "gpt-6.1-sol"), [], _collect()[1]))
+    inp, _, out = PRICES["gpt-6.1-sol"]
+    assert result.searches == 1 and result.search_usd == pytest.approx((10 * inp + 5 * out) / 1e6 + 0.01)
+    assert result.cost_usd >= result.search_usd
+    runner, fake = _runner(demo_ws, [("search", {"query": "NeurIPS 2026 reviewer call"}), ("text", "ok")])
+
+    async def go():
+        return await runner.wait((await runner.start("manual", "find calls")).id)
+
+    run = anyio.run(go)
+    assert run.searches == 1 and run.search_cost_usd > 0.01

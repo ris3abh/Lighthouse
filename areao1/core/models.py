@@ -652,6 +652,10 @@ class AgentRun(_File):
     changes: list[str] = Field(default_factory=list, description="data/changes.jsonl ids this run made.")
     usage: RunUsage = Field(default_factory=RunUsage)
     cost_usd: float | None = None
+    searches: int = Field(0, description="Web searches that ran in this run.")
+    search_cost_usd: float = Field(
+        0.0, description="What they cost (per-search fee + tokens), part of cost_usd."
+    )
     stop_reason: str | None = None
     error: str | None = None
 

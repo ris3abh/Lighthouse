@@ -48,6 +48,8 @@ class EngineResult:
     stop_reason: str | None = None
     is_error: bool = False
     error: str | None = None
+    searches: int = 0  # web searches that ran (included in cost_usd)
+    search_usd: float = 0.0  # their per-search fee plus the search sub-requests' tokens
 
 
 Emit = Callable[[AgentEvent], Awaitable[None]]

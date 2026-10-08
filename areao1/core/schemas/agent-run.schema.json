@@ -493,6 +493,18 @@
       "title": "Schema Version",
       "type": "integer"
     },
+    "search_cost_usd": {
+      "default": 0.0,
+      "description": "What they cost (per-search fee + tokens), part of cost_usd.",
+      "title": "Search Cost Usd",
+      "type": "number"
+    },
+    "searches": {
+      "default": 0,
+      "description": "Web searches that ran in this run.",
+      "title": "Searches",
+      "type": "integer"
+    },
     "sources": {
       "items": {
         "$ref": "#/$defs/RunSource"

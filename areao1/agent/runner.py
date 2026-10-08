@@ -331,6 +331,7 @@ class AgentRunner:
             result = await self.engine().run(request, tools, emit)
             run.text = result.text
             run.cost_usd = result.cost_usd
+            run.searches, run.search_cost_usd = result.searches, result.search_usd
             run.stop_reason = result.stop_reason
             if result.is_error:
                 run.status, run.error = "error", result.error

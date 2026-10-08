@@ -230,6 +230,7 @@ export default function Agent({ focus }: { focus: string | null }) {
                       {r.proposals.length} proposal{r.proposals.length === 1 ? "" : "s"} · {fmtTokens(r.counted_tokens)} · {fmtPct(cacheRate(r.usage))} cached ·{" "}
                       {r.tier ? `${r.tier} · ${r.model} · ` : ""}
                       {fmtUsd(r.cost_usd)}
+                      {r.searches ? ` (incl. ${plural(r.searches, "search", "searches")} ${fmtUsd(r.search_cost_usd ?? 0)})` : ""}
                     </p>
                   </button>
                 </li>
@@ -289,7 +290,10 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
           <dl className="mt-6 grid grid-cols-2 gap-px border border-line bg-line text-xs @2xl:grid-cols-5 [&>div]:bg-surface [&>div]:p-3 [&_dd]:mt-1 [&_dd]:font-mono [&_dd]:text-sm [&_dt]:eyebrow">
             <div>
               <dt>Cost</dt>
-              <dd>{fmtUsd(run.cost_usd)}</dd>
+              <dd title="Includes web searches">
+                {fmtUsd(run.cost_usd)}
+                {run.searches ? <span className="block text-[10.5px] text-muted">{plural(run.searches, "search", "searches")} {fmtUsd(run.search_cost_usd ?? 0)}</span> : null}
+              </dd>
             </div>
             <div>
               <dt>Tokens (counted)</dt>
