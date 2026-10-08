@@ -156,13 +156,16 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       OpenAI key only (Anthropic key removed on start); the suite's FakeEngine runs the real engine against a
       scripted Responses API; Claude Code skill + AGENTS.md Codex section in every workspace
 - [x] G0 live check (2026-10-07, owner's workspace, gpt-6.1-sol): chat $0.0077 (3 tool calls, no search);
-      opportunity scout $0.2203 (20 tool calls, 4 searches = $0.1306 of it, 6 sources, 6 Inbox proposals)
+      opportunity scout $0.2203 (20 tool calls, 4 searches = $0.1306 of it, 6 sources, 6 Inbox proposals);
+      with searches on gpt-6-luna (ab3fa34): $0.2281 (29 tool calls, 10 searches = $0.1097 of it: $0.011 per search,
+      was $0.033; 10 sources, 5 proposals)
 - [x] E7 live check: rules-only refresh on the owner's Gmail ($0); found organizer mail in Promotions was never
       read (fixed, ab734a1). The HackMIT judging thread and DubHacks reply aren't in the connected account
 - [x] E8. Emails from other accounts (ADR 0014 amendment): .eml drops on Evidence, Inbox and Mail go through the
       upload pipeline (original kept) with sender authentication from the original headers, the Mail view's
       rules, criterion mapping and an invited / completed stage from the text; Gmail messages forwarded as an
       attachment are sorted and verified by the attached original, which can be imported
+- [x] E9. Guide: bring in emails from another account (docs/gmail.md and Contacts > Mail)
 - [ ] CHECKPOINT 4 (Gmail): connect with an app password, Refresh threads, one approved send
       Reported 2026-10-07 (built and tested with fake IMAP / SMTP); the live run waits for the owner's app password
 
