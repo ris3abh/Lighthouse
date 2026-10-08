@@ -28,6 +28,14 @@ def fake(monkeypatch):
     return g
 
 
+@pytest.fixture(autouse=True)
+def model_sorting_on(ws):
+    """Most tests here exercise the model tier; test_model_sorting_is_off_by_default checks the default."""
+    cfg = ws.config()
+    cfg.mail.model_sorting = True
+    ws.save_config(cfg)
+
+
 @pytest.fixture
 def people(ws):
     omar = ws.add_contact(name="Omar Haddad", emails=["omar@mlh.example"], relationship="organizer")
@@ -71,7 +79,7 @@ def test_rules_sort_case_mail_and_nothing_else_is_kept(ws, people, fake):
     assert by["Invitation to review manuscript JX-2041"].category == "reviewer"  # keyword
     assert set(by) == {"Lunch next week?", "Thank you for agreeing", "You're invited: AI Weekend",
                        "Invitation to review manuscript JX-2041"}  # fmt: skip
-    assert "2 left for the model tier" in out["lines"][0]  # Rita and the digest wait for a model
+    assert "2 left unsorted (no model available)" in out["lines"][0]  # Rita and the digest wait
     view = TestClient(create_app(ws, allowed_hosts=["testserver"])).get("/api/mail").json()
     counts = {c["id"]: c["count"] for c in view["categories"]}
     assert counts == {
@@ -215,3 +223,23 @@ def test_the_api_sync_records_the_model_cost(ws, people, fake, monkeypatch):
     assert out["lines"][0].startswith("Mail: 6 new") and any(i["category"] == "awards" for i in out["items"])
     run = AgentRunner(ws).runs()[0]
     assert (run.task, run.tier, run.cost_usd) == ("classify", "mundane", pytest.approx(0.0004))
+
+
+def test_model_sorting_is_off_by_default_and_a_setting(ws, people, fake):
+    from areao1.core.models import WorkspaceConfig
+
+    assert WorkspaceConfig().mail.model_sorting is False
+    c = TestClient(create_app(ws, allowed_hosts=["testserver"]))
+    assert c.put("/api/settings/mail", headers=W, json={"model_sorting": False}).json() == {
+        "model_sorting": False
+    }
+    assert ws.changes()[-1].action == "settings.mail"
+    _inbox(fake)
+    prompts: list[str] = []
+    out = anyio.run(mailview.sync, ws, _mundane(_judge("1: awards", prompts)))
+    assert prompts == [] and out["cost_usd"] == 0.0  # off: no model call even with a model available
+    assert "2 left unsorted (model sorting is off)" in out["lines"][0]
+    assert sorted(h["Subject"] for h in out["unsorted"]) == ["Quick question", "Your weekly digest"]
+    view = c.get("/api/mail").json()
+    assert (view["unsorted"], view["model_sorting"]) == (2, False)
+    assert "Quick question" not in (ws.root / "data" / "mail.json").read_text()  # unsorted mail isn't kept

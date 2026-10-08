@@ -95,6 +95,12 @@ export default function MailView({ contacts, contact, setContact }: { contacts: 
           </ul>
         )}
       </Card>
+      {data.unsorted > 0 && (
+        <p className="text-sm text-ink-2" data-mail-unsorted>
+          {plural(data.unsorted, "new message")} no rule could sort {data.unsorted === 1 ? "isn't" : "aren't"} shown or kept.
+          {data.model_sorting ? " No model was available to sort them." : <> Turn on <a className="link" href="#/settings">model sorting</a> in Settings &gt; Gmail to sort them, or move similar mail to teach the rules.</>}
+        </p>
+      )}
       <p className="font-mono text-[10.5px] leading-relaxed text-muted uppercase">
         Read-only: nothing is marked read, moved, labelled or deleted in Gmail · only case mail is kept (who, when, the subject) · a message's text is
         fetched when you open it and never saved · moving a message teaches the sorting rules

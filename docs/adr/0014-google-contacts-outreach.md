@@ -108,10 +108,11 @@ memberships, Other contact threads. This widens what Area O1 reads, so the rules
   nothing turns read, and nothing is moved, labelled, archived or deleted (tests fail on any other IMAP command).
 - **Sorting is rules first**: a sender you taught by moving a message; a contact on the message (a letter writer
   goes to Letter writers); a known organizer or review-system domain; a keyword in the subject. Only what no rule
-  decides goes to the **mundane tier**, with the sender, subject and first 300 characters, redacted like any
+  decides goes to the **mundane tier**, and only with **model sorting** on (Settings > Gmail, off by default),
+  with the sender, subject and first 300 characters, redacted like any
   model input, under the monthly cap, its cost recorded as a run. The model's answer can only be a category name
-  or "none"; the prompt says the mail is data, not instructions, and any other answer counts as "none". Without
-  a model (no key, or over the cap) undecided mail waits, unshown.
+  or "none"; the prompt says the mail is data, not instructions, and any other answer counts as "none". With it off,
+  or without a model (no key, or over the cap), undecided mail waits, unshown and unkept (only a count).
 - **What's kept** (`data/mail.json`): for case-relevant mail only, who, when, the redacted subject, the category
   and why; for everything else, a one-way hash of the message ID so it isn't read twice. First lines are never
   kept. Everything outside the categories is never shown or stored.

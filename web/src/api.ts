@@ -643,6 +643,8 @@ export interface MailView {
   categories: { id: MailCategory; label: string; count: number }[];
   items: MailItemView[];
   rules: { sender: string; category: MailCategory | "hide"; at: string }[];
+  unsorted: number;
+  model_sorting: boolean;
   synced_at: string | null;
   lines?: string[];
 }
@@ -758,6 +760,7 @@ export const api = {
   mail: () => request<MailView>("GET", "/mail"),
   syncMail: () => request<MailView>("POST", "/mail/sync"),
   moveMail: (id: string, category: MailCategory | "hide") => request<MailView>("PUT", `/mail/${enc(id)}`, { category }),
+  setMailSorting: (on: boolean) => request<{ model_sorting: boolean }>("PUT", "/settings/mail", { model_sorting: on }),
   mailText: (id: string) => request<MailText>("GET", `/mail/${enc(id)}/text`),
   gmailStatus: () => request<GmailStatus>("GET", "/gmail"),
   connectGmail: (email: string, password: string) => request<GmailStatus>("PUT", "/gmail", { email, password }),

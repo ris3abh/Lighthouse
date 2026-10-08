@@ -196,6 +196,9 @@ async def sync(ws: Case, mundane: Any = None, days: int = LOOKBACK_DAYS) -> dict
         if decided[0] != "hide":
             kept.append(_item(m, *decided, contacts, me))
     result: dict[str, Any] = {"cost_usd": 0.0}
+    sorting = ws.config().mail.model_sorting
+    if not sorting:
+        mundane = None  # Settings > Gmail: model sorting is off, rules only
     asked = pending[:MODEL_MAX]
     judge, how = mundane() if (mundane and asked) else (None, None)
     if judge is not None and how is not None and asked:
@@ -211,11 +214,15 @@ async def sync(ws: Case, mundane: Any = None, days: int = LOOKBACK_DAYS) -> dict
     box.items = sorted([*box.items, *(k for k in kept if k.id not in have)], key=lambda i: i.at, reverse=True)
     box.seen = ([*box.seen, *(_hash(i) for i in done)])[-SEEN_MAX:]
     box.synced_at = clock.utcnow()
-    ws.save_mailbox(box)
     waiting = len(pending) - len(asked) + (len(asked) if judge is None else 0)
+    box.unsorted = waiting
+    ws.save_mailbox(box)
+    why = "model sorting is off" if not sorting else "no model available"
     result["lines"] = [f"Mail: {len(new)} new, {len(kept)} case-relevant kept"
-                       + (f"; {waiting} left for the model tier (no model available)" if waiting and judge is None
-                          else "")]  # fmt: skip
+                       + (f"; {waiting} left unsorted ({why})" if waiting else "")]  # fmt: skip
+    result["unsorted"] = [
+        m["headers"] for m in pending[len(asked) if judge is not None else 0 :]
+    ]  # in memory only
     return result
 
 
@@ -282,7 +289,8 @@ def view(ws: Case) -> dict[str, Any]:
                       "candidate": {"id": c.id, "title": c.title} if c else None})  # fmt: skip
     return {"connected": mail.connected(), "categories": [{"id": k, "label": v, "count": counts[k]}
                                                           for k, v in CATEGORIES.items()],
-            "items": items, "rules": [r.model_dump(mode="json") for r in box.rules],
+            "items": items, "rules": [r.model_dump(mode="json") for r in box.rules], "unsorted": box.unsorted,
+            "model_sorting": ws.config().mail.model_sorting,
             "synced_at": box.synced_at.isoformat() if box.synced_at else None}  # fmt: skip
 
 

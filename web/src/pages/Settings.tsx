@@ -85,6 +85,7 @@ export default function Settings() {
         <div className="p-6">
           <GmailConnect />
         </div>
+        <MailSorting />
       </Card>
 
       <Card title="Notification channels" className="mb-8" actions={
@@ -243,6 +244,35 @@ export default function Settings() {
           <Empty>Nothing sent yet.</Empty>
         )}
       </Card>
+    </div>
+  );
+}
+
+/** Model sorting for the Mail view (off by default): mail no rule sorts goes to the mundane tier, redacted. */
+function MailSorting() {
+  const toast = useToast();
+  const mail = useLoad(() => api.mail(), []);
+  const m = mail.data;
+  if (!m) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line p-6">
+      <p className="max-w-2xl text-sm leading-relaxed text-ink-2">
+        <strong className="font-semibold text-ink">Model sorting</strong> for Contacts &gt; Mail: mail no rule can sort goes to the mundane tier (sender, subject and
+        first lines, redacted; its cost counts toward your monthly cap). Off: rules only
+        {m.unsorted ? `, and ${m.unsorted} message${m.unsorted === 1 ? "" : "s"} from the last refresh stayed unsorted` : ""}.
+      </p>
+      <Button
+        aria-pressed={m.model_sorting}
+        variant={m.model_sorting ? "primary" : "secondary"}
+        onClick={() =>
+          api
+            .setMailSorting(!m.model_sorting)
+            .then(() => mail.reload())
+            .catch((e: Error) => toast(e.message, "error"))
+        }
+      >
+        {m.model_sorting ? "On" : "Off"}
+      </Button>
     </div>
   );
 }

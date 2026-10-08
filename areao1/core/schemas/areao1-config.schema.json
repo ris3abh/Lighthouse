@@ -307,6 +307,20 @@
       "title": "ConnectorConfig",
       "type": "object"
     },
+    "MailConfig": {
+      "additionalProperties": false,
+      "description": "The Mail view on Contacts (ADR 0014, Mail view amendment).",
+      "properties": {
+        "model_sorting": {
+          "default": false,
+          "description": "Send mail no rule could sort to the mundane model tier (sender, subject, first lines, redacted). Off: rules only.",
+          "title": "Model Sorting",
+          "type": "boolean"
+        }
+      },
+      "title": "MailConfig",
+      "type": "object"
+    },
     "MissionsConfig": {
       "additionalProperties": false,
       "description": "Scheduled agent runs. Off by default: they spend tokens without anyone pressing a button. Schedules live\nin ``schedules`` (mission-opportunity-scout, mission-what-changed); budgets apply as for any run.",
@@ -461,6 +475,9 @@
       ],
       "title": "Engine",
       "type": "string"
+    },
+    "mail": {
+      "$ref": "#/$defs/MailConfig"
     },
     "notifications": {
       "$ref": "#/$defs/NotificationsConfig"

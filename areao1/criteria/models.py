@@ -255,6 +255,7 @@ class Mailbox(_File):
     rules: list[MailRule] = Field(default_factory=list)
     seen: list[str] = Field(default_factory=list, description="Hashes of message IDs already classified, so "
                             "nothing is read twice. Not the messages: one-way hashes.")  # fmt: skip
+    unsorted: int = Field(0, ge=0, description="New mail no rule sorted at the last refresh (not kept).")
     synced_at: datetime | None = None
 
 

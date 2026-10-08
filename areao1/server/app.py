@@ -156,6 +156,10 @@ class LetterBody(BaseModel):
     last_contact: dt.date | None = None
 
 
+class MailSettingsBody(BaseModel):
+    model_sorting: bool
+
+
 class MailMoveBody(BaseModel):
     category: str = Field(min_length=3, max_length=20)
 
@@ -935,6 +939,11 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         """Cheap mode: chat on the mid tier (ADR 0009 §3)."""
         svc.set_cheap_mode(body.cheap_mode)
         return runner.status()
+
+    @app.put("/api/settings/mail")
+    def put_mail_settings(body: MailSettingsBody) -> dict[str, Any]:
+        """Model sorting for the Mail view: off sorts by rules only."""
+        return dict(svc.set_mail_sorting(body.model_sorting))
 
     @app.get("/api/agent/status")
     def agent_status() -> dict[str, Any]:

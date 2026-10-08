@@ -521,6 +521,13 @@ class OutreachConfig(_Model):
     )
 
 
+class MailConfig(_Model):
+    """The Mail view on Contacts (ADR 0014, Mail view amendment)."""
+
+    model_sorting: bool = Field(False, description="Send mail no rule could sort to the mundane model tier "
+                                "(sender, subject, first lines, redacted). Off: rules only.")  # fmt: skip
+
+
 class WorkspaceConfig(_File):
     workspace_name: str = "my-case"
     profile: str = Field("", description="Active profile id; the domain layer supplies the default.")
@@ -528,6 +535,7 @@ class WorkspaceConfig(_File):
     server: ServerConfig = Field(default_factory=ServerConfig)
     vault: VaultConfig = Field(default_factory=VaultConfig)
     outreach: OutreachConfig = Field(default_factory=OutreachConfig)
+    mail: MailConfig = Field(default_factory=MailConfig)
     schedules: dict[str, str] = Field(
         default_factory=lambda: dict(DEFAULT_SCHEDULES), description="Cron per job; '' turns a job off."
     )
