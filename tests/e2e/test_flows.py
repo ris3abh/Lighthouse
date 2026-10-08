@@ -679,3 +679,64 @@ def test_qa_fixes_in_the_browser(browser, serve, qa):
         )
         assert len(qa.errors()) == n
     no_errors(qa)
+
+
+# ------------------------------------------------------------------------------------------- bulk review (F9)
+
+
+def test_bulk_review_of_a_long_inbox(browser, serve, qa):
+    """Thirty items from a chat export: filter to its notes, select all matching, reject, Undo batch; a shift-click
+    range; the keys; notes collapsed by default."""
+    from areao1.core.models import Candidate
+    from areao1.criteria.case import Case
+
+    srv = serve("film")
+    common = dict(
+        source="chat:chatgpt",
+        evidence_type="self_report",
+        proposed_criterion="",
+        source_tier="self_reported",
+        confidence=0.3,
+    )
+    Case(srv.ws).add_candidates(
+        [Candidate(kind="deadline", fingerprint=f"chatx:deadline:{i}", title=f"Deadline {i}", summary=f'"deadline {i}"',
+                   proposal={"title": f"Deadline {i}", "due": "2026-12-0" + str(1 + i % 8), "kind": "other"}, **common) for i in range(10)]
+        + [Candidate(kind="context", fingerprint=f"chatx:note:{i}", title=f"Note {i}", summary=f'"note {i}"',
+                     proposal={"id": f"n{i}", "text": f"note {i}", "client": "ChatGPT export"}, **common) for i in range(20)]
+    )  # fmt: skip
+    page = new_page(browser, qa)
+    open_route(page, srv.base, "inbox")
+    pending = lambda: len(api(srv, "/inbox"))  # noqa: E731
+    start = pending()
+    with step(qa, page, "notes are collapsed by default"):
+        notes = page.locator("details", has_text="Notes from your chats")
+        assert notes.count() == 1 and notes.get_attribute("open") is None
+    with step(qa, page, "filter to the export's notes, select all matching, reject"):
+        key = next(g["key"] for g in api(srv, "/inbox/groups") if g["label"].startswith("ChatGPT export"))
+        page.get_by_label("From").select_option(key)
+        page.get_by_label("Kind").select_option("context")
+        page.get_by_text("Select all 20 matching").click()
+        page.get_by_role("toolbar", name="Bulk review").get_by_role("button", name="Reject").click()
+        page.get_by_text("Rejected 20 items").wait_for(timeout=10000)
+        assert pending() == start - 20
+    with step(qa, page, "one Undo brings all twenty back"):
+        button(page, "Undo batch").click()
+        page.get_by_text(re.compile("Undone: 20 items back in the Inbox")).wait_for(timeout=20000)
+        assert pending() == start
+    with step(qa, page, "a shift-click range selects five deadlines"):
+        page.get_by_role("button", name="Clear filters").click()
+        page.get_by_label("Kind").select_option("deadline")
+        boxes = page.get_by_label("Select for bulk review")
+        boxes.nth(0).click()
+        boxes.nth(4).click(modifiers=["Shift"])
+        assert page.get_by_text("5 selected").is_visible()
+        page.get_by_role("toolbar", name="Bulk review").get_by_role("button", name="Accept").click()
+        page.get_by_text("Accepted 5 items").wait_for(timeout=10000)
+        assert len([d for d in api(srv, "/deadlines") if d["title"].startswith("Deadline ")]) == 5
+    with step(qa, page, "keys: j moves, x selects"):
+        page.get_by_role("button", name="Clear filters").click()
+        page.evaluate("() => document.activeElement && document.activeElement.blur()")
+        page.keyboard.press("j")
+        page.keyboard.press("x")
+        assert page.get_by_text("1 selected").is_visible()
+    no_errors(qa)

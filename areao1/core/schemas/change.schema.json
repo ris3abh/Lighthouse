@@ -38,6 +38,19 @@
       "title": "Auto",
       "type": "boolean"
     },
+    "batch": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Inbox bulk review: the batch this change was part of (one Undo).",
+      "title": "Batch"
+    },
     "before": {
       "anyOf": [
         {

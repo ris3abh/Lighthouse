@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from pydantic import BaseModel
@@ -280,11 +282,27 @@ class Case(Workspace):
 
     # ------------------------------------------------------------------ hooks
 
-    def after_change(self) -> Scoreboard:
+    _deferred = 0  # > 0 while a batch runs: re-score once at the end, not after every item
+
+    @contextmanager
+    def batch(self) -> Iterator[None]:
+        """Many writes in a row (an Inbox bulk review): the scoreboard, DASHBOARD.md and the calendar are rebuilt
+        once when the batch ends instead of after every item."""
+        self._deferred += 1
+        try:
+            yield
+        finally:
+            self._deferred -= 1
+            if not self._deferred:
+                self.after_change()
+
+    def after_change(self) -> Scoreboard | None:  # type: ignore[override]
         """Recompute the scoreboard and regenerate DASHBOARD.md."""
         from areao1.core.calendar import write_calendar
         from areao1.criteria.dashboard import write_dashboard
 
+        if self._deferred:
+            return None
         board = self.recompute()
         write_dashboard(self, board)
         write_calendar(self)

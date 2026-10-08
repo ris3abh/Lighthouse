@@ -83,6 +83,15 @@ class DateBody(BaseModel):
     date: dt.date
 
 
+class BulkBody(BaseModel):
+    action: Literal["accept", "reject", "snooze"]
+    ids: list[str] | None = None
+    filter: dict[str, Any] | None = None
+    expect: int | None = Field(None, description="With a filter: how many you saw; refused if that changed.")
+    until: dt.date | None = None
+    confirm_evidence: bool = False
+
+
 class NoteBody(BaseModel):
     note: str = ""
 
@@ -377,6 +386,29 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
 
     # ------------------------------------------------------------------ inbox
 
+    @app.get("/api/inbox/groups")
+    def get_inbox_groups() -> list[dict[str, Any]]:
+        from areao1.criteria import inbox_bulk
+
+        return inbox_bulk.groups(ws)
+
+    @app.post("/api/inbox/bulk")
+    def post_inbox_bulk(body: BulkBody) -> dict[str, Any]:
+        from areao1.criteria import inbox_bulk
+
+        if body.ids is None and body.filter is None:
+            raise HTTPException(400, "choose items or a filter")
+        ids = body.ids if body.ids is not None else [c.id for c in inbox_bulk.select(ws, body.filter or {})]
+        if body.filter is not None and body.expect is not None and len(ids) != body.expect:
+            raise HTTPException(
+                409, f"the Inbox changed: {len(ids)} items match now, not {body.expect}. Look again."
+            )
+        return svc.bulk_inbox(body.action, ids, until=body.until, confirm_evidence=body.confirm_evidence)
+
+    @app.post("/api/inbox/batches/{batch}/undo")
+    def post_inbox_batch_undo(batch: str) -> dict[str, Any]:
+        return svc.undo_batch(batch)
+
     @app.get("/api/inbox")
     def get_inbox(status: str = "pending") -> list[dict[str, Any]]:
         if status == "pending":
@@ -385,7 +417,10 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
             items = ws.inbox().candidates
         else:
             items = [c for c in ws.inbox().candidates if c.status == status]
-        return [{**c.model_dump(mode="json"), "rule_check": checked(c.rule_check)}
+        from areao1.criteria.inbox_bulk import group_of
+
+        return [{**c.model_dump(mode="json"), "rule_check": checked(c.rule_check),
+                 "group": group_of(c)[0], "group_label": group_of(c)[1]}
                 for c in sorted(items, key=lambda c: (-c.confidence, c.created_at))]  # fmt: skip
 
     @app.patch("/api/inbox/{candidate_id}")

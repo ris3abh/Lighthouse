@@ -301,7 +301,12 @@ class Memory:
         observations = {o.id: o for o in self.observations()}
         decided: dict[str, ReviewStatus] = {}
         for d in self.decisions():
-            decided[d.claim_id] = d.decision
+            if (
+                d.decision == "reopened"
+            ):  # an undone decision: back to waiting (append-only, the history stays)
+                decided.pop(d.claim_id, None)
+            else:
+                decided[d.claim_id] = d.decision
         connectors: dict[tuple[str, str, str], set[str]] = {}
         for c in claims:
             key = (c.subject, c.predicate, json.dumps(c.value))

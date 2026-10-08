@@ -14,9 +14,11 @@
       "type": "string"
     },
     "decision": {
+      "description": "reopened: an earlier decision was undone (Inbox bulk review); the claim is waiting for review again.",
       "enum": [
         "approved",
-        "rejected"
+        "rejected",
+        "reopened"
       ],
       "title": "Decision",
       "type": "string"

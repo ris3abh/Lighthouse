@@ -54,7 +54,7 @@ export default function TrackerCard({ c, onDone }: { c: Candidate; onDone: () =>
     }, `${ADD_TO[kind].replace("Add to", "Added to")}`);
 
   return (
-    <article className="animate-rise border-b border-line px-5 py-5 last:border-b-0 md:px-6">
+    <article className="animate-rise border-b border-line px-5 py-5 last:border-b-0 md:px-6" data-candidate={c.id}>
       <div className="flex flex-wrap items-start gap-2">
         <div className="min-w-0 flex-1">
           <h3 className="text-[15px] leading-snug font-medium">{kind === "letter" ? String(p.name) : kind === "update" || kind === "metric" || kind === "context" ? c.title : String(p.title)}</h3>

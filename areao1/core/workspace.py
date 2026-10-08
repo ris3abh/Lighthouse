@@ -373,6 +373,30 @@ class Workspace:
             self.after_change()
             return cand
 
+    def reopen_candidate(self, before: dict[str, Any]) -> Candidate:
+        """Put a candidate back in the Inbox as it was (pending), for undoing a bulk decision. Its claims are reopened
+        (memory is append-only: the earlier decision stays on record; a "reopened" decision after it wins)."""
+        with self.lock:
+            cand = Candidate.model_validate({**before, "status": "pending", "snoozed_until": None})
+            inbox = self.inbox()
+            inbox.candidates = [c for c in inbox.candidates if c.id != cand.id] + [cand]
+            self.save_inbox(inbox)
+            if cand.claim_ids:
+                self.memory.decide(cand.claim_ids, "reopened", rationale="undone in the Inbox (bulk review)")
+            self.after_change()
+            return cand
+
+    def remove_exhibit(self, exhibit_id: str) -> None:
+        """Take an exhibit back out (its file too), for undoing an acceptance."""
+        with self.lock:
+            ex = self.exhibits()
+            gone = next((e for e in ex.exhibits if e.id == exhibit_id), None)
+            ex.exhibits = [e for e in ex.exhibits if e.id != exhibit_id]
+            self.save_exhibits(ex)
+            if gone is not None and (self.root / gone.file).is_file():
+                (self.root / gone.file).unlink()
+            self.after_change()
+
     def set_verification(self, candidate_id: str, verification: str, note: str) -> Candidate:
         with self.lock:
             inbox = self.inbox()

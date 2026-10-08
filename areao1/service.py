@@ -56,6 +56,7 @@ class Service:
         self.ws = ws
         self.actor = actor
         self.auto = auto
+        self.batch: str | None = None  # set during an Inbox bulk review: every change carries it
 
     @contextmanager
     def _guard(self, action: str) -> Iterator[None]:
@@ -94,6 +95,7 @@ class Service:
                     after=after,
                     auto=self.auto,
                     undoes=undoes,
+                    batch=self.batch,
                 )  # fmt: skip
             )
             return result
@@ -118,6 +120,96 @@ class Service:
         return found
 
     # ------------------------------------------------------------------ inbox
+
+    # ------------------------------------------------------------------ inbox bulk review (F9)
+
+    BULK = ("accept", "reject", "snooze")
+
+    def bulk_inbox(self, action: str, ids: list[str], *, until: date | None = None,
+                   confirm_evidence: bool = False) -> dict[str, Any]:  # fmt: skip
+        """Decide many candidates at once, each through the same door as a single decision (rules, rule check and
+        logging per item). Evidence can be accepted in bulk only with ``confirm_evidence``. Returns the batch id (for
+        one Undo), what was done and what wasn't, with why."""
+        from areao1.core.models import new_id
+
+        if action not in self.BULK:
+            raise WorkspaceError(f"unknown bulk action {action!r}")
+        pending = {c.id: c for c in self.ws.pending_candidates()}
+        self.batch = new_id("batch")
+        done, failed = [], []
+        with self._guard("inbox.bulk"), self.ws.batch():  # the one re-score at the end is a service write too
+            self._bulk(action, ids, pending, until, confirm_evidence, done, failed)
+        batch, self.batch = self.batch, None
+        return {"batch": batch if done else None, "action": action, "done": done, "failed": failed}
+
+    def _bulk(self, action: str, ids: list[str], pending: dict[str, Candidate], until: date | None,
+              confirm_evidence: bool, done: list[str], failed: list[dict[str, str]]) -> None:  # fmt: skip
+        try:
+            for cid in dict.fromkeys(ids):
+                cand = pending.get(cid)
+                if cand is None:
+                    failed.append({"id": cid, "why": "not waiting in the Inbox any more"})
+                    continue
+                if action == "accept" and cand.kind == "evidence" and not confirm_evidence:
+                    failed.append({"id": cid, "why": "evidence needs your confirmation"})
+                    continue
+                try:
+                    if action == "accept":
+                        self.accept_candidate(cid)
+                    elif action == "reject":
+                        self.reject_candidate(cid)
+                    else:
+                        self.snooze_candidate(cid, until)
+                    done.append(cid)
+                except (WorkspaceError, NotFound) as exc:
+                    failed.append({"id": cid, "why": str(exc)[:300]})
+        except BaseException:
+            self.batch = None
+            raise
+
+    def undo_batch(self, batch: str) -> dict[str, Any]:
+        """Undo one bulk review: every decision in it, newest first. Candidates come back pending; what accepting
+        created (a tracker entry, an exhibit) is taken out. A record changed again since is left alone, and said so."""
+        changes = self.ws.changes()
+        mine = [c for c in changes if c.batch == batch and c.action.startswith("inbox.") and c.undoes is None]
+        if not mine:
+            raise NotFound(f"no batch {batch!r}")
+        if any(c.undoes in {m.id for m in mine} for c in changes):
+            raise WorkspaceError("that batch was already undone")
+        tracker = {"deadline": "deadline", "pipeline": "pipeline_item"}
+        undone, left = [], []
+        self.batch = f"undo-{batch}"
+        with self._guard("inbox.undo"), self.ws.batch():
+            self._undo_each(mine, tracker, undone, left)
+        return {"batch": batch, "undone": undone, "left": left}
+
+    def _undo_each(
+        self, mine: list[Any], tracker: dict[str, str], undone: list[Any], left: list[Any]
+    ) -> None:
+        try:
+            for ch in reversed(mine):
+                before = ch.before or {}
+
+                def revert(ch: Any = ch, before: dict[str, Any] = before) -> Any:
+                    if ch.action == "inbox.accept":
+                        after = ch.after or {}
+                        kind = before.get("kind", "evidence")
+                        if kind == "evidence" and after.get("id"):
+                            self.ws.remove_exhibit(after["id"])
+                        elif kind in tracker and after.get("id"):
+                            self.ws.restore_record(tracker[kind], after["id"], None)
+                        elif kind == "letter" and after.get("id"):
+                            self.ws.restore_record("letter", after["id"], None)
+                    return self.ws.reopen_candidate(before)
+
+                try:
+                    self._record("inbox.undo", "candidate", revert, target_id=before.get("id"), before=ch.after,
+                                 summary=f"undo: {ch.summary}", undoes=ch.id)  # fmt: skip
+                    undone.append(before.get("id"))
+                except (WorkspaceError, NotFound, ValueError) as exc:
+                    left.append({"id": before.get("id"), "why": str(exc)[:300]})
+        finally:
+            self.batch = None
 
     def edit_candidate(self, candidate_id: str, **changes: Any) -> Candidate:
         before = self._candidate(candidate_id)

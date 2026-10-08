@@ -638,6 +638,9 @@ class Change(_Model):
     after: dict[str, Any] | None = None
     auto: bool = Field(False, description="Applied by autopilot without the user's approval (undoable).")
     undoes: str | None = Field(None, description="For an undo: the id of the change it reverted.")
+    batch: str | None = Field(
+        None, description="Inbox bulk review: the batch this change was part of (one Undo)."
+    )
 
 
 # --------------------------------------------------------------------------- agent/ (ADR 0005)
@@ -803,7 +806,9 @@ class Decision(_Model):
 
     id: str = Field(default_factory=lambda: new_id("dec"))
     claim_id: str
-    decision: Literal["approved", "rejected"]
+    decision: Literal["approved", "rejected", "reopened"] = Field(
+        description="reopened: an earlier decision was undone (Inbox bulk review); the claim is waiting for review again."
+    )
     reviewer: str = "user"
     at: datetime = Field(default_factory=utcnow)
     rationale: str = ""

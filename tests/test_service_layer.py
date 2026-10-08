@@ -141,13 +141,23 @@ def _proof_ids(ws) -> dict[str, str]:
 
     report = preflight.latest(ws) or {"issues": []}
     issue = report["issues"][0]["id"] if report["issues"] else ""
-    return {"proof_anchor": anchor, "proof_exhibit": other, "preflight_issue": issue}
+    batch = next((ch.batch for ch in reversed(ws.changes()) if ch.batch), "")
+    return {"proof_anchor": anchor, "proof_exhibit": other, "preflight_issue": issue, "batch": batch}
 
 
 def _preflight_ran(ws) -> None:
     from areao1.criteria import preflight
 
     preflight.run(ws)
+
+
+def _bulk_rejected(ws) -> None:
+    from areao1.service import Service
+
+    other = next(
+        c.id for c in ws.pending_candidates() if c.kind == "evidence" and c.evidence_type == "dataset"
+    )
+    Service(ws).bulk_inbox("reject", [other])
 
 
 def _proof_ready(ws) -> None:
@@ -319,6 +329,8 @@ SAMPLES = {
     ("POST", "/api/preflight/run"): ("/api/preflight/run", {}, "preflight.run"),
     ("POST", "/api/preflight/{issue_id}/dismiss"): ("/api/preflight/{preflight_issue}/dismiss", {"json": {"note": "Known"}},
                                                      "preflight.dismiss", "_preflight_ran"),
+    ("POST", "/api/inbox/bulk"): ("/api/inbox/bulk", {"json": {"action": "reject", "ids": ["{other}"]}}, "inbox.reject"),
+    ("POST", "/api/inbox/batches/{batch}/undo"): ("/api/inbox/batches/{batch}/undo", {}, "inbox.undo", "_bulk_rejected"),
     ("POST", "/api/onboarding/ai"): ("/api/onboarding/ai", {"json": {"choice": "skip"}}, "onboarding.ai", "_at_ai"),
 }  # fmt: skip
 
@@ -365,9 +377,13 @@ def test_page_writes_only_happen_inside_the_service_layer(route, demo_ws, writes
     ids |= _proof_ids(demo_ws)  # records the setup made
     path = path.format(**ids)
     if "json" in kwargs:  # ids in the body too ({contact}, {onboarding})
-        body = {
-            k: v.format(**ids) if isinstance(v, str) and "{" in v else v for k, v in kwargs["json"].items()
-        }
+
+        def fill(v):  # ids in strings, and in lists of strings (bulk review)
+            if isinstance(v, str) and "{" in v:
+                return v.format(**ids)
+            return [fill(x) for x in v] if isinstance(v, list) else v
+
+        body = {k: fill(v) for k, v in kwargs["json"].items()}
         kwargs = {**kwargs, "json": body}
     before = len(demo_ws.changes())
     writes.clear()

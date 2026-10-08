@@ -125,6 +125,34 @@ export const DATE_SOURCE: Record<DateSource, string> = {
   unconfirmed: "date unconfirmed",
 };
 
+/** Inbox bulk review (F9). */
+export interface InboxGroup {
+  key: string;
+  label: string;
+  count: number;
+  kinds: Record<string, number>;
+}
+export interface InboxFilter {
+  group?: string;
+  kind?: string;
+  criterion?: string;
+  text?: string;
+}
+export interface BulkRequest {
+  action: "accept" | "reject" | "snooze";
+  ids?: string[];
+  filter?: InboxFilter;
+  expect?: number;
+  until?: string;
+  confirm_evidence?: boolean;
+}
+export interface BulkResult {
+  batch: string | null;
+  action: string;
+  done: string[];
+  failed: { id: string; why: string }[];
+}
+
 export interface Candidate {
   rule_check?: RuleCheck | null;
   id: string;
@@ -149,6 +177,9 @@ export interface Candidate {
   source_tier: string | null;
   proposal: Record<string, unknown>;
   verification?: "verified" | "unconfirmed" | "confirmed" | "suspicious" | null;
+  /** Where it came from, for bulk review (F9): a chat export by day, the agent, Gmail, uploads, a source. */
+  group?: string;
+  group_label?: string;
   /** The date the document itself shows, and where it was read (B2). */
   document_date?: string | null;
   date_source?: DateSource | null;
@@ -842,6 +873,9 @@ export const api = {
     request<Scoreboard>("PUT", `/criteria/${enc(criterion)}/override`, { status }),
 
   inbox: () => request<Candidate[]>("GET", "/inbox"),
+  inboxGroups: () => request<InboxGroup[]>("GET", "/inbox/groups"),
+  bulkInbox: (body: BulkRequest) => request<BulkResult>("POST", "/inbox/bulk", body),
+  undoBatch: (batch: string) => request<{ batch: string; undone: string[]; left: { id: string; why: string }[] }>("POST", `/inbox/batches/${enc(batch)}/undo`),
   editCandidate: (id: string, edits: Partial<Candidate>) => request<Candidate>("PATCH", `/inbox/${enc(id)}`, edits),
   accept: (id: string, edits: Partial<Candidate> & { date?: string }) =>
     request<Exhibit>("POST", `/inbox/${enc(id)}/accept`, edits),

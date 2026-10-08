@@ -6,6 +6,8 @@ import RuleCheckView, { blocking } from "../components/RuleCheck";
 import TrackerCard, { TRACKER_LABEL } from "../components/TrackerCard";
 import { Paperclip, Upload } from "lucide-react";
 import DropZone from "../components/DropZone";
+import { BulkBar, Filters, GroupCheckbox, KIND_LABEL, matchesFilter, SelectRow, UndoBanner, useInboxKeys, useSelection } from "../components/BulkReview";
+import type { InboxFilter } from "../api";
 import { Button, Card, Chip, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { today, useLoad, useRoute } from "../hooks";
 import Banter, { banterOk } from "../components/Banter";
@@ -13,7 +15,10 @@ import { banterText } from "../lib/banter";
 
 export default function Inbox() {
   const { version, bump } = useRefresh();
-  const inbox = useLoad(() => Promise.all([api.inbox(), api.profile()]), [version]);
+  const inbox = useLoad(() => Promise.all([api.inbox(), api.profile(), api.inboxGroups()]), [version]);
+  const [filter, setFilter] = useState<InboxFilter>({});
+  const [last, setLast] = useState<{ batch: string; label: string } | null>(null);
+  const [more, setMore] = useState<Record<string, boolean>>({});
   const toast = useToast();
   const [sending, setSending] = useState(false);
   const drop = async (files: File[]) => {
@@ -32,22 +37,33 @@ export default function Inbox() {
   useEffect(() => {
     if (focus && inbox.data) document.querySelector(`[data-candidate="${CSS.escape(focus)}"]`)?.scrollIntoView({ block: "center" });
   }, [focus, inbox.data]);
+  const all = inbox.data?.[0] ?? [];
+  const candidates = all.filter((c) => matchesFilter(c, filter, (x) => x.group ?? ""));
+  const order = orderOf(candidates, inbox.data?.[1]);
+  const sel = useSelection(order);
+  const cursor = useInboxKeys(order, sel.toggle);
   if (inbox.error) return <ErrorBox error={inbox.error} retry={inbox.reload} />;
   if (!inbox.data) return <Loading />;
-  const [candidates, profile] = inbox.data;
+  const [, profile, groupList] = inbox.data;
+  const row = (c: Candidate, card: React.ReactNode) => (
+    <SelectRow key={c.id} id={c.id} checked={sel.picked.has(c.id)} onToggle={sel.toggle} focused={cursor === c.id}>
+      {card}
+    </SelectRow>
+  );
+  const LIMIT = 50;
+  const page = <T extends Candidate>(key: string, list: T[]) => (more[key] ? list : list.slice(0, LIMIT));
+  const showMore = (key: string, list: Candidate[]) =>
+    list.length > LIMIT && !more[key] ? (
+      <div className="border-t border-line px-5 py-3">
+        <Button size="sm" variant="ghost" onClick={() => setMore({ ...more, [key]: true })}>
+          Show {list.length - LIMIT} more
+        </Button>
+      </div>
+    ) : null;
 
   const labels: Record<string, string> = { "": "Needs a criterion", ...Object.fromEntries(profile.criteria.map((c) => [c.id, c.short_label || c.label])) };
   const full: Record<string, string> = Object.fromEntries(profile.criteria.map((c) => [c.id, c.label]));
-  const evidence = candidates.filter((c) => c.kind === "evidence");
-  const trackers = candidates.filter((c) => c.kind !== "evidence");
-  const groups = new Map<string, Candidate[]>();
-  for (const c of evidence) groups.set(c.proposed_criterion, [...(groups.get(c.proposed_criterion) ?? []), c]);
-  const trackerGroups = (["deadline", "pipeline", "letter", "update", "metric", "context"] as const)
-    .map((k) => [k, trackers.filter((c) => c.kind === k)] as const)
-    .filter(([, list]) => list.length);
-  const order = [...groups.keys()].sort(
-    (a, b) => profile.criteria.findIndex((c) => c.id === a) - profile.criteria.findIndex((c) => c.id === b),
-  );
+  const { groups, criteriaOrder, trackerGroups } = grouped(candidates, profile);
 
   return (
     <div>
@@ -62,7 +78,38 @@ export default function Inbox() {
           {sending ? "Adding…" : "Drop files or emails (.eml) here, or click to choose. Emails are checked for a verified sender."}
         </p>
       </DropZone>
-      {candidates.length === 0 ? (
+      {all.length > 0 && <Filters groups={groupList} filter={filter} setFilter={setFilter} total={all.length} shown={candidates.length} />}
+      <UndoBanner
+        last={last}
+        onUndone={() => {
+          setLast(null);
+          bump();
+        }}
+      />
+      <BulkBar
+        picked={sel.picked}
+        matching={order}
+        filter={filter}
+        candidates={candidates}
+        onClear={sel.clear}
+        onSelectMatching={() => sel.setMany(order, true)}
+        onDone={(r, label) => {
+          sel.clear();
+          if (r.batch) setLast({ batch: r.batch, label });
+          else toast(label, "error");
+          bump();
+        }}
+      />
+      {all.length > 0 && (
+        <p className="-mt-3 mb-6 font-mono text-[10.5px] tracking-[0.04em] text-muted">
+          Keys: j / k move · x select · a accept · r reject · shift-click a checkbox for a range
+        </p>
+      )}
+      {candidates.length === 0 && all.length > 0 ? (
+        <Card panel="inbox">
+          <Empty>Nothing matches these filters.</Empty>
+        </Card>
+      ) : candidates.length === 0 ? (
         <Card panel="inbox">
           <Empty>
             <Banter id="empty_inbox" as="span" fallback="Nothing to review." /> New candidates arrive when you{" "}
@@ -74,40 +121,57 @@ export default function Inbox() {
         </Card>
       ) : (
         <div className="flex flex-col gap-8">
-          {order.map((crit) => (
+          {criteriaOrder.map((crit) => (
             <Card
               key={crit}
               panel="inbox"
               title={
                 <span className="flex items-center gap-3" title={full[crit]}>
+                  <GroupCheckbox ids={groups.get(crit)!.map((c) => c.id)} picked={sel.picked} setMany={sel.setMany} />
                   {labels[crit] ?? crit}
                   <span className="num text-ink-2">{groups.get(crit)!.length}</span>
                 </span>
               }
               actions={!labels[crit] && <Chip tone="outline">not in the {profile.name} profile</Chip>}
             >
-              {groups.get(crit)!.map((c) => (
-                <CandidateCard key={c.id} c={c} profile={profile} onDone={bump} />
-              ))}
+              {page(crit, groups.get(crit)!).map((c) => row(c, <CandidateCard c={c} profile={profile} onDone={bump} />))}
+              {showMore(crit, groups.get(crit)!)}
             </Card>
           ))}
-          {trackerGroups.map(([kind, list]) => (
-            <Card
-              key={kind}
-              panel="inbox"
-              title={
-                <span className="flex items-center gap-3">
-                  {TRACKER_LABEL[kind]}
-                  <span className="num text-ink-2">{list.length}</span>
-                </span>
-              }
-              actions={<span className="font-mono text-[10.5px] text-muted uppercase">Tracker · never counts toward a criterion</span>}
-            >
-              {list.map((c) => (
-                <TrackerCard key={c.id} c={c} onDone={bump} />
-              ))}
-            </Card>
-          ))}
+          {trackerGroups.map(([kind, list]) =>
+            kind === "context" ? (
+              <details key={kind} className="card group" open={filter.kind === "context"}>
+                <summary className="flex min-h-12 cursor-pointer list-none flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-2.5 hover:bg-sunken">
+                  <span className="eyebrow flex items-center gap-3 text-ink">
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <GroupCheckbox ids={list.map((c) => c.id)} picked={sel.picked} setMany={sel.setMany} />
+                    </span>
+                    {KIND_LABEL.context} from your chats and tools
+                    <span className="num text-ink-2">{list.length}</span>
+                  </span>
+                  <span className="font-mono text-[10.5px] text-muted uppercase">Low priority · self-reported · never evidence</span>
+                </summary>
+                {page(kind, list).map((c) => row(c, <TrackerCard c={c} onDone={bump} />))}
+                {showMore(kind, list)}
+              </details>
+            ) : (
+              <Card
+                key={kind}
+                panel="inbox"
+                title={
+                  <span className="flex items-center gap-3">
+                    <GroupCheckbox ids={list.map((c) => c.id)} picked={sel.picked} setMany={sel.setMany} />
+                    {TRACKER_LABEL[kind]}
+                    <span className="num text-ink-2">{list.length}</span>
+                  </span>
+                }
+                actions={<span className="font-mono text-[10.5px] text-muted uppercase">Tracker · never counts toward a criterion</span>}
+              >
+                {page(kind, list).map((c) => row(c, <TrackerCard c={c} onDone={bump} />))}
+                {showMore(kind, list)}
+              </Card>
+            ),
+          )}
           {trackerGroups.length > 0 && (
             <p className="max-w-3xl text-sm leading-relaxed text-ink-2">
               Tracker suggestions come from your chats and the agent. Adding them updates your deadlines, pipeline, letters and metrics;
@@ -122,6 +186,26 @@ export default function Inbox() {
       )}
     </div>
   );
+}
+
+const TRACKER_KINDS = ["deadline", "pipeline", "letter", "update", "metric", "context"] as const;
+
+/** Evidence by criterion (profile order), then trackers by kind, notes last. */
+function grouped(candidates: Candidate[], profile: Profile) {
+  const groups = new Map<string, Candidate[]>();
+  for (const c of candidates.filter((x) => x.kind === "evidence")) groups.set(c.proposed_criterion, [...(groups.get(c.proposed_criterion) ?? []), c]);
+  const criteriaOrder = [...groups.keys()].sort(
+    (a, b) => profile.criteria.findIndex((c) => c.id === a) - profile.criteria.findIndex((c) => c.id === b),
+  );
+  const trackerGroups = TRACKER_KINDS.map((k) => [k, candidates.filter((c) => c.kind === k)] as const).filter(([, list]) => list.length);
+  return { groups, criteriaOrder, trackerGroups };
+}
+
+/** The order cards are shown in (for shift-click ranges and j / k). */
+function orderOf(candidates: Candidate[], profile: Profile | undefined): string[] {
+  if (!profile) return [];
+  const { groups, criteriaOrder, trackerGroups } = grouped(candidates, profile);
+  return [...criteriaOrder.flatMap((k) => groups.get(k)!.map((c) => c.id)), ...trackerGroups.flatMap(([, list]) => list.map((c) => c.id))];
 }
 
 function Confidence({ value }: { value: number }) {

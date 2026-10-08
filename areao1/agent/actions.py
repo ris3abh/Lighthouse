@@ -35,6 +35,7 @@ YOURS: dict[str, str] = {
     "inbox.edit": INBOX,
     "inbox.reject": INBOX,
     "inbox.snooze": INBOX,
+    "inbox.undo": INBOX,
     "inbox.upload": "A file you choose to add; the agent can't pick files from your computer.",
     "evidence.upload": "A file you choose to add; the agent can't pick files from your computer.",
     "evidence.remap": CRITERION,
