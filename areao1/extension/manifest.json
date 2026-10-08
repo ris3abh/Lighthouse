@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Area O1 capture",
+  "version": "0.2.0",
+  "description": "When you visit an official page your Area O1 vault lists, saves it to Area O1 on this computer. Never browses on its own.",
+  "permissions": ["storage", "scripting"],
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "*://*.uscis.gov/*",
+    "*://*.ecfr.gov/*",
+    "*://*.federalregister.gov/*",
+    "*://*.travel.state.gov/*",
+    "*://*.justice.gov/*",
+    "*://*.uscode.house.gov/*",
+    "*://*.dhs.gov/*",
+    "*://*.govinfo.gov/*",
+    "*://*.uscourts.gov/*",
+    "*://*.supremecourt.gov/*",
+    "*://*.courtlistener.com/*"
+  ],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_popup": "popup.html", "default_title": "Area O1 capture" }
+}

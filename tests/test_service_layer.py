@@ -46,6 +46,9 @@ SYSTEM_ROUTES = {
     ("POST", "/api/mail/sync"), ("PUT", "/api/mail/{gm_id}"),
     # The daily opportunity check proposes to the Inbox through the service layer (actor "opportunities").
     ("POST", "/api/opportunities/run"),
+    # The capture extension (ADR 0011 §2): pairing state in the cache, captures into the vault cache like an import.
+    ("POST", "/api/vault/capture/code"), ("DELETE", "/api/vault/capture"), ("POST", "/api/vault/capture/pair"),
+    ("POST", "/api/vault/capture/page"),
     # Agent runs write their own records (agent/runs, agent/conversations); anything the agent changes in
     # the workspace goes through Service(actor="agent:<run>"), covered in tests/test_agent.py.
     ("POST", "/api/agent/chat"), ("POST", "/api/agent/runs"), ("POST", "/api/agent/runs/{run_id}/stop"),

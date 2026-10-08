@@ -1,0 +1,7 @@
+{
+  "name": "areao1-extension-e2e",
+  "private": true,
+  "description": "Dev-only: drives a real Chrome with the capture extension against a running Area O1 (tests/test_extension_e2e.py).",
+  "type": "module",
+  "dependencies": { "puppeteer-core": "^25.12.0" }
+}

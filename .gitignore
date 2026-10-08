@@ -25,3 +25,4 @@ areao1/_data/
 # local Claude Code worktrees and settings
 /.claude/
 !.env.example
+extension-e2e/node_modules

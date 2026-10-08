@@ -440,6 +440,18 @@ def secret_delete(ref: Annotated[str, typer.Argument()], workspace: WorkspaceOpt
 
 
 @app.command()
+def extension() -> None:
+    """Where the capture extension is, and how to load it in Chrome (ADR 0011 §2)."""
+    from areao1.resources import PACKAGE_DIR
+
+    path = PACKAGE_DIR / "extension"
+    typer.echo(
+        f"{path}\n\nIn Chrome: chrome://extensions > turn on Developer mode > Load unpacked > choose the folder "
+        "above. Then pair it: Area O1 > Knowledge > Pair the browser extension."
+    )
+
+
+@app.command()
 def mcp(workspace: WorkspaceOpt = None) -> None:
     """Run a read-only MCP server over stdio (e.g. `claude mcp add areao1 -- areao1 mcp -w <dir>`)."""
     from areao1.mcp.server import serve

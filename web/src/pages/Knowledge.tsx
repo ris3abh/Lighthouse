@@ -65,6 +65,7 @@ export default function Knowledge() {
           </Button>
         }
       />
+      <CaptureExtension />
       {!k.enabled && (
         <p className="mb-8 border border-alert bg-surface px-5 py-4 text-sm text-ink">
           The vault is turned off (<code>vault: {"{enabled: false}"}</code> in areao1.yaml). Nothing is fetched, and rule statements show as unverified.
@@ -281,5 +282,57 @@ function FindingRow({ s, kinds, onDone }: { s: VaultSourceStatus; kinds: string[
         Add as a source
       </Button>
     </li>
+  );
+}
+
+/** Pair the capture extension (ADR 0011 §2): a one-time code, typed into the extension's popup. */
+function CaptureExtension() {
+  const toast = useToast();
+  const status = useLoad(() => api.captureStatus(), []);
+  const [code, setCode] = useState<string | null>(null);
+  const s = status.data;
+  if (!s) return null;
+  return (
+    <Card title="Browser extension" className="mb-8" panel="capture">
+      <div className="grid gap-3 p-5 text-sm leading-relaxed text-ink-2 md:p-6">
+        <p>
+          With the Area O1 capture extension in Chrome, visiting one of these official pages saves it here, so blocked sites stay fresh without saving
+          pages by hand. It never browses on its own and only talks to Area O1 on this computer.
+        </p>
+        <p className="font-mono text-[11px] text-muted uppercase">
+          {s.paired ? `Paired ${s.paired_at ? s.paired_at.slice(0, 10) : ""} · watching ${s.watched} pages` : `Not paired · ${s.watched} pages to watch`}
+        </p>
+        <ol className="grid list-decimal gap-1 pl-5">
+          <li>
+            Load it: run <code className="font-mono">areao1 extension</code> for the folder, then in Chrome open chrome://extensions, turn on Developer mode and
+            choose Load unpacked.
+          </li>
+          <li>Pair it: get a code below and type it into the extension's popup.</li>
+        </ol>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={() =>
+              api.captureCode().then(
+                (r) => setCode(r.code),
+                (e: Error) => toast(e.message, "error"),
+              )
+            }
+          >
+            {s.paired ? "Pair again" : "Get a pairing code"}
+          </Button>
+          {code && (
+            <span className="font-mono text-lg tracking-widest text-ink" data-pairing-code>
+              {code}
+            </span>
+          )}
+          {code && <span className="text-xs text-muted">Good for ten minutes, once.</span>}
+          {s.paired && (
+            <Button variant="ghost" onClick={() => api.captureUnpair().then(() => status.reload())}>
+              Unpair
+            </Button>
+          )}
+        </div>
+      </div>
+    </Card>
   );
 }

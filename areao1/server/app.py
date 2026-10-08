@@ -156,6 +156,17 @@ class LetterBody(BaseModel):
     last_contact: dt.date | None = None
 
 
+class CapturePairBody(BaseModel):
+    code: str = Field(min_length=4, max_length=20)
+
+
+class CapturePageBody(BaseModel):
+    url: str = Field(min_length=8, max_length=2000)
+    title: str = Field("", max_length=500)
+    html: str = Field(min_length=1, max_length=8_000_000)
+    share: bool = False
+
+
 class OpportunitiesBody(BaseModel):
     enabled: bool | None = None
     verify_on_web: bool | None = None
@@ -1203,6 +1214,61 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         for cand in ws.pending_candidates():
             add(cand.rule_check, {"type": "candidate", "id": cand.id, "label": cand.title}, cand.created_at)
         return list(found.values())
+
+    # ------------------------------------------------------------------ capture extension (ADR 0011 §2)
+
+    @app.post("/api/vault/capture/code")
+    def capture_code() -> dict[str, Any]:
+        """A one-time pairing code for the browser extension (ten minutes, once)."""
+        from areao1.vault import capture
+
+        return {"code": capture.new_code(), "expires_in": capture.CODE_TTL}
+
+    @app.get("/api/vault/capture/status")
+    def capture_status() -> dict[str, Any]:
+        from areao1.vault import capture
+
+        return {**capture.status(ws), "watched": len(capture.watched(ws))}
+
+    @app.delete("/api/vault/capture")
+    def capture_unpair() -> dict[str, Any]:
+        from areao1.vault import capture
+
+        capture.unpair(ws)
+        return capture.status(ws)
+
+    @app.post("/api/vault/capture/pair")
+    def capture_pair(body: CapturePairBody) -> dict[str, Any]:
+        """The extension trades a pairing code for its capture token (shown once) and the pages to watch."""
+        from areao1.vault import capture
+
+        try:
+            token = capture.pair(ws, body.code)
+        except PermissionError as exc:
+            raise HTTPException(403, str(exc)) from exc
+        return {"token": token, "sources": capture.watched(ws)}
+
+    @app.get("/api/vault/capture/sources")
+    def capture_sources(request: Request) -> dict[str, Any]:
+        from areao1.vault import capture
+
+        if not capture.authorized(ws, request.headers.get("authorization")):
+            raise HTTPException(401, "pair the extension again (Settings > Knowledge)")
+        return {"sources": capture.watched(ws)}
+
+    @app.post("/api/vault/capture/page")
+    def capture_page(body: CapturePageBody, request: Request) -> dict[str, Any]:
+        """A page the person visited, sent by the paired extension; imported only if it's a listed source."""
+        from areao1.vault import capture
+
+        if not capture.authorized(ws, request.headers.get("authorization")):
+            raise HTTPException(401, "pair the extension again (Settings > Knowledge)")
+        try:
+            return capture.capture(ws, body.url, body.title, body.html)
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
 
     @app.get("/api/knowledge")
     def knowledge() -> dict[str, Any]:

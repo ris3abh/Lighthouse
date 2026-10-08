@@ -188,7 +188,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 #### Part G: vault without babysitting (ADR 0011)
 - [x] G1. Change-triggered freshness: Federal Register + eCFR APIs for rules affecting O-1 / EB-1A and fees; a
       blocked USCIS page is flagged only when a relevant rule changes; timers only for sources with no signal
-- [ ] G2. Chrome MV3 capture extension (extension/): matches only vault/sources.yaml URLs, saves visited pages to
+- [x] G2. Chrome MV3 capture extension (extension/): matches only vault/sources.yaml URLs, saves visited pages to
       the local app with a one-time pairing token, never browses on its own; automated-browser test; packaged
       for "load unpacked"
 - [ ] G3. community-vault/: README, manifest, hash-verified public-domain government snapshots, CI that validates

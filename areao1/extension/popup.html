@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Area O1 capture</title>
+    <style>
+      :root { --ink: #111; --paper: #f7f6f2; --muted: #666; --line: #ccc; }
+      @media (prefers-color-scheme: dark) { :root { --ink: #eee; --paper: #141414; --muted: #999; --line: #333; } }
+      body { margin: 0; width: 320px; padding: 16px; background: var(--paper); color: var(--ink); font: 14px/1.45 system-ui, sans-serif; }
+      h1 { font-size: 16px; margin: 0 0 8px; }
+      p { margin: 6px 0; } .muted { color: var(--muted); font-size: 12px; }
+      label { display: block; margin: 10px 0 4px; font: 11px ui-monospace, monospace; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+      input[type=text] { box-sizing: border-box; width: 100%; padding: 6px 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; }
+      button { margin-top: 10px; padding: 6px 12px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); font: inherit; cursor: pointer; }
+      button.ghost { background: transparent; color: var(--ink); }
+    </style>
+  </head>
+  <body>
+    <h1>Area O1 capture</h1>
+    <p class="muted">Saves the official pages your vault lists when you visit them. It never browses on its own.</p>
+    <div id="unpaired">
+      <label for="app">Area O1 address</label>
+      <input id="app" type="text" value="http://127.0.0.1:7777" />
+      <label for="code">Pairing code (Settings &gt; Knowledge)</label>
+      <input id="code" type="text" placeholder="AB12-CD34" />
+      <button id="pair">Pair</button>
+    </div>
+    <div id="paired" hidden>
+      <p id="count"></p>
+      <p id="last" class="muted"></p>
+      <label><input id="share" type="checkbox" /> Share captures of public government pages with the community library</label>
+      <button id="unpair" class="ghost">Unpair</button>
+    </div>
+    <p id="status" class="muted" role="status"></p>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

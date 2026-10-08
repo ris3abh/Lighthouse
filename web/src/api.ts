@@ -770,6 +770,9 @@ export const api = {
   setOpportunities: (body: { enabled?: boolean; verify_on_web?: boolean }) =>
     request<{ enabled: boolean; verify_on_web: boolean }>("PUT", "/settings/opportunities", body),
   runOpportunities: () => request<{ lines: string[]; cost_usd: number }>("POST", "/opportunities/run"),
+  captureStatus: () => request<{ paired: boolean; paired_at: string | null; watched: number }>("GET", "/vault/capture/status"),
+  captureCode: () => request<{ code: string; expires_in: number }>("POST", "/vault/capture/code"),
+  captureUnpair: () => request<{ paired: boolean }>("DELETE", "/vault/capture"),
   setMailSorting: (on: boolean) => request<{ model_sorting: boolean }>("PUT", "/settings/mail", { model_sorting: on }),
   importForwarded: (id: string) => request<Candidate>("POST", `/mail/${enc(id)}/import`),
   mailText: (id: string) => request<MailText>("GET", `/mail/${enc(id)}/text`),
