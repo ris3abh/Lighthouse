@@ -48,7 +48,18 @@
     header.top { border-bottom: 1px solid var(--frame); }
     header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
     .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-    .brand svg { width: 24px; height: 24px; }
+    .brand img { width: 24px; height: 24px; display: block; }
+    header.top nav { display: flex; align-items: center; gap: 20px; font-family: var(--mono); font-size: 12px;
+                     letter-spacing: 0.12em; text-transform: uppercase; }
+    header.top nav a { text-decoration: none; }
+    header.top nav a.docs { background: var(--ink); color: var(--on-ink); padding: 8px 14px; }
+    header.top nav a:hover { text-decoration: underline; }
+    header.top nav a.docs:hover { text-decoration: none; opacity: 0.88; }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .cta a { font-family: var(--mono); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+             text-decoration: none; padding: 12px 18px; border: 1px solid var(--frame); }
+    .cta a.primary { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+    .cta a:hover { background: var(--ink); color: var(--on-ink); }
     .brand span { font-stretch: 68%; font-weight: 700; font-size: 26px; letter-spacing: -0.01em; text-transform: uppercase; }
     .eyebrow { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.14em;
                text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
@@ -92,11 +103,14 @@
 <body>
   <header class="top">
     <div class="wrap">
-      <a class="brand" href="https://github.com/ris3abh/areao1" aria-label="Area O1 on GitHub">
-        <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" fill="var(--ink)"/><path d="M13 10h6l1.5 16h-9z" fill="var(--paper)"/><path d="M12 7h8v3h-8z" fill="var(--paper)"/><path d="M20 8.5 29 5v7z" fill="var(--muted)"/></svg>
+      <a class="brand" href="./" aria-label="Area O1 home">
+        <img src="favicon.svg" alt="" width="24" height="24">
         <span>Area O1</span>
       </a>
-      <a href="https://github.com/ris3abh/areao1">GitHub</a>
+      <nav aria-label="Site">
+        <a href="https://github.com/ris3abh/areao1">GitHub</a>
+        <a class="docs" href="docs/">Docs</a>
+      </nav>
     </div>
   </header>
 
@@ -113,6 +127,11 @@
         O-1A or EB-1A extraordinary-ability case: a criteria scoreboard, an evidence inbox, metrics, deadlines,
         letters and a dashboard. Start from your LinkedIn PDF; it takes a few minutes.
       </p>
+      <div class="cta">
+        <a class="primary" href="docs/">Read the docs</a>
+        <a href="docs/getting-started/">Getting started</a>
+        <a href="docs/tour/">Take the tour</a>
+      </div>
 
       <div class="card install">
         <div class="row">
@@ -191,7 +210,7 @@
       <p>Area O1 is not legal advice and is not affiliated with USCIS. Criteria profiles are community-maintained summaries of public
         regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.
         <span data-banter="disclaimer">Not affiliated with USCIS, the U.S. Air Force, or anything in Nevada.</span></p>
-      <p><a href="https://github.com/ris3abh/areao1">Source on GitHub</a> ·
+      <p><a href="docs/">Docs</a> · <a href="https://github.com/ris3abh/areao1">Source on GitHub</a> ·
         <a href="https://github.com/ris3abh/areao1/blob/main/DISCLAIMER.md">Disclaimer</a> · Apache-2.0 · Created by Rishabh Sharma</p>
     </div>
   </footer>

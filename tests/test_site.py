@@ -63,10 +63,27 @@ def test_page_is_self_contained():
     assert "<script" not in text  # and none inline: a static page
     assert not re.search(r'<link[^>]+rel="stylesheet"', text)  # CSS is inline
     assert "prefers-color-scheme: dark" in text  # light and dark
-    for ref in re.findall(r'url\("([^"]+)"\)|href="([^"#:]+)"', text):
+    for ref in re.findall(r'url\("([^"]+)"\)|href="([^"#:]+)"|src="([^"#:]+)"', text):
         local = next(r for r in ref if r)
+        if local == "./" or local.startswith("docs/"):  # the page itself; the docs are built beside it
+            continue
         assert (SITE / local).is_file(), local  # fonts and icon ship with the page
     assert (SITE / "fonts" / "LICENSE-archivo.txt").exists()  # OFL fonts travel with their license
+
+
+def test_page_uses_the_dashboard_logo_and_links_the_docs():
+    text = PAGE.read_text()
+    logo = (SITE / "favicon.svg").read_text()
+    assert logo == (ROOT / "web" / "public" / "favicon.svg").read_text()  # the dashboard's O1 mark
+    assert '<link rel="icon" type="image/svg+xml" href="favicon.svg">' in text
+    header = text.split('<header class="top">', 1)[1].split("</header>", 1)[0]
+    assert '<img src="favicon.svg"' in header and "<svg" not in header
+    assert '<a class="docs" href="docs/">Docs</a>' in header  # in the header
+    hero = text.split('<section class="hero">', 1)[1].split("</section>", 1)[0]
+    assert 'href="docs/">Read the docs</a>' in hero  # and in the hero, before the install lines
+    nav = yaml.dump(yaml.load((ROOT / "mkdocs.yml").read_text(), Loader=yaml.BaseLoader)["nav"])
+    for href in re.findall(r'href="docs/([^"]*)"', text):  # each docs link is a page of the docs site
+        assert href == "" or f"{href.rstrip('/')}/index.md" in nav, href
 
 
 def test_pages_workflow_deploys_the_landing_page_and_the_docs_from_main():
