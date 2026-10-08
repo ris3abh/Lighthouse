@@ -126,6 +126,35 @@ memberships, Other contact threads. This widens what Area O1 reads, so the rules
 
 The contact threads of §2 (headers only) and the opportunity-mail rule (Part F) are unchanged.
 
+## Amendment (2026-10-07): emails from other accounts (.eml and forward as attachment)
+
+People need evidence that sits in another mailbox (a work account Area O1 can't and shouldn't connect to). Two
+ways bring it in, both explicit acts by the person:
+
+- **Dropping .eml files** on Evidence, the Inbox or Contacts > Mail. Each file goes through the upload pipeline:
+  its bytes are kept as a snapshot in `memory/sources/` (the original file, so it can be filed as the exhibit),
+  and a candidate goes to the Inbox. On top of a plain upload, an email gets:
+  - **Sender authentication from its original headers.** Area O1 reads the receiving server's verdict in the
+    topmost `Authentication-Results` header (else `ARC-Authentication-Results`): SPF, DKIM (with the signing
+    domain) and DMARC. "Verified sender" means DMARC passed, or DKIM passed for the From domain's organization.
+    An explicit fail is shown as such; no results at all is "unverified". This is the receiving provider's
+    check, recorded in the file, not a new cryptographic check: the keys may have rotated since, and a hand-edited
+    file could carry fake headers, which is why the verdict is shown with who made it (`mx.google.com`, ...) and the
+    person still reviews every candidate.
+  - **The Mail view's rules** (contacts, organizer domains, subject keywords; the model only if model sorting is
+    on) pick the category, which maps to a criterion: judging and reviewer requests to Judging, awards to Awards
+    (a membership to Membership), press to Press; the rest stays "you decide".
+  - **A stage from the text**: `completed` only on explicit completion ("thank you for judging", "your reviews
+    were submitted", a certificate); everything else is `invited`, because an invitation is not a completion.
+  - The summary carries the sender, date, the authentication verdict and one quoted sentence.
+- **Forwarding as an attachment** to the connected Gmail. The Mail view recognizes a message with an attached
+  `message/rfc822` part (from `BODYSTRUCTURE`, metadata only), reads the attached original's headers
+  (`BODY.PEEK[n.HEADER]`), and sorts and authenticates **the original**, not the forward (a forward's own
+  authentication only proves who forwarded it). **Import the attached original** fetches that part (PEEK) and runs
+  it through the same .eml pipeline. Plain forwards (inline) can't be authenticated: the original headers are gone.
+
+The rest of the Mail view's rules are unchanged: still read-only, still only case mail kept.
+
 ## Consequences
 
 - Gmail needs only an app password and is optional and off by default. Nothing in Area O1 needs a Google Cloud
