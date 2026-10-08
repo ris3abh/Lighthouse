@@ -445,6 +445,24 @@ class Service:
         return self._record("settings.autopilot", "settings", apply, target_id="autopilot", before=before,
                             summary=", ".join(f"{k}={'on' if v else 'off'}" for k, v in flags.items()))  # fmt: skip
 
+    def set_opportunities(self, enabled: bool | None = None, verify_on_web: bool | None = None) -> Any:
+        """The daily opportunity job (ADR 0016): on or off, and whether finds are confirmed on the web."""
+        if self.auto:
+            raise AutopilotRefused("autopilot can't change settings")
+        cfg = self.ws.config()
+        before = cfg.opportunities.model_dump()
+
+        def apply() -> Any:
+            if enabled is not None:
+                cfg.opportunities.enabled = bool(enabled)
+            if verify_on_web is not None:
+                cfg.opportunities.verify_on_web = bool(verify_on_web)
+            self.ws.save_config(cfg)
+            return cfg.opportunities.model_dump()
+
+        return self._record("settings.opportunities", "settings", apply, target_id="opportunities", before=before,
+                            summary=f"daily opportunity check {'on' if cfg.opportunities.enabled or enabled else 'off'}")  # fmt: skip
+
     def set_mail_sorting(self, on: bool) -> Any:
         """Model sorting for the Mail view (off by default: rules only)."""
         if self.auto:

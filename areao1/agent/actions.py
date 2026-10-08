@@ -45,6 +45,7 @@ YOURS: dict[str, str] = {
     "settings.missions": "It decides what the agent may do on its own.",
     "settings.agent": "It decides which model answers you and what that costs.",
     "settings.mail": "It decides whether your mail is sent to a model to be sorted.",
+    "settings.opportunities": "It decides whether your mail is read every day for opportunities.",
     "inbox.recheck": "It re-runs the automatic check on the agent's own text.",
     "briefing.recheck": "It re-runs the automatic check on the agent's own text.",
     "onboarding.": "Your own answers about yourself.",

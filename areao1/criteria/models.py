@@ -264,6 +264,8 @@ class Mailbox(_File):
     seen: list[str] = Field(default_factory=list, description="Hashes of message IDs already classified, so "
                             "nothing is read twice. Not the messages: one-way hashes.")  # fmt: skip
     unsorted: int = Field(0, ge=0, description="New mail no rule sorted at the last refresh (not kept).")
+    processed: list[str] = Field(default_factory=list, description="Mail the daily opportunity job already "
+                                 "looked at (message ids), so a find is proposed once.")  # fmt: skip
     synced_at: datetime | None = None
 
 

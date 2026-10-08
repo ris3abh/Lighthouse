@@ -25,7 +25,7 @@ PDF = b"%PDF-1.4 fictional\n"
 # Routes the five pages write through. Every mutating route under these prefixes must be covered below.
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
-                 "/api/settings/missions", "/api/settings/agent", "/api/settings/mail", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
+                 "/api/settings/missions", "/api/settings/agent", "/api/settings/mail", "/api/settings/opportunities", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
                  "/api/onboarding", "/api/todos", "/api/contacts", "/api/outreach")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
@@ -44,6 +44,8 @@ SYSTEM_ROUTES = {
     # The Mail view writes only data/mail.json, a read-only cache of case mail headers and the sorting rules you
     # teach by moving a message; nothing in the case changes (ADR 0014, Mail view amendment).
     ("POST", "/api/mail/sync"), ("PUT", "/api/mail/{gm_id}"),
+    # The daily opportunity check proposes to the Inbox through the service layer (actor "opportunities").
+    ("POST", "/api/opportunities/run"),
     # Agent runs write their own records (agent/runs, agent/conversations); anything the agent changes in
     # the workspace goes through Service(actor="agent:<run>"), covered in tests/test_agent.py.
     ("POST", "/api/agent/chat"), ("POST", "/api/agent/runs"), ("POST", "/api/agent/runs/{run_id}/stop"),
@@ -224,6 +226,7 @@ SAMPLES = {
     ("PATCH", "/api/todos/{todo_id}"): ("/api/todos/{todo}", {"json": {"status": "done"}}, "todo.update"),
     ("PUT", "/api/settings/agent"): ("/api/settings/agent", {"json": {"cheap_mode": True}}, "settings.agent"),
     ("PUT", "/api/settings/mail"): ("/api/settings/mail", {"json": {"model_sorting": True}}, "settings.mail"),
+    ("PUT", "/api/settings/opportunities"): ("/api/settings/opportunities", {"json": {"enabled": True}}, "settings.opportunities"),
     ("POST", "/api/outreach"): ("/api/outreach", {"json": {"contact_id": "{contact}", "subject": "Thank you",
                                                          "body": "Thanks for judging with me."}}, "outreach.draft"),
     ("PATCH", "/api/outreach/{draft_id}"): ("/api/outreach/{draft}", {"json": {"body": "Thank you again."}}, "outreach.edit"),

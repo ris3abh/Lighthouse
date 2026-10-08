@@ -86,6 +86,7 @@ export default function Settings() {
           <GmailConnect />
         </div>
         <MailSorting />
+        <DailyOpportunities />
       </Card>
 
       <Card title="Notification channels" className="mb-8" actions={
@@ -244,6 +245,53 @@ export default function Settings() {
           <Empty>Nothing sent yet.</Empty>
         )}
       </Card>
+    </div>
+  );
+}
+
+/** The daily opportunity job (ADR 0016): off by default; finds go to the Inbox, verified or not. */
+function DailyOpportunities() {
+  const toast = useToast();
+  const settings = useLoad(() => api.settings(), []);
+  const [busy, setBusy] = useState(false);
+  const o = settings.data?.opportunities;
+  if (!o) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line p-6">
+      <p className="max-w-2xl text-sm leading-relaxed text-ink-2">
+        <strong className="font-semibold text-ink">Daily opportunity check</strong>: once a day, invitations to judge, review, speak or apply become Inbox items,
+        each marked verified (sender check and the event's official page) or unconfirmed, with a check-in to the organizer drafted for your approval. Off by
+        default.
+      </p>
+      <div className="flex gap-2">
+        <Button
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              toast((await api.runOpportunities()).lines.join(" "));
+            } catch (e) {
+              toast((e as Error).message, "error");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? "Checking…" : "Check now"}
+        </Button>
+        <Button
+          aria-pressed={o.enabled}
+          variant={o.enabled ? "primary" : "secondary"}
+          onClick={() =>
+            api
+              .setOpportunities({ enabled: !o.enabled })
+              .then(() => settings.reload())
+              .catch((e: Error) => toast(e.message, "error"))
+          }
+        >
+          {o.enabled ? "On" : "Off"}
+        </Button>
+      </div>
     </div>
   );
 }

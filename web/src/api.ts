@@ -137,6 +137,8 @@ export interface Candidate {
   attachment: string | null;
   source_tier: string | null;
   proposal: Record<string, unknown>;
+  verification?: "verified" | "unconfirmed" | "confirmed" | "suspicious" | null;
+  verification_note?: string;
 }
 
 export type ReviewStatus = "proposed" | "corroborated" | "approved" | "rejected";
@@ -368,6 +370,7 @@ export interface MissionView {
 }
 
 export interface SettingsView {
+  opportunities: { enabled: boolean; verify_on_web: boolean };
   profile: string;
   engine: string;
   privacy: { redact_before_llm: boolean };
@@ -764,6 +767,9 @@ export const api = {
   mail: () => request<MailView>("GET", "/mail"),
   syncMail: () => request<MailView>("POST", "/mail/sync"),
   moveMail: (id: string, category: MailCategory | "hide") => request<MailView>("PUT", `/mail/${enc(id)}`, { category }),
+  setOpportunities: (body: { enabled?: boolean; verify_on_web?: boolean }) =>
+    request<{ enabled: boolean; verify_on_web: boolean }>("PUT", "/settings/opportunities", body),
+  runOpportunities: () => request<{ lines: string[]; cost_usd: number }>("POST", "/opportunities/run"),
   setMailSorting: (on: boolean) => request<{ model_sorting: boolean }>("PUT", "/settings/mail", { model_sorting: on }),
   importForwarded: (id: string) => request<Candidate>("POST", `/mail/${enc(id)}/import`),
   mailText: (id: string) => request<MailText>("GET", `/mail/${enc(id)}/text`),

@@ -195,6 +195,7 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <Chip>{c.evidence_type}</Chip>
             <StageChip stage={c.stage} />
+            {c.verification && <VerificationChip v={c.verification} note={c.verification_note ?? ""} />}
             {c.signals.map((s) => (
               <Chip key={s} tone="ink">
                 {s}
@@ -288,5 +289,24 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
         </Button>
       </div>
     </article>
+  );
+}
+
+const VERIFICATION: Record<string, { label: string; tone: "ink" | "muted" | "outline"; alert?: boolean }> = {
+  verified: { label: "verified", tone: "ink" },
+  confirmed: { label: "confirmed by reply", tone: "ink" },
+  unconfirmed: { label: "unconfirmed", tone: "outline" },
+  suspicious: { label: "suspicious sender", tone: "outline", alert: true },
+};
+
+/** A mail find's verification (ADR 0016): sender check + official page, a drafted check-in, or a failed check. */
+function VerificationChip({ v, note }: { v: string; note: string }) {
+  const s = VERIFICATION[v] ?? { label: v, tone: "muted" as const };
+  return (
+    <span title={note} className={s.alert ? "text-alert" : undefined}>
+      <Chip tone={s.tone} className={s.alert ? "border-alert text-alert" : undefined}>
+        {s.label}
+      </Chip>
+    </span>
   );
 }

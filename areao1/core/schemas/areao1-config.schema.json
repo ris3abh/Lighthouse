@@ -385,6 +385,26 @@
       "title": "NotificationsConfig",
       "type": "object"
     },
+    "OpportunitiesConfig": {
+      "additionalProperties": false,
+      "description": "The daily opportunity job (ADR 0016): opportunity mail to the Inbox, each find verified or not.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "description": "Run the daily-opportunities job every 24 hours.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "verify_on_web": {
+          "default": true,
+          "description": "Confirm each event on its official page (or Devpost / MLH); may run one cheap web search per find with no usable link.",
+          "title": "Verify On Web",
+          "type": "boolean"
+        }
+      },
+      "title": "OpportunitiesConfig",
+      "type": "object"
+    },
     "OutreachConfig": {
       "additionalProperties": false,
       "description": "Emails to your contacts (ADR 0014 \u00a75): drafted, approved by you, then sent from your Gmail.",
@@ -477,6 +497,9 @@
     },
     "notifications": {
       "$ref": "#/$defs/NotificationsConfig"
+    },
+    "opportunities": {
+      "$ref": "#/$defs/OpportunitiesConfig"
     },
     "outreach": {
       "$ref": "#/$defs/OutreachConfig"

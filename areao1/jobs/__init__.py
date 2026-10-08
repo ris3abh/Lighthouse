@@ -122,6 +122,12 @@ def _mail_view(ws: Case) -> list[str]:
     return list(out["lines"])
 
 
+def _opportunities(ws: Case, scheduled: bool = False) -> list[str]:
+    from areao1.google import opportunities
+
+    return opportunities.run_job(ws, scheduled)
+
+
 def _google(ws: Case, scheduled: bool = False) -> list[str]:
     from areao1.google import gmail, outreach
     from areao1.service import Service
@@ -159,5 +165,9 @@ JOBS: dict[str, tuple[str, Callable[[Case, bool], list[str]]]] = {
     "google": (
         "Gmail threads with your contacts, the Mail view and follow-up drafts (skips until Gmail is connected)",
         _google,
+    ),
+    "daily-opportunities": (
+        "opportunity mail to the Inbox, each find verified or not (off until enabled in Settings > Gmail)",
+        _opportunities,
     ),
 }

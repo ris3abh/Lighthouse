@@ -176,7 +176,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 #### Part F: daily opportunity job (ADR 0016)
 - [x] F1. Cap web searches per run (agent.max_searches, default 8, in areao1.yaml); at the cap further searches
       are refused, the run finishes with what it has and its answer says the cap was reached
-- [ ] F2. Daily opportunity job (mission-style, off by default, every 24h when enabled): reads new mail with the
+- [x] F2. Daily opportunity job (mission-style, off by default, every 24h when enabled): reads new mail with the
       Mail rules (incl. Promotions / Social), sender check, .eml / forward handling and the invited / completed
       stage rules; opportunity mail becomes Inbox items
 - [ ] F3. Verification per find: sender check; the event confirmed on its official page (or Devpost / MLH) with

@@ -220,6 +220,32 @@
         "title": {
           "title": "Title",
           "type": "string"
+        },
+        "verification": {
+          "anyOf": [
+            {
+              "enum": [
+                "verified",
+                "unconfirmed",
+                "confirmed",
+                "suspicious"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "For an opportunity found in mail (ADR 0016): verified (sender check + official page), unconfirmed (a check-in drafted), confirmed (the organizer replied) or suspicious (sender check failed).",
+          "title": "Verification"
+        },
+        "verification_note": {
+          "default": "",
+          "description": "Why it got that verification.",
+          "maxLength": 500,
+          "title": "Verification Note",
+          "type": "string"
         }
       },
       "required": [

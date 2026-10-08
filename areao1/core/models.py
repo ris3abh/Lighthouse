@@ -140,6 +140,12 @@ class Candidate(_Model):
     )
     status: Literal["pending", "snoozed", "rejected"] = "pending"
     snoozed_until: date | None = None
+    verification: Literal["verified", "unconfirmed", "confirmed", "suspicious"] | None = Field(
+        None,
+        description="For an opportunity found in mail (ADR 0016): verified (sender check + official page), "
+        "unconfirmed (a check-in drafted), confirmed (the organizer replied) or suspicious (sender check failed).",
+    )
+    verification_note: str = Field("", max_length=500, description="Why it got that verification.")
     rule_check: RuleCheck | None = Field(None, description="Rule claims in agent-written text, checked.")
 
     # Raw evidence a connector attached; turned into an observation + claims by the sync job.
@@ -519,6 +525,7 @@ DEFAULT_SCHEDULES: dict[str, str] = {
     "mission-what-changed": "0 7 * * *",
     "vault-watch": "0 6 * * *",
     "google": "*/15 * * * *",  # Gmail threads with contacts and follow-ups; skips (no network) until connected
+    "daily-opportunities": "30 8 * * *",  # every 24h; skips unless opportunities.enabled (ADR 0016)
 }
 
 
@@ -533,6 +540,14 @@ class OutreachConfig(_Model):
     follow_up_days: int = Field(
         7, ge=2, le=60, description="Quiet days after your email before a follow-up draft."
     )
+
+
+class OpportunitiesConfig(_Model):
+    """The daily opportunity job (ADR 0016): opportunity mail to the Inbox, each find verified or not."""
+
+    enabled: bool = Field(False, description="Run the daily-opportunities job every 24 hours.")
+    verify_on_web: bool = Field(True, description="Confirm each event on its official page (or Devpost / MLH); "
+                                "may run one cheap web search per find with no usable link.")  # fmt: skip
 
 
 class MailConfig(_Model):
@@ -556,6 +571,7 @@ class WorkspaceConfig(_File):
     vault: VaultConfig = Field(default_factory=VaultConfig)
     outreach: OutreachConfig = Field(default_factory=OutreachConfig)
     mail: MailConfig = Field(default_factory=MailConfig)
+    opportunities: OpportunitiesConfig = Field(default_factory=OpportunitiesConfig)
     schedules: dict[str, str] = Field(
         default_factory=lambda: dict(DEFAULT_SCHEDULES), description="Cron per job; '' turns a job off."
     )

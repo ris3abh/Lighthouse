@@ -156,6 +156,11 @@ class LetterBody(BaseModel):
     last_contact: dt.date | None = None
 
 
+class OpportunitiesBody(BaseModel):
+    enabled: bool | None = None
+    verify_on_web: bool | None = None
+
+
 class MailSettingsBody(BaseModel):
     model_sorting: bool
 
@@ -898,6 +903,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
             "profile": ws.profile_id(),
             "engine": cfg.engine,
             "privacy": cfg.privacy.model_dump(),
+            "opportunities": cfg.opportunities.model_dump(),
             "channels": channels,
             "routes": cfg.notifications.routes,
             "deadline_alert_days": cfg.notifications.deadline_alert_days,
@@ -945,6 +951,26 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         """Cheap mode: chat on the mid tier (ADR 0009 §3)."""
         svc.set_cheap_mode(body.cheap_mode)
         return runner.status()
+
+    @app.put("/api/settings/opportunities")
+    def put_opportunities(body: OpportunitiesBody) -> dict[str, Any]:
+        """The daily opportunity job: on or off (off by default), and web confirmation of finds (ADR 0016)."""
+        return dict(svc.set_opportunities(body.enabled, body.verify_on_web))
+
+    @app.post("/api/opportunities/run")
+    async def run_opportunities() -> dict[str, Any]:
+        """Run the daily opportunity check now (even when the schedule is off)."""
+        from areao1.google import mail, opportunities
+
+        try:
+            out = await opportunities.run_now(ws, runner)
+        except mail.MailError as exc:
+            raise HTTPException(502, str(exc)) from exc
+        return {
+            "lines": out["lines"],
+            "cost_usd": out["cost_usd"],
+            "finds": [c.model_dump(mode="json") for c in out["finds"]],
+        }
 
     @app.put("/api/settings/mail")
     def put_mail_settings(body: MailSettingsBody) -> dict[str, Any]:

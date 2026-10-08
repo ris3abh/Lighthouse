@@ -100,6 +100,7 @@ def test_google_is_gmail_only(demo_ws):
         "gmail",
         "mail",
         "mailview",
+        "opportunities",
         "outreach",
     ]
     with TestClient(create_app(demo_ws, allowed_hosts=["testserver"])) as client:
