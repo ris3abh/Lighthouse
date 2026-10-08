@@ -110,6 +110,24 @@ def notify(ws: Case, cand: Candidate, event: str) -> None:
                           key=f"opportunity:{cand.id}"))  # fmt: skip
 
 
+# What a find must actually be about, by category: a hackathon's participant notices or a digest sit in "Judging &
+# hackathons" but aren't an invitation to judge, so they never become a judging find.
+ABOUT: dict[str, re.Pattern[str]] = {
+    "judging": re.compile(r"\bjudg\w*|\bjur(?:y|or)s?\b", re.I),
+    "reviewer": re.compile(r"\breview\w*|program committee|\bpc member|\breferee", re.I),
+    "invites": re.compile(r"\binvit\w*|\bspeak\w*|\bpanel\w*|\bkeynote|\btalk\b|\bpresent\w*", re.I),
+    "press": re.compile(r"\binterview\w*|\barticle|\bpodcast|\bstory\b|\bfeature\w*|\bquote", re.I),
+    "awards": re.compile(r"\baward\w*|\bnominat\w*|\bprize|\bfellow\w*|\bmember\w*|\bhonou?r", re.I),
+}
+
+
+def about(info: dict[str, Any]) -> bool:
+    pattern = ABOUT.get(info["category"])
+    return pattern is None or bool(
+        pattern.search(f"{info['headers'].get('Subject', '')}\n{info['text'][:4000]}")
+    )
+
+
 def gmail_link(item: MailItem) -> str:
     return f"https://mail.google.com/mail/u/0/#all/{item.thread_id}"
 
@@ -165,7 +183,7 @@ async def run(ws: Case, mundane: Any = None, verifier: Any = None) -> dict[str, 
     proposed: list[Candidate] = []
     looked: list[str] = []
     threads = {c.source for c in ws.inbox().candidates}
-    skipped = 0
+    skipped = skipped_off = 0
     for item in finds(ws):
         looked.append(item.id)
         if f"gmail:{item.thread_id}" in threads:
@@ -177,6 +195,9 @@ async def run(ws: Case, mundane: Any = None, verifier: Any = None) -> dict[str, 
             info = read_find(ws, item)
         except (mail.MailError, KeyError, ValueError):
             continue  # gone from Gmail, or unreadable: try again tomorrow
+        if not about(info):
+            skipped_off += 1
+            continue  # a participant notice or a digest, not an invitation
         if verifier is not None:
             verification, note, url, spent = await verifier(ws, item, info)
             cost += spent
@@ -201,7 +222,8 @@ async def run(ws: Case, mundane: Any = None, verifier: Any = None) -> dict[str, 
     verified = sum(1 for c in proposed if c.verification == "verified")
     line = (f"Opportunities: {len(proposed)} new in your Inbox ({verified} verified)" if proposed
             else "Opportunities: nothing new") + (f"; {confirmed} confirmed by the organizer's reply" if confirmed else "") + (
-        f"; {skipped} already tracked" if skipped else "")  # fmt: skip
+        f"; {skipped} already tracked" if skipped else "") + (
+        f"; {skipped_off} not about an opportunity" if skipped_off else "")  # fmt: skip
     return {"lines": [*synced.get("lines", []), line], "cost_usd": round(cost, 6), "finds": proposed}
 
 

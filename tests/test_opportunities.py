@@ -118,3 +118,18 @@ def test_a_forwarded_original_is_a_find_as_itself(ws, g):
     [c] = [c for c in ws.pending_candidates() if c.fingerprint.startswith("opp:")]
     assert c.title == "Judge for Example Hacks 2026?" and c.facts["sender_auth"] == "verified"
     assert c.facts["from"] == "team@examplehacks.org" and c.verification == "unconfirmed"
+
+
+def test_a_hackathon_notice_or_digest_is_not_a_judging_find(ws, g):
+    """Found on real mail: a hackathon's participant notices and a platform's digest sit in Judging & hackathons
+    (by keyword or domain) but aren't invitations, so they never become finds."""
+    g.add(1, D, "Hackathon Platform <help@platform.example>", "alex@gmail.com", "Spring Hackathon: your idea was selected",
+          body="Congratulations, your idea made it to round two. Build on!", tab="promotions")  # fmt: skip
+    g.add(2, D, "Devpost <cassie@devpost.com>", "alex@gmail.com", "HACKATHONS just for you",
+          body="Here are this week's hackathons you might like.")  # fmt: skip
+    invite(g, uid=3)
+    out = anyio.run(opportunities.run, ws, None, None)
+    assert [c.title for c in ws.pending_candidates() if c.fingerprint.startswith("opp:")] == [
+        "Invitation to judge Example Hacks 2026"
+    ]
+    assert "2 not about an opportunity" in out["lines"][-1]

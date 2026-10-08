@@ -30,10 +30,13 @@ saying it was reached.
 2. takes new mail in the opportunity categories (invites, judging, reviewer requests, press, awards), including a
    forward's attached original (sorted and authenticated as the original); dropped .eml files already went to the
    Inbox and are skipped;
-3. reads each message's text in memory (PEEK), and keeps only facts (sender, dates mentioned, links, event name)
+3. skips mail that isn't about the opportunity its category implies (a judging find must mention judging, a reviewer
+   request reviewing, an invitation speaking or a panel, and so on): a hackathon's participant notices and a
+   platform's digest sort into "Judging & hackathons" but aren't invitations;
+4. reads each message's text in memory (PEEK), and keeps only facts (sender, dates mentioned, links, event name)
    and one quoted sentence; the stage follows the .eml rule: `completed` only on explicit completion, else
    `invited`;
-4. proposes an evidence candidate to the Inbox with that stage, the sender check, and a verification status.
+5. proposes an evidence candidate to the Inbox with that stage, the sender check, and a verification status.
 
 ### 3. Verification
 
