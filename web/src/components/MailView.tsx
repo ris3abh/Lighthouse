@@ -103,6 +103,8 @@ export default function MailView({ contacts, contact, setContact }: { contacts: 
         ))}
       </div>
 
+      <OtherAccounts />
+
       <DropZone onFiles={dropEml} busy={busy} accept=".eml,message/rfc822" multiple label="Drop .eml emails">
         <p className="flex items-center gap-2 text-sm text-ink-2">
           <Upload className="size-4" strokeWidth={1.5} aria-hidden />
@@ -229,6 +231,35 @@ function Row({ i, labels, onOpen, onMove, onImport, nested }: { i: MailItemView;
         </select>
       </div>
     </li>
+  );
+}
+
+/** "Bring in emails from another account": Forward as attachment or .eml download, after the employer's policy. */
+function OtherAccounts() {
+  return (
+    <details className="group border border-line bg-surface" data-other-accounts>
+      <summary className="cursor-pointer list-none px-5 py-3 font-mono text-[11px] tracking-[0.06em] text-ink-2 uppercase hover:text-ink md:px-6">
+        Bring in emails from another account (e.g. work)
+      </summary>
+      <div className="grid gap-3 border-t border-line px-5 py-4 text-sm leading-relaxed text-ink-2 md:px-6">
+        <p>
+          <strong className="font-medium text-ink">Check your employer's email policy first.</strong> Many don't allow forwarding work mail to a personal account.
+          Bring in only emails about your own work and recognition, never confidential business mail.
+        </p>
+        <ol className="grid list-decimal gap-2 pl-5">
+          <li>
+            <strong className="font-medium text-ink">Forward as attachment</strong> to your connected Gmail (in Gmail: More &gt; Forward as attachment; Outlook and
+            Apple Mail call it Forward as Attachment). Press Refresh mail: it shows as the original, with its sender check, and Import original sends it to
+            your Inbox.
+          </li>
+          <li>
+            <strong className="font-medium text-ink">Or download it as .eml</strong> (in Gmail: More &gt; Download message; Apple Mail: File &gt; Save As, Raw
+            Message Source) and drop it below. Outlook for Windows saves .msg files, which can't be read: forward as attachment there.
+          </li>
+        </ol>
+        <p>A plain Forward loses the original headers, so the sender can't be verified.</p>
+      </div>
+    </details>
   );
 }
 

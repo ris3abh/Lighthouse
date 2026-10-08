@@ -50,13 +50,38 @@ limits are Area O1's own rules, each covered by tests:
   address still on the contact, and at most 10 a day (Settings: `outreach.daily_limit`). Agents and autopilot
   can't send. Follow-ups after 7 quiet days are drafts for you to approve, never sent on their own.
 
-## 3. Turning it off
+## 3. Bring in emails from another account (e.g. work)
+
+Evidence often sits in a mailbox Area O1 isn't connected to, like a work account: an invitation to judge, a thank-you
+for reviewing, an award notice. **Check your employer's email policy first.** Many don't allow forwarding work mail to
+a personal account; ask if you're unsure, and bring in only emails about your own work and recognition, never
+confidential business mail.
+
+Two ways, both keep the original headers, so Area O1 can show whether the sender was verified:
+
+- **Forward as attachment** to your connected Gmail. In Gmail: open the message, then More (⋮) > *Forward as
+  attachment* (or select several, then ⋮ > *Forward as attachment*). In Outlook and Apple Mail the command is also
+  called *Forward as Attachment*. Then press **Refresh mail** in Contacts > Mail: the forward is shown as the
+  original (its sender, subject and sender check), and **Import original** sends it to your Inbox with its file.
+- **Download the message as an .eml file** and drop it on Contacts > Mail, Evidence or the Inbox (several at once is
+  fine). In Gmail: More (⋮) > *Download message*. Outlook on the web and Apple Mail can save a message as .eml too
+  (Apple Mail: File > Save As, format *Raw Message Source*). Outlook for Windows saves `.msg` files, which Area O1
+  can't read: use Forward as attachment there.
+
+A plain **Forward** (not as an attachment) drops the original headers: the sender can't be verified, so prefer the
+two ways above.
+
+Each email becomes an Inbox candidate with a suggested criterion, a stage (an invitation stays *invited*; only an
+explicit thank-you or confirmation is *completed*) and the sender check. Accepting it files the original `.eml` as
+the exhibit.
+
+## 4. Turning it off
 
 **Settings > Gmail > Disconnect** forgets the app password on this computer. Google has no way for an app to
 revoke an app password, so also remove it at
 [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
 
-## 4. Calendars
+## 5. Calendars
 
 Area O1 doesn't sync with Google Calendar. Your deadlines live on the **Calendar** page and in
 `data/calendar.ics`. Calendar apps on this computer (Apple Calendar, Outlook, Thunderbird) can follow them with

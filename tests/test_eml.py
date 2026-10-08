@@ -177,3 +177,15 @@ def test_a_gmail_forward_is_sorted_and_verified_by_its_attached_original(ws, mon
     assert ("UID", "FETCH", "1", "(BODY.PEEK[2])") in g.commands  # PEEK: still unread in Gmail
     assert ws.changes()[-1].action == "inbox.upload"  # through the service layer, like any drop
     assert c.post("/api/mail/12345/import", headers=W).status_code == 404
+
+
+def test_the_guide_for_other_accounts_is_in_the_docs_and_the_mail_view():
+    from pathlib import Path
+
+    root = Path(__file__).parents[1]
+    doc = (root / "docs" / "gmail.md").read_text()
+    view = (root / "web" / "src" / "components" / "MailView.tsx").read_text()
+    for text in (doc, view):
+        assert "Bring in emails from another account (e.g. work)" in text
+        assert "employer's email policy first" in text
+        assert "Forward as attachment" in text and ".eml" in text and "plain Forward" in text.replace("A plain **Forward**", "A plain Forward")
