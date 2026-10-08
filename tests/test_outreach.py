@@ -87,7 +87,7 @@ def test_case_contacts_only(ws, omar, gm):
 
 def test_the_daily_limit_and_the_send_permission(ws, omar, monkeypatch):
     c = TestClient(create_app(ws, allowed_hosts=["testserver"]))
-    d1, d2 = _draft(c, omar.id), _draft(c, omar.id)
+    d1, d2 = _draft(c, omar.id), _draft(c, omar.id, body="And could you confirm the spring finals too?")
     gm = FakeGmail().install(monkeypatch)  # Gmail not connected yet
     r = c.post(f"/api/outreach/{d1['id']}/send", headers=W)
     assert r.status_code >= 400 and "connect Gmail" in r.json()["detail"] and not gm.sent

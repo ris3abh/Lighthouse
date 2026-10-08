@@ -98,3 +98,24 @@ export function useBackToClose(open: boolean, onClose: () => void) {
     return bindBackToClose(window.history, window, () => close.current());
   }, [open]);
 }
+
+/** Actions that cost money or send something run once at a time (B3): `run(key, fn)` ignores a second call with
+ * the same key while the first is in flight (a ref, so a double click can't slip in before the re-render), and
+ * `busy(key)` disables its button. The server dedupes too (idempotency keys), for other tabs and retries. */
+export function useOnce() {
+  const inflight = useRef(new Set<string>());
+  const [, setTick] = useState(0);
+  const run = useCallback(async <T,>(key: string, fn: () => Promise<T>): Promise<T | undefined> => {
+    if (inflight.current.has(key)) return undefined;
+    inflight.current.add(key);
+    setTick((t) => t + 1);
+    try {
+      return await fn();
+    } finally {
+      inflight.current.delete(key);
+      setTick((t) => t + 1);
+    }
+  }, []);
+  const busy = useCallback((key: string) => inflight.current.has(key), []);
+  return { run, busy };
+}

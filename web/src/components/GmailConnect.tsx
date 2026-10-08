@@ -1,6 +1,7 @@
 import { Check, ExternalLink, LogOut, Mail, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, type GmailStatus } from "../api";
+import { useOnce } from "../hooks";
 import { Button, Chip, useToast } from "./ui";
 
 export const APP_PASSWORDS = "https://myaccount.google.com/apppasswords";
@@ -9,6 +10,7 @@ export const APP_PASSWORDS = "https://myaccount.google.com/apppasswords";
  * `onDone`) and Settings > Gmail. */
 export default function GmailConnect({ onDone, busy }: { onDone?: () => void; busy?: boolean }) {
   const toast = useToast();
+  const once = useOnce(); // reading Gmail: once per click (B3)
   const [s, setS] = useState<GmailStatus | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,14 +53,17 @@ export default function GmailConnect({ onDone, busy }: { onDone?: () => void; bu
         {!onDone && (
           <div className="flex flex-wrap gap-2">
             <Button
+              disabled={once.busy("threads")}
               onClick={() =>
-                api.syncGmail().then(
-                  (r) => toast(r.lines.join(" ")),
-                  (e: Error) => toast(e.message, "error"),
+                once.run("threads", () =>
+                  api.syncGmail().then(
+                    (r) => toast(r.lines.join(" ")),
+                    (e: Error) => toast(e.message, "error"),
+                  ),
                 )
               }
             >
-              <RefreshCw /> Refresh threads
+              <RefreshCw /> {once.busy("threads") ? "Refreshing…" : "Refresh threads"}
             </Button>
             <Button
               variant="ghost"

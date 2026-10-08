@@ -535,3 +535,94 @@ def test_cheap_mode_from_the_chat(browser, serve, qa):
         page.wait_for_timeout(700)
         assert api(srv, "/agent/status").get("cheap_mode") is (not before)
     no_errors(qa)
+
+
+# ------------------------------------------------------------------------------------------- run once (B3)
+
+
+def test_double_clicking_anything_that_costs_or_sends_does_it_once(browser, serve, qa):
+    """Every action that costs a model call, reads the network or sends something, double-clicked: one request
+    reaches the server (the button is busy, identical requests are merged) and one thing happens."""
+    srv = serve("film")
+    page = new_page(browser, qa)
+    posts: list[str] = []
+    page.on(
+        "request",
+        lambda r: (
+            posts.append(r.url.split("/api", 1)[1].split("?")[0])
+            if r.method == "POST" and "/api/" in r.url
+            else None
+        ),
+    )
+
+    def once(route: str, target: Any, path: str, settle: int = 1500) -> None:
+        open_route(page, srv.base, route)
+        posts.clear()
+        with step(qa, page, f"double-click on {route}: {path}"):
+            target().dblclick()
+            page.wait_for_timeout(settle)
+            n = sum(1 for p in posts if re.fullmatch(path, p))
+            assert n == 1, f"{n} requests to {path}"
+
+    once("letters", lambda: page.get_by_text("Draft from claims").first, r"/letters/[^/]+/draft", 2500)
+    drafts = len(api(srv, "/outreach")["drafts"])
+    once(
+        "letters",
+        lambda: page.get_by_role("button", name=re.compile("^Send to ")).first,
+        r"/letters/[^/]+/send",
+    )
+    assert len(api(srv, "/outreach")["drafts"]) == drafts + 1
+    runs = len(api(srv, "/agent/runs"))
+    once("agent", lambda: button(page, "^Run now$"), r"/agent/missions/[^/]+/run")
+    once("overview", lambda: button(page, "^Refresh$"), r"/agent/missions/what_changed/run")
+    assert len(api(srv, "/agent/runs")) == runs + 2
+    once("contacts", lambda: button(page, "Refresh threads"), r"/gmail/sync")
+    once("contacts?view=mail", lambda: button(page, "Refresh mail"), r"/mail/sync")
+    once("knowledge", lambda: button(page, "Check what's due"), r"/knowledge/sync", 4000)
+    once(
+        "settings",
+        lambda: (
+            page.locator("div", has=page.get_by_text("Daily opportunity check", exact=True))
+            .get_by_role("button", name="Check now")
+            .last
+        ),
+        r"/opportunities/run",
+    )
+    once("metrics", lambda: button(page, "Snapshot now"), r"/metrics/snapshot")
+    sent = api(srv, "/outreach")["sent_today"]
+    once("contacts", lambda: button(page, "Approve & send"), r"/outreach/[^/]+/send", 5500)
+    assert api(srv, "/outreach")["sent_today"] == sent + 1  # one email, after the undo window
+    with step(qa, page, "chat: Enter twice sends once"):
+        open_route(page, srv.base, "overview")
+        before = len(api(srv, "/agent/runs"))
+        button(page, "^Ask$").click()
+        box = page.get_by_label("Message")
+        box.fill("Where do I stand?")
+        posts.clear()
+        box.press("Enter")
+        box.press("Enter")
+        page.wait_for_timeout(2500)
+        assert sum(1 for p in posts if p == "/agent/chat") == 1 and len(api(srv, "/agent/runs")) == before + 1
+    # Onboarding lookups, on a new workspace at the find-your-work step.
+    fresh = serve("empty")
+    open_route(page, fresh.base, "overview")
+    dialog = page.get_by_role("dialog", name=re.compile("Getting started"))
+    dialog.locator("input[type=file]").set_input_files(str(PERSONAS / "ravi" / "linkedin.pdf"))
+    for _ in range(30):
+        page.wait_for_timeout(400)
+        if dialog.get_by_role("button", name=re.compile("^Yes, look")).count():
+            break
+        for name in ("^Yes$", "O-1A", "Later, in Settings"):
+            b = button(dialog, name)
+            if b.count() and b.is_visible() and b.is_enabled():
+                b.click()
+                break
+        month = dialog.locator("input[type=month]")
+        if month.count() and month.first.is_visible():
+            month.first.fill("2027-03")
+            button(dialog, "^Save").click()
+    with step(qa, page, "onboarding: a lookup double-clicked starts once"):
+        posts.clear()
+        dialog.get_by_role("button", name=re.compile("^Yes, look")).first.dblclick()
+        page.wait_for_timeout(1500)
+        assert sum(1 for p in posts if p.startswith("/onboarding/lookups/")) == 1

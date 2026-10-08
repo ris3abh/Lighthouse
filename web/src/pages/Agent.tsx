@@ -6,7 +6,7 @@ import RuleCheckView from "../components/RuleCheck";
 import ToolCall from "../components/ToolCall";
 import { Play } from "lucide-react";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, plural, Progress, useToast } from "../components/ui";
-import { useLoad } from "../hooks";
+import { useLoad, useOnce } from "../hooks";
 import { cacheRate, countTokens, fmtPct, fmtTokens, fmtUsd, itemsFromTimeline, useRunStream } from "../runStream";
 
 const KIND_LABEL = { chat: "chat", manual: "manual", scheduled: "scheduled" } as const;
@@ -26,6 +26,7 @@ function duration(r: AgentRunView) {
 export default function Agent({ focus }: { focus: string | null }) {
   const { version, bump } = useRefresh();
   const toast = useToast();
+  const once = useOnce(); // a mission run costs model calls: once per click (B3)
   const data = useLoad(() => Promise.all([api.runs(), api.agentStatus(), api.missions(), api.refusals()]), [version]);
   const [kind, setKind] = useState<"all" | "chat" | "manual" | "scheduled">("all");
   const [selected, setSelected] = useState<string | null>(focus);
@@ -39,7 +40,7 @@ export default function Agent({ focus }: { focus: string | null }) {
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
   if (!data.data) return <Loading />;
   const [runs, status, missionList, refused] = data.data;
-  const runMission = async (name: string) => {
+  const runMission = (name: string) => once.run(`mission:${name}`, async () => {
     try {
       const r = await api.runMission(name);
       setSelected(r.run_id);
@@ -48,7 +49,7 @@ export default function Agent({ focus }: { focus: string | null }) {
     } catch (e) {
       toast((e as Error).message, "error");
     }
-  };
+  });
   const shown = runs.filter((r) => kind === "all" || r.kind === kind);
   const current = selected || shown[0]?.id || null;
 
@@ -151,8 +152,8 @@ export default function Agent({ focus }: { focus: string | null }) {
                   )}
                 </p>
               </div>
-              <Button size="sm" disabled={!status.available} onClick={() => runMission(m.name)}>
-                Run now
+              <Button size="sm" disabled={!status.available || once.busy(`mission:${m.name}`)} onClick={() => runMission(m.name)}>
+                {once.busy(`mission:${m.name}`) ? "Starting…" : "Run now"}
               </Button>
             </li>
           ))}

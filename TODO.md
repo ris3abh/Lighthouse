@@ -262,7 +262,7 @@ never enters the packet as evidence.
 - [ ] QA fixes (owner approved 2026-10-08), one commit per batch:
   - [x] F1 B2: exhibits dated by the document (source, email headers, PDF metadata, claim event date), else asked
         and marked "date unconfirmed"; `areao1 repair-dates` for exhibits already filed
-  - [ ] F2 B3 generalized: busy states and server-side idempotency keys for everything that costs or sends; one
+  - [x] F2 B3 generalized: busy states and server-side idempotency keys for everything that costs or sends; one
         double-click test over all of them
   - [ ] F3 B18: onboarding lookups get read-only tools; guard test
   - [ ] F4 B1, B6 (merge letter writers into contacts), B7, B14, B20, B5, B8

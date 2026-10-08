@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Square } from "lucide-react";
 import { api, type Task } from "../api";
 import { useRefresh } from "../App";
-import { useLoad } from "../hooks";
+import { useLoad, useOnce } from "../hooks";
 import RuleCheckView from "./RuleCheck";
 import { Button, Card, Chip, cx, useToast } from "./ui";
 
@@ -10,6 +10,7 @@ import { Button, Card, Chip, cx, useToast } from "./ui";
 export default function Briefing({ tasks = [] }: { tasks?: Task[] }) {
   const { version, bump } = useRefresh();
   const toast = useToast();
+  const once = useOnce(); // a briefing is a model run: once per click (B3)
   const brief = useLoad(() => api.briefing(), [version]);
   const [busy, setBusy] = useState<string | null>(null);
   const b = brief.data;
@@ -22,15 +23,16 @@ export default function Briefing({ tasks = [] }: { tasks?: Task[] }) {
     return () => window.clearInterval(t);
   }, [refreshing]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const refresh = async () => {
-    try {
-      await api.runMission("what_changed");
-      toast("Refreshing the briefing…");
-      brief.reload();
-    } catch (e) {
-      toast((e as Error).message, "error");
-    }
-  };
+  const refresh = () =>
+    once.run("briefing", async () => {
+      try {
+        await api.runMission("what_changed");
+        toast("Refreshing the briefing…");
+        brief.reload();
+      } catch (e) {
+        toast((e as Error).message, "error");
+      }
+    });
 
   const decide = async (id: string, approve: boolean) => {
     setBusy(id);
@@ -53,7 +55,7 @@ export default function Briefing({ tasks = [] }: { tasks?: Task[] }) {
           {new Date(b.generated_at).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" })}
         </a>
       )}
-      <Button size="sm" variant="ghost" disabled={!!refreshing} onClick={refresh}>
+      <Button size="sm" variant="ghost" disabled={!!refreshing || once.busy("briefing")} onClick={refresh}>
         {refreshing ? "Refreshing…" : "Refresh"}
       </Button>
     </span>

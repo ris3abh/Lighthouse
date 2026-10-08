@@ -3,7 +3,7 @@ import { api, type KnowledgeView, type VaultSourceStatus } from "../api";
 import { useRefresh } from "../App";
 import { RefreshCw } from "lucide-react";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, plural, Stat, useToast } from "../components/ui";
-import { useLoad } from "../hooks";
+import { useLoad, useOnce } from "../hooks";
 
 const TIER_LABEL = { 1: "Tier 1 · primary law and agency", 2: "Tier 2 · adjudication", 3: "Tier 3 · secondary (context only)" } as const;
 
@@ -20,6 +20,7 @@ function freshness(s: VaultSourceStatus): { label: string; tone: "ink" | "outlin
 export default function Knowledge() {
   const { version, bump } = useRefresh();
   const toast = useToast();
+  const once = useOnce(); // the vault sync reads the network: once per click (B3)
   const data = useLoad(() => api.knowledge(), [version]);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -36,7 +37,7 @@ export default function Knowledge() {
     never: official.filter((s) => !s.checked_at && s.status === "never fetched").length,
   };
 
-  const sync = async (sources?: string[], force = false) => {
+  const sync = (sources?: string[], force = false) => once.run("sync", async () => {
     const key = sources?.join(",") ?? "all";
     setBusy(key);
     try {
@@ -50,7 +51,7 @@ export default function Knowledge() {
     } finally {
       setBusy(null);
     }
-  };
+  });
 
   return (
     <div>

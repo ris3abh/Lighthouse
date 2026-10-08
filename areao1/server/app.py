@@ -295,6 +295,11 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         fresh = refresh(check, vault)
         return fresh.model_dump(mode="json") if fresh else None
 
+    from areao1.server.idempotency import RunOnce
+
+    app.add_middleware(
+        RunOnce
+    )  # innermost: a costly or sending request runs once (B3), after the checks below
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts or ["127.0.0.1", "localhost"])
 
     @app.middleware("http")

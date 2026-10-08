@@ -5,7 +5,7 @@ import { useRefresh } from "../App";
 import ChipInput from "../components/ChipInput";
 import MailView from "../components/MailView";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, PageHeader, plural, Segmented, useToast } from "../components/ui";
-import { today, useLoad, useRoute } from "../hooks";
+import { today, useLoad, useOnce, useRoute } from "../hooks";
 
 const RELATIONSHIPS: Relationship[] = ["recommender", "collaborator", "organizer", "editor", "mentor", "employer", "other"];
 
@@ -14,6 +14,7 @@ const RELATIONSHIPS: Relationship[] = ["recommender", "collaborator", "organizer
 export default function Contacts() {
   const { version, bump } = useRefresh();
   const toast = useToast();
+  const once = useOnce(); // reading Gmail: once per click (B3)
   const data = useLoad(() => api.contacts(), [version]);
   const mail = useLoad(() => api.outreach(), [version]);
   const [writing, setWriting] = useState<ContactView | null>(null);
@@ -58,9 +59,11 @@ export default function Contacts() {
                 { value: "mail", label: <><Mail /> Mail</> },
               ]}
             />
-            {tab === "people" && <Button onClick={() => save(async () => toast((await api.syncGmail()).lines.join(" ")), "Threads refreshed")}>
-              <RefreshCw /> Refresh threads
-            </Button>}
+            {tab === "people" && (
+              <Button disabled={once.busy("threads")} onClick={() => once.run("threads", () => save(async () => toast((await api.syncGmail()).lines.join(" ")), "Threads refreshed"))}>
+                <RefreshCw /> {once.busy("threads") ? "Refreshing…" : "Refresh threads"}
+              </Button>
+            )}
             {tab === "people" && <Button variant="primary" onClick={() => setAdding(true)}>
               <Plus /> Add a contact
             </Button>}

@@ -114,7 +114,7 @@ def test_the_daily_limit_and_case_contacts_only(ws, people, fake):
     cfg.outreach.daily_limit = 1
     ws.save_config(cfg)
     c = _app(ws)
-    d1, d2, d3 = _draft(c, omar.id), _draft(c, omar.id), _draft(c, omar.id)
+    d1, d2, d3 = (_draft(c, omar.id, f"MLH judging ({n})") for n in (1, 2, 3))  # three different drafts
     Service(ws).update_contact(omar.id, emails=["omar@new.example"])
     r = c.post(f"/api/outreach/{d1['id']}/send", headers=W)
     assert r.status_code >= 400 and "case contacts only" in r.json()["detail"] and not fake.sent
@@ -188,7 +188,9 @@ def test_approving_twice_while_gmail_is_slow_sends_once(ws, people, fake, monkey
         t.start()
     for t in clicks:
         t.join()
-    assert len(fake.sent) == 1 and sorted(codes) == [200, 400, 400, 400]
+    assert (
+        len(fake.sent) == 1 and sorted(codes)[0] == 200 and all(x in (400, 409) for x in sorted(codes)[1:])
+    )  # 409: the same click, not repeated
     assert [ch.action for ch in ws.changes()].count("outreach.send") == 1
     assert c.get("/api/outreach").json()["sent_today"] == 1
 
@@ -198,7 +200,7 @@ def test_every_send_attempt_is_logged_and_the_limit_counts_actual_sends(ws, peop
 
     omar, _ = people
     c = _app(ws)
-    d1, d2 = _draft(c, omar.id), _draft(c, omar.id)
+    d1, d2 = _draft(c, omar.id, "MLH judging (1)"), _draft(c, omar.id, "MLH judging (2)")
     fake.password = "zzzzzzzzzzzzzzzz"  # Gmail refuses
     assert c.post(f"/api/outreach/{d1['id']}/send", headers=W).status_code == 400
     [fail] = ws.outreach().attempts

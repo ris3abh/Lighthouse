@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api, type LetterWriter } from "../api";
 import { useRefresh } from "../App";
 import { Button, Card, Chip, CriterionName, cx, Empty, ErrorBox, Loading, PageHeader, plural, useToast } from "../components/ui";
-import { today, useLoad } from "../hooks";
+import { today, useLoad, useOnce } from "../hooks";
 
 const STATUSES: LetterWriter["status"][] = ["prospect", "asked", "drafting", "sent", "signed", "declined"];
 const RELATIONSHIPS: LetterWriter["relationship"][] = ["independent", "employer", "coauthor"];
@@ -19,6 +19,7 @@ const STATUS_TONE: Record<string, string> = {
 export default function Letters() {
   const { version, bump } = useRefresh();
   const toast = useToast();
+  const once = useOnce(); // drafting costs a model call and sending makes an email: once per click (B3)
   const data = useLoad(() => api.letters(), [version]);
   const [form, setForm] = useState({ name: "", relationship: "independent" as LetterWriter["relationship"], credentials: "" });
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
@@ -119,9 +120,10 @@ export default function Letters() {
                           type="button"
                           className="link"
                           title="Draft from approved claims only; each sentence cites its claims. For the writer to rewrite and sign."
-                          onClick={() => save(() => api.draftLetter(lt.id), `Draft for ${lt.name} written from approved claims`)}
+                          disabled={once.busy(`draft:${lt.id}`)}
+                          onClick={() => once.run(`draft:${lt.id}`, () => save(() => api.draftLetter(lt.id), `Draft for ${lt.name} written from approved claims`))}
                         >
-                          {lt.draft_exists ? "Redraft" : "Draft from claims"}
+                          {once.busy(`draft:${lt.id}`) ? "Drafting…" : lt.draft_exists ? "Redraft" : "Draft from claims"}
                         </button>
                         {lt.draft_exists && lt.draft_path && (
                           <a className="link" href={api.draftUrl(lt.draft_path)} target="_blank" rel="noreferrer">
@@ -133,9 +135,10 @@ export default function Letters() {
                             type="button"
                             className="link"
                             title="An email from you with the draft, waiting for Approve & send on Contacts"
-                            onClick={() => save(() => api.sendLetterDraft(lt.id), `Draft to ${lt.name} is waiting for your approval on Contacts`)}
+                            disabled={once.busy(`send:${lt.id}`)}
+                            onClick={() => once.run(`send:${lt.id}`, () => save(() => api.sendLetterDraft(lt.id), `Draft to ${lt.name} is waiting for your approval on Contacts`))}
                           >
-                            Send to {lt.name.split(" ").slice(-1)[0]}
+                            {once.busy(`send:${lt.id}`) ? "Preparing…" : `Send to ${lt.name.split(" ").slice(-1)[0]}`}
                           </button>
                         )}
                       </span>

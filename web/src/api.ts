@@ -782,10 +782,35 @@ export interface OnboardingView {
   person: { name: string; field: string; location: string };
 }
 
+/** Requests that cost money or send something (B3). Identical ones in flight share one request, and each carries an
+ * Idempotency-Key the server uses to run it once. Keep in step with areao1/server/idempotency.py. */
+export const ONCE = [
+  /^\/letters\/[^/]+\/(draft|send)$/, /^\/outreach(\/[^/]+\/send)?$/, /^\/opportunities\/run$/, /^\/(gmail|mail)\/sync$/,
+  /^\/agent\/(chat|runs|missions\/[^/]+\/run)$/, /^\/knowledge\/sync$/, /^\/onboarding\/lookups\/[^/]+$/, /^\/metrics\/snapshot$/,
+];
+const inflight = new Map<string, Promise<unknown>>();
+
+function newKey() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  if (method === "POST" && !(body instanceof FormData) && ONCE.some((r) => r.test(path))) {
+    const id = `${path} ${JSON.stringify(body ?? null)}`;
+    const pending = inflight.get(id);
+    if (pending) return pending as Promise<T>;
+    const p = send<T>(method, path, body, newKey()).finally(() => inflight.delete(id));
+    inflight.set(id, p);
+    return p;
+  }
+  return send<T>(method, path, body);
+}
+
+async function send<T>(method: string, path: string, body?: unknown, key?: string): Promise<T> {
   const init: RequestInit = { method, headers: {} };
   const headers = init.headers as Record<string, string>;
   if (method !== "GET") headers[WRITE_HEADER] = "1"; // the server rejects writes without it
+  if (key) headers["Idempotency-Key"] = key;
   if (body instanceof FormData) {
     init.body = body;
   } else if (body !== undefined) {
