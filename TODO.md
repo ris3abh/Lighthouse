@@ -235,7 +235,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
       started, a guided tour with screenshots from the filming workspace, connectors, MCP and agents, how it works,
       best practices, reference; the Pages workflow builds it beside the landing page; CI builds it strictly
 - [x] D2. Landing page: the dashboard's O1 logo in the header and favicon, prominent links to the docs
-- [ ] D3. README rewritten short (banner, badges, screenshot, features, install, MCP, privacy, links); details moved
+- [x] D3. README rewritten short (banner, badges, screenshot, features, install, MCP, privacy, links); details moved
       to the docs; checkout path fixed
 - [ ] D4. brag-output/ in .gitignore
 

@@ -1,5 +1,5 @@
 """The landing page (ADR 0013, S5): one static page with the one line, a screenshot, what you need, the
-privacy promise and the not-legal-advice note; the README opens with the same install lines."""
+privacy promise and the not-legal-advice note; the README, short, shows the same install lines."""
 
 from __future__ import annotations
 
@@ -16,17 +16,34 @@ PAGE = SITE / "index.html"
 
 def _readme_install_lines() -> list[str]:
     readme = (ROOT / "README.md").read_text()
-    section = readme.split("## Install and start", 1)[1].split("\n## ", 1)[0]
+    section = readme.split("## Install in one line", 1)[1].split("\n## ", 1)[0]
     return [b.strip() for b in re.findall(r"```(?:sh|powershell)\n(.*?)```", section, re.S)]
 
 
-def test_readme_opens_with_what_it_is_the_one_line_and_what_you_need():
+def test_readme_is_short_and_points_to_the_docs():
     readme = (ROOT / "README.md").read_text()
     heads = re.findall(r"^## .+", readme, re.M)
-    assert heads[:2] == ["## Install and start", "## What you need"]
+    assert heads == ["## What it does", "## Install in one line", "## Connect Claude Code or Codex via MCP",
+                     "## Privacy: runs on your machine", "## Contributing"]  # fmt: skip
+    assert len(readme.splitlines()) < 120  # details live in the docs
+    top = readme.split("## What it does", 1)[0]
+    assert '<img src="docs/social-preview.png"' in top and "overview-dark.webp" in top  # banner, screenshot
+    for badge in (
+        "actions/workflows/ci.yml/badge.svg",
+        "github/license",
+        "github/v/release",
+        "badge/python-3.11",
+    ):
+        assert badge in top, badge
+    assert "https://ris3abh.github.io/areao1/docs/" in top
+    for icon in re.findall(r'src="(docs/readme/icons/[^"]+)"', readme):
+        assert (ROOT / icon).is_file(), icon
+    for f in ("README.md", "docs/manual/getting-started/install.md"):
+        assert "cd Area O1" not in (ROOT / f).read_text()  # the checkout folder is areao1
     lines = _readme_install_lines()
     assert len(lines) == 2
     assert lines[0].endswith("/install.sh | sh") and "install.ps1 | iex" in lines[1]
+    assert "claude mcp add areao1 -- areao1 mcp" in readme and "codex mcp add areao1 -- areao1 mcp" in readme
 
 
 def test_page_shows_the_install_lines_exactly_as_the_readme():

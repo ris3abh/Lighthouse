@@ -68,6 +68,8 @@ def test_every_line_is_used_only_where_it_is_listed():
                 continue
             if f == "docs/site/index.html" and key in LANDING_LINES:
                 continue
+            if f == "README.md" and key == "disclaimer":  # the README's footer, like the landing page's
+                continue
             body = (ROOT / f).read_text(errors="ignore")
             assert stem not in body, f"{key!r} copied into {f}"
 
