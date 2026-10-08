@@ -262,6 +262,37 @@ def qa(
     raise typer.Exit(report.returncode)
 
 
+@app.command("repair-dates")
+def repair_dates(
+    workspace: WorkspaceOpt = None,
+    apply: Annotated[
+        bool, typer.Option("--apply", help="Make the changes (without it, only show them)")
+    ] = False,
+) -> None:
+    """Exhibits filed before dates were tracked: set the date each document shows (an email's Date header, a PDF's
+    creation date, its claims' event dates), or mark it "date unconfirmed" when its date is only the filing day."""
+    from areao1.criteria import dates
+
+    try:
+        ws = find_workspace(workspace)
+        steps = dates.plan(ws)
+        for s in steps:
+            change = (
+                f"{s['from']} -> {s['to']} (from the {s['source']})"
+                if s["source"] != "unconfirmed"
+                else "date unconfirmed"
+            )
+            typer.echo(f"  {s['title'][:60]:60} {change}")
+        if not steps:
+            typer.echo("Every exhibit's date is accounted for.")
+        elif apply:
+            typer.echo(f"Updated {dates.apply(ws, steps)} exhibit(s).")
+        else:
+            typer.echo(f"{len(steps)} exhibit(s) to update; run again with --apply.")
+    except WorkspaceError as exc:
+        raise _fail(str(exc)) from exc
+
+
 @app.command()
 def preflight(workspace: WorkspaceOpt = None) -> None:
     """Evidence preflight (ADR 0018): what a reviewer would notice, by severity. Writes data/preflight.json."""

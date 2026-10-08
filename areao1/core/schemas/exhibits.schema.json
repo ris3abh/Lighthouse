@@ -37,6 +37,27 @@
           "title": "Date",
           "type": "string"
         },
+        "date_source": {
+          "anyOf": [
+            {
+              "enum": [
+                "email",
+                "pdf",
+                "claim",
+                "source",
+                "you",
+                "unconfirmed"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Where the date came from; unconfirmed means nobody knows it yet. None: filed before this was recorded (`areao1 repair-dates`).",
+          "title": "Date Source"
+        },
         "evidence_type": {
           "title": "Evidence Type",
           "type": "string"

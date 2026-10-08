@@ -397,7 +397,7 @@ class Workspace:
                 raise WorkspaceError(
                     "self-reported items can't become exhibits; upload the underlying document instead"
                 )
-            exhibit_date = edits.pop("date", None) or clock.today()
+            exhibit_date, date_source = self._exhibit_date(cand, edits.pop("date", None))
             for key, value in edits.items():
                 if key not in self.EDITABLE_CANDIDATE_FIELDS:
                     raise WorkspaceError(f"field {key!r} is not editable")
@@ -434,6 +434,7 @@ class Workspace:
                 stage=cand.stage,
                 source_tier=cand.source_tier,
                 claim_ids=list(cand.claim_ids),
+                date_source=date_source,
             )
             if cand.claim_ids:
                 # Approval records a decision; it does not certify truth or legal sufficiency.
@@ -444,6 +445,41 @@ class Workspace:
             self.save_exhibits(ex)
             inbox.candidates = [c for c in inbox.candidates if c.id != cand.id]
             self.save_inbox(inbox)
+            self.after_change()
+            return exhibit
+
+    def _exhibit_date(self, cand: Candidate, given: Any) -> tuple[date, str]:
+        """The exhibit's date: the one the person gave, else the document's own (email header, PDF metadata, the
+        source), else the latest event date of the claims behind it. With none of these it's the filing day, marked
+        unconfirmed, never silently today."""
+        if given:
+            day = given if isinstance(given, date) else date.fromisoformat(str(given))
+            return day, (cand.date_source or "you") if day == cand.document_date else "you"
+        if cand.document_date:
+            return cand.document_date, cand.date_source or "source"
+        claims = {c.id: c for c in self.memory.claims()} if cand.claim_ids else {}
+        dated = [claims[i].event_date for i in cand.claim_ids if i in claims and claims[i].event_date]
+        if dated:
+            return max(d for d in dated if d is not None), "claim"
+        return clock.today(), "unconfirmed"
+
+    def redate_exhibit(self, exhibit_id: str, on: date, source: str = "you") -> Exhibit:
+        """Set an exhibit's date (the one its document shows) and rename its file to match the naming convention."""
+        with self.lock:
+            ex = self.exhibits()
+            exhibit = next((e for e in ex.exhibits if e.id == exhibit_id), None)
+            if exhibit is None:
+                raise NotFound(f"no exhibit {exhibit_id!r}")
+            if on != exhibit.date:
+                ext = exhibit.file.rsplit(".", 1)[-1]
+                rel = self._unique_evidence_path(exhibit.criterion, on, exhibit.title, ext)
+                old = self.root / exhibit.file
+                if old.exists():
+                    (self.root / rel).parent.mkdir(parents=True, exist_ok=True)
+                    old.rename(self.root / rel)
+                exhibit.file = rel
+            exhibit.date, exhibit.date_source = on, source  # type: ignore[assignment]
+            self.save_exhibits(ex)
             self.after_change()
             return exhibit
 
@@ -639,6 +675,22 @@ class Workspace:
         """Candidate fields a domain layer reads from a dropped file's content (None: guess from the name)."""
         return None
 
+    @staticmethod
+    def document_date(content: bytes, filename: str) -> date | None:
+        """The date a file says it was made: a PDF's creation date (its metadata). None when it doesn't say."""
+        if not filename.lower().endswith(".pdf"):
+            return None
+        try:
+            import io
+
+            from pypdf import PdfReader
+
+            meta = PdfReader(io.BytesIO(content)).metadata
+            made = meta.creation_date if meta else None
+        except Exception:  # an unreadable or odd PDF has no date we can trust
+            return None
+        return clock.local_date(made) if made else None
+
     def stage_upload(self, content: bytes, filename: str, criterion: str | None = None) -> Candidate:
         """A dropped file: snapshot it in memory/ and propose it in the Inbox. Accepting files it as an exhibit."""
         if len(content) > self.MAX_UPLOAD_BYTES:
@@ -659,6 +711,9 @@ class Workspace:
             fields: dict[str, Any] = {"evidence_type": etype, "proposed_criterion": crit, "title": title[:120],
                                       "summary": f"Uploaded {name} ({_size(len(content))}). Check the criterion, type "
                                       "and stage, then accept.", "confidence": 0.6 if crit else 0.3, "stage": stage}  # fmt: skip
+            made = self.document_date(content, name)
+            if made:
+                fields.update(document_date=made, date_source="pdf")
             if extra:
                 fields.update(extra)
                 if criterion:  # dropped on a criterion: that wins
@@ -727,6 +782,7 @@ class Workspace:
                 source_url=source_url,
                 signals=signals or [],
                 stage=stage,  # type: ignore[arg-type]
+                date_source="you",  # the person chose the date on the upload form
             )
             ex = self.exhibits()
             ex.exhibits.append(exhibit)

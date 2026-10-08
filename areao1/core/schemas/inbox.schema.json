@@ -36,6 +36,41 @@
           "title": "Created At",
           "type": "string"
         },
+        "date_source": {
+          "anyOf": [
+            {
+              "enum": [
+                "email",
+                "pdf",
+                "claim",
+                "source",
+                "you",
+                "unconfirmed"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Where document_date came from.",
+          "title": "Date Source"
+        },
+        "document_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The date the document itself shows (email header, PDF metadata, the source), if known.",
+          "title": "Document Date"
+        },
         "evidence_type": {
           "title": "Evidence Type",
           "type": "string"

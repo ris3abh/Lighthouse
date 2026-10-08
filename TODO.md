@@ -259,7 +259,21 @@ never enters the packet as evidence.
 - [x] QA sweep before items 3-4 (2026-10-08): Playwright suite in tests/e2e (crawler of every route and control,
       20 flow tests, every page light/dark x laptop/phone with axe-core and overflow), run 3 times, a 20-minute
       exploratory pass, triage; `areao1 qa`; a report-only CI job (blocking once the bugs are fixed)
-- [ ] QA fixes, after the owner reads the report; then bulk review for the Inbox (scoped in the report)
+- [ ] QA fixes (owner approved 2026-10-08), one commit per batch:
+  - [x] F1 B2: exhibits dated by the document (source, email headers, PDF metadata, claim event date), else asked
+        and marked "date unconfirmed"; `areao1 repair-dates` for exhibits already filed
+  - [ ] F2 B3 generalized: busy states and server-side idempotency keys for everything that costs or sends; one
+        double-click test over all of them
+  - [ ] F3 B18: onboarding lookups get read-only tools; guard test
+  - [ ] F4 B1, B6 (merge letter writers into contacts), B7, B14, B20, B5, B8
+  - [ ] F5 accessibility: B4, B9, B11, B12, B13, B15, B16, B17, download buttons inside links
+  - [ ] F6 UX: friendly lookup errors, Memory empty filter message, one offline banner on Knowledge
+  - [ ] F7 B19 (film_demo answers every chat) and the offline stub raises a DNS error
+  - [ ] F8 crawler: re-find after re-renders, a skip reason per control, Evidence coverage; browser suite blocking
+  - [ ] F9 Inbox bulk review (groups, filters, selection, batch actions with one Undo batch, keyboard)
+  - [ ] F10 chat-import extraction: notes low priority and collapsed, proposed only with a person, date, deadline or
+        case item; near-duplicates merged; count what remains of the owner's 397
+  - [ ] F11 areao1 qa --runs 3: new summary table
 - [ ] 3. Final merits workspace: sustained-acclaim timeline, rule-computed themes with reasons, OpenAlex field
       benchmarks where available, rule-checked Kazarian / Policy Manual citations
 - [ ] 4. Review packet builder: exhibit numbering (C4-01), TOC, per-criterion index, claim -> exhibit -> page/quote

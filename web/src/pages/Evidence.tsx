@@ -1,6 +1,6 @@
 import { Check, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
-import { api, type EvidenceCriterion, type Exhibit, STAGES, stageCounts } from "../api";
+import { api, DATE_SOURCE, type EvidenceCriterion, type Exhibit, STAGES, stageCounts } from "../api";
 import ClaimsPanel, { StageChip } from "../components/Claims";
 import DropZone, { useFileDrop } from "../components/DropZone";
 import PreflightPanel from "../components/Preflight";
@@ -251,7 +251,7 @@ function CriterionSection({
                   )}
                 </p>
                 <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
-                  <span className="num">{e.date}</span>
+                  <ExhibitDate e={e} onChanged={onChanged} />
                   <Chip>{e.evidence_type}</Chip>
                   <StageChip stage={e.stage} />
                   {!stageCounts(e.stage) && <span className="font-mono text-[10.5px] text-ink uppercase">not counted until completed</span>}
@@ -292,6 +292,46 @@ function CriterionSection({
         </div>
       )}
     </section>
+  );
+}
+
+/** The exhibit's date and how it's known; "date unconfirmed" until someone sets the date the document shows (B2). */
+function ExhibitDate({ e, onChanged }: { e: Exhibit; onChanged: () => void }) {
+  const toast = useToast();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(e.date);
+  const save = async () => {
+    try {
+      await api.redate(e.id, value);
+      toast("Date set; the file is renamed to match");
+      setEditing(false);
+      onChanged();
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
+  };
+  if (editing)
+    return (
+      <span className="inline-flex items-center gap-1">
+        <input type="date" className="input h-7 py-0 text-xs" aria-label={`Date ${e.title} shows`} value={value} onChange={(ev) => setValue(ev.target.value)} />
+        <Button size="sm" className="h-7" onClick={save} disabled={!value}>
+          Save
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7" onClick={() => setEditing(false)}>
+          Cancel
+        </Button>
+      </span>
+    );
+  return (
+    <>
+      <span className="num" title={e.date_source ? DATE_SOURCE[e.date_source] : undefined}>
+        {e.date}
+      </span>
+      {e.date_source === "unconfirmed" && <Chip tone="outline">Date unconfirmed</Chip>}
+      <button className="link text-[11px]" onClick={() => setEditing(true)}>
+        {e.date_source === "unconfirmed" ? "Set date" : "Change date"}
+      </button>
+    </>
   );
 }
 

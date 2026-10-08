@@ -295,6 +295,12 @@ class Service:
         return self._record("evidence.upload", "exhibit", lambda: self.ws.add_exhibit_file(**kwargs),
                             summary=str(kwargs.get("title", "")))  # fmt: skip
 
+    def redate_exhibit(self, exhibit_id: str, on: date, source: str = "you") -> Exhibit:
+        """The date the document shows (the file is renamed to match). ``source`` says how it's known."""
+        before = self._find(self.ws.exhibits().exhibits, exhibit_id, "exhibit")
+        return self._record("evidence.redate", "exhibit", lambda: self.ws.redate_exhibit(exhibit_id, on, source),
+                            before=before, summary=f"{before.title}: {before.date} -> {on}")  # fmt: skip
+
     def remap_exhibit(self, exhibit_id: str, criterion: str, evidence_type: str | None = None) -> Exhibit:
         before = self._find(self.ws.exhibits().exhibits, exhibit_id, "exhibit")
         return self._record("evidence.remap", "exhibit",

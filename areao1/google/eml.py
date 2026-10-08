@@ -159,6 +159,8 @@ def candidate_fields(info: dict[str, Any], filename: str, size: str) -> dict[str
                + (f' "{quote}"' if quote else "")
                + (f" Sorted as {cat} ({info['why']})." if cat else " No rule placed it: choose the criterion."))  # fmt: skip
     return {"evidence_type": etype, "proposed_criterion": crit, "title": subject[:120], "summary": summary[:1000],
+            "document_date": clock.local_date(info["when"]) if info["when"] else None,
+            "date_source": "email" if info["when"] else None,
             "confidence": (0.7 if auth["verdict"] == "verified" else 0.45) if crit else 0.3,
             "stage": _stage(info["stage"], crit, cat),
             "facts": {"from": addr, "date": when, "sender_auth": auth["verdict"],

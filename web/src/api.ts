@@ -114,6 +114,17 @@ export interface RuleCheck {
   note: string | null;
 }
 
+export type DateSource = "email" | "pdf" | "claim" | "source" | "you" | "unconfirmed";
+/** How an exhibit's date is known, in words. */
+export const DATE_SOURCE: Record<DateSource, string> = {
+  email: "from the email's Date header",
+  pdf: "from the PDF's metadata",
+  claim: "from the event date of its claims",
+  source: "from the source",
+  you: "set by you",
+  unconfirmed: "date unconfirmed",
+};
+
 export interface Candidate {
   rule_check?: RuleCheck | null;
   id: string;
@@ -138,6 +149,9 @@ export interface Candidate {
   source_tier: string | null;
   proposal: Record<string, unknown>;
   verification?: "verified" | "unconfirmed" | "confirmed" | "suspicious" | null;
+  /** The date the document itself shows, and where it was read (B2). */
+  document_date?: string | null;
+  date_source?: DateSource | null;
   verification_note?: string;
 }
 
@@ -181,6 +195,7 @@ export interface Exhibit {
   stage: string | null;
   claim_ids: string[];
   accepted_at: string;
+  date_source?: DateSource | null;
 }
 
 export interface Signal {
@@ -889,6 +904,7 @@ export const api = {
 
   evidence: () => request<EvidenceView>("GET", "/exhibits"),
   upload: (form: FormData) => request<Exhibit>("POST", "/exhibits/upload", form),
+  redate: (id: string, date: string) => request<Exhibit>("POST", `/exhibits/${enc(id)}/date`, { date }),
   remap: (id: string, criterion: string) => request<Exhibit>("PATCH", `/exhibits/${enc(id)}`, { criterion }),
   proof: () => request<{ checklists: ProofChecklist[] }>("GET", "/proof"),
   preflight: () => request<{ report: PreflightReport | null }>("GET", "/preflight"),

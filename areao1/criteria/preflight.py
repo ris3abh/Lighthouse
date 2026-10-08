@@ -351,14 +351,19 @@ def claim_without_exhibit(x: _Ctx) -> list[dict[str, Any]]:
 def undated_exhibit(x: _Ctx) -> list[dict[str, Any]]:
     out = []
     for ex in sorted(x.exhibits.values(), key=lambda e: (e.date, e.id)):
-        if ex.date != clock.local_date(ex.accepted_at):
+        if ex.date_source == "unconfirmed":
+            out.append(_issue("undated_exhibit", "low", f"{ex.title}: date unconfirmed",
+                              "No date was known when it was filed. Set the date the document shows (Evidence > Set date).",
+                              [x.doc_ref(f"exhibit:{ex.id}")], ex.id))  # fmt: skip
+            continue
+        if ex.date_source is not None or ex.date != clock.local_date(ex.accepted_at):
             continue
         dated = any(x.claims[c].event_date or x.claims[c].valid_from not in (None, ex.date)
                     for c in ex.claim_ids if c in x.claims)  # fmt: skip
         if not dated:
             out.append(_issue("undated_exhibit", "low", f"{ex.title}: no document date",
-                              "Its date is the day it was filed. Set the date the document shows.",
-                              [x.doc_ref(f"exhibit:{ex.id}")], ex.id))  # fmt: skip
+                              "Its date is the day it was filed. Set the date the document shows, or run "
+                              "`areao1 repair-dates`.", [x.doc_ref(f"exhibit:{ex.id}")], ex.id))  # fmt: skip
     return out
 
 

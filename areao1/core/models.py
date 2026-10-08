@@ -110,6 +110,11 @@ class SourcesFile(_File):
 # --------------------------------------------------------------------------- inbox.json
 
 
+# Where an exhibit's date came from. "unconfirmed": no date was known and none was given, so the exhibit carries the
+# day it was filed until the person sets the date the document shows.
+DateSource = Literal["email", "pdf", "claim", "source", "you", "unconfirmed"]
+
+
 class Candidate(_Model):
     id: str = Field(default_factory=lambda: new_id("cand"))
     kind: Literal["evidence", "pipeline", "deadline", "letter", "update", "metric", "context"] = Field(
@@ -147,6 +152,11 @@ class Candidate(_Model):
     )
     verification_note: str = Field("", max_length=500, description="Why it got that verification.")
     rule_check: RuleCheck | None = Field(None, description="Rule claims in agent-written text, checked.")
+    document_date: date | None = Field(
+        None,
+        description="The date the document itself shows (email header, PDF metadata, the source), if known.",
+    )
+    date_source: DateSource | None = Field(None, description="Where document_date came from.")
 
     # Raw evidence a connector attached; turned into an observation + claims by the sync job.
     _evidence: Evidence | None = PrivateAttr(default=None)
@@ -193,6 +203,15 @@ class Exhibit(_Model):
     )
     accepted_at: datetime = Field(default_factory=utcnow)
     notes: str = ""
+    date_source: DateSource | None = Field(
+        None,
+        description="Where the date came from; unconfirmed means nobody knows it yet. None: filed before this "
+        "was recorded (`areao1 repair-dates`).",  # fmt: skip
+    )
+
+    @property
+    def date_unconfirmed(self) -> bool:
+        return self.date_source == "unconfirmed"
 
     @field_validator("file")
     @classmethod

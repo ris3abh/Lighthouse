@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type Candidate, type Profile } from "../api";
+import { api, type Candidate, DATE_SOURCE, type Profile } from "../api";
 import { useRefresh } from "../App";
 import ClaimsPanel, { StageChip } from "../components/Claims";
 import RuleCheckView, { blocking } from "../components/RuleCheck";
@@ -146,7 +146,7 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
     evidence_type: c.evidence_type,
     title: c.title,
     summary: c.summary,
-    date: today(),
+    date: c.document_date ?? "", // the document's own date (B2); empty when nothing says, never today by default
   });
   const crit = profile.criteria.find((x) => x.id === form.proposed_criterion);
 
@@ -173,7 +173,7 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
       const banked = (o: { scoreboard: { criteria: { id: string; status: string }[] } }) =>
         new Set(o.scoreboard.criteria.filter((x) => x.status === "banked").map((x) => x.id));
       const before = banked(await api.overview());
-      await api.accept(c.id, { ...(editing ? edits() : {}), date: form.date });
+      await api.accept(c.id, { ...(editing ? edits() : {}), ...(editing && form.date ? { date: form.date } : {}) });
       const now = banked(await api.overview());
       if ([...now].some((id) => !before.has(id)) && banterOk()) toast(`${banterText("banked")} A criterion is now banked.`); // ADR 0010 §4
     }, "Accepted — exhibit filed and scoreboard updated");
@@ -192,6 +192,11 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
             )}
           </h3>
           <p className="mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-2">{c.summary}</p>
+          {c.kind === "evidence" && (
+            <p className="mt-1.5 font-mono text-[11px] tracking-[0.04em] text-muted">
+              {c.document_date ? `Dated ${c.document_date}, ${DATE_SOURCE[c.date_source ?? "source"]}` : "No document date found: Edit to set it, or it's filed as date unconfirmed"}
+            </p>
+          )}
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <Chip>{c.evidence_type}</Chip>
             <StageChip stage={c.stage} />
@@ -252,8 +257,15 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
             <textarea className="input" rows={2} value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />
           </label>
           <label>
-            <span className="label">Exhibit date</span>
+            <span className="label">Exhibit date — the date the document shows</span>
             <input type="date" className="input" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+            <span className="mt-1 block text-xs text-ink-2">
+              {c.document_date && form.date === c.document_date
+                ? `Read ${DATE_SOURCE[c.date_source ?? "source"]}.`
+                : form.date
+                  ? "Set by you."
+                  : "No date found. Enter the date the document shows, or accept it as date unconfirmed and set it later."}
+            </span>
           </label>
         </div>
       )}

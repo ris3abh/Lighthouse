@@ -265,6 +265,8 @@ SAMPLES = {
     }, "evidence.upload"),
     ("PATCH", "/api/exhibits/{exhibit_id}"): ("/api/exhibits/{exhibit}", {"json": {"criterion": "press"}},
                                               "evidence.remap"),
+    ("POST", "/api/exhibits/{exhibit_id}/date"): ("/api/exhibits/{exhibit}/date", {"json": {"date": "2025-05-05"}},
+                                                  "evidence.redate"),
     ("PUT", "/api/profile"): ("/api/profile", {"json": {"id": "eb1a"}}, "profile.set"),
     ("PUT", "/api/criteria/{criterion_id}/override"): ("/api/criteria/press/override", {"json": {"status": "gap"}},
                                                        "criterion.override"),

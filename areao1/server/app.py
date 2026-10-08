@@ -79,6 +79,10 @@ class SnoozeBody(BaseModel):
     until: dt.date | None = None
 
 
+class DateBody(BaseModel):
+    date: dt.date
+
+
 class NoteBody(BaseModel):
     note: str = ""
 
@@ -610,6 +614,10 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     @app.patch("/api/exhibits/{exhibit_id}")
     def remap(exhibit_id: str, body: RemapBody) -> dict[str, Any]:
         return svc.remap_exhibit(exhibit_id, body.criterion, body.evidence_type).model_dump(mode="json")
+
+    @app.post("/api/exhibits/{exhibit_id}/date")
+    def redate(exhibit_id: str, body: DateBody) -> dict[str, Any]:
+        return svc.redate_exhibit(exhibit_id, body.date).model_dump(mode="json")
 
     @app.get("/api/files/{path:path}")
     def get_file(path: str) -> FileResponse:

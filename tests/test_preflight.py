@@ -135,7 +135,10 @@ def test_invited_without_completion_captures_without_a_primary_and_undated(ws):
     _exhibit(ws, "Riverside Jam judges page (PDF)", url="https://jam.example/judges")  # its primary copy
     from areao1.core import clock
 
-    _exhibit(ws, "Certificate with no date shown", on=clock.today())
+    legacy = _exhibit(ws, "Certificate with no date shown", on=clock.today())
+    ex = ws.exhibits()
+    next(e for e in ex.exhibits if e.id == legacy.id).date_source = None  # filed before dates were tracked
+    ws.save_exhibits(ex)
     report = preflight.run(ws, save=False)
     kinds = _kinds(report)
     assert (
