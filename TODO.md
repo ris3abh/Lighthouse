@@ -151,12 +151,14 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       received) and all case mail in 7 categories with counts; rules first (taught senders, contacts, organizer
       domains, subject keywords), then the mundane tier on headers + first lines; moving teaches a sender rule;
       PEEK-only reads of a read-only mailbox; text fetched on open, never written; links to Inbox candidates
-- [ ] E7 live check: Refresh mail on the owner's Gmail (sends first lines of unsorted mail to the mundane tier)
 - [x] G0. OpenAI is the only engine (ADR 0015): Responses API engine with our tool loop, guarded web search,
       prompt caching, price table, dollar cap; tiers one line each (hard/mid gpt-6.1-sol, mundane gpt-6-luna);
       OpenAI key only (Anthropic key removed on start); the suite's FakeEngine runs the real engine against a
       scripted Responses API; Claude Code skill + AGENTS.md Codex section in every workspace
-- [ ] G0 live check: one chat and one opportunity-scout run on OpenAI, with costs (waits for the owner's key)
+- [x] G0 live check (2026-10-07, owner's workspace, gpt-6.1-sol): chat $0.0077 (3 tool calls, no search);
+      opportunity scout $0.2203 (20 tool calls, 4 searches = $0.1306 of it, 6 sources, 6 Inbox proposals)
+- [x] E7 live check: rules-only refresh on the owner's Gmail ($0); found organizer mail in Promotions was never
+      read (fixed, ab734a1). The HackMIT judging thread and DubHacks reply aren't in the connected account
 - [ ] CHECKPOINT 4 (Gmail): connect with an app password, Refresh threads, one approved send
       Reported 2026-10-07 (built and tested with fake IMAP / SMTP); the live run waits for the owner's app password
 
