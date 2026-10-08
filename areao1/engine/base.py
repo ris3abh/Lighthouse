@@ -34,6 +34,7 @@ class EngineRequest:
     model: str
     effort: str = "medium"
     web_search: bool = True
+    max_searches: int | None = None  # web searches per run; further ones are refused with a reason
     search_model: str | None = None  # the model that runs each web search (the mundane tier); None: ``model``
     max_turns: int = 25
     max_budget_usd: float | None = None
@@ -51,6 +52,7 @@ class EngineResult:
     error: str | None = None
     searches: int = 0  # web searches that ran (included in cost_usd)
     search_usd: float = 0.0  # their per-search fee plus the search sub-requests' tokens
+    search_capped: bool = False  # a search was refused because the run reached max_searches
 
 
 Emit = Callable[[AgentEvent], Awaitable[None]]

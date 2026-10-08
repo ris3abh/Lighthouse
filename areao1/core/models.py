@@ -503,6 +503,8 @@ class AgentConfig(_Model):
         False, description="Run chat on the mid tier instead of the hard one (ADR 0009 §3)."
     )
     web_search: bool = True
+    max_searches: int = Field(8, ge=0, le=50, description="Web searches per run; at the cap the run finishes "
+                              "with what it found and says so (ADR 0016).")  # fmt: skip
     max_turns: int = Field(25, ge=1, le=200)
     budget: AgentBudget = Field(default_factory=AgentBudget)
     autopilot: AutopilotConfig = Field(default_factory=AutopilotConfig)

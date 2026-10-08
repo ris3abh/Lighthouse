@@ -73,6 +73,14 @@
           "title": "Effort",
           "type": "string"
         },
+        "max_searches": {
+          "default": 8,
+          "description": "Web searches per run; at the cap the run finishes with what it found and says so (ADR 0016).",
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Max Searches",
+          "type": "integer"
+        },
         "max_turns": {
           "default": 25,
           "maximum": 200,

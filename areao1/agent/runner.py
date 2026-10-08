@@ -271,6 +271,7 @@ class AgentRunner:
             effort=cfg.agent.effort,
             web_search=cfg.agent.web_search,
             search_model=self.route("web_search").model,
+            max_searches=cfg.agent.max_searches,
             max_turns=cfg.agent.max_turns,
             max_budget_usd=min(caps) if caps else None,
             task_budget_tokens=max(20_000, min(b.per_run_tokens, b.monthly_tokens - used_tokens)),
@@ -333,6 +334,10 @@ class AgentRunner:
             run.text = result.text
             run.cost_usd = result.cost_usd
             run.searches, run.search_cost_usd = result.searches, result.search_usd
+            if result.search_capped and "search limit" not in run.text.lower():  # it always says so
+                run.text = (run.text.rstrip() + "\n\n" if run.text.strip() else "") + (
+                    f"(The search limit of {request.max_searches} per run was reached; this uses what was found.)"
+                )
             run.stop_reason = result.stop_reason
             if result.is_error:
                 run.status, run.error = "error", result.error

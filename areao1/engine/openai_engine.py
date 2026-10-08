@@ -257,12 +257,18 @@ class OpenAIEngine:
                 return f"Denied: {denied}", False
         if not query:
             return "Error: an empty search", False
+        if request.max_searches is not None and result.searches >= request.max_searches:
+            result.search_capped = True
+            return (
+                f"Denied: this run reached its limit of {request.max_searches} web searches. Don't search again: "
+                "finish with what you found, and say in your answer that the search limit was reached."
+            ), False
         tool: dict[str, Any] = {"type": "web_search"}
         if domains:
             tool["filters"] = {"allowed_domains": domains[:100]}
         model = request.search_model or request.model  # the mundane tier: searching is simple reading
         body = {"model": model, "instructions": SEARCH_INSTRUCTIONS, "input": query, "tools": [tool],
-                "tool_choice": "required", "store": False, "include": ["web_search_call.action.sources"],
+                "tool_choice": "required", "max_tool_calls": 1, "store": False, "include": ["web_search_call.action.sources"],
                 "reasoning": {"effort": "low"}}  # fmt: skip
         r = await client.post(URL, json={k: v for k, v in body.items()})
         if r.status_code != 200:

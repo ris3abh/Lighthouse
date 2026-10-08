@@ -584,3 +584,29 @@ def test_searches_are_counted_and_priced_in_the_run(demo_ws):
     assert run.searches == 1 and run.search_cost_usd == pytest.approx(
         (10 * inp + 5 * out) / 1e6 + 0.01, abs=1e-6
     )
+
+
+def test_searches_are_capped_per_run_and_the_answer_says_so(demo_ws):
+    """F1: agent.max_searches (default 8). At the cap a search is refused; the run finishes with what it found and
+    its answer says the limit was reached."""
+    from areao1.core.models import AgentConfig
+
+    assert AgentConfig().max_searches == 8
+    cfg = demo_ws.config()
+    cfg.agent.max_searches = 2
+    demo_ws.save_config(cfg)
+    script = [("search", {"query": f"hackathon judges call {n}"}) for n in range(4)] + [
+        ("text", "Here are two leads.")
+    ]
+    runner, fake = _runner(demo_ws, script)
+
+    async def go():
+        return await runner.wait((await runner.start("manual", "find judging calls")).id)
+
+    run = anyio.run(go)
+    assert run.searches == 2 and len(fake.api.searches) == 2  # the third and fourth never ran
+    refused = [out for name, ok, out in fake.tool_outputs if name == "web_search" and not ok]
+    assert len(refused) == 2 and "limit of 2 web searches" in refused[0]
+    assert run.status == "done" and run.text.startswith("Here are two leads.")
+    assert "search limit of 2 per run was reached" in run.text
+    assert all(b.get("max_tool_calls") == 1 for b in fake.api.searches)  # one hosted search per request

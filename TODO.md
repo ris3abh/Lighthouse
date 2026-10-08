@@ -174,7 +174,7 @@ No stops between parts; no live runs on the owner's Gmail, OpenAI key or real wo
 needs the owner goes into one "Needs you" list in the K4 report. One commit per item with tests; push after green CI.
 
 #### Part F: daily opportunity job (ADR 0016)
-- [ ] F1. Cap web searches per run (agent.max_searches, default 8, in areao1.yaml); at the cap further searches
+- [x] F1. Cap web searches per run (agent.max_searches, default 8, in areao1.yaml); at the cap further searches
       are refused, the run finishes with what it has and its answer says the cap was reached
 - [ ] F2. Daily opportunity job (mission-style, off by default, every 24h when enabled): reads new mail with the
       Mail rules (incl. Promotions / Social), sender check, .eml / forward handling and the invited / completed
