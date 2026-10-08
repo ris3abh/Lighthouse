@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 REQUIRED = {
     "SPEC.md": [
+        "## 2a. Ground rules",
         "## 5a. Knowledge vault",
         "## 5b. Evidence-aware graph memory",
         "## 5c. Evaluation harness",

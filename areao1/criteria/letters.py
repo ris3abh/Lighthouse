@@ -11,20 +11,13 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from areao1.agent.guardrails import guard_answer
 from areao1.core import clock
 from areao1.criteria import constellation
 from areao1.criteria.case import Case
+from areao1.criteria.grounding import CITE, LABEL, keep_grounded
 
-CITE = re.compile(r"\[(clm_[0-9a-f]{6,}(?:\s*,\s*clm_[0-9a-f]{6,})*)\]")
-# In a letter, any sentence judging eligibility goes (third person too: "she qualifies", "meets the criteria").
-VERDICT = re.compile(
-    r"\b(qualif(?:y|ies|ied)|eligib\w*|meets? (?:the |all |each |every )?(?:\w+ )?(?:criteri\w*|standards?|requirements?)"
-    r"|satisf(?:y|ies|ied) (?:the |all )?(?:\w+ )?criteri\w*|will (?:surely |certainly |definitely )?be approved"
-    r"|deserves? (?:the|a|an) (?:visa|green card|approval))\b",
-    re.I,
-)
-FRAME = re.compile(r"^(dear\b|to whom it may concern|sincerely|respectfully|regards|best\b|\[)", re.I)
+__all__ = ["CITE", "LABEL", "keep_grounded", "draft", "email_body", "approved_claims", "template"]
+
 SYSTEM = """You draft a recommendation letter that a named writer will review, rewrite and sign. Write in the
 writer's voice, in plain professional English, under 400 words.
 
@@ -36,7 +29,7 @@ placeholder in square brackets for them to fill in, e.g. [WRITER: how you worked
 Never state that the person qualifies, meets a criterion, or will be approved; never mention USCIS outcomes. Begin
 with "Dear Officer," or "To whom it may concern," and end with "Sincerely," then "[WRITER: signature, name, title]".
 The writer signs, not you."""
-HEADER = ("<!-- Draft for {writer} to review, rewrite and sign. Area O1 never signs or sends it as them. Each "
+HEADER = ("<!-- " + LABEL + ". Draft for {writer} to review, rewrite and sign. Area O1 never signs or sends it as them. Each "
           "bracketed id is the claim a sentence rests on; the sources are listed at the end. -->")  # fmt: skip
 
 
@@ -63,32 +56,6 @@ def template(writer: str, person: str, claims: list[dict[str, Any]]) -> str:
     lines += ["", "[WRITER: your own assessment of this work, in your words.]", "", "Sincerely,",
               "[WRITER: signature, name, title]"]  # fmt: skip
     return "\n".join(lines)
-
-
-def keep_grounded(text: str, allowed: set[str]) -> tuple[str, list[str], list[str]]:
-    """Drop factual sentences that cite nothing approved. Returns (text, cited claim ids, dropped sentences)."""
-    kept, cited, dropped = [], [], []
-    for para in text.split("\n"):
-        if not para.strip():
-            kept.append("")
-            continue
-        out = []
-        for sentence in re.split(
-            r"(?<=[.!?\]])\s+(?=[A-Z]|\[(?!clm_))", para.strip()
-        ):  # a citation stays with its sentence
-            ids = [i.strip() for m in CITE.finditer(sentence) for i in m.group(1).split(",")]
-            if VERDICT.search(sentence) or guard_answer(sentence)[1]:
-                dropped.append(sentence)  # never an eligibility verdict, in anyone's voice
-            elif FRAME.match(sentence.strip()) or (sentence.strip().startswith("[") and not ids):
-                out.append(sentence)  # greeting, closing, a placeholder for the writer
-            elif ids and all(i in allowed for i in ids):
-                out.append(sentence)
-                cited += ids
-            else:
-                dropped.append(sentence)
-        if out:
-            kept.append(" ".join(out))
-    return re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip(), list(dict.fromkeys(cited)), dropped
 
 
 async def draft(ws: Case, letter_id: str, judge: Any = None, model: str = "") -> dict[str, Any]:
@@ -120,6 +87,7 @@ async def draft(ws: Case, letter_id: str, judge: Any = None, model: str = "") ->
         raise ValueError("The draft didn't rest on any approved claim, so it wasn't kept. Try again.")
     sources = {s["id"]: s for s in claims}
     lines = [HEADER.format(writer=letter.name), "", f"# Letter from {letter.name}: draft of {clock.today().isoformat()}", "",
+             f"**{LABEL}.** Every sentence cites the approved claims it rests on; {letter.name} rewrites and signs it.", "",
              text, "", "---", "", "## Sources (claims this draft rests on)", ""]  # fmt: skip
     for cid in cited:
         s = sources[cid]
@@ -144,4 +112,4 @@ def email_body(ws: Case, letter_name: str, text: str) -> str:
     first = parts[0] if parts else letter_name
     return (f"Hi {first},\n\nThank you again for agreeing to write a letter. To save you time, here is a draft built "
             "only from documented facts. Please rewrite anything in your own words, fill in the bracketed parts, and "
-            f"only sign it if it reads true to you.\n\n---\n\n{clean}\n\n---\n\nThank you,\n{person}")  # fmt: skip
+            f"only sign it if it reads true to you.\n\n---\n\n{LABEL}\n\n{clean}\n\n---\n\nThank you,\n{person}")  # fmt: skip

@@ -4,7 +4,7 @@ floor that holds even when a model doesn't follow it.
 * Stages: the agent can't propose something as completed / published / granted unless the quote it cites says so.
   An invitation quoted as a completion is refused.
 * Letters: the agent can't mark a letter sent or signed (only the writer signs; only the person sends).
-* Final answers: eligibility verdicts and guarantees are replaced with a one-line note.
+* Final answers: eligibility verdicts, guarantees and approval probabilities are replaced with a one-line note.
 * Untrusted text: web page text is wrapped as data; text addressed to an AI is flagged and never followed.
 * People: people-search and personal social sites are off limits; contacts are looked up on public professional
   pages only.
@@ -39,7 +39,10 @@ LETTER_HUMAN_ONLY = {"sent", "signed"}
 _VERDICT = re.compile(
     r"[^.!?\n]*\b(?:you(?:'re| are| would be| will be)?\s+(?:clearly |definitely |certainly |likely |probably )?"
     r"(?:eligible|qualif(?:y|ied|ies))(?: for)?|(?:guarantee[ds]?|certain(?:ly)?) (?:to be |of )?(?:approv\w*|success|"
-    r"an? (?:visa|green card))|will (?:definitely |surely |certainly )?(?:be approved|get (?:the|your) (?:visa|green card)))"
+    r"an? (?:visa|green card))|will (?:definitely |surely |certainly )?(?:be approved|get (?:the|your) (?:visa|green card))"
+    # No approval probability or likelihood score, ever (SPEC §2a.1).
+    r"|(?:chances?|probability|likelihood|odds) (?:of|for) (?:approval|success|being approved|getting (?:approved|the "
+    r"(?:visa|green card)))|(?:approval|success) (?:probability|odds|likelihood|chances?)|likely to be approved)"
     r"[^.!?\n]*[.!?]?",
     re.I,
 )

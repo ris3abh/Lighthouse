@@ -239,6 +239,31 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
       to the docs; checkout path fixed
 - [x] D4. brag-output/ in .gitignore
 
+## v0.3: finish the evidence loop (2026-10-08)
+
+Ground rules (SPEC §2a, guard tests in tests/test_ground_rules.py): no approval probability or likelihood score
+anywhere; every generated sentence in a packet, narrative or draft links to approved claim ids, unsupported ones
+are dropped; every draft is labeled "Draft for attorney review", no eligibility verdicts; self-reported material
+never enters the packet as evidence.
+
+- [x] ADRs 0017 proof recipes, 0018 preflight, 0019 final merits, 0020 review packet; SPEC ground rules + guards
+- [ ] 0. Zenodo DOI badge (concept DOI 10.5281/zenodo.23202416, always the latest; v0.2.0 is 10.5281/zenodo.23242002)
+      in the README; CITATION.cff with both
+- [ ] 1. Proof recipes: profiles/recipes/*.yaml per criterion; a checklist when an activity reaches accepted /
+      completed / granted / published (exhibits) or done (pipeline); each item links an upload or an existing
+      exhibit; missing items in This week; rule-based matches from Mail and sources to the Inbox; an agent tool
+- [ ] 2. Evidence preflight: Run preflight; claims without a primary exhibit, conflicting identity facts, differing
+      metrics, letters/drafts citing unsupported or outdated values, undated exhibits, invited without completed
+      proof, web captures without a primary copy, superseded values still cited; severities; never blocks
+- [ ] CHECKPOINT A: preflight on Maya, Ravi, Lena and the owner's workspace (summary only)
+- [ ] 3. Final merits workspace: sustained-acclaim timeline, rule-computed themes with reasons, OpenAlex field
+      benchmarks where available, rule-checked Kazarian / Policy Manual citations
+- [ ] 4. Review packet builder: exhibit numbering (C4-01), TOC, per-criterion index, claim -> exhibit -> page/quote
+      matrix, an outline drafted only from approved claims, .docx, review PDF with continuous pagination, attorney
+      export ZIP (packet, originals, matrix CSV, preflight issues, provenance JSON / PROV-JSON); reproducible
+- [ ] CHECKPOINT B: Maya's packet (.docx, PDF, matrix CSV)
+- [ ] 5. Docs pages per feature, SPEC.md, CHANGELOG; v0.3.0 prepared (not published)
+
 ## Phase 0 checklist
 
 - [x] `areao1 init` creates a workspace from a template, with schemas and .gitignore

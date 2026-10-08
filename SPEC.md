@@ -60,6 +60,24 @@ USCIS. Criteria profiles are community-maintained summaries of public regulation
 9. **Ship in phases.** A usable dashboard with GitHub + Hugging Face import comes first; Gmail and opportunity
    scans come after.
 
+## 2a. Ground rules
+
+These hold everywhere: in the dashboard, the API, the MCP tools, the agent's answers, drafts, the review packet and
+exports. Each has a guard test (`tests/test_ground_rules.py`); a change that breaks one fails CI.
+
+1. **No approval probability or likelihood score, anywhere.** Area O1 never shows, computes or exports a chance,
+   probability, likelihood, odds or percentage of approval, and the agent refuses to give one. Connector
+   *confidence* (how sure a connector is that an item is evidence) is not about approval and is labeled as such.
+2. **Every generated sentence is grounded.** In a packet, a narrative, an outline or a draft, every generated
+   sentence that states a fact links to the approved claim ids behind it; a sentence that cites nothing approved is
+   dropped. Greetings, headings and bracketed placeholders for a person's own words are the only exceptions.
+3. **Drafts are for attorney review.** Everything Area O1 drafts for a case (letter drafts, outlines, narratives,
+   the review packet) is labeled "Draft for attorney review", and never states that the person qualifies, meets a
+   criterion or will be approved (the existing guardrails apply).
+4. **Self-reported material is never evidence.** Notes, chat imports and anything else with the `self_reported`
+   tier keep trackers current but never enter the packet as evidence, never satisfy a proof-recipe item and never
+   count toward a criterion.
+
 ## 3. Architecture
 
 One local server owns data, UI, schedules and connectors; the agent engine does the writing and judgment;
