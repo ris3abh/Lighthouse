@@ -264,6 +264,33 @@ class Service:
         return self._record("proof.unlink", "proof", lambda: (self.ws.set_proof(None, anchor, item), {"id": f"{anchor}#{item}"})[1],
                             target_id=f"{anchor}#{item}", before=before, summary=item)  # fmt: skip
 
+    # ------------------------------------------------------------------ preflight (ADR 0018)
+
+    def run_preflight(self) -> dict[str, Any]:
+        """Run the checks and save the report. The change log keeps the counts, not the whole report."""
+        from areao1.criteria import preflight
+
+        out: dict[str, Any] = {}
+
+        def go() -> dict[str, Any]:
+            out.update(preflight.run(self.ws))
+            return {"id": "preflight", "counts": out["counts"]}
+
+        self._record("preflight.run", "preflight", go, target_id="preflight", summary="preflight")
+        return out
+
+    def dismiss_preflight(self, issue_id: str, note: str) -> dict[str, Any]:
+        if not note.strip():
+            raise WorkspaceError("say why it isn't a problem")
+
+        def go() -> dict[str, Any]:
+            report = self.ws.dismiss_preflight(issue_id, note.strip())
+            return {"id": issue_id, "counts": report.counts}
+
+        return self._record(
+            "preflight.dismiss", "preflight", go, target_id=issue_id, summary=note.strip()[:80]
+        )
+
     def add_exhibit_file(self, **kwargs: Any) -> Exhibit:
         return self._record("evidence.upload", "exhibit", lambda: self.ws.add_exhibit_file(**kwargs),
                             summary=str(kwargs.get("title", "")))  # fmt: skip

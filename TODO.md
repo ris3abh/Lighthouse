@@ -252,7 +252,7 @@ never enters the packet as evidence.
 - [x] 1. Proof recipes: profiles/recipes/*.yaml per criterion; a checklist when an activity reaches accepted /
       completed / granted / published (exhibits) or done (pipeline); each item links an upload or an existing
       exhibit; missing items in This week; rule-based matches from Mail and sources to the Inbox; an agent tool
-- [ ] 2. Evidence preflight: Run preflight; claims without a primary exhibit, conflicting identity facts, differing
+- [x] 2. Evidence preflight: Run preflight; claims without a primary exhibit, conflicting identity facts, differing
       metrics, letters/drafts citing unsupported or outdated values, undated exhibits, invited without completed
       proof, web captures without a primary copy, superseded values still cited; severities; never blocks
 - [ ] CHECKPOINT A: preflight on Maya, Ravi, Lena and the owner's workspace (summary only)

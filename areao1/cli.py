@@ -208,6 +208,21 @@ def run(
 
 
 @app.command()
+def preflight(workspace: WorkspaceOpt = None) -> None:
+    """Evidence preflight (ADR 0018): what a reviewer would notice, by severity. Writes data/preflight.json."""
+    from areao1.criteria import preflight as pf
+    from areao1.service import Service
+
+    try:
+        report = Service(find_workspace(workspace)).run_preflight()
+    except WorkspaceError as exc:
+        raise _fail(str(exc)) from exc
+    typer.echo(pf.summary(report))
+    for issue in [i for i in report["issues"] if not i["dismissed"]][:40]:
+        typer.echo(f"  {issue['severity']:6} {issue['title']}")
+
+
+@app.command()
 def up(
     port: Annotated[int | None, typer.Option(help="Port (default from areao1.yaml, 7777)")] = None,
     scheduler: Annotated[

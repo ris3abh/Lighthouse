@@ -49,6 +49,7 @@ YOURS: dict[str, str] = {
     "settings.opportunities": "It decides whether your mail is read every day for opportunities.",
     "inbox.recheck": "It re-runs the automatic check on the agent's own text.",
     "proof.": "Which document preserves a proof item is your call; the agent proposes matches to the Inbox.",
+    "preflight.": "You run and dismiss preflight from Evidence; the agent reads the results (list_preflight_issues).",
     "briefing.recheck": "It re-runs the automatic check on the agent's own text.",
     "onboarding.": "Your own answers about yourself.",
     "outreach.send": "Sending an email in your name needs your approval, every time (ADR 0014 §5).",

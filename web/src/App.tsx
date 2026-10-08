@@ -301,7 +301,7 @@ function Shell() {
       content = <Knowledge />;
       break;
     case "memory":
-      content = <Memory />;
+      content = <Memory claim={params.get("claim")} />;
       break;
     case "calendar":
       content = <Calendar />;

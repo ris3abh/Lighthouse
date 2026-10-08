@@ -26,7 +26,7 @@ PDF = b"%PDF-1.4 fictional\n"
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
                  "/api/settings/missions", "/api/settings/agent", "/api/settings/mail", "/api/settings/opportunities", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
-                 "/api/onboarding", "/api/todos", "/api/contacts", "/api/outreach", "/api/proof")  # fmt: skip
+                 "/api/onboarding", "/api/todos", "/api/contacts", "/api/outreach", "/api/proof", "/api/preflight")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -137,7 +137,17 @@ def _proof_ids(ws) -> dict[str, str]:
 
     anchor = next((a["anchor"] for a in proof.anchors(ws) if a["title"] == "Judged Example Hacks 2026"), "")
     other = next((e.id for e in ws.exhibits().exhibits if e.title == "Example Hacks 2026 judges page"), "")
-    return {"proof_anchor": anchor, "proof_exhibit": other}
+    from areao1.criteria import preflight
+
+    report = preflight.latest(ws) or {"issues": []}
+    issue = report["issues"][0]["id"] if report["issues"] else ""
+    return {"proof_anchor": anchor, "proof_exhibit": other, "preflight_issue": issue}
+
+
+def _preflight_ran(ws) -> None:
+    from areao1.criteria import preflight
+
+    preflight.run(ws)
 
 
 def _proof_ready(ws) -> None:
@@ -304,6 +314,9 @@ SAMPLES = {
                                                                  "note": "Not published"}}, "proof.waive", "_proof_ready"),
     ("POST", "/api/proof/unlink"): ("/api/proof/unlink", {"json": {"anchor": "{proof_anchor}", "item": "event_page"}},
                                     "proof.unlink", "_proof_linked"),
+    ("POST", "/api/preflight/run"): ("/api/preflight/run", {}, "preflight.run"),
+    ("POST", "/api/preflight/{issue_id}/dismiss"): ("/api/preflight/{preflight_issue}/dismiss", {"json": {"note": "Known"}},
+                                                     "preflight.dismiss", "_preflight_ran"),
     ("POST", "/api/onboarding/ai"): ("/api/onboarding/ai", {"json": {"choice": "skip"}}, "onboarding.ai", "_at_ai"),
 }  # fmt: skip
 

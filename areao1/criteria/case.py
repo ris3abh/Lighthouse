@@ -6,6 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from areao1.core.models import utcnow
 from areao1.core.workspace import DATA_FILES as CORE_DATA_FILES
 from areao1.core.workspace import NotFound, Workspace, WorkspaceError
 from areao1.criteria import engine
@@ -20,6 +21,7 @@ from areao1.criteria.models import (
     Outreach,
     OutreachDraft,
     Person,
+    PreflightReport,
     Profile,
     ProofLink,
     ProofLinks,
@@ -34,7 +36,7 @@ from areao1.onboarding.models import OnboardingState
 CASE_OPTIONAL_FILES: dict[str, type[BaseModel]] = {"onboarding.json": OnboardingState, "todos.json": Todos,
                                                    "contacts.json": Contacts, "threads.json": GmailThreads,
                                                    "outreach.json": Outreach, "mail.json": Mailbox,
-                                                   "proofs.json": ProofLinks}  # fmt: skip
+                                                   "proofs.json": ProofLinks, "preflight.json": PreflightReport}  # fmt: skip
 
 DATA_FILES: dict[str, type[BaseModel]] = {
     "person.json": Person,
@@ -156,6 +158,27 @@ class Case(Workspace):
                 proofs.links.append(link)
             self._save("proofs.json", proofs)
             return before
+
+    # ------------------------------------------------------------------ preflight (ADR 0018)
+
+    def save_preflight(self, report: dict[str, Any]) -> PreflightReport:
+        with self.lock:
+            model = PreflightReport.model_validate(report)
+            self._save("preflight.json", model)
+            return model
+
+    def dismiss_preflight(self, issue_id: str, note: str) -> PreflightReport:
+        with self.lock:
+            report = self._load("preflight.json", PreflightReport)
+            issue = next((i for i in report.issues if i.id == issue_id), None)
+            if issue is None:
+                raise NotFound(f"no preflight issue {issue_id!r}; run preflight again")
+            report.dismissed[issue_id] = {"note": note[:300], "at": utcnow().isoformat()}
+            issue.dismissed, issue.dismissed_note = True, note[:300]
+            report.counts[issue.severity] = max(0, report.counts.get(issue.severity, 0) - 1)
+            report.by_kind[issue.kind] = max(0, report.by_kind.get(issue.kind, 0) - 1)
+            self._save("preflight.json", report)
+            return report
 
     def todos(self) -> Todos:
         return self._load("todos.json", Todos)

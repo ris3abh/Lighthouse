@@ -1,0 +1,133 @@
+{
+  "$defs": {
+    "PreflightIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "dismissed": {
+          "default": false,
+          "title": "Dismissed",
+          "type": "boolean"
+        },
+        "dismissed_note": {
+          "default": "",
+          "title": "Dismissed Note",
+          "type": "string"
+        },
+        "id": {
+          "description": "Stable: a hash of the kind and the records involved, so a dismissal sticks.",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "refs": {
+          "description": "The claims, exhibits, letters, drafts.",
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Refs",
+          "type": "array"
+        },
+        "severity": {
+          "description": "How likely a reader is to notice; never odds.",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "severity",
+        "title"
+      ],
+      "title": "PreflightIssue",
+      "type": "object"
+    }
+  },
+  "$id": "https://areao1.dev/schemas/v1/preflight.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "by_kind": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "By Kind",
+      "type": "object"
+    },
+    "claims": {
+      "default": 0,
+      "title": "Claims",
+      "type": "integer"
+    },
+    "counts": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "description": "Open issues by severity.",
+      "title": "Counts",
+      "type": "object"
+    },
+    "dismissed": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "description": "issue id -> {note, at}",
+      "title": "Dismissed",
+      "type": "object"
+    },
+    "exhibits": {
+      "default": 0,
+      "title": "Exhibits",
+      "type": "integer"
+    },
+    "issues": {
+      "items": {
+        "$ref": "#/$defs/PreflightIssue"
+      },
+      "title": "Issues",
+      "type": "array"
+    },
+    "run_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Run At"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "title": "PreflightReport",
+  "type": "object"
+}

@@ -99,6 +99,13 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
 
         return ctx.out({"activities": proof.missing(ws)})
 
+    async def t_preflight(args: S) -> str:
+        from areao1.criteria import preflight
+
+        report = preflight.run(ws, save=False)
+        return ctx.out({"summary": preflight.summary(report),
+                        "issues": [i for i in report["issues"] if not i["dismissed"]][:60]})  # fmt: skip
+
     async def t_claims(args: S) -> str:
         return ctx.out(read.query_claims(ws, args["entity"], args.get("as_of")))
 
@@ -744,6 +751,9 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         AgentTool("missing_proof", "Completed or accepted activities with proof still to save (proof recipes): each "
                   "item's label and why. To suggest a document you found, propose_evidence with its quote; the person "
                   "links it.", _obj({}, []), t_missing_proof),
+        AgentTool("list_preflight_issues", "Evidence preflight: outdated or unsupported values cited, facts that disagree, "
+                  "invited without completed proof, captures without a primary copy, undated exhibits; each with the "
+                  "claims and exhibits involved. Read-only.", _obj({}, []), t_preflight),
         AgentTool("get_profile", "The active profile's criteria, accepted evidence types and strength signals.", _obj({}, []), t_profile),
         AgentTool("query_claims", "Claims about an entity (id or name fragment), optionally as of a date.",
                   _obj({"entity": STR, "as_of": DATE}, ["entity"]), t_claims),
@@ -821,6 +831,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
     touches = {
         "get_scoreboard": ("data/exhibits.json", "data/criteria.json"), "list_gaps": ("data/exhibits.json", "data/inbox.json"),
         "missing_proof": ("data/exhibits.json", "data/proofs.json", "profiles/recipes/"),
+        "list_preflight_issues": ("memory/", "data/exhibits.json", "data/letters.json", "drafts/"),
         "get_profile": ("profiles/",), "query_claims": ("memory/claims.jsonl",),
         "get_provenance": ("memory/claims.jsonl", "memory/sources/"), "what_changed": ("memory/", "data/metrics.csv"),
         "list_inbox": ("data/inbox.json",), "list_deadlines": ("data/deadlines.json",),

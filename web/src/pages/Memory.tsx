@@ -25,11 +25,12 @@ import {
 const STATUS_LABEL: Record<StarStatus, string> = { approved: "approved", pending: "pending", superseded: "superseded", rejected: "rejected" };
 
 /** The constellation memory map (H1, ADR 0012): every claim a star in its criterion's cluster. */
-export default function Memory() {
+export default function Memory({ claim }: { claim?: string | null }) {
   const data = useLoad(() => api.constellation(), []);
   const [view, setView] = useState<"sky" | "list">("sky");
   const [filters, setFilters] = useState<Filters>({ criterion: "all", entity: "", statuses: new Set(DEFAULT_STATUSES), from: null, until: null });
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(claim ?? null); // #/memory?claim=<id> opens its trail
+  useEffect(() => setSelected(claim ?? null), [claim]);
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
   if (!data.data)
     return (

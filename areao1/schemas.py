@@ -34,6 +34,7 @@ MODELS: dict[str, type[BaseModel]] = {
     "profile": domain.Profile,
     "proof-recipe": domain.Recipe,
     "proofs": domain.ProofLinks,
+    "preflight": domain.PreflightReport,
     "memory-observation": core.Observation,
     "memory-entity": core.Entity,
     "memory-claim": core.Claim,

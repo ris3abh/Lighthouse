@@ -22,7 +22,7 @@ was never followed by proof of completion. Each one is cheap to fix early and ex
    |---|---|---|
    | `superseded_cited` | high | an exhibit, letter or draft citing a claim that a newer value supersedes |
    | `unsupported_cited` | high | a letter or draft citing a claim that isn't approved, or doesn't exist |
-   | `conflicting_facts` | high | current approved claims about the same person or entity that disagree on a name, title, employer or date |
+   | `conflicting_facts` | high (names), medium (titles, employers, dates) | approved claims about the same person or entity that disagree on a name, title or employer (across related predicates, or a document's value replaced by another document's), and an exhibit dated more than three days from the event its source describes |
    | `metric_mismatch` | medium | the same metric with different values in different documents (both values and dates shown) |
    | `invited_not_completed` | medium | an activity at `invited` / `accepted` whose completion proof isn't linked (ADR 0017) |
    | `capture_without_primary` | medium | an exhibit that is only a web capture (`.md`, `.html`, `.txt`) with no PDF or primary copy linked |

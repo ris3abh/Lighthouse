@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api, type EvidenceCriterion, type Exhibit, STAGES, stageCounts } from "../api";
 import ClaimsPanel, { StageChip } from "../components/Claims";
 import DropZone, { useFileDrop } from "../components/DropZone";
+import PreflightPanel from "../components/Preflight";
 import ProofPanel, { type ProofUpload } from "../components/Proof";
 import { useRefresh } from "../App";
 import { Button, Card, Chip, CriterionName, cx, Empty, ErrorBox, Loading, Modal, PageHeader, plural, StatusBadge, useToast } from "../components/ui";
@@ -70,6 +71,8 @@ export default function Evidence({ focus, proof }: { focus: string | null; proof
           </ul>
         </div>
       )}
+
+      <PreflightPanel version={version} />
 
       <ProofPanel
         criteria={criteria}

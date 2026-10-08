@@ -227,6 +227,37 @@ export interface ProofChecklist {
   missing: number;
 }
 
+/** Evidence preflight (ADR 0018). Severity is how likely a reader is to notice, never about approval. */
+export interface PreflightRef {
+  type: "claim" | "exhibit" | "letter" | "draft" | "proof";
+  id: string;
+  label: string;
+  link: string | null;
+  value?: unknown;
+  date?: string;
+  status?: string;
+}
+
+export interface PreflightIssue {
+  id: string;
+  kind: string;
+  severity: "high" | "medium" | "low";
+  title: string;
+  detail: string;
+  refs: PreflightRef[];
+  dismissed: boolean;
+  dismissed_note: string;
+}
+
+export interface PreflightReport {
+  run_at: string;
+  issues: PreflightIssue[];
+  counts: Record<"high" | "medium" | "low", number>;
+  by_kind: Record<string, number>;
+  exhibits: number;
+  claims: number;
+}
+
 export interface EvidenceView {
   criteria: EvidenceCriterion[];
   other_exhibits: Exhibit[];
@@ -860,6 +891,9 @@ export const api = {
   upload: (form: FormData) => request<Exhibit>("POST", "/exhibits/upload", form),
   remap: (id: string, criterion: string) => request<Exhibit>("PATCH", `/exhibits/${enc(id)}`, { criterion }),
   proof: () => request<{ checklists: ProofChecklist[] }>("GET", "/proof"),
+  preflight: () => request<{ report: PreflightReport | null }>("GET", "/preflight"),
+  runPreflight: () => request<{ report: PreflightReport }>("POST", "/preflight/run"),
+  dismissPreflight: (id: string, note: string) => request<{ report: PreflightReport }>("POST", `/preflight/${enc(id)}/dismiss`, { note }),
   proofLink: (anchor: string, item: string, exhibit_id: string) => request<unknown>("POST", "/proof/link", { anchor, item, exhibit_id }),
   proofWaive: (anchor: string, item: string, note: string) => request<unknown>("POST", "/proof/waive", { anchor, item, note }),
   proofUnlink: (anchor: string, item: string) => request<unknown>("POST", "/proof/unlink", { anchor, item }),

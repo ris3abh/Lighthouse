@@ -79,6 +79,10 @@ class SnoozeBody(BaseModel):
     until: dt.date | None = None
 
 
+class NoteBody(BaseModel):
+    note: str = ""
+
+
 class ProofBody(BaseModel):
     anchor: str
     item: str
@@ -563,6 +567,25 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         return exhibit.model_dump(mode="json")
 
     # ------------------------------------------------------------------ proof recipes (ADR 0017)
+
+    # ------------------------------------------------------------------ preflight (ADR 0018)
+
+    @app.get("/api/preflight")
+    def get_preflight() -> dict[str, Any]:
+        from areao1.criteria import preflight
+
+        return {"report": preflight.latest(ws)}
+
+    @app.post("/api/preflight/run")
+    def post_preflight_run() -> dict[str, Any]:
+        return {"report": svc.run_preflight()}
+
+    @app.post("/api/preflight/{issue_id}/dismiss")
+    def post_preflight_dismiss(issue_id: str, body: NoteBody) -> dict[str, Any]:
+        from areao1.criteria import preflight
+
+        svc.dismiss_preflight(issue_id, body.note)
+        return {"report": preflight.latest(ws)}
 
     @app.get("/api/proof")
     def get_proof() -> dict[str, Any]:

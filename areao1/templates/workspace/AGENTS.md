@@ -59,7 +59,7 @@ Area O1's own agent runs on OpenAI inside the app. Coding agents work alongside 
   ```
 
 Tools: `what_changed(since)`, `get_scoreboard()`, `list_gaps()`, `query_claims(entity, as_of?)`,
-`get_provenance(claim_id)` (all read-only) and `propose_context(text, title?, topic?, client?)`, the only write: a
+`get_provenance(claim_id)`, `preflight()` (all read-only) and `propose_context(text, title?, topic?, client?)`, the only write: a
 self-reported note to the person's Inbox (pass your name as `client`). Start a session with `what_changed` and
 `get_scoreboard`; check `get_provenance` before relying on a fact; never state an eligibility verdict; never send
 email or edit evidence files for the person.

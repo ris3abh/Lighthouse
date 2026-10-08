@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import re
 from datetime import date, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field, field_validator
 
@@ -313,6 +313,34 @@ class ProofLink(_Model):
 
 class ProofLinks(_File):
     links: list[ProofLink] = Field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- preflight (ADR 0018)
+
+
+class PreflightIssue(_Model):
+    id: str = Field(description="Stable: a hash of the kind and the records involved, so a dismissal sticks.")
+    kind: str
+    severity: Literal["high", "medium", "low"] = Field(
+        description="How likely a reader is to notice; never odds."
+    )
+    title: str
+    detail: str = ""
+    refs: list[dict[str, Any]] = Field(
+        default_factory=list, description="The claims, exhibits, letters, drafts."
+    )
+    dismissed: bool = False
+    dismissed_note: str = ""
+
+
+class PreflightReport(_File):
+    run_at: datetime | None = None
+    issues: list[PreflightIssue] = Field(default_factory=list)
+    dismissed: dict[str, dict[str, str]] = Field(default_factory=dict, description="issue id -> {note, at}")
+    counts: dict[str, int] = Field(default_factory=dict, description="Open issues by severity.")
+    by_kind: dict[str, int] = Field(default_factory=dict)
+    exhibits: int = 0
+    claims: int = 0
 
 
 # --------------------------------------------------------------------------- profiles/*.yaml
