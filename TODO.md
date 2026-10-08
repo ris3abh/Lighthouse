@@ -219,8 +219,11 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 #### Part K: final
 - [x] K1. Walkthrough as Maya, Ravi and Lena from an empty workspace to the constellation; screenshots, both themes
       (2026-10-08: LinkedIn onboarding, two fictional web pages and a .eml, three accepts each; 14-16 stars, 4 approved)
-- [ ] K2. Live checks on the owner's setup: one daily opportunity run on Gmail, one vault sync, one chat; costs
-- [ ] K3. SPEC.md, README, landing page, CHANGELOG, ADRs; prepare v0.2.0 (not published)
+- [x] K2. Live checks on the owner's setup (2026-10-08): daily opportunity run on Gmail ($0; 286 new, 10 in
+      Judging & hackathons were participant notices / digests, now set aside, no finds), vault sync ($0; 9 fetched,
+      13 blocked as expected, 4 community snapshots imported, change signals tightened after the run), chat
+      ($0.034, gpt-6.1-sol mid, its rule sentence verified against the community Policy Manual snapshot)
+- [x] K3. SPEC.md, README, landing page, CHANGELOG, ADRs; v0.2.0 prepared (version, changelog, docs/releases-v0.2.0.md; not tagged or published)
 - [ ] K4. Final report: per part, screenshots, costs, open issues, "Needs you"
 
 ## Phase 0 checklist

@@ -5,13 +5,58 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-08
+
+### Highlights
+- **OpenAI is the only engine** (ADR 0015): the Responses API with Area O1's own tool loop, nothing stored at
+  OpenAI, three model tiers one line each (hard and mid `gpt-6.1-sol`, mundane `gpt-6-luna`), web search as a
+  guarded tool on the mundane tier, capped per run (`agent.max_searches`, default 8), and every run's cost,
+  including its searches. Connecting the AI takes an OpenAI API key.
+- **Memory constellation** (ADR 0012): every claim a star in its criterion's cluster; brightness is confidence,
+  solid approved, rings pending, red conflicts; click a star for its provenance trail; replay the case in date order.
+- **Daily opportunity check** (ADR 0016): invitations in your mail become Inbox items, each **verified** (sender
+  authentication and the event on its official page) or unconfirmed (a check-in drafted for your approval) or
+  suspicious; phishing fixtures never verify.
+- **A vault without babysitting** (ADR 0011): official pages stay fresh on real rule changes (Federal Register and
+  eCFR), a Chrome extension saves the blocked pages you visit, and a public community snapshot library fills gaps.
+- **Gmail with an app password** (ADR 0014): a read-only Mail view of case mail, `.eml` and forward-as-attachment
+  import with sender checks, and approved sends with a 10-second undo.
+- **Letters drafted from approved claims**, each sentence citing its claims, for the writer to rewrite and sign.
+
 ### Changed
 - Renamed to **Area O1** (ADR 0010): package and command `areao1`, `AREAO1_*` variables, `areao1.yaml` and
   `.areao1/` in workspaces, keychain service `areao1`. Lighthouse-era workspaces, settings, keychain entries and
   variables are migrated on first run with a notice; `lighthouse-gc` remains as a deprecated alias.
-- Connecting the AI takes an Anthropic API key only; the Claude Code login option is gone (ADR 0013 amendment).
+- The agent engine is OpenAI's Responses API (ADR 0015); an Anthropic key saved before is removed from the keychain
+  on start, and workspaces naming Claude models load with the OpenAI tier defaults.
+- Google is Gmail only, with an app password (ADR 0014 amendment): the OAuth client flow and Google Calendar sync
+  are removed; the Calendar page and `calendar.ics` stay (Google Calendar imports the file).
+- Freshness of blocked official pages follows change signals instead of timers (ADR 0011); timers stay for sources
+  with no change feed (processing times, the Visa Bulletin).
 
 ### Added
+- Memory page (ADR 0012): the constellation, filters by criterion, entity, status and date, a time slider and
+  Replay, a list view for screen readers, smooth at 2,000+ claims, phones; `/api/memory/constellation` and
+  `/api/claims/{id}/provenance`.
+- Daily opportunity job `daily-opportunities` (ADR 0016), off by default (Settings > Gmail > Daily opportunity
+  check, or Check now): the Mail rules (Promotions / Social filtered), the sender check, the invited / completed
+  stage rule, web confirmation on the organizer's domain or Devpost / MLH, de-duplication against the Inbox (scout
+  leads included), the pipeline and exhibits, and an `opportunity` notification per new find.
+- Vault change signals (Federal Register final rules in effect, eCFR amendment dates), the capture extension
+  (`areao1 extension`, `docs/extension.md`; pairing in Knowledge > Browser extension), the community snapshot
+  library (github.com/ris3abh/areao1-community-vault; pulled on vault-watch, hash-verified; opt-in local sharing),
+  and one reminder only when a relevant page changed and no newer snapshot exists.
+- Contacts > Mail (ADR 0014 amendments): case mail only, in seven categories, rules first, model sorting opt-in,
+  sender-check badges, read-only (PEEK), bodies fetched on open and never stored; `.eml` drops on Evidence, Inbox
+  and Mail; Gmail forwards-as-attachment sorted and verified by the attached original; a guide for bringing in mail
+  from another account.
+- Outreach: every send attempt logged (failures shown on Contacts), the daily limit counts sends Gmail accepted,
+  Approve & send waits 10 seconds with Undo send, double approvals send once.
+- Letter drafts (Letters > Draft from claims): approved claims only, every sentence cites its claims, verdicts
+  dropped, a signature placeholder; Send to the writer goes through Approve & send.
+- Claude Code skill (`.claude/skills/areao1/`) and an `AGENTS.md` Codex section in every workspace; the
+  chat-import adapter hook (`docs/chat-import.md`); `NOTICE` in built packages; a dev-only filming workspace
+  (`scripts/film_demo.py`, `docs/filming.md`).
 - Design system "Brutalism 2.0" (ADR 0007): semantic light and dark tokens with one muted red for attention,
   condensed Archivo headlines with JetBrains Mono for data, framed panels, a System / Light / Dark switch,
   lucide line icons, and data motion (charts draw in and morph, count-ups, calendar drag-and-glide).
@@ -227,5 +272,6 @@ this release.
   by source and content (the snapshot file is still shared).
 - The chat panel crashed in browsers where `scrollIntoView()` returns a Promise (an effect returned it).
 
-[Unreleased]: https://github.com/ris3abh/Lighthouse/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/ris3abh/Lighthouse/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ris3abh/areao1/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ris3abh/areao1/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/ris3abh/areao1/releases/tag/v0.1.0

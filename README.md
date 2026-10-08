@@ -57,21 +57,19 @@ in a **private workspace directory** on your machine (its own Git repo); this re
 
 ## Status
 
-**Phase 0 and Phase 1a–1b are done** (core, dashboard, imports, alerts, trackers). See [SPEC.md](SPEC.md) for the full plan and [TODO.md](TODO.md) for progress.
+**v0.2.0** (2026-10-08). See [SPEC.md](SPEC.md) for the plan, [TODO.md](TODO.md) for progress and
+[CHANGELOG.md](CHANGELOG.md) for what changed.
 
-| Works today | Coming next (Phase 1+) |
+| Works today | Coming next |
 |---|---|
-| Drag-and-drop evidence into the Inbox; read-only MCP server for agents | Letter drafting (agent) |
-| Notifications, scheduler, deadline alerts, weekly digest | |
-| Calendar (+ `.ics` feed), Pipeline kanban, Letters roster | |
-| Claude / ChatGPT export import → deadline, pipeline and letter-writer suggestions | LLM-assisted extraction |
-| `init`, `import`, `run <job>`, `up`, `validate`, `notify`, `secret`, `mcp` | `export`, `purge` |
-| GitHub (public + fine-grained PAT, incl. 14-day traffic history) | |
-| Hugging Face (models, datasets, Spaces, linked Papers) | Gmail triage, opportunity scans |
-| Semantic Scholar, OpenAlex, arXiv, ORCID (papers, citations, venues, h-index) | |
-| Website: any page or sitemap (readability text; mentions → press / award proposals; bot-blocked pages marked unreadable) | |
-| O-1A + EB-1A rubrics, rule-based scoreboard | MCP write tools (through the Inbox), Claude Code / Codex agent, chat |
-| Dashboard: Overview, Inbox, Evidence, Metrics, Pipeline, Letters, Calendar, Sources, Settings | Opportunities, Chat |
+| Onboarding from your LinkedIn PDF; Inbox, Evidence, Metrics, Pipeline, Letters, Contacts, Calendar, Knowledge, Memory | `export`, `purge` |
+| O-1A + EB-1A rubrics and a rule-based scoreboard; every fact a claim quoting its source | More criteria profiles |
+| Connectors: GitHub, Hugging Face, Semantic Scholar, OpenAlex, arXiv, ORCID, any website; chat-history imports | The adapter for Claude's dated-file export |
+| The agent on OpenAI: chat, missions, letter drafts from approved claims, rule-check against official sources | |
+| Gmail (app password): case mail, `.eml` and forwarded originals with sender checks, approved sends with undo | |
+| Daily opportunity check with verified / unconfirmed / suspicious finds | |
+| Knowledge vault: change signals, a capture extension, the community snapshot library | |
+| MCP server for Claude Code, Codex and other agents, with a skill pack in every workspace | |
 
 ## From a checkout, and more than one case
 
@@ -230,6 +228,23 @@ The server is **read-only**: `get_scoreboard`, `list_gaps`, `query_claims(entity
 `get_provenance(claim_id)` and `what_changed(since)`. Agents see each claim's verbatim source quote and review
 status, and are told to draft only from approved claims.
 
+### Memory
+
+The Memory page draws everything Area O1 knows as a night sky: one cluster per criterion, one star per claim.
+Bright is confident, solid is approved, a ring waits for your review, red is a conflict, faded is superseded.
+Click a star to see its trail back to the raw source; press Replay to watch your case grow in date order
+([ADR 0012](docs/adr/0012-constellation-memory-map.md)).
+
+### Opportunities and letters
+
+- **Daily opportunity check** (off until you turn it on in Settings > Gmail): invitations to judge, review, speak
+  or apply become Inbox items. A find is **verified** only when the sender's authentication passed and the event is
+  on its official page (or Devpost / MLH) with a matching date; otherwise it's unconfirmed and a short check-in to
+  the organizer waits for your approval, or suspicious (a failed sender check or a look-alike domain) with nothing
+  drafted ([ADR 0016](docs/adr/0016-daily-opportunities.md)).
+- **Letters**: Draft from claims writes a recommendation letter from approved claims only, every sentence citing its
+  claims, for the writer to rewrite and sign; Send to the writer waits for your Approve & send.
+
 ### Scheduled jobs
 
 `areao1 up` runs these in the background (edit the cron expressions under `schedules` in
@@ -241,6 +256,10 @@ status, and are told to draft only from approved claims.
 | `metrics-snapshot` | Mondays, every other week | append metrics (and GitHub's 14-day traffic) |
 | `deadline-check` | daily 07:00 | alert at 14 / 3 / 1 / 0 days and when overdue; follow-ups; calendar |
 | `digest` | Fridays 17:00 | what changed, stale pipeline items, next actions |
+| `vault-watch` | daily 06:00 | rule changes (Federal Register, eCFR), the community snapshot library, official sources due; one reminder only when a page changed and no newer copy exists |
+| `google` | every 15 min | Gmail threads with your contacts, the Mail view, follow-up drafts (skips until Gmail is connected) |
+| `daily-opportunities` | daily 08:30, off | invitations in your mail to the Inbox, each verified, unconfirmed or suspicious (Settings > Gmail) |
+| `mission-opportunity-scout` / `mission-what-changed` | Fridays / daily, off | agent missions (Settings > Missions) |
 
 `run` jobs are headless, so cron / launchd / GitHub Actions can call them until the built-in scheduler lands.
 
@@ -251,10 +270,13 @@ status, and are told to draft only from approved claims.
   keychain entry name.
 - Use **read-only** tokens: GitHub fine-grained PAT with Metadata + Contents read (Administration read only
   if you want traffic); Hugging Face read token.
-- No telemetry. The only network calls are to the sources you connect, the agent's model and web search when
-  you use it, and the public sources in the knowledge vault manifest (`vault/sources.yaml`: eCFR, USCIS,
-  State Department, Federal Register, court opinions). Turn the vault off with `vault: {enabled: false}` in
-  `areao1.yaml`.
+- No telemetry. The only network calls are to the sources you connect, OpenAI when you use the agent (with
+  `store: false`), Gmail if you connect it (read-only, PEEK; sends only what you approve), and the knowledge
+  vault: the official pages in `vault/sources.yaml` (eCFR, USCIS, State Department, Federal Register, court
+  opinions), the Federal Register and eCFR change feeds, and the community snapshot library on GitHub (turn it off
+  with `vault: {community: false}`, or the whole vault with `vault: {enabled: false}`, in `areao1.yaml`).
+- The capture extension reads a page only when its address is one of the vault's sources, and sends it only to
+  Area O1 on 127.0.0.1 ([docs/extension.md](docs/extension.md)).
 
 See [SECURITY.md](SECURITY.md).
 

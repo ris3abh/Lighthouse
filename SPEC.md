@@ -465,13 +465,13 @@ against the fictional fixture workspace and your own.
 ### Phase 1 — Automation (weekend 2)
 
 - [x] Website + Semantic Scholar / OpenAlex / ORCID / arXiv connectors (Phase 1d)
-- [ ] Scheduler with default jobs; `areao1 run <job>` headless
-- [ ] Notifications: desktop, email, Slack/Discord, ntfy
-- [ ] Deadlines + calendar.ics + Calendar page; Pipeline kanban with staleness
-- [ ] MCP server + Claude Code / Codex adapters + skills; Chat panel
-- [ ] Knowledge vault (5a): vault/sources.yaml, fetch + snapshot + local embeddings, TTL registry, vault-watch
-      job, Tier-1-first web search fallback
-- [ ] rule-check gate on every agent answer and dashboard rule text; unverified / conflict badges; Knowledge page
+- [x] Scheduler with default jobs; `areao1 run <job>` headless
+- [x] Notifications: desktop, email, Slack/Discord, ntfy
+- [x] Deadlines + calendar.ics + Calendar page; Pipeline kanban with staleness
+- [x] MCP server + a Claude Code skill and Codex AGENTS.md in every workspace (ADR 0015 §5); Chat panel
+- [x] Knowledge vault (5a): vault/sources.yaml, fetch + snapshot + local embeddings, freshness by change signals
+      (Federal Register, eCFR) or timers, vault-watch job, Tier-1-first web search fallback (ADR 0006, ADR 0011)
+- [x] rule-check gate on every agent answer and dashboard rule text; unverified / conflict badges; Knowledge page
 
 ### Phase 1c — Agent layer (see ADR 0005)
 
@@ -505,17 +505,22 @@ against the fictional fixture workspace and your own.
 
 ### Phase 2 — Gmail, scans, letters (weekends 3–4)
 
-- [ ] Gmail via OAuth (own client) and IMAP; query-scoped triage into Inbox
-- [ ] Opportunity scans (judging, reviewing, CFPs, awards, memberships) + Opportunities page
-- [ ] Letters page + letter-draft skill (per writer × criterion)
+- [x] Gmail with an app password over IMAP / SMTP (ADR 0014): contact threads, a read-only Mail view of case mail,
+      `.eml` and forward-as-attachment import with sender checks, approved sends with undo
+- [x] Opportunity scans: the weekly scout mission and the daily opportunity check over mail, each find verified,
+      unconfirmed or suspicious (ADR 0016); results go to the Inbox (no separate Opportunities page)
+- [x] Letters page + letter drafts from approved claims (each sentence cites its claims), sent to the writer through
+      outreach approval
 - [ ] EB-1A final-merits narrative layer; attorney export
-- [ ] Memory page (graph view, time slider, provenance drill-down) + session context packs + MCP memory tools
+- [x] Memory page as a constellation (time slider, provenance trail, filters; ADR 0012)
+- [ ] Session context packs + MCP memory tools
 - [ ] Evaluation harness (5c): three systems, five scenarios, metrics, ablations; research-portfolio profile +
       fixture workspace
 
 ### Phase 3 — Open-source launch
 
 - [ ] Docs site, setup wizard screenshots, 3-minute video walking through onboarding with a fictional persona
+      (the filming workspace and checklist are ready: `scripts/film_demo.py`, `docs/filming.md`)
 - [ ] pipx release, Docker image, GitHub Actions template
 - [ ] Contributor guides for new connectors, profiles and scans
 - [ ] Each release attaches eval/ results and a Zenodo DOI; PROV-JSON export documented

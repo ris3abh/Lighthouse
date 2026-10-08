@@ -73,6 +73,8 @@
     figcaption { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
                  color: var(--muted); margin-top: 10px; }
     .grid { display: grid; grid-template-columns: 1fr; gap: 0; margin: 56px 0; }
+    .features { padding: 28px 24px; margin: 0 0 56px; }
+    .features h2 { margin-bottom: 14px; }
     .grid > section { padding: 28px 24px; border: 1px solid var(--frame); background: var(--surface); }
     .grid > section + section { border-top: 0; }
     @media (min-width: 820px) {
@@ -160,11 +162,28 @@
           <li>The dashboard is served only to your own computer (127.0.0.1). There's no Area O1 account or server.</li>
           <li>Your case is a private workspace folder (<code>~/AreaO1</code>): plain files in their own git
             repo. It's yours to keep, back up to a private remote, move or delete.</li>
-          <li>Area O1 goes online only for what you ask: a lookup you said yes to, a source you import, or the
-            AI you connect.</li>
+          <li>Area O1 goes online for what you ask (a lookup you said yes to, a source you import, the AI you
+            connect, Gmail if you connect it) and to keep official rules current: government pages, the Federal
+            Register and eCFR, and a public library of government-page snapshots.</li>
         </ul>
       </section>
     </div>
+    <section class="card features">
+      <p class="eyebrow">What it does</p>
+      <h2>Your case, one place, always current</h2>
+      <ul>
+        <li><strong>An evidence inbox and a scoreboard.</strong> Your papers, code, talks, press and judging become
+          proposals you accept; each criterion shows banked, building or a gap. An invitation is never counted as done.</li>
+        <li><strong>Memory as a sky.</strong> Every fact is a star that quotes its source; click one to trace it back,
+          or replay how your case grew.</li>
+        <li><strong>Verified opportunities.</strong> Invitations in your mail are checked against the sender's
+          authentication and the event's official page before they're called verified.</li>
+        <li><strong>Rules that stay current.</strong> Answers are checked against official sources that refresh when a
+          rule actually changes.</li>
+        <li><strong>Letters from facts.</strong> Drafts built only from what you approved, for your writers to rewrite
+          and sign. Nothing is sent without your approval.</li>
+      </ul>
+    </section>
   </main>
 
   <footer>
@@ -173,7 +192,7 @@
         regulations (8 CFR 214.2(o), 8 CFR 204.5(h)). Always confirm strategy with an immigration attorney.
         <span data-banter="disclaimer">Not affiliated with USCIS, the U.S. Air Force, or anything in Nevada.</span></p>
       <p><a href="https://github.com/ris3abh/areao1">Source on GitHub</a> ·
-        <a href="https://github.com/ris3abh/areao1/blob/main/DISCLAIMER.md">Disclaimer</a> · Apache-2.0</p>
+        <a href="https://github.com/ris3abh/areao1/blob/main/DISCLAIMER.md">Disclaimer</a> · Apache-2.0 · Created by Rishabh Sharma</p>
     </div>
   </footer>
 </body>
