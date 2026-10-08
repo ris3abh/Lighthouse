@@ -8,7 +8,7 @@ version = "0.2.0.dev0"
 description = "Local-first command center for building an O-1A / EB-1A extraordinary-ability evidence file."
 readme = "README.md"
 license = "Apache-2.0"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.11"
 authors = [{ name = "Rishabh Sharma" }]
 keywords = ["o-1a", "eb-1a", "immigration", "evidence", "dashboard", "local-first"]
@@ -64,7 +64,7 @@ artifacts = ["areao1/server/static/**"]
 "vault" = "areao1/_data/vault"
 
 [tool.hatch.build.targets.sdist]
-include = ["areao1", "profiles", "examples", "vault", "tests", "web/src", "web/*.json", "web/*.ts", "web/index.html", "*.md", "LICENSE"]
+include = ["areao1", "profiles", "examples", "vault", "tests", "web/src", "web/*.json", "web/*.ts", "web/index.html", "*.md", "LICENSE", "NOTICE"]
 # The built UI too, so a wheel built from the sdist (the default for `python -m build`) still has it.
 artifacts = ["areao1/server/static/**"]
 

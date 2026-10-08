@@ -207,7 +207,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] I1. Letter drafting from approved claims only (each sentence linked to claim ids), guardrails, for the
       writer to review and sign; sent to the writer through outreach approval
 - [x] I2. Claude export adapter hook ready; the redacted sample goes to "Needs you" if still missing
-- [ ] I3. NOTICE file (Area O1, created by Rishabh Sharma), carried into built packages
+- [x] I3. NOTICE file (Area O1, created by Rishabh Sharma), carried into built packages
 - [ ] I4. Remove leftovers of removed features (Google Calendar, OAuth, Anthropic engine, demo workspace)
 
 #### Part J: demo filming workspace (dev-only, never shipped)
