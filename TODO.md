@@ -204,7 +204,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
       replays in date order, "Aligning the stars..." while loading; dark sky in both themes; reduced motion
 
 #### Part I: letters and loose ends
-- [ ] I1. Letter drafting from approved claims only (each sentence linked to claim ids), guardrails, for the
+- [x] I1. Letter drafting from approved claims only (each sentence linked to claim ids), guardrails, for the
       writer to review and sign; sent to the writer through outreach approval
 - [ ] I2. Claude export adapter hook ready; the redacted sample goes to "Needs you" if still missing
 - [ ] I3. NOTICE file (Area O1, created by Rishabh Sharma), carried into built packages

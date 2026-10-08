@@ -16,6 +16,7 @@ import csv
 import datetime as dt
 import io
 import json
+import re
 import threading
 from collections.abc import AsyncIterator
 from typing import Any, Literal
@@ -154,6 +155,10 @@ class LetterBody(BaseModel):
     status: str | None = None
     draft_path: str | None = None
     last_contact: dt.date | None = None
+
+
+class LetterSendBody(BaseModel):
+    contact_id: str | None = None
 
 
 class CapturePairBody(BaseModel):
@@ -730,6 +735,75 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     def remove_letter(letter_id: str) -> dict[str, Any]:
         svc.delete_letter(letter_id)
         return {"removed": letter_id}
+
+    @app.post("/api/letters/{letter_id}/draft")
+    async def draft_letter(letter_id: str) -> dict[str, Any]:
+        """Draft the writer's letter from approved claims only (each sentence cites its claims), for them to sign."""
+        from areao1.core.models import AgentRun, RunUsage
+        from areao1.criteria import letters
+
+        how = runner.route("letter")
+        judge = None
+        try:
+            ok, _ = runner.engine().available()
+            judge = runner.judge() if ok else None
+        except Exception:  # noqa: BLE001  (no AI: the template)
+            judge = None
+        spent: dict[str, Any] = {}
+
+        async def counted(system: str, prompt: str, model: str) -> Any:
+            reply = await judge(system, prompt, model)  # type: ignore[misc]
+            spent.update(usage=reply.usage, cost=reply.cost_usd)
+            return reply
+
+        try:
+            out = await letters.draft(ws, letter_id, counted if judge else None, how.model)
+        except KeyError as exc:
+            raise HTTPException(404, "no such letter writer") from exc
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        if spent:
+            runner.save(AgentRun(kind="manual", engine=runner.engine().name, model=how.model, task=how.task,
+                                 tier=how.tier, provider=how.provider, status="done",
+                                 prompt=f"Letter draft for {letter_id}", text=out["text"][:4000],
+                                 cost_usd=spent.get("cost"),
+                                 usage=RunUsage.model_validate({k: v for k, v in (spent.get("usage") or {}).items()
+                                                                if k in RunUsage.model_fields}),
+                                 finished_at=clock.utcnow()))  # fmt: skip
+        return {k: v for k, v in out.items() if k != "text"}
+
+    @app.get("/api/letters/{letter_id}/draft")
+    def get_letter_draft(letter_id: str) -> dict[str, Any]:
+        lt = next((x for x in ws.letters().letters if x.id == letter_id), None)
+        if lt is None or not lt.draft_path or not (ws.root / lt.draft_path).is_file():
+            raise HTTPException(404, "no draft yet")
+        return {"path": lt.draft_path, "text": (ws.root / lt.draft_path).read_text(encoding="utf-8")}
+
+    @app.post("/api/letters/{letter_id}/send")
+    def send_letter_draft(letter_id: str, body: LetterSendBody) -> dict[str, Any]:
+        """The draft goes to the writer as an email from you, waiting for Approve & send on Contacts."""
+        from areao1.criteria import letters
+        from areao1.google import outreach
+
+        lt = next((x for x in ws.letters().letters if x.id == letter_id), None)
+        if lt is None or not lt.draft_path or not (ws.root / lt.draft_path).is_file():
+            raise HTTPException(404, "draft the letter first")
+        contacts = ws.contacts().contacts
+        contact = (
+            next((c for c in contacts if c.id == body.contact_id), None)
+            if body.contact_id
+            else next(
+                (c for c in contacts if c.name.strip().lower() == lt.name.strip().lower() and c.emails), None
+            )
+        )
+        if contact is None or not contact.emails:
+            raise HTTPException(400, f"Add {lt.name} as a contact with an email first (Contacts).")
+        raw = (ws.root / lt.draft_path).read_text(encoding="utf-8")
+        text = raw.split("\n---\n")[0]
+        text = re.sub(r"^# .*$", "", re.sub(r"<!--.*?-->", "", text, flags=re.S), flags=re.M).strip()
+        draft = outreach.compose(ws, contact.id, "A draft of your letter, for you to rewrite and sign",
+                                 letters.email_body(ws, lt.name, text), purpose="ask", drafted_by="letters")  # fmt: skip
+        return svc.save_draft(draft).model_dump(mode="json")
 
     # ------------------------------------------------------------------ contacts (ADR 0014 §4)
 

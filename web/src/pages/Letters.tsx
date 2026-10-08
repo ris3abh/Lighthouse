@@ -113,14 +113,32 @@ export default function Letters() {
                         onChange={(e) => save(() => api.updateLetter(lt.id, { last_contact: e.target.value || null }), `${lt.name}: last contact updated`)}
                       />
                     </td>
-                    <td className="px-3 py-4 align-top text-xs">
-                      {lt.draft_exists && lt.draft_path ? (
-                        <a className="link" href={api.draftUrl(lt.draft_path)} target="_blank" rel="noreferrer">
-                          open
-                        </a>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
+                    <td className="px-3 py-4 align-top text-xs whitespace-nowrap" data-letter-draft={lt.id}>
+                      <span className="flex flex-col items-start gap-1">
+                        <button
+                          type="button"
+                          className="link"
+                          title="Draft from approved claims only; each sentence cites its claims. For the writer to rewrite and sign."
+                          onClick={() => save(() => api.draftLetter(lt.id), `Draft for ${lt.name} written from approved claims`)}
+                        >
+                          {lt.draft_exists ? "Redraft" : "Draft from claims"}
+                        </button>
+                        {lt.draft_exists && lt.draft_path && (
+                          <a className="link" href={api.draftUrl(lt.draft_path)} target="_blank" rel="noreferrer">
+                            open
+                          </a>
+                        )}
+                        {lt.draft_exists && (
+                          <button
+                            type="button"
+                            className="link"
+                            title="An email from you with the draft, waiting for Approve & send on Contacts"
+                            onClick={() => save(() => api.sendLetterDraft(lt.id), `Draft to ${lt.name} is waiting for your approval on Contacts`)}
+                          >
+                            Send to {lt.name.split(" ").slice(-1)[0]}
+                          </button>
+                        )}
+                      </span>
                     </td>
                     <td className="px-3 py-4 text-right align-top whitespace-nowrap">
                       {lt.status !== "sent" && lt.status !== "signed" && (

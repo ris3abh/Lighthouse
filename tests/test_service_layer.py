@@ -132,6 +132,38 @@ def _ids(ws):
     }
 
 
+def _letter_claims(ws) -> None:
+    """An approved claim in the first writer's criteria, so a letter can be drafted from it."""
+    from datetime import date
+
+    from areao1.core.models import ClaimDraft, Evidence
+
+    lt = ws.letters().letters[0]
+    crit = (lt.criteria or ["judging"])[0]
+    pred = {"judging": "judged_event", "awards": "award_received", "press": "press_mention"}.get(
+        crit, "judged_event"
+    )
+    [c] = ws.memory.record(Evidence(connector="upload", source_url="upload:letter-facts.txt", media_type="text/plain",
+                                    payload="Served as a judge for Example Hacks 2026.",
+                                    claims=[ClaimDraft(subject="event:example-hacks-2026", subject_kind="event",
+                                                       subject_name="Example Hacks 2026", predicate=pred, value="judge",
+                                                       excerpt="Served as a judge for Example Hacks 2026.",
+                                                       event_date=date(2026, 2, 1))]))  # fmt: skip
+    ws.memory.decide([c.id], "approved", rationale="test")
+    ws.update_letter(lt.id, criteria=[crit])
+
+
+def _letter_drafted(ws) -> None:
+    """The first writer's draft exists and they're a contact with an email."""
+    import anyio
+
+    from areao1.criteria import letters
+
+    lt = ws.letters().letters[0]
+    anyio.run(letters.draft, ws, lt.id, None, "")
+    ws.add_contact(name=lt.name, emails=["writer@uni.example"])
+
+
 def _todo(ws) -> str:
     from datetime import date
 
@@ -211,6 +243,9 @@ SAMPLES = {
                                "letter.add"),
     ("PATCH", "/api/letters/{letter_id}"): ("/api/letters/{letter}", {"json": {"status": "sent"}}, "letter.update"),
     ("DELETE", "/api/letters/{letter_id}"): ("/api/letters/{letter}", {}, "letter.delete"),
+    ("POST", "/api/letters/{letter_id}/draft"): ("/api/letters/{letter}/draft", {}, "letter.draft", "_letter_claims"),
+    ("POST", "/api/letters/{letter_id}/send"): ("/api/letters/{letter}/send", {"json": {}}, "outreach.draft",
+                                                "_letter_claims", "_letter_drafted"),
     ("PUT", "/api/settings/autopilot"): ("/api/settings/autopilot", {"json": {"metrics": True}}, "settings.autopilot"),
     ("POST", "/api/knowledge/findings/{source_id}/promote"): ("/api/knowledge/findings/{finding}/promote",
                                                              {"json": {"kind": "guidance"}}, "vault.promote"),

@@ -288,6 +288,22 @@ class Service:
         return self._record("letter.update", "letter", lambda: self.ws.update_letter(letter_id, **changes),
                             before=before, summary=before.name)  # fmt: skip
 
+    def save_letter_draft(self, letter_id: str, rel: str, content: str, cited: list[str]) -> Any:
+        """A letter draft (I1): the file under drafts/letters/, the claims it cites, and the writer's draft_path."""
+        before = self._find(self.ws.letters().letters, letter_id, "letter writer")
+
+        def apply() -> Any:
+            from areao1.core.workspace import _atomic_write
+
+            path = self.ws.resolve_inside(rel)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            _atomic_write(path, content)
+            self.ws.memory.cite(f"letter:{letter_id}", cited)
+            status = "drafting" if before.status in ("prospect", "asked") else before.status
+            return self.ws.update_letter(letter_id, draft_path=rel, status=status)
+
+        return self._record("letter.draft", "letter", apply, before=before, summary=before.name)
+
     def delete_letter(self, letter_id: str) -> None:
         before = self._find(self.ws.letters().letters, letter_id, "letter writer")
         self._record("letter.delete", "letter", lambda: self.ws.delete_letter(letter_id),
