@@ -39,8 +39,8 @@ export interface Layout {
   placed: Placed[];
   byId: Map<string, Placed>;
   centers: Map<string, { x: number; y: number; radius: number; label: string }>;
-  sources: Map<string, { x: number; y: number }>; // observation nodes, outside their cluster
-  exhibits: Map<string, { x: number; y: number }>;
+  sources: Map<string, { x: number; y: number }>; // "<cluster>|<observation>": a source node beside each cluster using it
+  exhibits: Map<string, { x: number; y: number }>; // "<cluster>|<exhibit>"
   bounds: { minX: number; minY: number; maxX: number; maxY: number };
   dates: string[]; // distinct dates, ascending
 }
@@ -80,14 +80,16 @@ export function layout(clusters: Cluster[], stars: Star[]): Layout {
       const r = SPACING * Math.sqrt(k + 0.5);
       const t = k * GOLDEN + phase;
       placed.push({ star: s, x: cx + Math.cos(t) * r, y: cy + Math.sin(t) * r, r: 1.2 + 1.6 * s.confidence, order: order.get(s.id)! });
-      if (!sources.has(s.source)) {
+      const sk = `${id}|${s.source}`;
+      if (!sources.has(sk)) {
         const a = hash(s.source) * Math.PI * 2;
-        sources.set(s.source, { x: cx + Math.cos(a) * (rad + 36), y: cy + Math.sin(a) * (rad + 36) });
+        sources.set(sk, { x: cx + Math.cos(a) * (rad + 36), y: cy + Math.sin(a) * (rad + 36) });
       }
       for (const ex of s.exhibits) {
-        if (!exhibits.has(ex)) {
+        const ek = `${id}|${ex}`;
+        if (!exhibits.has(ek)) {
           const a = hash(ex) * Math.PI * 2;
-          exhibits.set(ex, { x: cx + Math.cos(a) * (rad + 64), y: cy + Math.sin(a) * (rad + 64) });
+          exhibits.set(ek, { x: cx + Math.cos(a) * (rad + 64), y: cy + Math.sin(a) * (rad + 64) });
         }
       }
     });
@@ -190,10 +192,10 @@ export function trail(l: Layout, id: string): { x: number; y: number }[] {
   const p = l.byId.get(id);
   if (!p) return [];
   const pts = [{ x: p.x, y: p.y }];
-  const src = l.sources.get(p.star.source);
+  const src = l.sources.get(`${p.star.criterion}|${p.star.source}`);
   if (src) pts.push(src);
   for (const ex of p.star.exhibits) {
-    const e = l.exhibits.get(ex);
+    const e = l.exhibits.get(`${p.star.criterion}|${ex}`);
     if (e) pts.push(e);
   }
   return pts;

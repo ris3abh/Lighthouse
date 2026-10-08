@@ -1,13 +1,16 @@
-import { ExternalLink, List, Minus, Plus, Scan, Sparkles, X } from "lucide-react";
+import { ExternalLink, List, Minus, Pause, Play, Plus, Scan, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type ConstellationView, type Provenance } from "../api";
-import { Button, Chip, cx, Empty, ErrorBox, Loading, PageHeader, plural, Segmented } from "../components/ui";
+import Banter from "../components/Banter";
+import { Button, Chip, cx, Empty, ErrorBox, Loading, PageHeader, plural, Segmented, useReducedMotion } from "../components/ui";
 import { useLoad } from "../hooks";
 import {
   DEFAULT_STATUSES,
   fit,
+  glide,
   Grid,
   layout,
+  partial,
   toScreen,
   toWorld,
   trail,
@@ -28,7 +31,12 @@ export default function Memory() {
   const [filters, setFilters] = useState<Filters>({ criterion: "all", entity: "", statuses: new Set(DEFAULT_STATUSES), from: null, until: null });
   const [selected, setSelected] = useState<string | null>(null);
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
-  if (!data.data) return <Loading />;
+  if (!data.data)
+    return (
+      <div className="flex h-[62vh] min-h-[360px] items-center justify-center border border-ink md:h-[70vh]" style={{ background: "var(--sky-1)", color: "var(--sky-ink)" }} data-sky-loading>
+        <Banter id="constellation_loading" className="font-mono text-sm tracking-[0.08em] uppercase" fallback="Loading the constellation" />
+      </div>
+    );
   const c = data.data;
   const approved = c.stars.filter((s) => s.status === "approved").length;
   return (
@@ -127,10 +135,19 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
   const grid = useMemo(() => new Grid(L.placed), [L]);
   const [size, setSize] = useState({ w: 800, h: 520 });
   const cam = useRef<Camera | null>(null);
+  const target = useRef<Camera | null>(null); // where the camera glides to
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const moved = useRef(0);
   const [, force] = useState(0);
+  const reduced = useReducedMotion();
+  const born = useRef(performance.now()); // stars fade in from here
+  const trailAt = useRef(0); // when the selected star's trail started drawing
+  const frame = useRef(0);
+  const last = useRef(performance.now());
   const shown = useCallback((p: Placed) => visible(p.star, filters), [filters]);
+  useEffect(() => {
+    trailAt.current = performance.now();
+  }, [selected]);
 
   useEffect(() => {
     const el = wrap.current;
@@ -141,13 +158,27 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
   }, []);
   useEffect(() => {
     cam.current = fit(L.bounds, size.w, size.h);
+    target.current = cam.current;
     force((n) => n + 1);
   }, [L, size.w, size.h]);
 
-  const draw = useCallback(() => {
+  /** Draw one frame; returns whether anything is still moving (a fade, a twinkle, a glide, a trail). */
+  const draw = useCallback((): boolean => {
     const el = canvas.current;
+    const now = performance.now();
+    const dt = now - last.current;
+    last.current = now;
+    let moving = false;
+    if (cam.current && target.current && cam.current !== target.current) {
+      if (reduced) cam.current = target.current;
+      else {
+        const [next, done] = glide(cam.current, target.current, dt);
+        cam.current = next;
+        moving = !done;
+      }
+    }
     const camera = cam.current;
-    if (!el || !camera) return;
+    if (!el || !camera) return false;
     const dpr = window.devicePixelRatio || 1;
     if (el.width !== Math.round(size.w * dpr)) {
       el.width = Math.round(size.w * dpr);
@@ -175,12 +206,23 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
       g.fillText(ctr.label.toUpperCase(), sx, sy - ctr.radius * camera.k - 8);
     }
     const scale = Math.max(0.7, Math.min(2.6, camera.k * 1.4));
+    const n = Math.max(1, L.placed.length);
+    const age = now - born.current;
     for (const p of L.placed) {
       if (!shown(p)) continue;
       const { sx, sy } = toScreen(camera, size.w, size.h, p.x, p.y);
       if (sx < -10 || sy < -10 || sx > size.w + 10 || sy > size.h + 10) continue;
       const s = p.star;
       let alpha = 0.35 + 0.65 * s.confidence;
+      if (!reduced) {
+        const fade = Math.min(1, Math.max(0, (age - (p.order / n) * 900) / 500)); // fade in, oldest first
+        if (fade < 1) moving = true;
+        alpha *= fade;
+        if (s.status === "pending") {
+          alpha *= 0.62 + 0.38 * Math.sin(now / 700 + p.order * 1.7); // only pending stars twinkle
+          moving = true;
+        }
+      }
       if (s.status === "superseded") alpha *= 0.25;
       if (s.status === "rejected") alpha *= 0.2;
       const r = p.r * scale;
@@ -204,7 +246,11 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
     }
     g.globalAlpha = 1;
     if (selected) {
-      const pts = trail(L, selected).map((q) => toScreen(camera, size.w, size.h, q.x, q.y));
+      const progress = reduced ? 1 : Math.min(1, (now - trailAt.current) / 900);
+      if (progress < 1) moving = true;
+      const full = trail(L, selected);
+      const drawn = partial(full, progress);
+      const pts = drawn.map((q) => toScreen(camera, size.w, size.h, q.x, q.y));
       g.strokeStyle = cssVar("--star-trail");
       g.lineWidth = 1.5;
       g.setLineDash([4, 3]);
@@ -212,7 +258,7 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
       pts.forEach((q, i) => (i ? g.lineTo(q.sx, q.sy) : g.moveTo(q.sx, q.sy)));
       g.stroke();
       g.setLineDash([]);
-      pts.slice(1).forEach((q, i) => {
+      pts.slice(1).filter((_, i) => i + 1 < pts.length && (progress >= 1 || i + 2 < pts.length)).forEach((q, i) => {
         g.fillStyle = cssVar("--star-trail");
         g.fillRect(q.sx - 3, q.sy - 3, 6, 6);
         g.fillStyle = cssVar("--sky-ink");
@@ -227,9 +273,22 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
         g.stroke();
       }
     }
-  }, [L, size, shown, selected, filters.criterion]);
+    return moving;
+  }, [L, size, shown, selected, filters.criterion, reduced]);
 
-  useEffect(() => draw());
+  // Draw on every change, and keep animating only while something moves.
+  const kick = useCallback(() => {
+    cancelAnimationFrame(frame.current);
+    const loop = () => {
+      if (draw()) frame.current = requestAnimationFrame(loop);
+    };
+    last.current = performance.now();
+    loop();
+  }, [draw]);
+  useEffect(() => {
+    kick();
+    return () => cancelAnimationFrame(frame.current);
+  }, [kick]);
 
   const pick = (sx: number, sy: number) => {
     const camera = cam.current!;
@@ -240,9 +299,14 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
     const r = canvas.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
-  const zoom = (factor: number, at?: { x: number; y: number }) => {
-    cam.current = zoomAt(cam.current!, size.w, size.h, at?.x ?? size.w / 2, at?.y ?? size.h / 2, factor);
-    draw();
+  const zoom = (factor: number, at?: { x: number; y: number }, now = false) => {
+    target.current = zoomAt(target.current ?? cam.current!, size.w, size.h, at?.x ?? size.w / 2, at?.y ?? size.h / 2, factor);
+    if (now) cam.current = target.current;
+    kick();
+  };
+  const goTo = (c2: Camera) => {
+    target.current = c2;
+    kick();
   };
 
   return (
@@ -269,11 +333,12 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
             const other = a === prev ? b : a;
             const before = Math.hypot(prev.x - other.x, prev.y - other.y);
             const after = Math.hypot(now.x - other.x, now.y - other.y);
-            if (before > 0) zoom(after / before, { x: (now.x + other.x) / 2, y: (now.y + other.y) / 2 });
+            if (before > 0) zoom(after / before, { x: (now.x + other.x) / 2, y: (now.y + other.y) / 2 }, true);
           } else {
             const camera = cam.current!;
             cam.current = { ...camera, x: camera.x - (now.x - prev.x) / camera.k, y: camera.y - (now.y - prev.y) / camera.k };
-            draw();
+            target.current = cam.current; // dragging follows the finger
+            kick();
           }
           moved.current += Math.abs(now.x - prev.x) + Math.abs(now.y - prev.y);
           pointers.current.set(e.pointerId, now);
@@ -281,7 +346,14 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
         onPointerUp={(e) => {
           const at = local(e);
           pointers.current.delete(e.pointerId);
-          if (moved.current < 6) onSelect(pick(at.x, at.y)?.star.id ?? null);
+          if (moved.current < 6) {
+            const hit = pick(at.x, at.y);
+            onSelect(hit?.star.id ?? null);
+            if (hit) {
+              const t = target.current ?? cam.current!;
+              goTo({ k: Math.max(t.k, 1.6), x: hit.x, y: hit.y }); // glide to the star
+            }
+          }
         }}
         onKeyDown={(e) => {
           const camera = cam.current!;
@@ -289,14 +361,12 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
           const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
           if (moves[e.key]) {
             e.preventDefault();
-            cam.current = { ...camera, x: camera.x + moves[e.key][0], y: camera.y + moves[e.key][1] };
-            draw();
+            const t = target.current ?? camera;
+            goTo({ ...t, x: t.x + moves[e.key][0], y: t.y + moves[e.key][1] });
           } else if (e.key === "+" || e.key === "=") zoom(1.4);
           else if (e.key === "-") zoom(1 / 1.4);
-          else if (e.key === "0") {
-            cam.current = fit(L.bounds, size.w, size.h);
-            draw();
-          } else if (e.key === "Escape") onSelect(null);
+          else if (e.key === "0") goTo(fit(L.bounds, size.w, size.h));
+          else if (e.key === "Escape") onSelect(null);
         }}
       />
       <div className="absolute top-3 right-3 flex flex-col gap-1">
@@ -306,14 +376,7 @@ function Sky({ c, filters, selected, onSelect }: { c: ConstellationView; filters
         <Button size="sm" aria-label="Zoom out" onClick={() => zoom(1 / 1.4)}>
           <Minus />
         </Button>
-        <Button
-          size="sm"
-          aria-label="Fit the whole sky"
-          onClick={() => {
-            cam.current = fit(L.bounds, size.w, size.h);
-            draw();
-          }}
-        >
+        <Button size="sm" aria-label="Fit the whole sky" onClick={() => goTo(fit(L.bounds, size.w, size.h))}>
           <Scan />
         </Button>
       </div>
@@ -341,11 +404,39 @@ function Legend() {
   );
 }
 
+/** The time slider: the case up to a date. Play replays it in date order (about six seconds); with reduced motion
+ * it jumps to the end. */
 function TimeSlider({ dates, until, onChange }: { dates: string[]; until: string | null; onChange: (d: string | null) => void }) {
-  if (dates.length < 2) return null;
+  const reduced = useReducedMotion();
+  const [playing, setPlaying] = useState(false);
   const idx = until ? Math.max(0, dates.findIndex((d) => d >= until)) : dates.length - 1;
+  useEffect(() => {
+    if (!playing) return;
+    if (reduced) {
+      onChange(null);
+      setPlaying(false);
+      return;
+    }
+    let i = idx >= dates.length - 1 ? 0 : idx;
+    const step = Math.max(16, 6000 / dates.length);
+    onChange(dates[i]);
+    const timer = window.setInterval(() => {
+      i += 1;
+      if (i >= dates.length - 1) {
+        onChange(null);
+        setPlaying(false);
+        window.clearInterval(timer);
+      } else onChange(dates[i]);
+    }, step);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing]);
+  if (dates.length < 2) return null;
   return (
     <div className="mt-4 flex flex-wrap items-center gap-3" data-time-slider>
+      <Button size="sm" aria-label={playing ? "Pause the replay" : "Replay the case in date order"} onClick={() => setPlaying((p) => !p)}>
+        {playing ? <Pause /> : <Play />} {playing ? "Pause" : "Replay"}
+      </Button>
       <span className="font-mono text-[10.5px] text-muted uppercase">{dates[0]}</span>
       <input
         type="range"
@@ -355,6 +446,7 @@ function TimeSlider({ dates, until, onChange }: { dates: string[]; until: string
         aria-label="Show the case up to this date"
         className="min-w-0 flex-1 accent-[var(--ink)]"
         onChange={(e) => {
+          setPlaying(false);
           const i = Number(e.target.value);
           onChange(i >= dates.length - 1 ? null : dates[i]);
         }}

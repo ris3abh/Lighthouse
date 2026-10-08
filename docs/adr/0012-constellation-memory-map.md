@@ -32,8 +32,8 @@ A **Memory** page draws the memory as a night sky.
 - **Motion.** Stars fade in on load; only pending stars twinkle; zoom and pan glide (eased); the trail draws as a
   path; "Aligning the stars..." (the banter line for this place) shows while loading. With reduced motion there's no
   twinkle, fade or glide, and replay jumps to the end.
-- **Look.** A dark sky in both themes (the page is the one place the light theme stays dark), with the design
-  system's type and controls around it.
+- **Look.** A near-black sky in both themes (the page is the one place the light theme stays dark), monochrome like
+  the rest of the design system; the conflict glow is its only color, a red registered with the status colors.
 
 ## Consequences
 

@@ -22,9 +22,10 @@ PLACES = {
     "finish": {"components/Finale.tsx"},
     "not_found": {"pages/NotFound.tsx"},
     "eb1a_first_switch": {"App.tsx"},
+    "constellation_loading": {"pages/Memory.tsx"},
 }
 LANDING_LINES = {"hero", "tagline_visit", "tagline_billing", "disclaimer"}
-LATER = {"constellation_loading"}
+LATER: set[str] = set()
 PY_PLACES = {
     "signal_verified": {"areao1/google/opportunities.py"},
     "signal_unverified": {"areao1/google/opportunities.py"},

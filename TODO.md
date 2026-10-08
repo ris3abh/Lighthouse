@@ -200,7 +200,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] H1. Memory page: criteria = clusters, claims = stars (brightness = confidence, solid = approved, hollow =
       pending, conflicts glow red, superseded fade); click = provenance trail to the raw source; filters by
       criterion, entity, status, date; smooth at 2,000+ claims; phones
-- [ ] H2. Motion: fade-in, twinkle on pending only, gliding zoom / pan, animated provenance path, time slider
+- [x] H2. Motion: fade-in, twinkle on pending only, gliding zoom / pan, animated provenance path, time slider
       replays in date order, "Aligning the stars..." while loading; dark sky in both themes; reduced motion
 
 #### Part I: letters and loose ends
