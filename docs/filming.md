@@ -35,7 +35,7 @@ Keep that terminal visible to you (not on camera): the event keys below are type
 
 | Key | What happens | What to show |
 |---|---|---|
-| `j` | A judging invitation from Lakeside Hacks arrives in the fake Gmail; the daily opportunity check runs, confirms the event on its (stubbed) official page and files it **verified** | The desktop notification "New signal detected: Lakeside Hacks 2026, verified.", then Inbox (reload) with the verified chip |
+| `j` | A judging invitation from Lakeside Hacks arrives in the fake Gmail; the daily opportunity check runs, confirms the event on its (stubbed) official page and files it **verified** | The desktop notification (the verified-signal line, naming Lakeside Hacks 2026), then Inbox (reload) with the verified chip |
 | `u` | An invitation from a look-alike domain (Riverside Hack5) arrives; it comes out **suspicious**, nothing is drafted | Inbox: the suspicious chip and its note |
 | `r` | Rebuild the workspace from scratch | Reload the page |
 | `q` | Quit | |
@@ -43,7 +43,7 @@ Keep that terminal visible to you (not on camera): the event keys below are type
 ## 5. Shot list
 
 1. **Overview**: the scoreboard and briefing.
-2. **Memory**: let the stars fade in ("Aligning the stars..." flashes first), press **Replay** to grow the case
+2. **Memory**: let the stars fade in (the loading line flashes first), press **Replay** to grow the case
    from 2024 to today, click a star to draw its trail back to the source.
 3. Type `j`. **Notification**, then **Inbox**: the verified judging invitation, its sender check and the official
    page in its note.
