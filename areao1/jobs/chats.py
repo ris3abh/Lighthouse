@@ -134,6 +134,10 @@ async def import_picked(
             proposals += chat_extract.candidates(source, items, snapshot, noun)
     else:
         note = "Connect your AI for people, asks, decisions and metrics too."
+    proposals, trimmed = chat_extract.tighten(ws, proposals)  # F10: notes that matter, no near-duplicates
+    if trimmed["left_out"] or trimmed["merged"]:
+        note = " ".join(x for x in (note, f"Left out {trimmed['left_out']} notes with no person, date, deadline or case "
+                                    f"item; merged {trimmed['merged']} near-duplicates.") if x)  # fmt: skip
     with ws.lock:
         for _, snapshot, _ in snapshots:
             ws.memory.record(snapshot)
