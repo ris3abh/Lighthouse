@@ -54,13 +54,17 @@ class Pages:
     def page(self, source_id: str, body: bytes, ctype: str = "text/html; charset=utf-8", status: int = 200):
         self.overrides[source_id] = (status, body, ctype)
 
-    def install(self, rules: list | None = None, versions: dict | None = None):
+    def install(
+        self, rules: list | None = None, versions: dict | None = None, community: tuple | None = None
+    ):
         r = self.router
         r.get("https://www.ecfr.gov/api/versioner/v1/titles.json").respond(json=TITLES)
-        # the community library (ADR 0011 §3): empty by default
-        r.get("https://raw.githubusercontent.com/ris3abh/areao1-community-vault/main/manifest.json").respond(
-            json={"version": 1, "snapshots": []}
-        )
+        # the community library (ADR 0011 §3): empty by default; ``community`` = (entries, {path: bytes})
+        lib = "https://raw.githubusercontent.com/ris3abh/areao1-community-vault/main"
+        entries, files = community or ([], {})
+        r.get(f"{lib}/manifest.json").respond(json={"version": 1, "snapshots": entries})
+        for path, body in files.items():
+            r.get(f"{lib}/{path}").respond(content=body)
         # change signals (ADR 0011): Federal Register final rules and eCFR amendment dates, none by default
         r.get("https://www.federalregister.gov/api/v1/documents.json",
               params__contains={"conditions[type][]": "RULE"}).respond(json={"results": rules or []})  # fmt: skip
@@ -545,3 +549,52 @@ def test_maintenance_pages_are_unreadable(ws, pages):
     pages.install()
     [r] = _sync(Vault(ws), ids=["uscis-o1"])
     assert r.status == "unreadable" and "site unavailable (Under Maintenance)" in r.error
+
+
+def test_one_reminder_only_when_a_relevant_change_has_no_newer_snapshot_anywhere(ws, pages, monkeypatch):
+    """G4 (ADR 0011 §4): a rule change makes the saved I-129 page stale; a newer community snapshot (or a capture)
+    settles it silently; only when none exists does one notification go out, with a direct link."""
+    import hashlib
+
+    rec = _Recorder()
+    monkeypatch.setattr(notify, "CHANNELS", lambda: {"desktop": rec})
+    pages.page("uscis-i-129", fixture("cloudflare-403.html"), status=403)
+    vault = Vault(ws)
+    vault.import_file("uscis-i-129", fixture("uscis-i-129.html"), "Form I-129.html")
+    effective = clock.local_date(utcnow() + timedelta(days=2)).isoformat()
+    rule = {"document_number": "2026-777", "title": "Fee Schedule; Form I-129 changes", "abstract": "",
+            "effective_on": effective, "html_url": "https://www.federalregister.gov/d/2026-777",
+            "cfr_references": [{"title": 8, "part": 106}]}  # fmt: skip
+    fresh = fixture("uscis-i-129.html").replace(
+        b"</body>", b"<p>Edition 11/01/26 after the fee rule.</p></body>"
+    )
+    sha = hashlib.sha256(fresh).hexdigest()
+    newer = {"source_id": "uscis-i-129", "url": "https://www.uscis.gov/i-129", "sha256": sha,
+             "captured_at": (utcnow() + timedelta(days=3)).isoformat(), "file": f"snapshots/{sha}.html",
+             "license": "public-domain-us-gov"}  # fmt: skip
+
+    # A newer snapshot exists in the community library: imported, nothing to ask.
+    pages.router.routes.clear()
+    pages.install(rules=[rule], community=([newer], {newer["file"]: fresh}))
+    _at(monkeypatch, timedelta(days=4))
+    lines = run_watch(ws)
+    assert "community library: 1 newer snapshot imported" in lines
+    assert not [n for n in rec.sent if n.title.startswith("Re-import")]
+
+    # Another relevant rule later, and no newer snapshot anywhere: exactly one reminder, with the page's link.
+    later = {**rule, "document_number": "2026-888", "title": "Form I-129 edition update",
+             "effective_on": clock.local_date(utcnow() + timedelta(days=6)).isoformat()}  # fmt: skip
+    pages.router.routes.clear()
+    pages.install(rules=[rule, later], community=([newer], {newer["file"]: fresh}))
+    _at(monkeypatch, timedelta(days=7))
+    run_watch(ws)
+    _at(monkeypatch, timedelta(days=8))
+    run_watch(ws)
+    [note] = [n for n in rec.sent if n.title.startswith("Re-import")]
+    assert note.url == "https://www.uscis.gov/i-129" and "Form I-129 edition update" in note.body
+
+    # Visiting the page with the capture extension settles it too.
+    from areao1.vault import capture
+
+    capture.capture(ws, "https://www.uscis.gov/i-129", "I-129", fresh.decode() + "<!-- visited -->")
+    assert vault.lapsed_manual() == []

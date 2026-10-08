@@ -194,7 +194,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] G3. community-vault/: README, manifest, hash-verified public-domain government snapshots, CI that validates
       URL, hash and structure; opt-in sharing from the extension; installs pull updates; create the GitHub repo
       only if gh is authenticated
-- [ ] G4. One notification with a direct link only when a relevant page changed and no snapshot exists anywhere
+- [x] G4. One notification with a direct link only when a relevant page changed and no snapshot exists anywhere
 
 #### Part H: constellation memory map (ADR 0012)
 - [ ] H1. Memory page: criteria = clusters, claims = stars (brightness = confidence, solid = approved, hollow =
