@@ -197,7 +197,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] G4. One notification with a direct link only when a relevant page changed and no snapshot exists anywhere
 
 #### Part H: constellation memory map (ADR 0012)
-- [ ] H1. Memory page: criteria = clusters, claims = stars (brightness = confidence, solid = approved, hollow =
+- [x] H1. Memory page: criteria = clusters, claims = stars (brightness = confidence, solid = approved, hollow =
       pending, conflicts glow red, superseded fade); click = provenance trail to the raw source; filters by
       criterion, entity, status, date; smooth at 2,000+ claims; phones
 - [ ] H2. Motion: fade-in, twinkle on pending only, gliding zoom / pan, animated provenance path, time slider

@@ -664,6 +664,22 @@ export interface MailText {
   date: string;
   text: string;
 }
+export interface ConstellationView {
+  clusters: { id: string; label: string }[];
+  stars: import("./lib/constellation").Star[];
+  exhibits: Record<string, { title: string; criterion: string }>;
+}
+export interface Provenance {
+  claim: { id: string; subject: string; predicate: string; value: unknown; stage: string | null; valid_from: string | null; recorded_at: string; status: string; current: boolean; confidence: string; excerpt: string; source_url: string | null };
+  extracted_by: { kind: string; name: string };
+  excerpt_verified: boolean;
+  observation: { id: string; connector: string; source_url: string; captured_at: string; snapshot: string; filename: string | null } | null;
+  entity: { id: string; name: string; kind: string; url: string | null } | null;
+  reviews: { decision: string; at: string; rationale: string }[];
+  supersedes: { id: string; value: unknown; valid_from: string | null }[];
+  superseded_by: { id: string; value: unknown; valid_from: string | null }[];
+  cited_by: { exhibit_id: string; title: string; file: string }[];
+}
 export interface GmailStatus {
   connected: boolean;
   email: string | null;
@@ -808,6 +824,8 @@ export const api = {
   reject: (id: string) => request<Candidate>("POST", `/inbox/${enc(id)}/reject`),
   snooze: (id: string, until?: string) => request<Candidate>("POST", `/inbox/${enc(id)}/snooze`, { until }),
 
+  constellation: () => request<ConstellationView>("GET", "/memory/constellation"),
+  provenance: (id: string) => request<Provenance>("GET", `/claims/${enc(id)}/provenance`),
   claims: (ids: string[]) => request<Claim[]>("GET", `/claims?ids=${ids.map(enc).join(",")}`),
 
   evidence: () => request<EvidenceView>("GET", "/exhibits"),

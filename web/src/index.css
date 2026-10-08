@@ -25,6 +25,14 @@
   --building: #855600;
   --building-soft: #f4e6c8;
   --on-status: #ffffff;
+  /* The constellation (ADR 0012): a dark sky in both themes. */
+  --sky-1: #050505;
+  --sky-2: #141413;
+  --sky-ink: #e9e6dc;
+  --sky-muted: #8d8b85;
+  --star: #f4f2ec;
+  --star-conflict: #ff6b57;
+  --star-trail: #c9c6bd;
   color-scheme: light;
 }
 
@@ -46,6 +54,14 @@
   --building: #e3a53c;
   --building-soft: #36280e;
   --on-status: #0d0d0c;
+  /* The constellation (ADR 0012): a dark sky in both themes. */
+  --sky-1: #050505;
+  --sky-2: #141413;
+  --sky-ink: #e9e6dc;
+  --sky-muted: #8d8b85;
+  --star: #f4f2ec;
+  --star-conflict: #ff6b57;
+  --star-trail: #c9c6bd;
   color-scheme: dark;
 }
 

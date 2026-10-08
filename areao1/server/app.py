@@ -588,6 +588,23 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
             )
         return out
 
+    @app.get("/api/memory/constellation")
+    def memory_constellation() -> dict[str, Any]:
+        """Every claim as a star in its criterion's cluster (ADR 0012): status, confidence, conflicts, dates, sources."""
+        from areao1.criteria import constellation
+
+        return constellation.stars(ws)
+
+    @app.get("/api/claims/{claim_id}/provenance")
+    def claim_provenance(claim_id: str) -> dict[str, Any]:
+        """One claim's full trail: the verified excerpt, the raw source, reviews, versions and citing exhibits."""
+        from areao1.mcp import tools as mcp_tools
+
+        try:
+            return mcp_tools.get_provenance(ws, claim_id)
+        except Exception as exc:  # noqa: BLE001  (ToolError: no such claim)
+            raise HTTPException(404, str(exc)) from exc
+
     @app.get("/api/memory")
     def memory_summary() -> dict[str, Any]:
         mem = ws.memory

@@ -36,6 +36,7 @@ TOKENS = (
 )
 # The only colored tokens; everything else is a neutral ramp.
 STATUS_TOKENS = {
+    "star-conflict",  # the constellation's conflict glow (ADR 0012): red, like alert
     "alert",
     "alert-soft",
     "on-alert",
@@ -102,7 +103,7 @@ def test_monochrome_plus_three_status_colors():
         colored = {name: _hue(value) for name, value in tokens.items() if _hue(value)}
         assert set(colored) <= STATUS_TOKENS, (selector, colored)
         assert set(colored.values()) == {"red", "amber", "green"}, (selector, colored)
-        assert {colored[n] for n in ("alert", "alert-soft")} == {"red"}
+        assert {colored[n] for n in ("alert", "alert-soft", "star-conflict")} == {"red"}
         assert {colored[n] for n in ("building", "building-soft")} == {"amber"}
         assert {colored[n] for n in ("banked", "banked-soft")} == {"green"}
     stray = [f"{p.relative_to(WEB)}: {m.group(0)}" for p in _sources() if str(p.relative_to(WEB)) not in STATUS_FILES
