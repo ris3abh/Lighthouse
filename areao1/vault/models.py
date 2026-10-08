@@ -47,6 +47,23 @@ class VaultSource(_Model):
         description="Id of the primary source for the same facts (e.g. the fee regulation for a fee page). When "
         "they disagree, the primary governs.",
     )
+    signal: str | None = Field(
+        None,
+        description="A change signal (manifest `signals`) that says when this page's facts changed. With one, the "
+        "copy stays fresh until a relevant rule takes effect (ADR 0011); without, its timer applies.",
+    )
+
+
+class Signal(_Model):
+    """What counts as a relevant change for a group of sources (ADR 0011 §1)."""
+
+    terms: list[str] = Field(
+        default_factory=list, description="Words in a Federal Register rule's title / abstract."
+    )
+    cfr_parts: list[int] = Field(default_factory=list, description="8 CFR parts a rule amends.")
+    ecfr_sections: list[str] = Field(
+        default_factory=list, description="8 CFR sections whose eCFR amendments count."
+    )
 
 
 class VaultManifest(_Model):
@@ -57,6 +74,7 @@ class VaultManifest(_Model):
     rule_hints: list[str] = Field(
         default_factory=list, description="Regexes for sentences that may state a rule."
     )
+    signals: dict[str, Signal] = Field(default_factory=dict)
     sources: list[VaultSource] = Field(default_factory=list)
 
     @field_validator("sources")
@@ -85,6 +103,14 @@ class VaultManifest(_Model):
                     f"({'tier1_domains' if s.tier == 1 else 'tier1_domains or tier2_domains'}); "
                     f"{s.url.split('/')[2]} can only be Tier 3"
                 )
+        return self
+
+    @model_validator(mode="after")
+    def _signals_exist(self) -> VaultManifest:
+        if self.signals:  # a partial override may name bundled signals; checked again after the merge
+            bad = sorted({s.signal for s in self.sources if s.signal and s.signal not in self.signals})
+            if bad:
+                raise ValueError(f"unknown signals {bad}; define them under `signals`")
         return self
 
     def tier_of(self, url: str) -> int | None:

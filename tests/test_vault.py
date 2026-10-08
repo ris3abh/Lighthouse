@@ -17,6 +17,7 @@ from typer.testing import CliRunner
 
 from areao1 import notify
 from areao1.cli import app
+from areao1.core import clock
 from areao1.core.models import utcnow
 from areao1.jobs import JOBS
 from areao1.vault import Vault, load_manifest
@@ -53,9 +54,17 @@ class Pages:
     def page(self, source_id: str, body: bytes, ctype: str = "text/html; charset=utf-8", status: int = 200):
         self.overrides[source_id] = (status, body, ctype)
 
-    def install(self):
+    def install(self, rules: list | None = None, versions: dict | None = None):
         r = self.router
         r.get("https://www.ecfr.gov/api/versioner/v1/titles.json").respond(json=TITLES)
+        # change signals (ADR 0011): Federal Register final rules and eCFR amendment dates, none by default
+        r.get("https://www.federalregister.gov/api/v1/documents.json",
+              params__contains={"conditions[type][]": "RULE"}).respond(json={"results": rules or []})  # fmt: skip
+        r.get("https://www.ecfr.gov/api/versioner/v1/versions/title-8.json").mock(
+            side_effect=lambda req: httpx.Response(
+                200, json={"content_versions": (versions or {}).get(req.url.params["part"], [])}
+            )
+        )
         served = {
             "ecfr-8cfr-214-2-o": (200, fixture("ecfr-214.2.xml"), "text/xml"),
             "ecfr-8cfr-204-5-h": (200, fixture("ecfr-204.5.xml"), "text/xml"),
@@ -346,24 +355,79 @@ def test_watch_reminds_to_reimport_manual_sources_when_their_window_lapses(ws, p
     assert not any(n.title.startswith("Re-import") for n in rec.sent)
     assert vault.lapsed_manual() == []
 
-    # Eight days later (forms: 7-day window) the automatic attempt is still blocked: one reminder, with the link.
+    # Eight days later, past the forms window, but no relevant rule changed: the I-129 page has a change signal
+    # (ADR 0011), so nothing asks for a re-import.
     _at(monkeypatch, timedelta(days=8))
     lines = run_watch(ws)
+    assert not any(n.title.startswith("Re-import") for n in rec.sent) and vault.lapsed_manual() == []
+    assert "signals: no new changes" in lines and any("uscis-i-129: unreadable" in line for line in lines)
+
+    # A fee rule that touches Form I-129 takes effect on day 9: one reminder, naming the change, with the link.
+    effective = clock.local_date(utcnow() + timedelta(days=9)).isoformat()
+    rule = {"document_number": "2026-12345", "title": "U.S. Citizenship and Immigration Services Fee Schedule and "
+            "Changes to Form I-129", "abstract": "Adjusts fees.", "effective_on": effective,
+            "html_url": "https://www.federalregister.gov/d/2026-12345", "cfr_references": [{"title": 8, "part": 106}]}  # fmt: skip
+    pages.router.routes.clear()
+    pages.install(rules=[rule])
+    _at(monkeypatch, timedelta(days=10))
+    run_watch(ws)
     [note] = [n for n in rec.sent if n.title.startswith("Re-import")]
     assert (
         note.title
         == "Re-import: Form I-129, Petition for a Nonimmigrant Worker (edition, instructions, where to file)"
     )
     assert note.url == "https://www.uscis.gov/i-129" and "https://www.uscis.gov/i-129" in note.body
+    assert (
+        f"changed since: U.S. Citizenship and Immigration Services Fee Schedule and Changes to Form I-129 (in effect {effective})"
+        in note.body
+    )
     assert "#/knowledge" in note.body and "last imported" in note.body and note.event == "vault"
-    assert any("uscis-i-129: unreadable" in line for line in lines)
     # The next day's run doesn't repeat it (same lapse).
-    _at(monkeypatch, timedelta(days=9))
+    _at(monkeypatch, timedelta(days=11))
     run_watch(ws)
     assert len([n for n in rec.sent if n.title.startswith("Re-import")]) == 1
     # Re-importing clears it.
     vault.import_file("uscis-i-129", fixture("uscis-i-129.html"), "Form I-129.html")
     assert vault.lapsed_manual() == []
+
+
+def test_sources_without_a_signal_keep_their_timer_and_stale_signals_fall_back_to_timers(
+    ws, pages, monkeypatch
+):
+    vault = Vault(ws)
+    rows = "".join(
+        f"<tr><td>Form I-{100 + n}</td><td>Service Center {n}</td><td>{n + 2} months</td></tr>"
+        for n in range(40)
+    )
+    times = f"<html><body><h1>Check case processing times</h1><table>{rows}</table></body></html>".encode()
+    vault.import_file("uscis-processing-times", times, "Processing times.html")  # no signal
+    vault.import_file("uscis-i-129", fixture("uscis-i-129.html"), "Form I-129.html")  # signal: forms
+    from areao1.vault import signals
+
+    assert anyio.run(signals.check, vault, None) == ["signals: no new changes"]
+    _at(monkeypatch, timedelta(days=8))
+    anyio.run(signals.check, vault, None)  # the daily watch checks the feeds again: nothing relevant changed
+    assert [s.id for s, _ in vault.lapsed_manual()] == ["uscis-processing-times"]  # 7-day timer
+    _at(monkeypatch, timedelta(days=12))  # no check for four days (offline): timers decide
+    assert {s.id for s, _ in vault.lapsed_manual()} == {"uscis-processing-times", "uscis-i-129"}
+
+
+def test_an_unrelated_rule_changes_nothing_and_an_unreachable_feed_is_said(ws, pages, monkeypatch):
+    from areao1.vault import signals
+
+    other = {"document_number": "2026-1", "title": "Temporary Agricultural Workers (H-2A)", "abstract": "Farm labor.",
+             "effective_on": "2026-01-01", "html_url": "x", "cfr_references": [{"title": 8, "part": 655}]}  # fmt: skip
+    pages.router.routes.clear()
+    pages.install(
+        rules=[other],
+        versions={"214": [{"identifier": "214.2", "amendment_date": "2024-04-01", "substantive": True}]},
+    )
+    vault = Vault(ws)
+    assert anyio.run(signals.check, vault, None) == ["signals: 1 new change"]  # the eCFR baseline for 214.2
+    assert [e["signal"] for e in signals.load(vault)["events"]] == ["o1"]  # H-2A matched nothing
+    pages.router.routes.clear()
+    pages.router.get(signals.FR_URL).respond(503)
+    assert "Federal Register unreachable" in anyio.run(signals.check, vault, None)[0]
 
 
 def test_manual_source_links_resolve_this_months_url(ws):

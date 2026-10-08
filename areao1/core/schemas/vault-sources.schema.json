@@ -1,5 +1,37 @@
 {
   "$defs": {
+    "Signal": {
+      "additionalProperties": false,
+      "description": "What counts as a relevant change for a group of sources (ADR 0011 \u00a71).",
+      "properties": {
+        "cfr_parts": {
+          "description": "8 CFR parts a rule amends.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Cfr Parts",
+          "type": "array"
+        },
+        "ecfr_sections": {
+          "description": "8 CFR sections whose eCFR amendments count.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Ecfr Sections",
+          "type": "array"
+        },
+        "terms": {
+          "description": "Words in a Federal Register rule's title / abstract.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Terms",
+          "type": "array"
+        }
+      },
+      "title": "Signal",
+      "type": "object"
+    },
     "VaultSource": {
       "additionalProperties": false,
       "properties": {
@@ -87,6 +119,19 @@
           "description": "Id of the primary source for the same facts (e.g. the fee regulation for a fee page). When they disagree, the primary governs.",
           "title": "Secondary To"
         },
+        "signal": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A change signal (manifest `signals`) that says when this page's facts changed. With one, the copy stays fresh until a relevant rule takes effect (ADR 0011); without, its timer applies.",
+          "title": "Signal"
+        },
         "start": {
           "anyOf": [
             {
@@ -164,6 +209,13 @@
       },
       "title": "Rule Hints",
       "type": "array"
+    },
+    "signals": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Signal"
+      },
+      "title": "Signals",
+      "type": "object"
     },
     "sources": {
       "items": {

@@ -52,10 +52,13 @@ def remind_manual(ws: Workspace, vault: Vault) -> str | None:
         return None
     port = ws.config().server.port
     knowledge = f"http://127.0.0.1:{port}/#/knowledge"
-    lines = [
-        f"· {s.title}: last imported {clock.local_date(checked).isoformat()}\n  {vault.link(s)}"
-        for s, checked in lapsed
-    ]
+    from areao1.vault import signals
+
+    lines = []
+    for s, checked in lapsed:
+        because = signals.why(vault, s, checked)
+        lines.append(f"· {s.title}: last imported {clock.local_date(checked).isoformat()}"
+                     + (f"; changed since: {because}" if because else "") + f"\n  {vault.link(s)}")  # fmt: skip
     first = lapsed[0][0]
     title = (f"Re-import: {first.title}" if len(lapsed) == 1
              else f"{len(lapsed)} saved official pages are out of date")  # fmt: skip
@@ -72,11 +75,14 @@ def run_watch(ws: Workspace, scheduled: bool = False, client: httpx.AsyncClient 
         return ["skipped: the vault is turned off (vault.enabled in areao1.yaml)"]
     vault = Vault(ws)
 
-    async def go() -> list[VaultFetch]:
-        return await vault.sync(tier1_daily=True, client=client)
+    async def go() -> tuple[list[str], list[VaultFetch]]:
+        from areao1.vault import signals
 
-    results = anyio.run(go)
-    lines = [summarize(results)]
+        changed = await signals.check(vault, client)  # change signals first: they decide what's stale
+        return changed, await vault.sync(tier1_daily=True, client=client)
+
+    signal_lines, results = anyio.run(go)
+    lines = [summarize(results), *signal_lines]
     lines += [f"{r.source_id}: {r.status}: {r.error}" for r in results if r.status in ("unreadable", "error")]
     for sent in (notify_changes(ws, vault, results), remind_manual(ws, vault)):
         if sent:

@@ -87,6 +87,7 @@ def load_manifest(override: Path | None = None) -> VaultManifest:
         tier1_domains=sorted({*base.tier1_domains, *extra.tier1_domains}),
         tier2_domains=sorted({*base.tier2_domains, *extra.tier2_domains}),
         rule_hints=[*base.rule_hints, *(h for h in extra.rule_hints if h not in base.rule_hints)],
+        signals={**base.signals, **extra.signals},
         sources=list(by_id.values()),
     )
 
@@ -275,7 +276,17 @@ class Vault:
             return {r["source_id"]: dict(r) for r in con.execute("select * from state")}
 
     def is_fresh(self, source: VaultSource, checked_at: datetime | None, now: datetime | None = None) -> bool:
-        return checked_at is not None and (now or utcnow()) < self.manifest.expires_at(source, checked_at)
+        """A source with a change signal stays fresh until a relevant rule takes effect after its copy was taken
+        (when the signals were checked recently); everything else follows its timer (ADR 0011 §1)."""
+        if checked_at is None:
+            return False
+        if source.signal:
+            from areao1.vault import signals
+
+            verdict = signals.fresh(self, source, checked_at, now)
+            if verdict is not None:
+                return verdict
+        return (now or utcnow()) < self.manifest.expires_at(source, checked_at)
 
     def due(self, source: VaultSource, state: dict[str, Any] | None, *, tier1_daily: bool) -> bool:
         checked = _dt(state.get("checked_at")) if state else None
