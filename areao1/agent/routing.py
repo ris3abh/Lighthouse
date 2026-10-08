@@ -12,7 +12,7 @@ from typing import Literal
 
 from areao1.core import migrate, names
 from areao1.core.models import AgentModels
-from areao1.core.secrets import _read_dotenv, get_secret
+from areao1.core.secrets import _read_dotenv
 
 Tier = Literal["hard", "mid", "mundane"]
 
@@ -22,7 +22,6 @@ DEFAULTS: dict[Tier, str] = {
     "mid": "gpt-6.1-sol",
     "mundane": "gpt-6-luna",
 }
-OPENAI_KEY_REF = "openai:api_key"
 
 # task -> tier. Run kinds (chat, manual, scheduled) are tasks too.
 TASKS: dict[str, Tier] = {
@@ -67,10 +66,6 @@ def _env(name: str, workspace: Path | None) -> str | None:
     dotenv = _read_dotenv(workspace / ".env")
     old = [p + name.removeprefix(names.ENV_PREFIX) for p in names.PREVIOUS["env_prefixes"]]
     return dotenv.get(name) or next((dotenv[o] for o in old if dotenv.get(o)), None)
-
-
-def openai_key(workspace: Path | None = None) -> str | None:
-    return _env("OPENAI_API_KEY", workspace) or get_secret(OPENAI_KEY_REF)
 
 
 def route(

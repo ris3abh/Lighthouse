@@ -208,7 +208,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
       writer to review and sign; sent to the writer through outreach approval
 - [x] I2. Claude export adapter hook ready; the redacted sample goes to "Needs you" if still missing
 - [x] I3. NOTICE file (Area O1, created by Rishabh Sharma), carried into built packages
-- [ ] I4. Remove leftovers of removed features (Google Calendar, OAuth, Anthropic engine, demo workspace)
+- [x] I4. Remove leftovers of removed features (Google Calendar, OAuth, Anthropic engine, demo workspace)
 
 #### Part J: demo filming workspace (dev-only, never shipped)
 - [ ] J1. scripts/film_demo.py: fictional "Maya" workspace, fake Gmail, scripted engine, seeded constellation

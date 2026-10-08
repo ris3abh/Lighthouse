@@ -88,16 +88,15 @@ class Source(Protocol):
 | Hugging Face | user / org / repo URL | none for public; read token for private/gated | model & dataset downloads (rolling 30d + all-time where available), likes, Spaces, Papers upvotes, linked repos |
 | Website | any URL or sitemap | none | page text via readability, title/date/author, mentions of the user's name; classified as press / own-site / talk / award by the agent |
 | Scholarly | ORCID, Semantic Scholar ID, OpenAlex ID, arXiv author | none (free APIs) | papers, citations, citing works, venues, h-index |
-| Gmail | OAuth login or IMAP + app password | gmail.readonly scope, labels/queries you choose | judging & reviewer invites, acceptances, award notices, press requests, letter-writer replies, deadlines |
+| Gmail | IMAP + SMTP with an app password (ADR 0014) | read-only (PEEK), case mail only | judging & reviewer invites, acceptances, award notices, press requests, letter-writer replies, deadlines |
 | Manual | file upload / form | — | any exhibit: certificates, letters, pay stubs, photos |
 
 Notes for the builder:
 
 - Google Scholar has no API and blocks scraping. Use Semantic Scholar + OpenAlex as defaults; offer Scholar
   only via an optional SerpAPI key.
-- Gmail in an open-source app: gmail.readonly is a restricted scope, so a shared OAuth client would need Google
-  verification. Each user creates their own Google Cloud OAuth client (setup wizard walks them through it). In
-  "Testing" mode refresh tokens expire after 7 days, so also offer IMAP + app password as the low-friction path.
+- Gmail in an open-source app: Google's restricted scopes would need app verification and a Cloud project per
+  user, so Area O1 connects with an app password over IMAP / SMTP only (ADR 0014, amendment): no Google Cloud steps.
 - Gmail privacy: only messages matching user-defined queries (e.g. `from:(devpost OR mlh) OR subject:(judge OR
   reviewer OR accepted)`) are fetched. Bodies stay local; only the minimum excerpt goes to the LLM for
   classification.
