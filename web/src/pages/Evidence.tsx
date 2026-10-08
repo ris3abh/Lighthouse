@@ -3,14 +3,16 @@ import { useEffect, useState } from "react";
 import { api, type EvidenceCriterion, type Exhibit, STAGES, stageCounts } from "../api";
 import ClaimsPanel, { StageChip } from "../components/Claims";
 import DropZone, { useFileDrop } from "../components/DropZone";
+import ProofPanel, { type ProofUpload } from "../components/Proof";
 import { useRefresh } from "../App";
 import { Button, Card, Chip, CriterionName, cx, Empty, ErrorBox, Loading, Modal, PageHeader, plural, StatusBadge, useToast } from "../components/ui";
 import { today, useLoad } from "../hooks";
 
-export default function Evidence({ focus }: { focus: string | null }) {
+export default function Evidence({ focus, proof }: { focus: string | null; proof?: string | null }) {
   const { version, bump } = useRefresh();
   const view = useLoad(() => api.evidence(), [version]);
   const [uploadFor, setUploadFor] = useState<EvidenceCriterion | null>(null);
+  const [uploadProof, setUploadProof] = useState<ProofUpload | null>(null);
   const [preview, setPreview] = useState<Exhibit | null>(null);
   const [sending, setSending] = useState(false);
   const toast = useToast();
@@ -69,6 +71,17 @@ export default function Evidence({ focus }: { focus: string | null }) {
         </div>
       )}
 
+      <ProofPanel
+        criteria={criteria}
+        focus={proof ?? null}
+        version={version}
+        onChanged={bump}
+        onUpload={(crit, p) => {
+          setUploadProof(p);
+          setUploadFor(crit);
+        }}
+      />
+
       <div className="flex flex-col gap-8">
         {criteria.map((c) => (
           <CriterionSection
@@ -95,7 +108,17 @@ export default function Evidence({ focus }: { focus: string | null }) {
         )}
       </div>
 
-      {uploadFor && <UploadModal crit={uploadFor} onClose={() => setUploadFor(null)} onDone={bump} />}
+      {uploadFor && (
+        <UploadModal
+          crit={uploadFor}
+          proof={uploadProof}
+          onClose={() => {
+            setUploadFor(null);
+            setUploadProof(null);
+          }}
+          onDone={bump}
+        />
+      )}
       {preview && <PreviewModal exhibit={preview} onClose={() => setPreview(null)} />}
     </div>
   );
@@ -269,10 +292,10 @@ function CriterionSection({
   );
 }
 
-function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClose: () => void; onDone: () => void }) {
+function UploadModal({ crit, proof, onClose, onDone }: { crit: EvidenceCriterion; proof?: ProofUpload | null; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(proof ? proof.label : "");
   const [type, setType] = useState(crit.evidence_types[0] ?? "");
   const [stage, setStage] = useState(/invite/.test(crit.evidence_types[0] ?? "") ? "invited" : "");
   const [date, setDate] = useState(today());
@@ -292,6 +315,10 @@ function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClo
     form.append("summary", summary);
     form.append("signals", signals.join(","));
     form.append("stage", stage);
+    if (proof) {
+      form.append("proof_anchor", proof.anchor);
+      form.append("proof_item", proof.item);
+    }
     setBusy(true);
     try {
       const ex = await api.upload(form);
@@ -305,8 +332,11 @@ function UploadModal({ crit, onClose, onDone }: { crit: EvidenceCriterion; onClo
   };
 
   return (
-    <Modal title="Upload exhibit" onClose={onClose}>
-      <p className="eyebrow -mt-1 mb-4">{crit.short_label || crit.label}</p>
+    <Modal title={proof ? "Save proof" : "Upload exhibit"} onClose={onClose}>
+      <p className="eyebrow -mt-1 mb-4">
+        {crit.short_label || crit.label}
+        {proof && ` · ${proof.label}`}
+      </p>
       <form onSubmit={submit} className="grid gap-3">
         <label>
           <span className="label">File (PDF, image, letter…)</span>

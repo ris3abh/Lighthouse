@@ -1,0 +1,17 @@
+# Proof recipe (ADR 0017), for display of work (EB-1A). Community-edited; a suggestion, not a legal requirement.
+criterion: display
+label: "Display at exhibitions or showcases"
+items:
+  - id: display_record
+    label: "The program, catalog or page listing your work"
+    why: "Dated proof the work was shown."
+    match: {evidence_types: [exhibition_record, showcase], keywords: [program, catalog, exhibited, showcase, demo]}
+  - id: venue_standing
+    label: "Evidence of the venue's standing"
+    why: "Who attends and why showing there is a distinction."
+    match: {keywords: [attendees, selective, curated, accepted demos]}
+  - id: selection
+    label: "How work was selected"
+    why: "Shows it was chosen, not simply submitted."
+    optional: true
+    match: {keywords: [selected, acceptance rate, jury]}

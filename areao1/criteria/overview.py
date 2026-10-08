@@ -126,6 +126,10 @@ def human_tasks(ws: Case, today: date | None = None) -> list[dict[str, Any]]:
             }
         )
 
+    from areao1.criteria import proof
+
+    tasks += proof.tasks(ws)  # proof to save while it's easy to get (ADR 0017)
+
     issues = ws.naming_check()
     if issues:
         tasks.append(

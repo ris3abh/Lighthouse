@@ -1,0 +1,17 @@
+# Proof recipe (ADR 0017), for high salary. Community-edited; a suggestion, not a legal requirement.
+criterion: high_salary
+label: "High salary or remuneration"
+items:
+  - id: pay_records
+    label: "Pay records (pay stubs, W-2, a signed offer or contract)"
+    why: "Official records of what you're paid."
+    match: {evidence_types: [pay_stub, w2, offer_letter], keywords: [pay stub, w-2, offer letter, compensation, contract]}
+  - id: comparison
+    label: "A salary survey or benchmark for your role and location"
+    why: "\"High\" is relative: compare with others in the field from a reputable source."
+    match: {evidence_types: [salary_survey], keywords: [salary survey, wage data, benchmark, percentile, oflc]}
+  - id: equity
+    label: "Equity or bonus documents, if part of your pay"
+    why: "Grants and bonuses count when they're documented."
+    optional: true
+    match: {keywords: [equity, stock grant, rsu, bonus]}

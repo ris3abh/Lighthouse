@@ -1,0 +1,24 @@
+# Proof recipe (ADR 0017), for a leading or critical role. Community-edited; a suggestion, not a legal requirement.
+criterion: critical_role
+label: "Leading or critical role"
+items:
+  - id: org_reputation
+    label: "The organization's reputation"
+    why: "A critical role counts more at a distinguished organization: coverage, rankings, size, customers."
+    match: {evidence_types: [org_reputation], keywords: [ranked, named one of, customers include, funding, annual report]}
+  - id: org_chart
+    label: "An org chart showing where your role sits"
+    why: "Shows reporting lines and scope."
+    match: {evidence_types: [org_chart], keywords: [org chart, organizational chart, reporting structure]}
+  - id: role_description
+    label: "Your role description or offer letter"
+    why: "Your title, responsibilities and start date, from the organization."
+    match: {evidence_types: [offer_letter, role_letter], keywords: [offer letter, job description, role description, promotion]}
+  - id: impact_metrics
+    label: "Metrics showing the impact of your work"
+    why: "Revenue, users, uptime, adoption: what changed because of you."
+    match: {keywords: [revenue, users, growth, launched, adoption, impact]}
+  - id: corroboration
+    label: "Independent corroboration"
+    why: "A letter or article from someone outside your team describing your role."
+    match: {evidence_types: [role_letter], keywords: [letter of support, recommendation, profile of]}

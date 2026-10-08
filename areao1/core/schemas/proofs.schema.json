@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "ProofLink": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor": {
+          "description": "The activity: exhibit:<id>, pipeline:<id> or claim:<id>.",
+          "title": "Anchor",
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "exhibit_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The exhibit that preserves this item.",
+          "title": "Exhibit Id"
+        },
+        "item": {
+          "pattern": "^[a-z0-9][a-z0-9_\\-]*$",
+          "title": "Item",
+          "type": "string"
+        },
+        "note": {
+          "default": "",
+          "description": "Why it doesn't apply, for a waived item.",
+          "maxLength": 300,
+          "title": "Note",
+          "type": "string"
+        },
+        "status": {
+          "default": "linked",
+          "enum": [
+            "linked",
+            "waived"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "anchor",
+        "item",
+        "at"
+      ],
+      "title": "ProofLink",
+      "type": "object"
+    }
+  },
+  "$id": "https://areao1.dev/schemas/v1/proofs.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "links": {
+      "items": {
+        "$ref": "#/$defs/ProofLink"
+      },
+      "title": "Links",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "title": "ProofLinks",
+  "type": "object"
+}

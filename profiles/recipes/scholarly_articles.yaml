@@ -1,0 +1,21 @@
+# Proof recipe (ADR 0017), once a paper is published. Community-edited; a suggestion, not a legal requirement.
+criterion: scholarly_articles
+label: "Scholarly articles"
+items:
+  - id: published_copy
+    label: "The published version (PDF), showing the venue, date and authors"
+    why: "The record of publication; a preprint isn't the same."
+    match: {evidence_types: [paper, journal_article, conference_paper], stages: [published], keywords: [proceedings, journal, published, doi]}
+  - id: venue_standing
+    label: "Evidence of the venue's standing"
+    why: "Peer review, acceptance rate, impact or ranking of the journal or conference."
+    match: {keywords: [acceptance rate, peer-reviewed, impact factor, ranking, h5-index]}
+  - id: citations
+    label: "Citation counts, with the date you checked"
+    why: "Shows others build on it; numbers change, so keep dated snapshots."
+    match: {keywords: [citations, cited by]}
+  - id: acceptance_notice
+    label: "The acceptance notice"
+    why: "Dates the acceptance and shows the review."
+    optional: true
+    match: {stages: [accepted], keywords: [accepted for publication, paper accepted, camera-ready]}

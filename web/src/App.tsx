@@ -277,7 +277,7 @@ function Shell() {
       content = <Inbox />;
       break;
     case "evidence":
-      content = <Evidence focus={params.get("c")} />;
+      content = <Evidence focus={params.get("c")} proof={params.get("proof")} />;
       break;
     case "metrics":
       content = <Metrics focus={params.get("item")} />;

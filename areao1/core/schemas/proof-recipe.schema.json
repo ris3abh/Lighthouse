@@ -1,0 +1,107 @@
+{
+  "$defs": {
+    "RecipeItem": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "match": {
+          "$ref": "#/$defs/RecipeMatch"
+        },
+        "optional": {
+          "default": false,
+          "description": "\"If available\": never counted as missing.",
+          "title": "Optional",
+          "type": "boolean"
+        },
+        "why": {
+          "default": "",
+          "title": "Why",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "title": "RecipeItem",
+      "type": "object"
+    },
+    "RecipeMatch": {
+      "additionalProperties": false,
+      "description": "How an exhibit or a message is recognized as this proof item: any listed evidence type or stage, or (for\nmail and source items, and for suggesting existing exhibits) a keyword phrase in its title or subject.",
+      "properties": {
+        "evidence_types": {
+          "items": {
+            "pattern": "^[a-z0-9][a-z0-9_\\-]*$",
+            "type": "string"
+          },
+          "title": "Evidence Types",
+          "type": "array"
+        },
+        "keywords": {
+          "description": "Lowercase phrases.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Keywords",
+          "type": "array"
+        },
+        "stages": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Stages",
+          "type": "array"
+        }
+      },
+      "title": "RecipeMatch",
+      "type": "object"
+    }
+  },
+  "$id": "https://areao1.dev/schemas/v1/proof-recipe.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "profiles/recipes/<criterion>.yaml: the proof to preserve once an activity is accepted, completed, granted or\npublished. Community-edited advice, not a legal requirement.",
+  "properties": {
+    "applies_to": {
+      "description": "Evidence types this recipe is for; empty means all of the criterion's.",
+      "items": {
+        "pattern": "^[a-z0-9][a-z0-9_\\-]*$",
+        "type": "string"
+      },
+      "title": "Applies To",
+      "type": "array"
+    },
+    "criterion": {
+      "pattern": "^[a-z0-9][a-z0-9_\\-]*$",
+      "title": "Criterion",
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/RecipeItem"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "label": {
+      "title": "Label",
+      "type": "string"
+    }
+  },
+  "required": [
+    "criterion",
+    "label",
+    "items"
+  ],
+  "title": "Recipe",
+  "type": "object"
+}

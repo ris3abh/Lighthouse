@@ -1,0 +1,21 @@
+# Proof recipe (ADR 0017), once a membership is granted. Community-edited; a suggestion, not a legal requirement.
+criterion: membership
+label: "Membership requiring outstanding achievement"
+items:
+  - id: membership_proof
+    label: "The membership certificate or acceptance letter"
+    why: "The primary record that you were admitted."
+    match: {evidence_types: [membership_certificate, membership_letter], stages: [granted], keywords: [welcome to, you have been elected, membership certificate, admitted as]}
+  - id: bylaws
+    label: "The bylaws or rules for admission"
+    why: "Shows that membership requires outstanding achievement, not just a fee."
+    match: {evidence_types: [membership_bylaws], keywords: [bylaws, membership requirements, criteria for election, eligibility for membership]}
+  - id: judged_by_experts
+    label: "Who decides on admission"
+    why: "Recognized experts in the field reviewing applicants."
+    match: {keywords: [membership committee, elected by, nominated by, review committee]}
+  - id: selectivity
+    label: "How many apply and how many are admitted"
+    why: "Numbers make selectivity visible."
+    optional: true
+    match: {keywords: [acceptance rate, members worldwide, elected each year, fellows]}

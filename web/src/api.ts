@@ -201,6 +201,32 @@ export interface NamingIssue {
   detail: string;
 }
 
+/** Proof recipes (ADR 0017): what to save for an accepted / completed / granted / published activity. */
+export interface ProofItem {
+  id: string;
+  label: string;
+  why: string;
+  optional: boolean;
+  status: "missing" | "done" | "waived" | "self_reported";
+  via: "anchor" | "linked" | null;
+  exhibit_id: string | null;
+  exhibit_title: string | null;
+  note: string;
+  suggestions: { id: string; title: string }[];
+}
+
+export interface ProofChecklist {
+  anchor: string;
+  kind: "exhibit" | "pipeline" | "claim";
+  title: string;
+  criterion: string;
+  stage: string;
+  date: string;
+  recipe: string;
+  items: ProofItem[];
+  missing: number;
+}
+
 export interface EvidenceView {
   criteria: EvidenceCriterion[];
   other_exhibits: Exhibit[];
@@ -833,6 +859,10 @@ export const api = {
   evidence: () => request<EvidenceView>("GET", "/exhibits"),
   upload: (form: FormData) => request<Exhibit>("POST", "/exhibits/upload", form),
   remap: (id: string, criterion: string) => request<Exhibit>("PATCH", `/exhibits/${enc(id)}`, { criterion }),
+  proof: () => request<{ checklists: ProofChecklist[] }>("GET", "/proof"),
+  proofLink: (anchor: string, item: string, exhibit_id: string) => request<unknown>("POST", "/proof/link", { anchor, item, exhibit_id }),
+  proofWaive: (anchor: string, item: string, note: string) => request<unknown>("POST", "/proof/waive", { anchor, item, note }),
+  proofUnlink: (anchor: string, item: string) => request<unknown>("POST", "/proof/unlink", { anchor, item }),
   fileUrl: (path: string) => `./api/files/${path.split("/").map(enc).join("/")}`,
 
   metrics: () => request<{ series: Series[] }>("GET", "/metrics"),

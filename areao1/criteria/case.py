@@ -21,6 +21,8 @@ from areao1.criteria.models import (
     OutreachDraft,
     Person,
     Profile,
+    ProofLink,
+    ProofLinks,
     Scoreboard,
     SendAttempt,
     Todo,
@@ -31,7 +33,8 @@ from areao1.onboarding.models import OnboardingState
 # Case files written on first use; validated when present.
 CASE_OPTIONAL_FILES: dict[str, type[BaseModel]] = {"onboarding.json": OnboardingState, "todos.json": Todos,
                                                    "contacts.json": Contacts, "threads.json": GmailThreads,
-                                                   "outreach.json": Outreach, "mail.json": Mailbox}  # fmt: skip
+                                                   "outreach.json": Outreach, "mail.json": Mailbox,
+                                                   "proofs.json": ProofLinks}  # fmt: skip
 
 DATA_FILES: dict[str, type[BaseModel]] = {
     "person.json": Person,
@@ -137,6 +140,22 @@ class Case(Workspace):
             contacts.contacts = kept
             self._save("contacts.json", contacts)
             self.after_change()
+
+    # ------------------------------------------------------------------ proof links (ADR 0017)
+
+    def proofs(self) -> ProofLinks:
+        return self._load("proofs.json", ProofLinks)
+
+    def set_proof(self, link: ProofLink | None, anchor: str, item: str) -> ProofLink | None:
+        """Replace the link or waiver for (anchor, item); ``None`` removes it. Returns what was there before."""
+        with self.lock:
+            proofs = self.proofs()
+            before = next((x for x in proofs.links if x.anchor == anchor and x.item == item), None)
+            proofs.links = [x for x in proofs.links if not (x.anchor == anchor and x.item == item)]
+            if link is not None:
+                proofs.links.append(link)
+            self._save("proofs.json", proofs)
+            return before
 
     def todos(self) -> Todos:
         return self._load("todos.json", Todos)

@@ -24,10 +24,11 @@ from pydantic import BaseModel
 
 from areao1.agent.autopilot import AUTO_ACTIONS, AutopilotRefused
 from areao1.core import clock
-from areao1.core.models import Briefing, Candidate, Change, Evidence, Exhibit, MetricRow
+from areao1.core.models import Briefing, Candidate, Change, Evidence, Exhibit, MetricRow, utcnow
 from areao1.core.text import plural
 from areao1.core.workspace import NotFound, WorkspaceError
 from areao1.criteria.case import Case
+from areao1.criteria.models import ProofLink
 
 T = TypeVar("T")
 MAX_CONTEXT_CHARS = 4000
@@ -127,8 +128,12 @@ class Service:
         before = self._candidate(candidate_id)
         if not any(edits.get(k) is not None for k in self.ws.TEXT_FIELDS):
             self._rule_gate(before)
-        return self._record("inbox.accept", before.kind, lambda: self.ws.accept_candidate(candidate_id, **edits),
-                            before=before, summary=before.title)  # fmt: skip
+        result = self._record("inbox.accept", before.kind, lambda: self.ws.accept_candidate(candidate_id, **edits),
+                              before=before, summary=before.title)  # fmt: skip
+        proof = before.proposal.get("proof") if before.kind == "evidence" else None
+        if isinstance(proof, dict) and isinstance(result, Exhibit):  # a match for a proof item (ADR 0017)
+            self.link_proof(str(proof.get("anchor")), str(proof.get("item")), result.id)
+        return result
 
     def _rule_gate(self, cand: Candidate) -> None:
         """Unverified rule claims can't enter exhibits or letters (SPEC 5a). Freshness is re-evaluated now, so a
@@ -223,6 +228,41 @@ class Service:
         return self.propose_candidate(cand)
 
     # ------------------------------------------------------------------ evidence + scoring
+
+    # ------------------------------------------------------------------ proof recipes (ADR 0017)
+
+    def _proof_item(self, anchor: str, item: str) -> None:
+        from areao1.criteria import proof
+
+        if not any(
+            c["anchor"] == anchor and any(i["id"] == item for i in c["items"])
+            for c in proof.checklists(self.ws)
+        ):
+            raise NotFound(f"no proof item {item!r} for {anchor!r}")
+
+    def link_proof(self, anchor: str, item: str, exhibit_id: str) -> ProofLink:
+        """This exhibit preserves that proof item. A self-reported exhibit can be linked but never marks it done."""
+        self._proof_item(anchor, item)
+        self._find(self.ws.exhibits().exhibits, exhibit_id, "exhibit")
+        link = ProofLink(anchor=anchor, item=item, exhibit_id=exhibit_id, at=utcnow())
+        return self._record("proof.link", "proof", lambda: (self.ws.set_proof(link, anchor, item), link)[1],
+                            target_id=f"{anchor}#{item}", summary=item)  # fmt: skip
+
+    def waive_proof(self, anchor: str, item: str, note: str) -> ProofLink:
+        """Not applicable to this activity, with the person's reason."""
+        self._proof_item(anchor, item)
+        if not note.strip():
+            raise WorkspaceError("say why it doesn't apply")
+        link = ProofLink(anchor=anchor, item=item, status="waived", note=note.strip()[:300], at=utcnow())
+        return self._record("proof.waive", "proof", lambda: (self.ws.set_proof(link, anchor, item), link)[1],
+                            target_id=f"{anchor}#{item}", summary=item)  # fmt: skip
+
+    def unlink_proof(self, anchor: str, item: str) -> dict[str, Any]:
+        before = next((x for x in self.ws.proofs().links if x.anchor == anchor and x.item == item), None)
+        if before is None:
+            raise NotFound(f"nothing linked for {item!r}")
+        return self._record("proof.unlink", "proof", lambda: (self.ws.set_proof(None, anchor, item), {"id": f"{anchor}#{item}"})[1],
+                            target_id=f"{anchor}#{item}", before=before, summary=item)  # fmt: skip
 
     def add_exhibit_file(self, **kwargs: Any) -> Exhibit:
         return self._record("evidence.upload", "exhibit", lambda: self.ws.add_exhibit_file(**kwargs),

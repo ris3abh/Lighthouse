@@ -26,7 +26,7 @@ PDF = b"%PDF-1.4 fictional\n"
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
                  "/api/settings/missions", "/api/settings/agent", "/api/settings/mail", "/api/settings/opportunities", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
-                 "/api/onboarding", "/api/todos", "/api/contacts", "/api/outreach")  # fmt: skip
+                 "/api/onboarding", "/api/todos", "/api/contacts", "/api/outreach", "/api/proof")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -130,6 +130,32 @@ def _ids(ws):
         ).id,
         "todo": _todo(ws),
     }
+
+
+def _proof_ids(ws) -> dict[str, str]:
+    from areao1.criteria import proof
+
+    anchor = next((a["anchor"] for a in proof.anchors(ws) if a["title"] == "Judged Example Hacks 2026"), "")
+    other = next((e.id for e in ws.exhibits().exhibits if e.title == "Example Hacks 2026 judges page"), "")
+    return {"proof_anchor": anchor, "proof_exhibit": other}
+
+
+def _proof_ready(ws) -> None:
+    """A completed judging exhibit (it gets a proof checklist) and another document that could preserve an item."""
+    from datetime import date
+
+    ws.add_exhibit_file(content=b"%PDF-1.4 a", filename="j.pdf", criterion="judging", evidence_type="panel_letter",
+                        title="Judged Example Hacks 2026", on=date(2026, 3, 1), stage="completed")  # fmt: skip
+    ws.add_exhibit_file(content=b"%PDF-1.4 b", filename="p.pdf", criterion="judging", evidence_type="panel_letter",
+                        title="Example Hacks 2026 judges page", on=date(2026, 3, 2))  # fmt: skip
+
+
+def _proof_linked(ws) -> None:
+    from areao1.service import Service
+
+    _proof_ready(ws)
+    ids = _proof_ids(ws)
+    Service(ws).link_proof(ids["proof_anchor"], "event_page", ids["proof_exhibit"])
 
 
 def _letter_claims(ws) -> None:
@@ -272,6 +298,12 @@ SAMPLES = {
     ("POST", "/api/contacts"): ("/api/contacts", {"json": {"name": "Prof. Lee"}}, "contact.add"),
     ("PATCH", "/api/contacts/{contact_id}"): ("/api/contacts/{contact}", {"json": {"notes": "Met at ICML"}}, "contact.update"),
     ("DELETE", "/api/contacts/{contact_id}"): ("/api/contacts/{contact}", {}, "contact.delete"),
+    ("POST", "/api/proof/link"): ("/api/proof/link", {"json": {"anchor": "{proof_anchor}", "item": "event_page",
+                                                               "exhibit_id": "{proof_exhibit}"}}, "proof.link", "_proof_ready"),
+    ("POST", "/api/proof/waive"): ("/api/proof/waive", {"json": {"anchor": "{proof_anchor}", "item": "selection_criteria",
+                                                                 "note": "Not published"}}, "proof.waive", "_proof_ready"),
+    ("POST", "/api/proof/unlink"): ("/api/proof/unlink", {"json": {"anchor": "{proof_anchor}", "item": "event_page"}},
+                                    "proof.unlink", "_proof_linked"),
     ("POST", "/api/onboarding/ai"): ("/api/onboarding/ai", {"json": {"choice": "skip"}}, "onboarding.ai", "_at_ai"),
 }  # fmt: skip
 
@@ -315,6 +347,7 @@ def test_page_writes_only_happen_inside_the_service_layer(route, demo_ws, writes
     ids = _ids(demo_ws)
     for name in setup:  # a route that needs a particular state first
         globals()[name](demo_ws)
+    ids |= _proof_ids(demo_ws)  # records the setup made
     path = path.format(**ids)
     if "json" in kwargs:  # ids in the body too ({contact}, {onboarding})
         body = {

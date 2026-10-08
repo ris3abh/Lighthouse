@@ -18,6 +18,8 @@ export default function Pipeline() {
   const { version, bump } = useRefresh();
   const toast = useToast();
   const data = useLoad(() => Promise.all([api.pipeline(), api.profile()]), [version]);
+  const proof = useLoad(() => api.proof(), [version]); // done items get a proof checklist (ADR 0017)
+  const toSave = (id: string) => proof.data?.checklists.find((c) => c.anchor === `pipeline:${id}`)?.missing ?? 0;
   const [over, setOver] = useState<Stage | null>(null);
   const [title, setTitle] = useState("");
   const [moved, setMoved] = useState<Record<string, Stage>>({}); // optimistic stage while a move saves
@@ -131,6 +133,11 @@ export default function Pipeline() {
                         </span>
                       )}
                       {item.stale && <Chip tone="alert">stale {item.days_since_move}d</Chip>}
+                      {toSave(item.id) > 0 && (
+                        <a href={`#/evidence?proof=pipeline:${item.id}`} className="link font-mono text-[10.5px] tracking-[0.06em] uppercase">
+                          {toSave(item.id)} proof to save
+                        </a>
+                      )}
                     </div>
                     {item.notes && <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-ink-2">{item.notes}</p>}
                     <div className="mt-3 flex items-center gap-2">

@@ -1,0 +1,12 @@
+# Proof recipe (ADR 0017), for commercial success (EB-1A). Community-edited; a suggestion, not a legal requirement.
+criterion: commercial_success
+label: "Commercial success"
+items:
+  - id: sales_records
+    label: "Sales, box-office or revenue records"
+    why: "Official figures from the publisher, label or platform."
+    match: {evidence_types: [box_office, sales_record], keywords: [sales, revenue, box office, units sold]}
+  - id: comparison
+    label: "How those figures compare in the field"
+    why: "Rankings or charts put the numbers in context."
+    match: {keywords: [chart, ranking, bestseller, top]}

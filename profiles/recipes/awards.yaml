@@ -1,0 +1,28 @@
+# Proof recipe (ADR 0017), once an award is granted. Community-edited; a suggestion, not a legal requirement.
+criterion: awards
+label: "Prizes or awards"
+items:
+  - id: certificate
+    label: "The certificate, trophy photo or award letter"
+    why: "The primary record that you received it."
+    match: {evidence_types: [award_certificate, fellowship, hackathon_win], stages: [granted], keywords: [certificate, award letter, congratulations, you have been selected, winner]}
+  - id: announcement
+    label: "The official announcement naming you"
+    why: "A dated public page or release from the awarding body."
+    match: {evidence_types: [award_notice], keywords: [announces, announcement, winners, recipients, awardees]}
+  - id: eligibility_rules
+    label: "The award's eligibility rules"
+    why: "Shows who could compete, and that it's for excellence in the field."
+    match: {keywords: [eligibility, who can apply, rules, terms and conditions]}
+  - id: competition_size
+    label: "The number of nominees or applicants"
+    why: "Selectivity is easier to see with numbers."
+    match: {keywords: [applicants, nominees, submissions received, entries, teams competed]}
+  - id: judging_process
+    label: "How winners were chosen"
+    why: "Who judged and on what basis."
+    match: {keywords: [judging criteria, jury, selection committee, judged by, evaluation criteria]}
+  - id: reputation
+    label: "Evidence of the award's reputation"
+    why: "Coverage, history, past recipients, the size of the field it's known in."
+    match: {keywords: [past recipients, previous winners, coverage, press release, history of the award]}

@@ -1,0 +1,38 @@
+# Proof recipe (ADR 0017): what to save while it's still easy to get, once judging is accepted or completed.
+# Community-edited. A suggestion of what reviewers commonly look for, not a legal requirement.
+criterion: judging
+label: "Judging the work of others"
+items:
+  - id: invitation
+    label: "The invitation"
+    why: "Shows who asked you, for what, and when."
+    match: {evidence_types: [judge_invite], stages: [invited], keywords: [invitation to judge, invite you to judge, invited to review, invite you to review, program committee invitation, join the program committee]}
+  - id: acceptance
+    label: "Your acceptance or the organizer's confirmation"
+    why: "Shows you took the role on, not only that you were asked."
+    match: {stages: [accepted], keywords: [confirmed as a judge, thanks for accepting, welcome to the program committee, welcome aboard, your judging assignment, you're confirmed]}
+  - id: submission_proof
+    label: "Proof your reviews or scores were submitted"
+    why: "A screenshot or export from the review system, or the organizer's receipt, shows the work was done."
+    match: {evidence_types: [reviewer_record], keywords: [review submitted, reviews submitted, your review has been received, scores submitted, review record, reviewer record]}
+  - id: completion
+    label: "The thank-you or certificate after the event"
+    why: "Confirms you completed the judging."
+    match: {stages: [completed], keywords: [thank you for judging, thanks for judging, thank you for reviewing, thanks for reviewing, certificate of appreciation, outstanding reviewer, thank you for serving]}
+  - id: event_page
+    label: "The event or program page that lists you as a judge"
+    why: "Public, dated and from the organizer, not from you."
+    match: {keywords: [judges, judging panel, program committee, reviewers]}
+  - id: organizer_standing
+    label: "Evidence of the organizer's standing"
+    why: "Who runs the event and why it matters in your field (size, history, sponsors, coverage)."
+    match: {keywords: [about us, sponsors, history of, attendees, participants from]}
+  - id: volume
+    label: "How many and what kind of submissions you judged"
+    why: "Judging 40 submissions in a track shows more than the word judged alone."
+    match: {keywords: [submissions assigned, papers assigned, projects judged, your assignments]}
+  - id: selection_criteria
+    label: "How judges were selected"
+    why: "Shows the role was selective, if the organizer published it."
+    optional: true
+    match: {keywords: [judges are selected, selection of judges, reviewer selection, program committee selection]}

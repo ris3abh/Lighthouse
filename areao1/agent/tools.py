@@ -94,6 +94,11 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
     async def t_gaps(args: S) -> str:
         return ctx.out(read.list_gaps(ws))
 
+    async def t_missing_proof(args: S) -> str:
+        from areao1.criteria import proof
+
+        return ctx.out({"activities": proof.missing(ws)})
+
     async def t_claims(args: S) -> str:
         return ctx.out(read.query_claims(ws, args["entity"], args.get("as_of")))
 
@@ -736,6 +741,9 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
     tool_list = [
         AgentTool("get_scoreboard", "Current criteria scoreboard (banked / building / gap / dropped).", _obj({}, []), t_scoreboard),
         AgentTool("list_gaps", "Criteria not yet banked: what's missing, what's in progress, what's in the Inbox.", _obj({}, []), t_gaps),
+        AgentTool("missing_proof", "Completed or accepted activities with proof still to save (proof recipes): each "
+                  "item's label and why. To suggest a document you found, propose_evidence with its quote; the person "
+                  "links it.", _obj({}, []), t_missing_proof),
         AgentTool("get_profile", "The active profile's criteria, accepted evidence types and strength signals.", _obj({}, []), t_profile),
         AgentTool("query_claims", "Claims about an entity (id or name fragment), optionally as of a date.",
                   _obj({"entity": STR, "as_of": DATE}, ["entity"]), t_claims),
@@ -812,6 +820,7 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
         ]  # fmt: skip
     touches = {
         "get_scoreboard": ("data/exhibits.json", "data/criteria.json"), "list_gaps": ("data/exhibits.json", "data/inbox.json"),
+        "missing_proof": ("data/exhibits.json", "data/proofs.json", "profiles/recipes/"),
         "get_profile": ("profiles/",), "query_claims": ("memory/claims.jsonl",),
         "get_provenance": ("memory/claims.jsonl", "memory/sources/"), "what_changed": ("memory/", "data/metrics.csv"),
         "list_inbox": ("data/inbox.json",), "list_deadlines": ("data/deadlines.json",),

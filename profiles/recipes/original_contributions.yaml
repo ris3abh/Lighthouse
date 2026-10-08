@@ -1,0 +1,24 @@
+# Proof recipe (ADR 0017), for an original contribution. Community-edited; a suggestion, not a legal requirement.
+criterion: original_contributions
+label: "Original contributions of major significance"
+items:
+  - id: the_work
+    label: "The work itself, dated (release, repository, patent, model card)"
+    why: "What you made and when."
+    match: {evidence_types: [open_source_project, ml_model, dataset, patent], keywords: [release, repository, patent, model card]}
+  - id: adoption
+    label: "Evidence that others adopted it"
+    why: "Users, dependents, downloads, companies that run it."
+    match: {evidence_types: [adoption_evidence], keywords: [used by, adopted, dependents, downloads, customers]}
+  - id: independent_use
+    label: "Independent use or implementation"
+    why: "Someone outside your team built on it or deployed it."
+    match: {keywords: [built on, deployed, implementation, integrated, case study]}
+  - id: expert_view
+    label: "An expert's view of its significance"
+    why: "A letter or article explaining why it matters to the field."
+    match: {evidence_types: [expert_letter], keywords: [letter, significance, impact on the field]}
+  - id: metrics_history
+    label: "Metrics over time (stars, downloads, citations)"
+    why: "Sustained growth reads better than a single number; keep dated snapshots."
+    match: {keywords: [stars, downloads, citations, metrics]}

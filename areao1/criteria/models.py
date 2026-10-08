@@ -269,6 +269,52 @@ class Mailbox(_File):
     synced_at: datetime | None = None
 
 
+# --------------------------------------------------------------------------- proof recipes (ADR 0017)
+
+
+class RecipeMatch(_Model):
+    """How an exhibit or a message is recognized as this proof item: any listed evidence type or stage, or (for
+    mail and source items, and for suggesting existing exhibits) a keyword phrase in its title or subject."""
+
+    evidence_types: list[Slug] = Field(default_factory=list)
+    stages: list[str] = Field(default_factory=list)
+    keywords: list[str] = Field(default_factory=list, description="Lowercase phrases.")
+
+
+class RecipeItem(_Model):
+    id: Slug
+    label: str
+    why: str = ""
+    optional: bool = Field(False, description='"If available": never counted as missing.')
+    match: RecipeMatch = Field(default_factory=RecipeMatch)
+
+
+class Recipe(_Model):
+    """profiles/recipes/<criterion>.yaml: the proof to preserve once an activity is accepted, completed, granted or
+    published. Community-edited advice, not a legal requirement."""
+
+    criterion: Slug
+    label: str
+    applies_to: list[Slug] = Field(
+        default_factory=list,
+        description="Evidence types this recipe is for; empty means all of the criterion's.",
+    )
+    items: list[RecipeItem]
+
+
+class ProofLink(_Model):
+    anchor: str = Field(description="The activity: exhibit:<id>, pipeline:<id> or claim:<id>.")
+    item: Slug
+    status: Literal["linked", "waived"] = "linked"
+    exhibit_id: str | None = Field(None, description="The exhibit that preserves this item.")
+    note: str = Field("", max_length=300, description="Why it doesn't apply, for a waived item.")
+    at: datetime
+
+
+class ProofLinks(_File):
+    links: list[ProofLink] = Field(default_factory=list)
+
+
 # --------------------------------------------------------------------------- profiles/*.yaml
 
 

@@ -1,0 +1,21 @@
+# Proof recipe (ADR 0017), once an article about you is published. Community-edited; a suggestion only.
+criterion: press
+label: "Published material about you"
+items:
+  - id: article_copy
+    label: "A full copy of the article (PDF), with the date and author"
+    why: "Web pages change; a dated copy with the byline is the record."
+    match: {evidence_types: [press_article, interview, podcast_feature, media_mention], stages: [published], keywords: [article, interview, feature, profile]}
+  - id: publication_standing
+    label: "Evidence of the publication's reach"
+    why: "Circulation, audience or standing of the outlet (a trade or major medium)."
+    match: {keywords: [circulation, readers, audience, monthly visitors, media kit]}
+  - id: about_you
+    label: "Proof it's about you and your work"
+    why: "The parts that name you and describe your work, not a passing mention."
+    match: {keywords: [profile of, interview with, spotlight]}
+  - id: translation
+    label: "A certified translation, if it isn't in English"
+    why: "Foreign-language material needs a translation."
+    optional: true
+    match: {keywords: [translation, translated]}

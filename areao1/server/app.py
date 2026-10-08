@@ -79,6 +79,13 @@ class SnoozeBody(BaseModel):
     until: dt.date | None = None
 
 
+class ProofBody(BaseModel):
+    anchor: str
+    item: str
+    exhibit_id: str | None = None
+    note: str = ""
+
+
 class RemapBody(BaseModel):
     criterion: str
     evidence_type: str | None = None
@@ -531,10 +538,14 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         signals: str = Form("", description="Comma-separated signal ids"),
         source_url: str = Form(""),
         stage: str = Form("", description="Event stage, e.g. invited / completed; empty if not an activity"),
+        proof_anchor: str = Form("", description="Uploaded from a proof checklist: the activity (ADR 0017)"),
+        proof_item: str = Form(""),
     ) -> dict[str, Any]:
         content = await file.read(MAX_UPLOAD_BYTES + 1)
         if len(content) > MAX_UPLOAD_BYTES:
             raise HTTPException(413, "file is larger than 25 MB")
+        if proof_anchor:
+            svc._proof_item(proof_anchor, proof_item)  # before filing anything
         exhibit = svc.add_exhibit_file(
             content=content,
             filename=file.filename or "upload.bin",
@@ -547,7 +558,31 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
             source_url=source_url or None,
             stage=stage or None,
         )
+        if proof_anchor:
+            svc.link_proof(proof_anchor, proof_item, exhibit.id)
         return exhibit.model_dump(mode="json")
+
+    # ------------------------------------------------------------------ proof recipes (ADR 0017)
+
+    @app.get("/api/proof")
+    def get_proof() -> dict[str, Any]:
+        from areao1.criteria import proof
+
+        return {"checklists": proof.checklists(ws)}
+
+    @app.post("/api/proof/link")
+    def post_proof_link(body: ProofBody) -> dict[str, Any]:
+        if not body.exhibit_id:
+            raise HTTPException(400, "choose an exhibit")
+        return svc.link_proof(body.anchor, body.item, body.exhibit_id).model_dump(mode="json")
+
+    @app.post("/api/proof/waive")
+    def post_proof_waive(body: ProofBody) -> dict[str, Any]:
+        return svc.waive_proof(body.anchor, body.item, body.note).model_dump(mode="json")
+
+    @app.post("/api/proof/unlink")
+    def post_proof_unlink(body: ProofBody) -> dict[str, Any]:
+        return svc.unlink_proof(body.anchor, body.item)
 
     @app.patch("/api/exhibits/{exhibit_id}")
     def remap(exhibit_id: str, body: RemapBody) -> dict[str, Any]:

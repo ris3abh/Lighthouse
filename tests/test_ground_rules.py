@@ -112,3 +112,19 @@ def test_self_reported_material_never_counts(ws):
     ex.exhibits[0].source_tier = "self_reported"
     ws.save_exhibits(ex)
     assert next(c for c in ws.recompute().criteria if c.id == "awards").exhibit_count == 1
+
+
+def test_self_reported_material_never_satisfies_a_proof_item(ws):
+    from areao1.criteria import proof
+    from areao1.service import Service
+
+    done = ws.add_exhibit_file(content=b"%PDF-1.4 x", filename="a.pdf", criterion="judging", evidence_type="panel_letter",
+                               title="Judged Example Hacks", on=date(2026, 1, 1), stage="completed")  # fmt: skip
+    note = ws.add_exhibit_file(content=b"%PDF-1.4 y", filename="b.pdf", criterion="judging", evidence_type="panel_letter",
+                               title="My own note", on=date(2026, 1, 2))  # fmt: skip
+    ex = ws.exhibits()
+    next(e for e in ex.exhibits if e.id == note.id).source_tier = "self_reported"
+    ws.save_exhibits(ex)
+    Service(ws).link_proof(f"exhibit:{done.id}", "event_page", note.id)
+    [c] = proof.checklists(ws)
+    assert next(i for i in c["items"] if i["id"] == "event_page")["status"] == "self_reported"

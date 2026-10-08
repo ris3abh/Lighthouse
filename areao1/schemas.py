@@ -32,6 +32,8 @@ MODELS: dict[str, type[BaseModel]] = {
     "opportunities": core.Opportunities,
     "areao1-config": core.WorkspaceConfig,
     "profile": domain.Profile,
+    "proof-recipe": domain.Recipe,
+    "proofs": domain.ProofLinks,
     "memory-observation": core.Observation,
     "memory-entity": core.Entity,
     "memory-claim": core.Claim,

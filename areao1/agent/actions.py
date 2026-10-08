@@ -48,6 +48,7 @@ YOURS: dict[str, str] = {
     "letter.draft": "You start a letter draft from Letters, so you choose when a model writes in a writer's voice.",
     "settings.opportunities": "It decides whether your mail is read every day for opportunities.",
     "inbox.recheck": "It re-runs the automatic check on the agent's own text.",
+    "proof.": "Which document preserves a proof item is your call; the agent proposes matches to the Inbox.",
     "briefing.recheck": "It re-runs the automatic check on the agent's own text.",
     "onboarding.": "Your own answers about yourself.",
     "outreach.send": "Sending an email in your name needs your approval, every time (ADR 0014 §5).",

@@ -24,8 +24,12 @@ def _run_sync(ws: Case, scheduled: bool = False) -> list[str]:
     from areao1.notify import Notification, send
 
     before = {c.id for c in ws.inbox().candidates}
+    from areao1.criteria import proof
+
     reports = _sync.sync(ws)
     lines = [r.line() for r in reports] or ["no sources: run `areao1 import <url>` first"]
+    if reports:
+        lines += proof.propose(ws)  # source pages that may preserve a proof item (ADR 0017)
     new = [c for c in ws.pending_candidates() if c.id not in before]
     if new:
         note = Notification(
@@ -129,11 +133,13 @@ def _opportunities(ws: Case, scheduled: bool = False) -> list[str]:
 
 
 def _google(ws: Case, scheduled: bool = False) -> list[str]:
+    from areao1.criteria import proof
     from areao1.google import gmail, outreach
     from areao1.service import Service
 
     lines = gmail.sync(ws)
     lines += _mail_view(ws)
+    lines += proof.propose(ws)  # mail that may preserve a proof item (ADR 0017), to the Inbox
     drafts = outreach.follow_ups(ws)  # after quiet days: drafts for you to approve, never sent on their own
     for d in drafts:
         Service(ws, actor="follow-up").save_draft(d)
