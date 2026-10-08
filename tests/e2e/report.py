@@ -47,7 +47,9 @@ def coverage(run: Path) -> dict[str, dict[str, int]]:
     out: dict[str, dict[str, int]] = {}
     for line in path.read_text().splitlines() if path.exists() else []:
         c = json.loads(line)
-        out[c["route"]] = {k: c[k] for k in ("elements", "exercised", "static", "skipped")}
+        out[c["route"]] = {k: c[k] for k in ("elements", "exercised", "static", "skipped")} | {
+            "reasons": c.get("reasons", {})
+        }
     return out
 
 
@@ -81,8 +83,13 @@ def summarize(runs: list[Path]) -> dict[str, Any]:
                       "elements": c.get("elements"), "exercised": (c.get("exercised", 0) + c.get("static", 0)) if c else None})  # fmt: skip
     total = sum(c["elements"] for c in cov.values())
     done = sum(c["exercised"] + c["static"] for c in cov.values())
+    reasons: dict[str, int] = {}
+    for c in cov.values():
+        for r, n in c.get("reasons", {}).items():
+            reasons[r] = reasons.get(r, 0) + n
     return {"runs": len(runs), "pages": pages, "issues": issues,
-            "coverage": {"elements": total, "exercised": done, "percent": round(100 * done / total, 1) if total else None}}  # fmt: skip
+            "coverage": {"elements": total, "exercised": done, "percent": round(100 * done / total, 1) if total else None,
+                         "skip_reasons": dict(sorted(reasons.items(), key=lambda kv: -kv[1]))}}  # fmt: skip
 
 
 def markdown(s: dict[str, Any]) -> str:
@@ -92,6 +99,12 @@ def markdown(s: dict[str, Any]) -> str:
     for p in s["pages"]:
         ex = f"{p['exercised']}/{p['elements']}" if p["elements"] else ""
         out.append(f"| {p['page']} | {p['status']} | {p['errors']} | {p['warnings']} | {ex} |")
+    if s["coverage"].get("skip_reasons"):
+        out += [
+            "",
+            "Not exercised, and why: "
+            + "; ".join(f"{n} {r}" for r, n in s["coverage"]["skip_reasons"].items()),
+        ]
     out += ["", "## Findings", ""]
     for f in s["issues"]:
         tag = "warning" if f["warning"] else "error"

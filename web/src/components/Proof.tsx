@@ -124,7 +124,7 @@ function Item({
   const others = (crit?.exhibits ?? []).filter((e) => `exhibit:${e.id}` !== c.anchor && !i.suggestions.some((s) => s.id === e.id));
   const missing = i.status === "missing" || i.status === "self_reported";
   return (
-    <li className="grid gap-2 px-5 py-3 sm:grid-cols-[1.5rem_1fr_auto] sm:items-start">
+    <li className="grid gap-2 px-5 py-3 sm:grid-cols-[1.5rem_1fr_auto] sm:items-start" data-proof-item={`${c.anchor}#${i.id}`}>
       <span aria-hidden className="mt-0.5">
         {i.status === "done" ? <Check className="size-4 text-ink" /> : i.status === "waived" ? <Minus className="size-4 text-muted" /> : <span className="inline-block size-3.5 border border-dashed border-ink-2" title="Not saved yet" />}
       </span>

@@ -269,7 +269,7 @@ never enters the packet as evidence.
   - [x] F5 accessibility: B4, B9, B11, B12, B13, B15, B16, B17, download buttons inside links
   - [x] F6 UX: friendly lookup errors, Memory empty filter message, one offline banner on Knowledge
   - [x] F7 B19 (film_demo answers every chat) and the offline stub raises a DNS error
-  - [ ] F8 crawler: re-find after re-renders, a skip reason per control, Evidence coverage; browser suite blocking
+  - [x] F8 crawler: re-find after re-renders, a skip reason per control, Evidence coverage; browser suite blocking
   - [ ] F9 Inbox bulk review (groups, filters, selection, batch actions with one Undo batch, keyboard)
   - [ ] F10 chat-import extraction: notes low priority and collapsed, proposed only with a person, date, deadline or
         case item; near-duplicates merged; count what remains of the owner's 397

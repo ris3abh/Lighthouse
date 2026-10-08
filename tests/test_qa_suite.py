@@ -44,7 +44,12 @@ def test_the_report_separates_consistent_and_flaky_per_page(tmp_path):
     assert by[("dead_control", "overview")]["warning"]
     pages = {p["page"]: p["status"] for p in s["pages"]}
     assert pages["knowledge"] == "broken" and pages["inbox"] == "warnings" and pages["overview"] == "warnings"
-    assert pages["metrics"] == "pass" and s["coverage"] == {"elements": 10, "exercised": 9, "percent": 90.0}
+    assert pages["metrics"] == "pass" and s["coverage"] == {
+        "elements": 10,
+        "exercised": 9,
+        "percent": 90.0,
+        "skip_reasons": {},
+    }
     assert "| knowledge | broken | 1 | 0 | 9/10 |" in report.markdown(s)
 
 
@@ -53,6 +58,7 @@ def test_ci_runs_the_suite_headless_and_areao1_qa_exists():
     steps = " ".join(str(s.get("run", "")) for s in jobs["e2e"]["steps"])
     assert "playwright install --with-deps chromium" in steps and "pytest tests/e2e" in steps
     assert any(s.get("env", {}).get("AREAO1_E2E") == "1" for s in jobs["e2e"]["steps"])
+    assert "continue-on-error" not in jobs["e2e"]  # blocking: a browser failure fails CI
     from areao1.cli import app
 
     names = {c.name or c.callback.__name__ for c in app.registered_commands}
