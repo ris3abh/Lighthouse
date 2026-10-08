@@ -188,4 +188,8 @@ def test_the_guide_for_other_accounts_is_in_the_docs_and_the_mail_view():
     for text in (doc, view):
         assert "Bring in emails from another account (e.g. work)" in text
         assert "employer's email policy first" in text
-        assert "Forward as attachment" in text and ".eml" in text and "plain Forward" in text.replace("A plain **Forward**", "A plain Forward")
+        assert (
+            "Forward as attachment" in text
+            and ".eml" in text
+            and "plain Forward" in text.replace("A plain **Forward**", "A plain Forward")
+        )
