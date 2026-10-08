@@ -1,0 +1,128 @@
+# The docs site (served at /docs/ next to the landing page; see .github/workflows/pages.yml).
+# Build: uv pip install -e '.[docs]' && mkdocs build --strict   (or mkdocs serve to preview)
+site_name: Area O1 docs
+site_description: Your O-1A / EB-1A evidence file, built on your own computer.
+site_url: https://ris3abh.github.io/areao1/docs/
+repo_url: https://github.com/ris3abh/areao1
+repo_name: ris3abh/areao1
+edit_uri: edit/main/docs/manual/
+copyright: Area O1 is not legal advice and is not affiliated with USCIS. Apache-2.0.
+docs_dir: docs/manual
+site_dir: build/docs
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  font: false               # Archivo and JetBrains Mono ship with the site (stylesheets/brutalism.css)
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: {icon: material/weather-night, name: Dark theme}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: {icon: material/weather-sunny, name: Light theme}
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/brutalism.css
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc: {permalink: true}
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed: {alternate_style: true}
+  - pymdownx.keys
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ris3abh/areao1
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - getting-started/index.md
+      - Install: getting-started/install.md
+      - First run and onboarding: getting-started/first-run.md
+      - Add an OpenAI API key: getting-started/openai-key.md
+      - Costs and budget caps: getting-started/costs.md
+  - Guided tour:
+      - tour/index.md
+      - Overview: tour/overview.md
+      - Inbox: tour/inbox.md
+      - Evidence: tour/evidence.md
+      - Metrics: tour/metrics.md
+      - Pipeline: tour/pipeline.md
+      - Letters: tour/letters.md
+      - Contacts and Mail: tour/contacts.md
+      - Calendar: tour/calendar.md
+      - Agent: tour/agent.md
+      - Knowledge: tour/knowledge.md
+      - Memory: tour/memory.md
+      - Sources: tour/sources.md
+      - Settings: tour/settings.md
+  - Connectors:
+      - connectors/index.md
+      - GitHub: connectors/github.md
+      - Hugging Face: connectors/hugging-face.md
+      - Scholarly sources: connectors/scholarly.md
+      - Websites: connectors/websites.md
+      - Gmail: connectors/gmail.md
+      - .eml and forwarded mail: connectors/eml.md
+      - Chat-history imports: connectors/chat-imports.md
+  - MCP and agents:
+      - mcp/index.md
+      - Set up your agent: mcp/setup.md
+      - The skill pack: mcp/skill-pack.md
+      - MCP tools: mcp/tools.md
+      - What agents can and can't do: mcp/limits.md
+  - How it works:
+      - how-it-works/index.md
+      - Claims and provenance: how-it-works/claims.md
+      - Invited vs completed: how-it-works/invited-vs-completed.md
+      - Review: how-it-works/review.md
+      - Rule check and the knowledge vault: how-it-works/rule-check.md
+      - Capture extension and community vault: how-it-works/extension.md
+      - Daily opportunity check: how-it-works/opportunities.md
+  - Best practices:
+      - best-practices/index.md
+      - Evidence that holds up: best-practices/evidence.md
+      - Letters: best-practices/letters.md
+      - Outreach etiquette: best-practices/outreach.md
+      - Keep case and code apart: best-practices/two-repos.md
+      - Privacy habits: best-practices/privacy.md
+  - Reference:
+      - reference/index.md
+      - Privacy and security: reference/privacy-security.md
+      - Commands: reference/commands.md
+      - Configuration: reference/configuration.md
+      - Architecture: reference/architecture.md
+      - FAQ: reference/faq.md
+      - Troubleshooting: reference/troubleshooting.md
+      - Contributing: reference/contributing.md
+      - Roadmap: reference/roadmap.md
+      - Coming from Lighthouse: reference/lighthouse.md
+      - Legal disclaimer: reference/disclaimer.md

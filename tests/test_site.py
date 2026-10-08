@@ -69,13 +69,36 @@ def test_page_is_self_contained():
     assert (SITE / "fonts" / "LICENSE-archivo.txt").exists()  # OFL fonts travel with their license
 
 
-def test_pages_workflow_deploys_docs_site_from_main():
+def test_pages_workflow_deploys_the_landing_page_and_the_docs_from_main():
     wf = yaml.safe_load((ROOT / ".github" / "workflows" / "pages.yml").read_text())
     triggers = wf[True] if True in wf else wf["on"]
-    assert triggers["push"]["branches"] == ["main"] and "docs/site/**" in triggers["push"]["paths"]
+    assert triggers["push"]["branches"] == ["main"]
+    assert {"docs/site/**", "docs/manual/**", "mkdocs.yml"} <= set(triggers["push"]["paths"])
     assert wf["permissions"] == {"contents": "read"}
     job = wf["jobs"]["deploy"]
     assert job["permissions"]["pages"] == "write" and job["permissions"]["id-token"] == "write"
     steps = {s.get("uses", "").split("@")[0]: s for s in job["steps"]}
-    assert steps["actions/upload-pages-artifact"]["with"]["path"] == "docs/site"
+    assert steps["actions/upload-pages-artifact"]["with"]["path"] == "_site"
     assert "actions/deploy-pages" in steps
+    build = next(s["run"] for s in job["steps"] if "mkdocs build" in s.get("run", ""))
+    assert "cp -R docs/site/. _site/" in build  # the landing page at /
+    assert "--strict --site-dir _site/docs" in build  # the docs at /docs/, broken links fail
+
+
+def test_docs_site_config():
+    cfg = yaml.load((ROOT / "mkdocs.yml").read_text(), Loader=yaml.BaseLoader)  # tolerates !!python tags
+    assert cfg["docs_dir"] == "docs/manual" and cfg["site_url"].endswith("/docs/")
+    assert cfg["theme"]["name"] == "material" and cfg["theme"]["font"] == "false"  # fonts ship with the site
+    manual = ROOT / "docs" / "manual"
+    assert (manual / cfg["theme"]["logo"]).read_text() == (
+        ROOT / "web" / "public" / "favicon.svg"
+    ).read_text()
+    assert {p["scheme"] for p in cfg["theme"]["palette"]} == {"default", "slate"}  # light and dark
+    assert "search" in cfg["plugins"]
+    css = (manual / "stylesheets" / "brutalism.css").read_text()
+    assert "archivo.woff2" in css and "jetbrains-mono.woff2" in css and "border-radius: 0" in css
+    nav = yaml.dump(cfg["nav"])
+    for page in re.findall(r"[\w/-]+\.md", nav):
+        assert (manual / page).is_file(), page
+    for shot in (manual / "assets" / "shots").glob("*-light.webp"):  # every screenshot in both themes
+        assert shot.with_name(shot.name.replace("-light", "-dark")).is_file(), shot.name

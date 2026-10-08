@@ -183,7 +183,7 @@ def test_the_guide_for_other_accounts_is_in_the_docs_and_the_mail_view():
     from pathlib import Path
 
     root = Path(__file__).parents[1]
-    doc = (root / "docs" / "gmail.md").read_text()
+    doc = (root / "docs" / "manual" / "connectors" / "gmail.md").read_text()
     view = (root / "web" / "src" / "components" / "MailView.tsx").read_text()
     for text in (doc, view):
         assert "Bring in emails from another account (e.g. work)" in text

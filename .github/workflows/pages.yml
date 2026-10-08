@@ -1,11 +1,11 @@
-# The landing page (ADR 0013): docs/site, as is, no build step.
+# The landing page (ADR 0013) at /, and the docs site (MkDocs Material, mkdocs.yml) at /docs/.
 # Works once the owner sets Settings > Pages > Source to "GitHub Actions".
 name: Pages
 
 on:
   push:
     branches: [main]
-    paths: ["docs/site/**", ".github/workflows/pages.yml"]
+    paths: ["docs/site/**", "docs/manual/**", "mkdocs.yml", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy docs/site
+    name: Deploy the landing page and the docs
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,9 +28,19 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install MkDocs Material
+        run: python -m pip install "mkdocs-material>=9.5,<10"
+      - name: Assemble the site (landing page at /, docs at /docs/)
+        run: |
+          mkdir -p _site
+          cp -R docs/site/. _site/
+          mkdocs build --strict --site-dir _site/docs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/site
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

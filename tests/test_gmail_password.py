@@ -110,7 +110,11 @@ def test_google_is_gmail_only(demo_ws):
     assert not [p for p in paths if p.startswith("/api/google")]
     assert ics.count("BEGIN:VEVENT") >= len([d for d in demo_ws.deadlines().deadlines if not d.done]) > 0
     root = Path(__file__).parents[1]
-    for f in [*(root / "web" / "src").rglob("*.ts*"), root / "docs" / "gmail.md", root / "README.md"]:
+    for f in [
+        *(root / "web" / "src").rglob("*.ts*"),
+        root / "docs" / "manual" / "connectors" / "gmail.md",
+        root / "README.md",
+    ]:
         text = f.read_text()
         for gone in ("console.cloud.google.com", "OAuth consent", "googleusercontent", "Test users"):
             assert gone not in text, (f, gone)
@@ -135,7 +139,7 @@ def test_an_old_google_sign_in_leaves_the_keychain(ws, http_mock):
 def test_the_docs_lead_with_the_app_password():
     from pathlib import Path
 
-    doc = (Path(__file__).parents[1] / "docs" / "gmail.md").read_text()
+    doc = (Path(__file__).parents[1] / "docs" / "manual" / "connectors" / "gmail.md").read_text()
     assert "app password" in doc
     assert mail.APP_PASSWORDS.removeprefix("https://") in doc
     for problem in ("normal Google password", "2-Step Verification is off", "IMAP is turned off"):

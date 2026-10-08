@@ -137,14 +137,46 @@ def build(root: Path) -> None:
     edges = [Edge(type="SUPERSEDES", src=b.id, dst=a.id) for a, b in zip(cites, cites[1:], strict=False)]
     edges += [Edge(type="CONTRADICTS", src=claims[i].id, dst=claims[i + 1].id) for i in (12, 140, 260)]
     ws.memory._append("edges", edges)
-    for crit, pred, title in (("judging", "judged_event", "Judging at Example Hackathon Series"),
-                              ("original_contributions", "repo_stars", "Open-source adoption"),
-                              ("awards", "award_received", "Example engineering award")):  # fmt: skip
+    # Two criteria banked (judging, contributions), two building (awards, press): a case partway there.
+    for crit, kind, pred, title, signals in (
+        ("judging", "panel_letter", "judged_event", "Judging at Example Hackathon Series", ["selective_event", "multiple_instances"]),
+        ("judging", "program_committee", "judged_event", "Program committee, Example Systems Conf", ["selective_event"]),
+        ("original_contributions", "open_source_project", "repo_stars", "Open-source adoption", ["widely_adopted", "used_by_others"]),
+        ("original_contributions", "adoption_evidence", "model_downloads", "Library used across Example Corp", ["sustained_activity"]),
+        ("awards", "award_certificate", "award_received", "Example engineering award", []),
+        ("press", "press_article", "press_mention", "Example Tech Weekly profile", []),
+    ):  # fmt: skip
         ex = ws.add_exhibit_file(content=b"%PDF-1.4 fictional exhibit", filename=f"{pred}.pdf", criterion=crit,
-                                 evidence_type="document", title=title, on=date.today() - timedelta(days=90))  # fmt: skip
+                                 evidence_type=kind, title=title, on=date.today() - timedelta(days=90),
+                                 signals=signals, stage="completed")  # fmt: skip
         ws.memory.cite(
             ex.id, [c.id for c in claims if c.predicate == pred and c.id in {x.id for x in old}][:8]
         )
+
+    # Metrics history (fortnightly, since 2024), the pipeline and deadlines, so every page has something to show.
+    from areao1.core.models import MetricRow
+
+    rows, day, n = [], start, 0
+    while day <= date.today():
+        n += 1
+        rows += [MetricRow(date=day, source="github", item="maya-chen/fastqueue", metric="stars", value=round(120 * n**1.35)),
+                 MetricRow(date=day, source="github", item="maya-chen/fastqueue", metric="forks", value=round(9 * n**1.2)),
+                 MetricRow(date=day, source="huggingface", item="maya-chen/trace-small", metric="downloads", value=round(800 * n**1.5)),
+                 MetricRow(date=day, source="openalex", item="Maya Chen", metric="citations", value=round(3 * n**1.4))]  # fmt: skip
+        day += timedelta(days=14)
+    ws.append_metrics(rows)
+    soon = date.today()
+    for title, crit, stage, follow in (("Review for Example Systems Conf 2027", "judging", "applied", 5),
+                                       ("Talk proposal: queues at scale", "press", "waiting", 12),
+                                       ("Example Engineering Society senior membership", "membership", "idea", None),
+                                       ("Mentor at Example Hackathon Series", "judging", "done", None)):  # fmt: skip
+        ws.add_pipeline_item(title=title, criterion=crit, stage=stage,
+                             follow_up=soon + timedelta(days=follow) if follow else None)  # fmt: skip
+    for title, kind, days_out, crit in (("Example Systems Conf reviews due", "submission", 6, "judging"),
+                                        ("Get the letter draft back from Dr. Natarajan", "follow_up", 10, None),
+                                        ("Example Engineering Society application closes", "application", 23, "membership"),
+                                        ("Target filing date", "filing", 75, None)):  # fmt: skip
+        ws.add_deadline(title=title, kind=kind, due=soon + timedelta(days=days_out), criterion=crit)
 
     # The vault: a Tier 1 page imported offline from the test fixtures, so the chat's rule sentence verifies.
     page = gzip.decompress(
@@ -180,7 +212,7 @@ def build(root: Path) -> None:
     gmail.install(_MP())
     mail.connect(gmail.email, gmail.password)
     _GMAIL[0] = gmail
-    print(f"built {root}: {len(claims)} claims, 3 exhibits, 2 contacts, 1 follow-up draft")
+    print(f"built {root}: {len(claims)} claims, 6 exhibits, 2 contacts, 1 follow-up draft")
 
 
 _GMAIL: list = [None]

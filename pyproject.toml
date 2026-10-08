@@ -46,6 +46,8 @@ dev = [
   "types-PyYAML",
   "icalendar>=6.0",
 ]
+# The docs site (mkdocs.yml): mkdocs serve to preview, mkdocs build --strict to check.
+docs = ["mkdocs-material>=9.5,<10"]
 
 [project.scripts]
 areao1 = "areao1.cli:app"

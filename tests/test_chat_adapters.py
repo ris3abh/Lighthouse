@@ -47,5 +47,5 @@ def test_a_registered_adapter_reads_a_new_layout_before_the_built_in_ones():
 def test_the_docs_explain_the_hook():
     from pathlib import Path
 
-    doc = (Path(__file__).parents[1] / "docs" / "chat-import.md").read_text()
+    doc = (Path(__file__).parents[1] / "docs" / "manual" / "connectors" / "chat-imports.md").read_text()
     assert "register_adapter" in doc and "redacted sample" in doc

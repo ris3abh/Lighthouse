@@ -61,6 +61,20 @@ jobs:
       - name: Type-check and build
         run: npm --prefix web run build
 
+  docs:
+    name: Docs site (strict build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install MkDocs Material
+        run: python -m pip install "mkdocs-material>=9.5,<10"
+      - name: Build (broken links and missing pages fail)
+        run: mkdocs build --strict
+
   wheel:
     name: Wheel (clean install + smoke test)
     runs-on: ubuntu-latest

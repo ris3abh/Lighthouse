@@ -229,6 +229,16 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
       dated-file Claude export; load and pair the capture extension; turn on the daily opportunity check if wanted;
       bring the HackMIT / DubHacks mail in from the other account (.eml or forward as attachment)
 
+## Docs, README and branding (2026-10-08)
+
+- [x] D1. Docs site at /docs/ (MkDocs Material, Brutalism 2.0 theme, light/dark, search, the O1 logo): getting
+      started, a guided tour with screenshots from the filming workspace, connectors, MCP and agents, how it works,
+      best practices, reference; the Pages workflow builds it beside the landing page; CI builds it strictly
+- [ ] D2. Landing page: the dashboard's O1 logo in the header and favicon, prominent links to the docs
+- [ ] D3. README rewritten short (banner, badges, screenshot, features, install, MCP, privacy, links); details moved
+      to the docs; checkout path fixed
+- [ ] D4. brag-output/ in .gitignore
+
 ## Phase 0 checklist
 
 - [x] `areao1 init` creates a workspace from a template, with schemas and .gitignore
