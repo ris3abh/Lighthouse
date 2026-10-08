@@ -21,6 +21,154 @@
       "title": "CriterionRule",
       "type": "object"
     },
+    "FinalMeritsRules": {
+      "additionalProperties": false,
+      "properties": {
+        "framing": {
+          "default": "",
+          "title": "Framing",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "standard": {
+          "items": {
+            "$ref": "#/$defs/MeritsCitation"
+          },
+          "title": "Standard",
+          "type": "array"
+        },
+        "themes": {
+          "items": {
+            "$ref": "#/$defs/MeritsTheme"
+          },
+          "title": "Themes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "title": "FinalMeritsRules",
+      "type": "object"
+    },
+    "MeritsCitation": {
+      "additionalProperties": false,
+      "description": "A sentence explaining the standard, and the passage in a vault source that says it.",
+      "properties": {
+        "quote": {
+          "title": "Quote",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "source_id",
+        "quote"
+      ],
+      "title": "MeritsCitation",
+      "type": "object"
+    },
+    "MeritsTheme": {
+      "additionalProperties": false,
+      "description": "One theme of the final-merits view (ADR 0019) and the visible rule that sets its status.",
+      "properties": {
+        "building": {
+          "default": 1,
+          "description": "The count at which it is building.",
+          "minimum": 1,
+          "title": "Building",
+          "type": "integer"
+        },
+        "criteria": {
+          "description": "Criteria whose exhibits count for this theme.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Criteria",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "evidence_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Types",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_\\-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "rule": {
+          "enum": [
+            "independent_letters",
+            "outside_employer",
+            "years",
+            "peer_context",
+            "adoption"
+          ],
+          "title": "Rule",
+          "type": "string"
+        },
+        "signals": {
+          "description": "Strength signals that count for this theme.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Signals",
+          "type": "array"
+        },
+        "strong": {
+          "default": 1,
+          "description": "The count at which the theme is strong.",
+          "minimum": 1,
+          "title": "Strong",
+          "type": "integer"
+        },
+        "strong_share": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "independent_letters: share of writers too.",
+          "title": "Strong Share"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "rule"
+      ],
+      "title": "MeritsTheme",
+      "type": "object"
+    },
     "NarrativeLayer": {
       "additionalProperties": false,
       "properties": {
@@ -144,6 +292,18 @@
       "default": "",
       "title": "Description",
       "type": "string"
+    },
+    "final_merits": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FinalMeritsRules"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The final-merits view's themes and rules."
     },
     "id": {
       "pattern": "^[a-z0-9][a-z0-9_\\-]*$",

@@ -32,7 +32,7 @@ PY_PLACES = {
 }
 # Serious surfaces: deadlines and countdowns, rule-check warnings, conflicts, refusals, errors, status, filing.
 SERIOUS_FILES = ["pages/Overview.tsx", "pages/Evidence.tsx", "pages/Calendar.tsx", "pages/Knowledge.tsx",
-                 "pages/Agent.tsx", "components/RuleCheck.tsx", "components/Briefing.tsx",
+                 "pages/Agent.tsx", "pages/Merits.tsx", "components/RuleCheck.tsx", "components/Briefing.tsx",
                  "components/TrackerCard.tsx", "components/Claims.tsx"]  # fmt: skip
 USE = re.compile(r"""<Banter\s+id="(\w+)"|banterText\("(\w+)"\)""")
 

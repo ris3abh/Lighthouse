@@ -395,6 +395,27 @@ class Service:
         return self._record("evidence.redate", "exhibit", lambda: self.ws.redate_exhibit(exhibit_id, on, source),
                             before=before, summary=f"{before.title}: {before.date} -> {on}")  # fmt: skip
 
+    def set_exhibit_organization(self, exhibit_id: str, organization: str) -> Exhibit:
+        before = self._find(self.ws.exhibits().exhibits, exhibit_id, "exhibit")
+        return self._record("evidence.organization", "exhibit",
+                            lambda: self.ws.set_exhibit_organization(exhibit_id, organization),
+                            before=before, summary=f"{before.title}: {organization.strip() or 'from its address'}")  # fmt: skip
+
+    def fetch_benchmarks(self, http: Any = None) -> dict[str, Any]:
+        """OpenAlex field benchmarks for the final-merits view, recorded as claims (the person pressed the button)."""
+        from areao1.criteria import merits
+
+        out: dict[str, Any] = {}
+
+        def go() -> dict[str, Any]:
+            out.update(merits.fetch_benchmarks(self.ws, http))
+            return {"id": "benchmarks", **out}
+
+        self._record(
+            "merits.benchmarks", "memory", go, target_id="benchmarks", summary="OpenAlex field benchmarks"
+        )
+        return out
+
     def remap_exhibit(self, exhibit_id: str, criterion: str, evidence_type: str | None = None) -> Exhibit:
         before = self._find(self.ws.exhibits().exhibits, exhibit_id, "exhibit")
         return self._record("evidence.remap", "exhibit",

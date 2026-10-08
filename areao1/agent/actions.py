@@ -39,6 +39,8 @@ YOURS: dict[str, str] = {
     "inbox.upload": "A file you choose to add; the agent can't pick files from your computer.",
     "evidence.upload": "A file you choose to add; the agent can't pick files from your computer.",
     "evidence.remap": CRITERION,
+    "evidence.organization": "Who issued a document is read off the document; you set it on Evidence.",
+    "merits.benchmarks": "Field benchmarks reach the network on your behalf; you fetch them from Final merits.",
     "evidence.redate": "The date a document shows is something you read off it; the agent can't see your files.",
     "criterion.override": CRITERION,
     "profile.set": CRITERION,

@@ -83,6 +83,10 @@ class DateBody(BaseModel):
     date: dt.date
 
 
+class OrganizationBody(BaseModel):
+    organization: str = Field("", max_length=200)
+
+
 class BulkBody(BaseModel):
     action: Literal["accept", "reject", "snooze"]
     ids: list[str] | None = None
@@ -654,6 +658,27 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     @app.patch("/api/exhibits/{exhibit_id}")
     def remap(exhibit_id: str, body: RemapBody) -> dict[str, Any]:
         return svc.remap_exhibit(exhibit_id, body.criterion, body.evidence_type).model_dump(mode="json")
+
+    @app.post("/api/exhibits/{exhibit_id}/organization")
+    def set_organization(exhibit_id: str, body: OrganizationBody) -> dict[str, Any]:
+        return svc.set_exhibit_organization(exhibit_id, body.organization).model_dump(mode="json")
+
+    @app.get("/api/merits")
+    def get_merits() -> dict[str, Any]:
+        from areao1.criteria import merits
+
+        return merits.report(ws, vault).model_dump(mode="json")
+
+    @app.post("/api/merits/benchmarks")
+    def post_benchmarks() -> dict[str, Any]:
+        try:
+            return svc.fetch_benchmarks()
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        except Exception as exc:  # the network: say what happened, plainly
+            from areao1.onboarding.api import classify
+
+            raise HTTPException(502, classify(exc, "OpenAlex")[1]) from exc
 
     @app.post("/api/exhibits/{exhibit_id}/date")
     def redate(exhibit_id: str, body: DateBody) -> dict[str, Any]:

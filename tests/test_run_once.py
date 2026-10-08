@@ -17,7 +17,7 @@ from areao1.server.app import create_app
 COSTLY = ["/api/letters/{letter_id}/draft", "/api/letters/{letter_id}/send", "/api/outreach", "/api/outreach/{draft_id}/send",
           "/api/opportunities/run", "/api/gmail/sync", "/api/mail/sync", "/api/agent/chat", "/api/agent/runs",
           "/api/agent/missions/{name}/run", "/api/knowledge/sync", "/api/onboarding/lookups/{lookup_id}",
-          "/api/metrics/snapshot"]  # fmt: skip
+          "/api/metrics/snapshot", "/api/merits/benchmarks"]  # fmt: skip
 
 
 def test_every_costly_route_is_guarded_and_nothing_else(ws):

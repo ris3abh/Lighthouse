@@ -227,6 +227,39 @@ export interface Exhibit {
   claim_ids: string[];
   accepted_at: string;
   date_source?: DateSource | null;
+  organization?: string;
+}
+
+/** The final-merits view (ADR 0019): rule-computed themes over the counted evidence. Never a score or verdict. */
+export type ThemeStatus = "strong" | "building" | "missing";
+export interface MeritsTheme {
+  id: string;
+  label: string;
+  description: string;
+  status: ThemeStatus;
+  why: string;
+  rule: string;
+  exhibit_ids: string[];
+  letter_ids: string[];
+  claim_ids: string[];
+}
+export interface MeritsReport {
+  profile: string;
+  label: string;
+  framing: string;
+  employer: string[];
+  timeline: { year: number; count: number; by_criterion: Record<string, string[]> }[];
+  first_year: number | null;
+  last_year: number | null;
+  gap_years: number[];
+  themes: MeritsTheme[];
+  openalex_authors: number;
+  benchmarks: { claim_id: string; work: string; year: number | null; percentile: number; review: string; source_url: string }[];
+  standard: { text: string; source_id: string; title: string; link: string; quote: string; status: "verified" | "stale" | "unverified"; why: string }[];
+  no_organization: string[];
+  exhibits: Record<string, { title: string; criterion: string; date: string; organization: string }>;
+  criteria: Record<string, string>;
+  letters: Record<string, string>;
 }
 
 export interface Signal {
@@ -818,6 +851,7 @@ export interface OnboardingView {
 export const ONCE = [
   /^\/letters\/[^/]+\/(draft|send)$/, /^\/outreach(\/[^/]+\/send)?$/, /^\/opportunities\/run$/, /^\/(gmail|mail)\/sync$/,
   /^\/agent\/(chat|runs|missions\/[^/]+\/run)$/, /^\/knowledge\/sync$/, /^\/onboarding\/lookups\/[^/]+$/, /^\/metrics\/snapshot$/,
+  /^\/merits\/benchmarks$/,
 ];
 const inflight = new Map<string, Promise<unknown>>();
 
@@ -966,6 +1000,9 @@ export const api = {
   redate: (id: string, date: string) => request<Exhibit>("POST", `/exhibits/${enc(id)}/date`, { date }),
   remap: (id: string, criterion: string) => request<Exhibit>("PATCH", `/exhibits/${enc(id)}`, { criterion }),
   proof: () => request<{ checklists: ProofChecklist[] }>("GET", "/proof"),
+  merits: () => request<MeritsReport>("GET", "/merits"),
+  fetchBenchmarks: () => request<{ authors: number; benchmarks: number }>("POST", "/merits/benchmarks"),
+  setOrganization: (id: string, organization: string) => request<Exhibit>("POST", `/exhibits/${enc(id)}/organization`, { organization }),
   preflight: () => request<{ report: PreflightReport | null }>("GET", "/preflight"),
   runPreflight: () => request<{ report: PreflightReport }>("POST", "/preflight/run"),
   dismissPreflight: (id: string, note: string) => request<{ report: PreflightReport }>("POST", `/preflight/${enc(id)}/dismiss`, { note }),

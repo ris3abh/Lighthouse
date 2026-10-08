@@ -89,6 +89,12 @@
           "title": "Notes",
           "type": "string"
         },
+        "organization": {
+          "default": "",
+          "description": "Who issued or published it (final merits: is it from outside your employer?). Empty: read from the source address.",
+          "title": "Organization",
+          "type": "string"
+        },
         "signals": {
           "items": {
             "type": "string"

@@ -10,7 +10,7 @@ export function banterText(key: BanterKey, values: Record<string, string> = {}):
 }
 
 /** Pages that are about status, deadlines, rule checks or refusals as a whole. */
-export const SERIOUS_PAGES = new Set(["overview", "evidence", "calendar", "knowledge", "agent", "contacts"]); // contacts: follow-up dates
+export const SERIOUS_PAGES = new Set(["overview", "evidence", "calendar", "knowledge", "agent", "contacts", "merits"]); // contacts: follow-up dates
 
 export function banterAllowed(s: { insideSerious: boolean; seriousOnScreen: boolean; seriousPage: boolean; earlierShown: number }): boolean {
   return !s.insideSerious && !s.seriousOnScreen && !s.seriousPage && s.earlierShown === 0;

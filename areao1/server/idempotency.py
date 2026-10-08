@@ -21,7 +21,7 @@ from typing import Any
 ONCE = [re.compile(p) for p in (
     r"^/api/letters/[^/]+/(draft|send)$", r"^/api/outreach(/[^/]+/send)?$", r"^/api/opportunities/run$",
     r"^/api/(gmail|mail)/sync$", r"^/api/agent/(chat|runs|missions/[^/]+/run)$", r"^/api/knowledge/sync$",
-    r"^/api/onboarding/lookups/[^/]+$", r"^/api/metrics/snapshot$",
+    r"^/api/onboarding/lookups/[^/]+$", r"^/api/metrics/snapshot$", r"^/api/merits/benchmarks$",
 )]  # fmt: skip
 WINDOW = 10.0  # seconds a body-identical request counts as the same one
 KEYED = 600.0  # seconds a keyed response is kept

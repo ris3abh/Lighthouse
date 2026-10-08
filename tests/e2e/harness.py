@@ -18,7 +18,7 @@ AXE = ROOT / "web" / "node_modules" / "axe-core" / "axe.min.js"
 CHROME = Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 SIZES = {"laptop": {"width": 1440, "height": 900}, "phone": {"width": 390, "height": 844}}
 ROUTES = ["overview", "inbox", "evidence", "metrics", "pipeline", "letters", "contacts", "contacts?view=mail",
-          "calendar", "agent", "memory", "knowledge", "sources", "settings", "not-a-page"]  # fmt: skip
+          "calendar", "merits", "agent", "memory", "knowledge", "sources", "settings", "not-a-page"]  # fmt: skip
 ERROR_KINDS = {"pageerror", "console_error", "http_5xx", "broken_link", "axe", "overflow", "flow"}
 
 

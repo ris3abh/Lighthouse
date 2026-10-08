@@ -384,6 +384,45 @@ class NarrativeLayer(_Model):
     prompts: list[str] = Field(default_factory=list)
 
 
+MeritsRule = Literal["independent_letters", "outside_employer", "years", "peer_context", "adoption"]
+
+
+class MeritsTheme(_Model):
+    """One theme of the final-merits view (ADR 0019) and the visible rule that sets its status."""
+
+    id: Slug
+    label: str
+    rule: MeritsRule
+    description: str = ""
+    strong: int = Field(1, ge=1, description="The count at which the theme is strong.")
+    building: int = Field(1, ge=1, description="The count at which it is building.")
+    strong_share: float | None = Field(
+        None, ge=0, le=1, description="independent_letters: share of writers too."
+    )
+    signals: list[str] = Field(
+        default_factory=list, description="Strength signals that count for this theme."
+    )
+    evidence_types: list[str] = Field(default_factory=list)
+    criteria: list[str] = Field(
+        default_factory=list, description="Criteria whose exhibits count for this theme."
+    )
+
+
+class MeritsCitation(_Model):
+    """A sentence explaining the standard, and the passage in a vault source that says it."""
+
+    text: str
+    source_id: str
+    quote: str
+
+
+class FinalMeritsRules(_Model):
+    label: str
+    framing: str = ""
+    themes: list[MeritsTheme] = Field(default_factory=list)
+    standard: list[MeritsCitation] = Field(default_factory=list)
+
+
 class Profile(_Model):
     id: Slug
     name: str
@@ -394,6 +433,9 @@ class Profile(_Model):
     criteria: list[ProfileCriterion]
     narrative: list[NarrativeLayer] = Field(
         default_factory=list, description="Qualitative layers scored by the agent, e.g. EB-1A final merits."
+    )
+    final_merits: FinalMeritsRules | None = Field(
+        None, description="The final-merits view's themes and rules."
     )
 
     def criterion(self, criterion_id: str) -> ProfileCriterion | None:

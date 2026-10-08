@@ -194,6 +194,11 @@ class Exhibit(_Model):
         None, description="Fingerprint of the accepted candidate, for de-duplication."
     )
     signals: list[str] = Field(default_factory=list)
+    organization: str = Field(
+        "",
+        description="Who issued or published it (final merits: is it from outside your employer?). Empty: "
+        "read from the source address.",
+    )
     source_tier: SourceTier | None = Field(
         None, description="self_reported exhibits never count toward a criterion."
     )

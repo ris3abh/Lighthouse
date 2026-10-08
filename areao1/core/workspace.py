@@ -507,6 +507,18 @@ class Workspace:
             self.after_change()
             return exhibit
 
+    def set_exhibit_organization(self, exhibit_id: str, organization: str) -> Exhibit:
+        """Who issued or published an exhibit (final merits reads it to tell your employer from everyone else)."""
+        with self.lock:
+            ex = self.exhibits()
+            exhibit = next((e for e in ex.exhibits if e.id == exhibit_id), None)
+            if exhibit is None:
+                raise NotFound(f"no exhibit {exhibit_id!r}")
+            exhibit.organization = organization.strip()[:200]
+            self.save_exhibits(ex)
+            self.after_change()
+            return exhibit
+
     def _accept_tracker(self, inbox: Inbox, cand: Candidate) -> BaseModel:
         record = self.apply_tracker(cand.kind, dict(cand.proposal))
         if cand.claim_ids:

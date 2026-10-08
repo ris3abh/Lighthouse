@@ -26,7 +26,7 @@ PDF = b"%PDF-1.4 fictional\n"
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
                  "/api/settings/missions", "/api/settings/agent", "/api/settings/mail", "/api/settings/opportunities", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
-                 "/api/onboarding", "/api/todos", "/api/contacts", "/api/outreach", "/api/proof", "/api/preflight")  # fmt: skip
+                 "/api/onboarding", "/api/todos", "/api/contacts", "/api/outreach", "/api/proof", "/api/preflight", "/api/merits")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -149,6 +149,26 @@ def _preflight_ran(ws) -> None:
     from areao1.criteria import preflight
 
     preflight.run(ws)
+
+
+def _openalex_offline(ws, monkeypatch) -> None:
+    """An OpenAlex author in Sources and a canned response, so the button records benchmarks without the network."""
+    from areao1.core.models import SourceRecord
+    from areao1.criteria import merits
+
+    src = ws.sources()
+    src.sources.append(SourceRecord(id="openalex:A0000000001", kind="openalex", handle="A0000000001",
+                                    url="https://openalex.org/A0000000001"))  # fmt: skip
+    ws.save_sources(src)
+
+    class Canned:
+        def get(self, path, params=None):
+            work = {"id": "https://openalex.org/W1", "display_name": "A paper", "publication_year": 2024,
+                    "cited_by_count": 12, "citation_normalized_percentile": {"value": 0.91}}  # fmt: skip
+            return type("R", (), {"data": {"results": [work]}})()
+
+    real = merits.fetch_benchmarks
+    monkeypatch.setattr(merits, "fetch_benchmarks", lambda w, http=None: real(w, Canned()))
 
 
 def _bulk_rejected(ws) -> None:
@@ -327,6 +347,9 @@ SAMPLES = {
     ("POST", "/api/proof/unlink"): ("/api/proof/unlink", {"json": {"anchor": "{proof_anchor}", "item": "event_page"}},
                                     "proof.unlink", "_proof_linked"),
     ("POST", "/api/preflight/run"): ("/api/preflight/run", {}, "preflight.run"),
+    ("POST", "/api/exhibits/{exhibit_id}/organization"): ("/api/exhibits/{exhibit}/organization",
+                                                          {"json": {"organization": "Lakeside Hacks"}}, "evidence.organization"),
+    ("POST", "/api/merits/benchmarks"): ("/api/merits/benchmarks", {}, "merits.benchmarks", "_openalex_offline"),
     ("POST", "/api/preflight/{issue_id}/dismiss"): ("/api/preflight/{preflight_issue}/dismiss", {"json": {"note": "Known"}},
                                                      "preflight.dismiss", "_preflight_ran"),
     ("POST", "/api/inbox/bulk"): ("/api/inbox/bulk", {"json": {"action": "reject", "ids": ["{other}"]}}, "inbox.reject"),
@@ -368,12 +391,13 @@ def test_every_page_write_route_is_covered(demo_ws):
 
 
 @pytest.mark.parametrize("route", sorted(SAMPLES), ids=lambda r: f"{r[0]} {r[1]}")
-def test_page_writes_only_happen_inside_the_service_layer(route, demo_ws, writes):
+def test_page_writes_only_happen_inside_the_service_layer(route, demo_ws, writes, monkeypatch):
     client = TestClient(create_app(demo_ws, allowed_hosts=["testserver"]))
     path, kwargs, action, *setup = SAMPLES[route]
     ids = _ids(demo_ws)
     for name in setup:  # a route that needs a particular state first
-        globals()[name](demo_ws)
+        fn = globals()[name]
+        fn(demo_ws, monkeypatch) if name == "_openalex_offline" else fn(demo_ws)
     ids |= _proof_ids(demo_ws)  # records the setup made
     path = path.format(**ids)
     if "json" in kwargs:  # ids in the body too ({contact}, {onboarding})

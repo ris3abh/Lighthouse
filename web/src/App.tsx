@@ -1,5 +1,5 @@
 import {
-  BookOpen, Orbit,
+  BookOpen, Orbit, Scale,
   Cable,
   CalendarDays,
   ChartLine,
@@ -33,6 +33,7 @@ import Evidence from "./pages/Evidence";
 import Inbox from "./pages/Inbox";
 import Knowledge from "./pages/Knowledge";
 import Memory from "./pages/Memory";
+import Merits from "./pages/Merits";
 import Letters from "./pages/Letters";
 import Contacts from "./pages/Contacts";
 import Metrics from "./pages/Metrics";
@@ -57,6 +58,7 @@ const NAV: { id: string; label: string; icon: LucideIcon }[] = [
   { id: "metrics", label: "Metrics", icon: ChartLine },
   { id: "pipeline", label: "Pipeline", icon: Kanban },
   { id: "letters", label: "Letters", icon: Mail },
+  { id: "merits", label: "Final merits", icon: Scale },
   { id: "contacts", label: "Contacts", icon: Users },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "agent", label: "Agent", icon: Sparkles },
@@ -290,6 +292,9 @@ function Shell() {
       break;
     case "letters":
       content = <Letters />;
+      break;
+    case "merits":
+      content = <Merits />;
       break;
     case "contacts":
       content = <Contacts />;

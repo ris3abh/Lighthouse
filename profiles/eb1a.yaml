@@ -128,3 +128,64 @@ narrative:
       - Is the acclaim sustained over several years rather than a single moment?
       - Does independent evidence (not only your own employer) corroborate the impact?
       - How does the record compare to others at the top of the field?
+
+# The final-merits view (ADR 0019): rule-computed themes over the counted evidence, and the standard as the vault
+# states it. Statuses describe the evidence against these rules; they are not a verdict.
+final_merits:
+  label: Final merits
+  framing: >
+    Meeting three criteria is step one. In step two the officer weighs all of the evidence together. These themes
+    show what your counted evidence covers, each against a rule you can read below; they aren't a score and they
+    don't predict the officer's weighing, which is holistic.
+  themes:
+    - id: independent_recognition
+      label: Independent recognition
+      rule: independent_letters
+      description: People and organizations with no stake in your work vouch for it.
+      strong: 2
+      strong_share: 0.5
+      building: 1
+      criteria: [awards, press]
+    - id: outside_employer
+      label: Recognition outside your employer
+      rule: outside_employer
+      description: Counted exhibits issued or published by organizations other than your employer.
+      strong: 3
+      building: 1
+    - id: multiple_years
+      label: Evidence across multiple years
+      rule: years
+      description: Acclaim that is sustained, not a single moment.
+      strong: 3
+      building: 2
+    - id: peer_context
+      label: Peer-relative context
+      rule: peer_context
+      description: How the record compares with others in the field (field benchmarks, documented selectivity).
+      strong: 2
+      building: 1
+      signals: [selective, selective_event, judged_by_experts, outstanding_achievement_required, major_venue, comparative_data, above_90th_percentile, distinguished_org]
+    - id: external_adoption
+      label: External adoption
+      rule: adoption
+      description: Your work is used, built on or implemented by others.
+      strong: 2
+      building: 1
+      evidence_types: [adoption_evidence]
+      signals: [widely_adopted, used_by_others]
+  standard:
+    - text: USCIS reviews an extraordinary-ability petition in two steps.
+      source_id: uscis-pm-6-f-2
+      quote: Officers should use a two-step analysis to evaluate the evidence submitted with the petition
+    - text: In the second step, the final merits determination, the officer evaluates all of the evidence together.
+      source_id: uscis-pm-6-f-2
+      quote: Evaluate all the evidence together when considering the petition in its entirety for the final merits determination
+    - text: Whether the person has risen to the very top of the field with sustained acclaim is addressed in that second step.
+      source_id: uscis-pm-6-f-2
+      quote: should be addressed in the second step of the analysis (final merits determination)
+    - text: Being stronger in one area than another is expected; the totality of the evidence is what's weighed.
+      source_id: uscis-pm-6-f-2
+      quote: While a person may be stronger in one particular evidentiary area than in others, the totality of the evidence must establish that the person is extraordinary.
+    - text: Kazarian v. USCIS set this two-step review; questions like how often others cite your work belong to the final merits step, not to counting criteria.
+      source_id: kazarian-v-uscis
+      quote: relevant to the final merits determination of whether a
