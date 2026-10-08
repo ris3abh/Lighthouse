@@ -296,13 +296,13 @@ class Case(Workspace):
             if not self._deferred:
                 self.after_change()
 
-    def after_change(self) -> Scoreboard | None:  # type: ignore[override]
-        """Recompute the scoreboard and regenerate DASHBOARD.md."""
+    def after_change(self) -> Scoreboard:
+        """Recompute the scoreboard and regenerate DASHBOARD.md (once at the end, during a batch)."""
         from areao1.core.calendar import write_calendar
         from areao1.criteria.dashboard import write_dashboard
 
         if self._deferred:
-            return None
+            return self.scoreboard()
         board = self.recompute()
         write_dashboard(self, board)
         write_calendar(self)

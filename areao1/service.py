@@ -136,7 +136,8 @@ class Service:
             raise WorkspaceError(f"unknown bulk action {action!r}")
         pending = {c.id: c for c in self.ws.pending_candidates()}
         self.batch = new_id("batch")
-        done, failed = [], []
+        done: list[str] = []
+        failed: list[dict[str, str]] = []
         with self._guard("inbox.bulk"), self.ws.batch():  # the one re-score at the end is a service write too
             self._bulk(action, ids, pending, until, confirm_evidence, done, failed)
         batch, self.batch = self.batch, None
@@ -177,7 +178,8 @@ class Service:
         if any(c.undoes in {m.id for m in mine} for c in changes):
             raise WorkspaceError("that batch was already undone")
         tracker = {"deadline": "deadline", "pipeline": "pipeline_item"}
-        undone, left = [], []
+        undone: list[Any] = []
+        left: list[Any] = []
         self.batch = f"undo-{batch}"
         with self._guard("inbox.undo"), self.ws.batch():
             self._undo_each(mine, tracker, undone, left)
