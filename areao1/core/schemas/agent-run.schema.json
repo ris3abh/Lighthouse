@@ -475,6 +475,12 @@
       "default": null,
       "title": "Provider"
     },
+    "read_only": {
+      "default": false,
+      "description": "Read tools only, plus proposals to the Inbox (an onboarding lookup): no tracker writes, no autopilot.",
+      "title": "Read Only",
+      "type": "boolean"
+    },
     "rule_check": {
       "anyOf": [
         {

@@ -548,6 +548,38 @@ def test_a_yes_runs_one_web_search_for_the_official_page(fresh, http_mock):
 
 
 @pytest.mark.usefixtures("public_dns")
+def test_a_lookup_can_read_and_propose_but_never_edit_your_trackers(fresh, http_mock):
+    """B18: a lookup is a background search the person said Yes to, not a chat. It gets read tools, web search and
+    propose_evidence (to the Inbox); no tracker writes, no autopilot. A model that tries one changes nothing."""
+    from agent_fakes import FakeEngine
+
+    from areao1.agent.actions import TOOL_FOR
+
+    url = _judging_page(http_mock, "Maya Chen, Omar Haddad")
+    script = [("tool", "add_deadline", {"title": "Sneaky deadline", "due": "2026-12-01"}),
+              ("tool", "update_contact", {"contact_id": "c_x", "notes": "edited"}),
+              *_script(url, "Thank you to everyone who judged HackSeattle 2025: Maya Chen, Omar Haddad.")]  # fmt: skip
+    engine = FakeEngine(script)
+    c, view = _finish_questions(fresh, "maya", engine)
+    lk = next(x for x in view["state"]["lookups"] if x["targets"] == ["Judge, HackSeattle 2025"])
+    c.post(f"/api/onboarding/lookups/{lk['id']}", headers=W, json={"accept": True})
+    assert _wait(c, lk["id"])["status"] == "found"  # it still finds and proposes
+    offered = set(engine.tool_names)
+    assert "propose_evidence" in offered and "read_page" in offered
+    assert not offered & set(TOOL_FOR.values()), offered & set(TOOL_FOR.values())
+    assert not offered & {
+        "propose_tracker_update",
+        "record_metric",
+        "propose_deadline",
+        "propose_pipeline_item",
+    }
+    agent = {ch.action for ch in fresh.changes() if ch.actor.startswith("agent:")}
+    assert fresh.deadlines().deadlines == [] and agent <= {"inbox.propose", "onboarding.lookup_result"}, agent
+    done = next(x for x in c.get("/api/onboarding").json()["state"]["lookups"] if x["id"] == lk["id"])
+    assert c.get(f"/api/agent/runs/{done['run_id']}").json()["read_only"] is True
+
+
+@pytest.mark.usefixtures("public_dns")
 def test_a_page_that_doesnt_name_you_is_flagged_as_a_possible_namesake(fresh, http_mock):
     from agent_fakes import FakeEngine
 

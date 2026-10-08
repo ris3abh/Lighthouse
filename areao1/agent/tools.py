@@ -85,6 +85,10 @@ STR: S = {"type": "string"}
 DATE: S = {"type": "string", "description": "YYYY-MM-DD"}
 
 
+# What a read-only run may still do: propose a find to the Inbox (you accept or reject it), or decline.
+READ_ONLY_RUN_WRITES = frozenset({"propose_evidence", "decline"})
+
+
 def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[AgentTool]:
     ws = ctx.ws
 
@@ -856,4 +860,6 @@ def build_tools(ctx: RunContext, http: httpx.AsyncClient | None = None) -> list[
     }  # fmt: skip
     for t in tool_list:
         t.touches = touches.get(t.name, ())
+    if ctx.run.read_only:  # an onboarding lookup (B18): read, search, and propose what it finds to the Inbox
+        tool_list = [t for t in tool_list if t.read_only or t.name in READ_ONLY_RUN_WRITES]
     return tool_list

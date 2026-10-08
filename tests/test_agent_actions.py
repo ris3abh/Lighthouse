@@ -115,3 +115,22 @@ def test_undo_change_undoes_by_id(demo_ws):
     change_id = out.rsplit("undo: ", 1)[1]
     assert "Undone" in _call(t, "undo_change", {"change_id": change_id})
     assert not [d for d in demo_ws.deadlines().deadlines if d.title == "Call with the attorney"]
+
+
+def test_a_read_only_run_gets_read_tools_and_inbox_proposals_only(demo_ws):
+    """B18: onboarding lookups run read-only: no direct tracker writes, no autopilot paths, nothing but reading and
+    proposing a find to the Inbox."""
+    from areao1.agent.tools import READ_ONLY_RUN_WRITES, RunContext, build_tools
+    from areao1.core.models import AgentRun
+
+    run = AgentRun(kind="manual", engine="fake", model="test", prompt="lookup", read_only=True)
+    tools = build_tools(RunContext(demo_ws, run))
+    writes = {t.name for t in tools if not t.read_only}
+    assert writes == set(READ_ONLY_RUN_WRITES) and not {t.name for t in tools} & set(TOOL_FOR.values())
+    full = {
+        t.name
+        for t in build_tools(
+            RunContext(demo_ws, AgentRun(kind="manual", engine="fake", model="t", prompt="p"))
+        )
+    }
+    assert set(TOOL_FOR.values()) <= full  # a task you start yourself still has them

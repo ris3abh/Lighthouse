@@ -387,7 +387,8 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
                 if runner is None:
                     raise RuntimeError("the agent isn't available")
                 run = await runner.start("manual", flow.find_task(todo.kind if todo else "", lk.targets[0], person.name),
-                                         namesake=[n for n in (person.name, *person.aliases) if n])  # fmt: skip
+                                         namesake=[n for n in (person.name, *person.aliases) if n],
+                                         read_only=True)  # a lookup reads and proposes; it never edits your trackers (B18)  # fmt: skip
                 lk.status, lk.run_id, lk.result = "searching", run.id, "Searching the web…"
             except Exception as exc:  # no AI connected, or over budget: nothing was searched
                 lk.status = "failed"

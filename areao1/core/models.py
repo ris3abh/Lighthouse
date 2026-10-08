@@ -678,6 +678,11 @@ class AgentRun(_File):
     id: str = Field(default_factory=lambda: new_id("run"))
     kind: Literal["chat", "manual", "scheduled"]
     mission: str | None = Field(None, description="For scheduled runs: which mission.")
+    read_only: bool = Field(
+        False,
+        description="Read tools only, plus proposals to the Inbox (an onboarding lookup): no tracker writes, "
+        "no autopilot.",  # fmt: skip
+    )
     rule_check: RuleCheck | None = Field(None, description="Rule claims in the final answer, checked.")
     status: Literal["running", "done", "error", "stopped"] = "running"
     engine: str

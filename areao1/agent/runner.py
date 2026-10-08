@@ -226,6 +226,7 @@ class AgentRunner:
         page: str | None = None,
         mission: str | None = None,
         namesake: list[str] | None = None,
+        read_only: bool = False,
     ) -> AgentRun:
         prompt = prompt.strip()
         if not prompt:
@@ -247,7 +248,7 @@ class AgentRunner:
             conv = self.conversation(conversation_id) if conversation_id else Conversation(title=prompt[:60])
         how = self.route(kind)
         model = how.model
-        run = AgentRun(kind=kind, engine=engine.name, model=model, prompt=prompt, mission=mission,  # type: ignore[arg-type]
+        run = AgentRun(kind=kind, engine=engine.name, model=model, prompt=prompt, mission=mission, read_only=read_only,  # type: ignore[arg-type]
                        conversation_id=conv.id if conv else None, task=how.task, tier=how.tier,
                        provider=how.provider)  # fmt: skip
         summary = ""

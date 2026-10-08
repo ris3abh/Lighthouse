@@ -264,7 +264,7 @@ never enters the packet as evidence.
         and marked "date unconfirmed"; `areao1 repair-dates` for exhibits already filed
   - [x] F2 B3 generalized: busy states and server-side idempotency keys for everything that costs or sends; one
         double-click test over all of them
-  - [ ] F3 B18: onboarding lookups get read-only tools; guard test
+  - [x] F3 B18: onboarding lookups get read-only tools; guard test
   - [ ] F4 B1, B6 (merge letter writers into contacts), B7, B14, B20, B5, B8
   - [ ] F5 accessibility: B4, B9, B11, B12, B13, B15, B16, B17, download buttons inside links
   - [ ] F6 UX: friendly lookup errors, Memory empty filter message, one offline banner on Knowledge
