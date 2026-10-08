@@ -255,7 +255,11 @@ never enters the packet as evidence.
 - [x] 2. Evidence preflight: Run preflight; claims without a primary exhibit, conflicting identity facts, differing
       metrics, letters/drafts citing unsupported or outdated values, undated exhibits, invited without completed
       proof, web captures without a primary copy, superseded values still cited; severities; never blocks
-- [ ] CHECKPOINT A: preflight on Maya, Ravi, Lena and the owner's workspace (summary only)
+- [x] CHECKPOINT A reached (2026-10-08): preflight on Maya, Ravi, Lena, the filming workspace and a copy of the owner's workspace; waiting for "continue"
+- [x] QA sweep before items 3-4 (2026-10-08): Playwright suite in tests/e2e (crawler of every route and control,
+      20 flow tests, every page light/dark x laptop/phone with axe-core and overflow), run 3 times, a 20-minute
+      exploratory pass, triage; `areao1 qa`; a report-only CI job (blocking once the bugs are fixed)
+- [ ] QA fixes, after the owner reads the report; then bulk review for the Inbox (scoped in the report)
 - [ ] 3. Final merits workspace: sustained-acclaim timeline, rule-computed themes with reasons, OpenAlex field
       benchmarks where available, rule-checked Kazarian / Policy Manual citations
 - [ ] 4. Review packet builder: exhibit numbering (C4-01), TOC, per-criterion index, claim -> exhibit -> page/quote

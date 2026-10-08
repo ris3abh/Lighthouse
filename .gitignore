@@ -30,3 +30,6 @@ film-maya/
 
 # local brag-document output
 brag-output/
+
+# browser QA suite output (findings, screenshots, reports)
+tests/e2e/.out/

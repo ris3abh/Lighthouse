@@ -208,6 +208,61 @@ def run(
 
 
 @app.command()
+def qa(
+    runs: Annotated[
+        int, typer.Option(help="Run the suite this many times, to tell flaky failures from real ones")
+    ] = 1,
+    keyword: Annotated[str, typer.Option("-k", help="Only tests matching this pytest expression")] = "",
+    out: Annotated[Path | None, typer.Option(help="Where the findings, screenshots and report go")] = None,
+) -> None:
+    """The browser QA suite (tests/e2e) from a checkout: every page and control, the main flows, light and dark,
+    laptop and phone, accessibility. Only throwaway fictional workspaces, fake Gmail and a scripted model."""
+    import os
+    import subprocess
+    import sys
+
+    root = Path(__file__).resolve().parents[1]
+    if not (root / "tests" / "e2e" / "serve.py").is_file():
+        raise _fail("`areao1 qa` runs from a checkout of the repo (tests/e2e isn't in the installed package)")
+    try:
+        import playwright  # noqa: F401
+    except ImportError as exc:
+        raise _fail(
+            "install the browser suite first: pip install -e '.[dev,e2e]' && playwright install chromium"
+        ) from exc
+    if not (root / "web" / "node_modules" / "axe-core").is_dir():
+        raise _fail("install the web dependencies first: npm --prefix web install")
+    base = out or root / "tests" / "e2e" / ".out"
+    dirs = []
+    for n in range(1, runs + 1):
+        run_dir = base / f"run-{n}"
+        if run_dir.exists():
+            import shutil
+
+            shutil.rmtree(run_dir)
+        dirs.append(run_dir)
+        env = {**os.environ, "AREAO1_E2E": "1", "AREAO1_QA_OUT": str(run_dir)}
+        cmd = [
+            sys.executable,
+            "-m",
+            "pytest",
+            "tests/e2e",
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            *(["-k", keyword] if keyword else []),
+        ]
+        typer.echo(f"run {n} of {runs}…")
+        subprocess.run(cmd, cwd=root, env=env)
+    report = subprocess.run([sys.executable, str(root / "tests" / "e2e" / "report.py"), *map(str, dirs),
+                             "--json", str(base / "report.json")], cwd=root, capture_output=True, text=True)  # fmt: skip
+    (base / "report.md").write_text(report.stdout)
+    typer.echo(report.stdout)
+    typer.echo(f"report: {base / 'report.md'}")
+    raise typer.Exit(report.returncode)
+
+
+@app.command()
 def preflight(workspace: WorkspaceOpt = None) -> None:
     """Evidence preflight (ADR 0018): what a reviewer would notice, by severity. Writes data/preflight.json."""
     from areao1.criteria import preflight as pf
