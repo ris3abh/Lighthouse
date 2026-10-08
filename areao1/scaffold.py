@@ -133,3 +133,30 @@ def validate_workspace(ws: Case) -> list[str]:
     for issue in ws.naming_check():
         problems.append(f"{issue['file']}: {issue['problem']} — {issue['detail']}")
     return problems
+
+
+AGENT_GUIDE_HEADING = "## Driving Area O1 from Claude Code or Codex"
+
+
+def install_agent_guides(ws: Case) -> list[str]:
+    """Give a workspace the Claude Code skill and AGENTS.md's Claude Code / Codex section (ADR 0015 §5) if it was made
+    before them. Adds only what's missing; never rewrites the person's files. Returns what was added."""
+    template = workspace_template_dir()
+    added = []
+    skill = ws.root / ".claude" / "skills" / "areao1" / "SKILL.md"
+    if not skill.exists():
+        skill.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(template / ".claude" / "skills" / "areao1" / "SKILL.md", skill)
+        added.append(".claude/skills/areao1/SKILL.md")
+    guide = ws.root / "AGENTS.md"
+    text = (template / "AGENTS.md").read_text(encoding="utf-8")
+    if not guide.exists():
+        guide.write_text(text, encoding="utf-8")
+        added.append("AGENTS.md")
+    elif AGENT_GUIDE_HEADING not in guide.read_text(encoding="utf-8"):
+        start = text.index(AGENT_GUIDE_HEADING)
+        section = text[start : text.index("\n## ", start + 1)].rstrip()
+        with guide.open("a", encoding="utf-8") as f:
+            f.write("\n\n" + section + "\n")
+        added.append("AGENTS.md (Claude Code and Codex section)")
+    return added

@@ -43,6 +43,27 @@ truth for the case. Read this before changing anything.
 | `memory/` | append-only evidence graph: observations, claims (with verbatim excerpts), edges, decisions; raw snapshots in `memory/sources/` |
 | `drafts/letters/` | recommendation letter drafts |
 
+## Driving Area O1 from Claude Code or Codex
+
+Area O1's own agent runs on OpenAI inside the app. Coding agents work alongside it through its MCP server
+(`areao1 mcp`), which reads the case and can send notes to the Inbox; they need no OpenAI key.
+
+- **Claude Code**: `claude mcp add areao1 -- areao1 mcp -w <this folder>`. The skill in
+  `.claude/skills/areao1/SKILL.md` explains the tools and how to use them.
+- **Codex**: `codex mcp add areao1 -- areao1 mcp -w <this folder>`, or in `~/.codex/config.toml`:
+
+  ```toml
+  [mcp_servers.areao1]
+  command = "areao1"
+  args = ["mcp", "-w", "/path/to/this/folder"]
+  ```
+
+Tools: `what_changed(since)`, `get_scoreboard()`, `list_gaps()`, `query_claims(entity, as_of?)`,
+`get_provenance(claim_id)` (all read-only) and `propose_context(text, title?, topic?, client?)`, the only write: a
+self-reported note to the person's Inbox (pass your name as `client`). Start a session with `what_changed` and
+`get_scoreboard`; check `get_provenance` before relying on a fact; never state an eligibility verdict; never send
+email or edit evidence files for the person.
+
 ## Useful commands
 
 ```sh

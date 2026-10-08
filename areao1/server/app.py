@@ -235,6 +235,9 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     from areao1.engine.connect import forget_anthropic
 
     forget_anthropic()  # an Anthropic key from before OpenAI-only leaves the keychain (ADR 0015)
+    from areao1.scaffold import install_agent_guides
+
+    install_agent_guides(ws)  # the Claude Code skill and Codex notes, for workspaces made before them
     for d in (
         ws.outreach().drafts
     ):  # approved, but the app stopped inside the undo window: not sent, a draft again
