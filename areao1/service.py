@@ -331,19 +331,64 @@ class Service:
                             lambda: self.ws.put_draft(before.model_copy(update={"status": "rejected"})),
                             before=before, summary=f"to {before.to}: {before.subject}")  # fmt: skip
 
-    def send_draft(self, draft_id: str) -> Any:
-        """Your approval: send it from your Gmail, then record it as sent. Agents and autopilot can't."""
+    def _user_only(self) -> None:
         if self.auto or self.actor != "user":
             raise WorkspaceError("only you can approve and send an email")
+
+    def approve_draft(self, draft_id: str) -> Any:
+        """Your approval (Approve & send): the email waits out the undo window, then deliver_draft sends it. Every
+        rule is checked now too, so a refusal shows at once. Agents and autopilot can't approve."""
+        self._user_only()
+        from areao1.google import outreach
+
+        with outreach.SENDING:
+            before = self._draft(draft_id)
+            if before.status != "draft":
+                raise WorkspaceError(f"this email is already {before.status}")
+            outreach.check(self.ws, before)
+            after = before.model_copy(update={"status": "queued", "queued_at": clock.utcnow()})
+            return self._record("outreach.approve", "outreach", lambda: self.ws.put_draft(after), before=before,
+                                summary=f"to {before.to}: {before.subject}")  # fmt: skip
+
+    def undo_send(self, draft_id: str) -> Any:
+        """Undo send, within the window: the email goes back to being a draft and nothing leaves."""
+        self._user_only()
+        from areao1.google import outreach
+
+        with outreach.SENDING:
+            before = self._draft(draft_id)
+            if before.status != "queued":
+                raise WorkspaceError("too late to undo: it's already sent" if before.status == "sent"
+                                     else f"this email is {before.status}, not waiting to send")  # fmt: skip
+            after = before.model_copy(update={"status": "draft", "queued_at": None})
+            return self._record("outreach.undo", "outreach", lambda: self.ws.put_draft(after), before=before,
+                                summary=f"to {before.to}: {before.subject}")  # fmt: skip
+
+    def deliver_draft(self, draft_id: str) -> Any:
+        """Send an approved email once its undo window is over. Nothing happens if it was undone meanwhile. If Gmail
+        refuses, it goes back to being a draft (the failure is logged) and the error is raised."""
         from areao1.google import outreach
 
         with outreach.SENDING:  # one at a time, read fresh: approving twice sends once
             before = self._draft(draft_id)
-            sent = outreach.send(self.ws, before)
+            if before.status != "queued":
+                return None
+            try:
+                sent = outreach.send(self.ws, before)
+            except WorkspaceError:
+                back = before.model_copy(update={"status": "draft", "queued_at": None})
+                self._record("outreach.send_failed", "outreach", lambda: self.ws.put_draft(back), before=before,
+                             summary=f"to {before.to}: {before.subject}")  # fmt: skip
+                raise
             after = before.model_copy(update={"status": "sent", "sent_at": clock.utcnow(), "gmail_id": sent.get("id"),
                                               "thread_id": sent.get("threadId") or before.thread_id})  # fmt: skip
             return self._record("outreach.send", "outreach", lambda: self.ws.put_draft(after), before=before,
                                 summary=f"to {before.to}: {before.subject}")  # fmt: skip
+
+    def send_draft(self, draft_id: str) -> Any:
+        """Approve and send at once, with no undo window (the CLI and tests). Agents and autopilot can't."""
+        self.approve_draft(draft_id)
+        return self.deliver_draft(draft_id)
 
     # ------------------------------------------------------------------ trackers (generic) + metrics
 

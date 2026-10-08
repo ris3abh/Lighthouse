@@ -90,6 +90,14 @@ def no_real_mail(monkeypatch):
     monkeypatch.setattr(mail, "SMTP", refuse)
 
 
+@pytest.fixture(autouse=True)
+def no_undo_wait(monkeypatch):
+    """Approve & send sends at once in tests; test_undo_send sets the window itself."""
+    from areao1.google import outreach
+
+    monkeypatch.setattr(outreach, "UNDO_SECONDS", 0)
+
+
 @pytest.fixture
 def ws(tmp_path) -> Case:
     return create_workspace(tmp_path / "case", name="Test Person", git=False)

@@ -145,6 +145,8 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       not yet tried live
 - [x] E6b. Send log: every send attempt (time, recipient, Message-ID or error) in outreach.json; the daily limit
       counts sends Gmail accepted (pre-log sends counted from the change log); failures show on Contacts
+- [x] E6c. Undo send: Approve & send waits 10 seconds (server-side) with Undo send; a refusal after the window
+      returns it to draft; an approval left waiting when the app stops becomes a draft again
 - [x] E7. Read-only Mail view on Contacts (ADR 0014, Mail view amendment): per-contact threads (sent and
       received) and all case mail in 7 categories with counts; rules first (taught senders, contacts, organizer
       domains, subject keywords), then the mundane tier on headers + first lines; moving teaches a sender rule;

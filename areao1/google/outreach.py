@@ -39,6 +39,7 @@ def compose(ws: Case, contact_id: str, subject: str, body: str, purpose: str = "
     )  # type: ignore[arg-type]
 
 
+UNDO_SECONDS = 10.0  # after Approve & send, how long Undo send can still stop it
 SENDING = threading.Lock()
 """Held from reading a draft to recording it as sent: a second Approve & send (a double click while Gmail is slow)
 waits, then finds the email already sent instead of sending it again."""
@@ -72,7 +73,7 @@ def failures(ws: Case, days: int = 7) -> list[SendAttempt]:
 
 def send(ws: Case, draft: OutreachDraft) -> dict[str, Any]:
     """Send an approved draft from your Gmail over SMTP. Returns its Message-ID and thread."""
-    if draft.status != "draft":
+    if draft.status not in ("draft", "queued"):
         raise WorkspaceError(f"this email is already {draft.status}")
     try:
         msg = _checked(ws, draft)
@@ -90,6 +91,17 @@ def send(ws: Case, draft: OutreachDraft) -> dict[str, Any]:
     ws.log_attempt(SendAttempt(draft_id=draft.id, to=draft.to, subject=draft.subject, ok=True,
                                message_id=msg["Message-ID"]))  # fmt: skip
     return {"id": msg["Message-ID"], "threadId": draft.thread_id}
+
+
+def check(ws: Case, draft: OutreachDraft) -> None:
+    """Every rule, checked when you approve (so a refusal shows at once instead of after the undo window). A refusal
+    is logged like any failed send."""
+    try:
+        _checked(ws, draft)
+    except WorkspaceError as exc:
+        ws.log_attempt(SendAttempt(draft_id=draft.id, to=draft.to, subject=draft.subject, ok=False,
+                                   error=str(exc)[:500]))  # fmt: skip
+        raise
 
 
 def _checked(ws: Case, draft: OutreachDraft) -> EmailMessage:

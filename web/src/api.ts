@@ -598,10 +598,11 @@ export interface OutreachDraftView {
   subject: string;
   body: string;
   purpose: string;
-  status: "draft" | "sent" | "rejected";
+  status: "draft" | "queued" | "sent" | "rejected";
   drafted_by: string;
   thread_id: string | null;
   created_at: string;
+  queued_at: string | null;
   sent_at: string | null;
 }
 export interface SendFailure {
@@ -617,6 +618,7 @@ export interface OutreachView {
   sent_today: number;
   daily_limit: number;
   can_send: boolean;
+  undo_seconds: number;
   failures: SendFailure[];
 }
 export type MailCategory = "invites" | "judging" | "reviewer" | "letters" | "press" | "awards" | "contacts";
@@ -749,6 +751,7 @@ export const api = {
   outreach: () => request<OutreachView>("GET", "/outreach"),
   draftEmail: (contact_id: string, subject: string, body: string) => request<OutreachDraftView>("POST", "/outreach", { contact_id, subject, body }),
   editDraft: (id: string, fields: { subject?: string; body?: string }) => request<OutreachDraftView>("PATCH", `/outreach/${enc(id)}`, fields),
+  undoSend: (id: string) => request<OutreachDraftView>("POST", `/outreach/${enc(id)}/undo`),
   rejectDraft: (id: string) => request<OutreachDraftView>("POST", `/outreach/${enc(id)}/reject`),
   sendDraft: (id: string) => request<OutreachDraftView>("POST", `/outreach/${enc(id)}/send`),
   syncGmail: () => request<{ lines: string[] }>("POST", "/gmail/sync"),

@@ -57,6 +57,8 @@ ONBOARDING_LOOKUP = ("POST", "/api/onboarding/lookups/{lookup_id}")
 # Sending mail needs Google, so it has no sample here; the send is saved through the service layer and
 # tests/test_outreach.py checks it.
 OUTREACH_SEND = ("POST", "/api/outreach/{draft_id}/send")
+# Undo send needs an approved email inside its window; tests/test_gmail_imap.py checks it goes through the service.
+OUTREACH_UNDO = ("POST", "/api/outreach/{draft_id}/undo")
 
 
 @pytest.fixture
@@ -248,11 +250,15 @@ def _mutating_routes(app) -> set[tuple[str, str]]:
 
 def test_every_page_write_route_is_covered(demo_ws):
     routes = _mutating_routes(create_app(demo_ws, allowed_hosts=["testserver"]))
-    page_routes = {r for r in routes if r[1].startswith(PAGE_PREFIXES)} - {ONBOARDING_LOOKUP, OUTREACH_SEND}
+    page_routes = {r for r in routes if r[1].startswith(PAGE_PREFIXES)} - {
+        ONBOARDING_LOOKUP,
+        OUTREACH_SEND,
+        OUTREACH_UNDO,
+    }
     assert page_routes == set(SAMPLES), (
         "a write route was added or removed: cover it in SAMPLES (and route it through the service layer)"
     )
-    unknown = routes - page_routes - SYSTEM_ROUTES - {ONBOARDING_LOOKUP, OUTREACH_SEND}
+    unknown = routes - page_routes - SYSTEM_ROUTES - {ONBOARDING_LOOKUP, OUTREACH_SEND, OUTREACH_UNDO}
     assert not unknown, f"unclassified write routes: {sorted(unknown)}"
 
 
@@ -317,7 +323,7 @@ def test_api_client_writes_map_to_known_routes(demo_ws):
     api_ts = _web_sources()["web/src/api.ts"]
     calls = re.findall(r'request<[^>]*>\(\s*"(POST|PUT|PATCH|DELETE)",\s*[`"]([^`"]+)[`"]', api_ts, re.S)
     assert calls
-    known = set(SAMPLES) | SYSTEM_ROUTES | {ONBOARDING_LOOKUP, OUTREACH_SEND}
+    known = set(SAMPLES) | SYSTEM_ROUTES | {ONBOARDING_LOOKUP, OUTREACH_SEND, OUTREACH_UNDO}
 
     def matches(method: str, path: str) -> bool:
         concrete = "/api" + re.sub(r"\$\{[^}]+\}", "X", path)

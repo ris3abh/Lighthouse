@@ -185,12 +185,15 @@ class OutreachDraft(_Model):
     subject: str = Field(min_length=1, max_length=200)
     body: str = Field(min_length=1, max_length=8000)
     purpose: Literal["ask", "thank_you", "follow_up", "update", "other"] = "other"
-    status: Literal["draft", "sent", "rejected"] = "draft"
+    status: Literal["draft", "queued", "sent", "rejected"] = Field(
+        "draft", description="queued: approved, waiting out the undo window before it's sent."
+    )
     drafted_by: str = Field(
         "user", description="'user', 'agent:<run>', or 'follow-up' (the 7-quiet-days job)."
     )
     thread_id: str | None = Field(None, description="The Gmail thread a follow-up continues.")
     created_at: datetime = Field(default_factory=utcnow)
+    queued_at: datetime | None = None
     sent_at: datetime | None = None
     gmail_id: str | None = None
 

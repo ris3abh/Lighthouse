@@ -87,7 +87,9 @@ Gmail only, signed in the way mail apps do:
   (`BODY.PEEK[HEADER.FIELDS (...)]`, which also leaves mail unread). Threads are grouped by Gmail's thread ID.
   There is no snippet: IMAP has none without reading the body, so §2's one-line snippet stays empty.
 - **Sending: SMTP** (`smtp.gmail.com`, SSL) with the same password, only from Approve & send, within the daily
-  limit (10 by default), to an address still on the contact. A follow-up replies in the thread (`In-Reply-To`).
+  limit (10 by default), to an address still on the contact. Approve & send starts a 10-second Undo send window;
+  sends run one at a time and re-read the draft, so a double click sends once. Every attempt is logged (time,
+  recipient, Message-ID or error) and the daily limit counts sends Gmail accepted. A follow-up replies in the thread (`In-Reply-To`).
 - **Opportunity mail (Part F)** keeps its own rule: bodies are read in memory only, and only the facts and one
   quoted sentence are kept.
 - **An app password can do more than OAuth scopes would** (full mail access over IMAP and SMTP). The limits are

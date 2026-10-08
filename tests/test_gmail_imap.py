@@ -222,3 +222,53 @@ def test_every_send_attempt_is_logged_and_the_limit_counts_actual_sends(ws, peop
     ws.save_config(cfg)
     r = c.post(f"/api/outreach/{d2['id']}/send", headers=W)
     assert "limit of 2" in r.json()["detail"] and ws.outreach().attempts[-1].error.startswith("today's limit")
+
+
+def test_undo_send_within_ten_seconds(ws, people, fake, monkeypatch):
+    """Approve & send waits out a 10-second window; Undo send in it means nothing leaves. After it, it's sent."""
+    import time
+
+    omar, _ = people
+    assert outreach.UNDO_SECONDS == 0  # tests default to no wait; the app ships with 10
+    monkeypatch.setattr(outreach, "UNDO_SECONDS", 0.4)
+    c = _app(ws)
+    d = _draft(c, omar.id)
+    r = c.post(f"/api/outreach/{d['id']}/send", headers=W).json()
+    assert r["status"] == "queued" and r["undo_seconds"] == 0.4 and not fake.sent
+    undone = c.post(f"/api/outreach/{d['id']}/undo", headers=W).json()
+    assert undone["status"] == "draft"
+    time.sleep(0.7)
+    assert not fake.sent and ws.outreach().drafts[0].status == "draft"  # the timer found it undone
+    assert [ch.action for ch in ws.changes()][-2:] == ["outreach.approve", "outreach.undo"]
+
+    c.post(f"/api/outreach/{d['id']}/send", headers=W)
+    time.sleep(0.7)
+    assert len(fake.sent) == 1 and ws.outreach().drafts[0].status == "sent"  # the window passed: sent
+    r = c.post(f"/api/outreach/{d['id']}/undo", headers=W)
+    assert r.status_code == 400 and "too late" in r.json()["detail"]
+    with pytest.raises(Exception, match="only you"):
+        Service(ws, actor="agent:run_x").undo_send(d["id"])
+
+
+def test_an_approved_email_left_waiting_at_shutdown_is_a_draft_again(ws, people, fake, monkeypatch):
+    omar, _ = people
+    monkeypatch.setattr(outreach, "UNDO_SECONDS", 30)
+    c = _app(ws)
+    d = _draft(c, omar.id)
+    assert c.post(f"/api/outreach/{d['id']}/send", headers=W).json()["status"] == "queued"
+    _app(ws)  # the app starts again: nothing is sent without a live approval
+    assert ws.outreach().drafts[0].status == "draft" and not fake.sent
+
+
+def test_a_refused_send_after_the_window_goes_back_to_draft(ws, people, fake, monkeypatch):
+    import time
+
+    omar, _ = people
+    monkeypatch.setattr(outreach, "UNDO_SECONDS", 0.2)
+    c = _app(ws)
+    d = _draft(c, omar.id)
+    c.post(f"/api/outreach/{d['id']}/send", headers=W)
+    fake.password = "zzzzzzzzzzzzzzzz"  # revoked during the window
+    time.sleep(0.6)
+    assert ws.outreach().drafts[0].status == "draft" and not fake.sent
+    assert c.get("/api/outreach").json()["failures"][0]["error"].startswith("Gmail didn't send it")

@@ -11,10 +11,12 @@ Local-only hardening: the server binds to 127.0.0.1 (see ``cli.up``), rejects fo
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import csv
 import datetime as dt
 import io
 import json
+import threading
 from collections.abc import AsyncIterator
 from typing import Any, Literal
 
@@ -226,6 +228,11 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     from areao1.google import forget_oauth
 
     forget_oauth()  # a Google sign-in from before Gmail-only leaves the keychain (ADR 0014, amendment)
+    for d in (
+        ws.outreach().drafts
+    ):  # approved, but the app stopped inside the undo window: not sent, a draft again
+        if d.status == "queued":
+            ws.put_draft(d.model_copy(update={"status": "draft", "queued_at": None}))
     runner = AgentRunner(ws, engine=engine)
     from areao1.onboarding.api import mount as mount_onboarding
 
@@ -720,6 +727,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         return {"drafts": [{**d.model_dump(mode="json"), "contact": names.get(d.contact_id, "")}
                            for d in reversed(ws.outreach().drafts)],
                 "sent_today": outreach.sent_today(ws), "daily_limit": cfg.daily_limit,
+                "undo_seconds": outreach.UNDO_SECONDS,
                 "can_send": outreach.can_send(),
                 "failures": [{**a.model_dump(mode="json"), "contact": next((names[d.contact_id] for d in
                                                                             ws.outreach().drafts if d.id == a.draft_id
@@ -743,8 +751,25 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
 
     @app.post("/api/outreach/{draft_id}/send")
     def send_outreach(draft_id: str) -> dict[str, Any]:
-        """Your approval: sends it from your Gmail."""
-        return svc.send_draft(draft_id).model_dump(mode="json")
+        """Your approval: it's sent from your Gmail once the undo window is over (unless you press Undo send)."""
+        from areao1.google import outreach
+
+        queued = svc.approve_draft(draft_id)
+        if outreach.UNDO_SECONDS <= 0:
+            return svc.deliver_draft(draft_id).model_dump(mode="json")
+        timer = threading.Timer(outreach.UNDO_SECONDS, _deliver, args=(draft_id,))
+        timer.daemon = True
+        timer.start()
+        return {**queued.model_dump(mode="json"), "undo_seconds": outreach.UNDO_SECONDS}
+
+    @app.post("/api/outreach/{draft_id}/undo")
+    def undo_outreach(draft_id: str) -> dict[str, Any]:
+        """Undo send: within the window, the email goes back to being a draft and nothing is sent."""
+        return svc.undo_send(draft_id).model_dump(mode="json")
+
+    def _deliver(draft_id: str) -> None:
+        with contextlib.suppress(WorkspaceError):  # a refusal is logged and shows on the Contacts page
+            svc.deliver_draft(draft_id)
 
     @app.get("/api/drafts/{path:path}")
     def get_draft(path: str) -> FileResponse:

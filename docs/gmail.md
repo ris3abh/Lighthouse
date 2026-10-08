@@ -45,7 +45,8 @@ limits are Area O1's own rules, each covered by tests:
   moves, gets a label or is deleted in Gmail.
 - **Opportunity mail** (the daily opportunity job, coming next): bodies are read in memory only; Area O1 keeps
   only the facts and one quoted sentence.
-- **Sending**: only when you press **Approve & send** on a draft, from your Gmail (it shows up in Sent), to an
+- **Sending**: only when you press **Approve & send** on a draft (then 10 seconds to press **Undo send** before it
+  leaves; if Area O1 stops during those seconds, the email stays a draft), from your Gmail (it shows up in Sent), to an
   address still on the contact, and at most 10 a day (Settings: `outreach.daily_limit`). Agents and autopilot
   can't send. Follow-ups after 7 quiet days are drafts for you to approve, never sent on their own.
 

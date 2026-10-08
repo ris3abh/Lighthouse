@@ -1,5 +1,5 @@
 import { Check, Mail, Plus, RefreshCw, Send, Trash2, UserRound, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, type ContactFields, type ContactView, type OutreachDraftView, type OutreachView, type Relationship } from "../api";
 import { useRefresh } from "../App";
 import ChipInput from "../components/ChipInput";
@@ -255,9 +255,10 @@ function ContactForm({ start, onSave, onCancel, onDelete }: { start?: ContactVie
 function Outreach({ view, onChange }: { view: OutreachView; onChange: () => void }) {
   const toast = useToast();
   const waiting = view.drafts.filter((d) => d.status === "draft");
+  const queued = view.drafts.filter((d) => d.status === "queued");
   const sent = view.drafts.filter((d) => d.status === "sent").slice(0, 5);
   const failed = view.failures ?? [];
-  if (!waiting.length && !sent.length && !failed.length) return null;
+  if (!waiting.length && !queued.length && !sent.length && !failed.length) return null;
   const act = async (fn: () => Promise<unknown>, msg: string) => {
     try {
       await fn();
@@ -287,7 +288,14 @@ function Outreach({ view, onChange }: { view: OutreachView; onChange: () => void
           </ul>
         </div>
       )}
-      {waiting.length === 0 && <Empty>Nothing waiting. Drafts from you, the agent or a follow-up land here first.</Empty>}
+      {queued.length > 0 && (
+        <ul>
+          {queued.map((d) => (
+            <QueuedRow key={d.id} d={d} seconds={view.undo_seconds} onUndo={() => act(() => api.undoSend(d.id), "Undone: nothing was sent. It's a draft again.")} onDone={onChange} />
+          ))}
+        </ul>
+      )}
+      {waiting.length === 0 && !queued.length && <Empty>Nothing waiting. Drafts from you, the agent or a follow-up land here first.</Empty>}
       <ul>
         {waiting.map((d) => (
           <DraftRow key={d.id} d={d} canSend={view.can_send} act={act} />
@@ -299,6 +307,36 @@ function Outreach({ view, onChange }: { view: OutreachView; onChange: () => void
         </p>
       )}
     </Card>
+  );
+}
+
+/** Approved and waiting out the undo window: a countdown and Undo send. The server sends it when the time is up. */
+function QueuedRow({ d, seconds, onUndo, onDone }: { d: OutreachDraftView; seconds: number; onUndo: () => void; onDone: () => void }) {
+  const until = (d.queued_at ? Date.parse(d.queued_at) : Date.now()) + seconds * 1000;
+  const [left, setLeft] = useState(() => Math.max(0, Math.ceil((until - Date.now()) / 1000)));
+  useEffect(() => {
+    const tick = setInterval(() => {
+      const s = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+      setLeft(s);
+      if (until - Date.now() < -1500) {
+        clearInterval(tick);
+        onDone(); // sent by now (or refused, which shows above)
+      }
+    }, 250);
+    return () => clearInterval(tick);
+  }, [until, onDone]);
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-sunken px-5 py-4 md:px-6" data-queued={d.id}>
+      <p className="min-w-0 text-sm">
+        <span className="font-mono text-[10.5px] text-muted uppercase">{left > 0 ? `Sending in ${left}s` : "Sending…"}</span>
+        <span className="block truncate">
+          To {d.contact || d.to} · {d.subject}
+        </span>
+      </p>
+      <Button variant="primary" disabled={left <= 0} onClick={onUndo}>
+        <X /> Undo send
+      </Button>
+    </li>
   );
 }
 
@@ -322,7 +360,7 @@ function DraftRow({ d, canSend, act }: { d: OutreachDraftView; canSend: boolean;
           title={!canSend ? "Connect Gmail in Settings > Gmail" : edited ? "Save your edits first" : undefined}
           onClick={() => {
             setSending(true);
-            act(() => api.sendDraft(d.id), `Sent to ${d.to}`).finally(() => setSending(false));
+            act(() => api.sendDraft(d.id), `Approved: sending to ${d.to} in a few seconds. You can still undo it.`).finally(() => setSending(false));
           }}
         >
           <Check /> {sending ? "Sending…" : "Approve & send"}
