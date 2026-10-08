@@ -148,6 +148,25 @@ def _manifest_paths(name: str, doc: Any, files: dict[str, bytes]) -> list[str]:
 # ----------------------------------------------------------------------------- adapters
 
 
+@dataclass(frozen=True)
+class Adapter:
+    """An export layout: ``detect`` says whether a JSON object is one of its items, ``parse`` turns it into a
+    Conversation (or a Project). Registered adapters are tried before the built-in ones, so a new layout (the
+    owner's dated-file Claude export, once a redacted sample arrives; C14) is one small function plus a fixture."""
+
+    name: str
+    label: str
+    detect: Any
+    parse: Any
+
+
+ADAPTERS: list[Adapter] = []
+
+
+def register_adapter(adapter: Adapter) -> None:
+    ADAPTERS[:] = [a for a in ADAPTERS if a.name != adapter.name] + [adapter]
+
+
 def _claude_project(item: dict[str, Any]) -> Project:
     docs = [(str(d.get("filename") or d.get("name") or "file"), str(d.get("content") or ""))
             for d in item.get("docs") or item.get("files") or [] if isinstance(d, dict)]  # fmt: skip
@@ -224,6 +243,17 @@ def read(dropped: list[tuple[str, bytes]]) -> Intake:
         )
         took = 0
         for item in items:
+            extra = next((a for a in ADAPTERS if a.detect(item)), None)
+            if extra is not None:
+                parsed = extra.parse(item)
+                if isinstance(parsed, Project):
+                    intake.projects.append(parsed)
+                    took += 1
+                elif parsed is not None and parsed.messages:
+                    seen[(parsed.provider, parsed.id or f"{path}:{took}")] = parsed
+                    took += 1
+                labels[extra.label] = labels.get(extra.label, 0) + 1
+                continue
             kind = _shape(item)
             if kind == "claude" or kind == "chatgpt":
                 conv = (_parse_claude if kind == "claude" else _parse_chatgpt)(item)
@@ -237,11 +267,19 @@ def read(dropped: list[tuple[str, bytes]]) -> Intake:
             if kind:
                 labels[LABELS[kind]] = labels.get(LABELS[kind], 0) + 1
         if not took:
-            intake.unread.append((path, "not a Claude or ChatGPT format I know" if items else "empty"))
+            intake.unread.append(
+                (
+                    path,
+                    "not a Claude or ChatGPT format I know (a redacted sample of this file lets us "
+                    "add it: see docs/chat-import.md)"
+                    if items
+                    else "empty",
+                )
+            )
     intake.conversations = sorted(
         seen.values(), key=lambda c: c.created.timestamp() if c.created else 0, reverse=True
     )
-    intake.formats += [k for k in LABELS.values() if k in labels]
+    intake.formats += [k for k in [*LABELS.values(), *(a.label for a in ADAPTERS)] if k in labels]
     if not intake.conversations and not intake.projects:
         raise ExportError(no_chats_message(dropped, intake, left_out))
     return intake

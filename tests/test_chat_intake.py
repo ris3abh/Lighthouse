@@ -104,7 +104,7 @@ def test_unknown_files_are_named_never_dropped_silently():
         _drop({"conversations.json": [CASE], "notes/odd.json": {"hello": "world"}, "broken.json": "{"})
     )
     assert dict(intake.unread) == {
-        "notes/odd.json": "not a Claude or ChatGPT format I know",
+        "notes/odd.json": "not a Claude or ChatGPT format I know (a redacted sample of this file lets us add it: see docs/chat-import.md)",
         "broken.json": "not valid JSON",
     }
     with pytest.raises(ExportError, match="notes/odd.json: not a Claude or ChatGPT format I know"):
