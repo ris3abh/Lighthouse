@@ -61,8 +61,8 @@ def links_in(text: str) -> list[str]:
 def event_name(subject: str) -> str:
     """The subject without reply / forward prefixes and invitation boilerplate."""
     s = re.sub(r"^\s*((re|fwd?|aw|fw)\s*:\s*)+", "", subject or "", flags=re.I)
-    s = re.sub(r"^(you'?re invited( to judge)?|invitation( to (judge|review|speak))?|invite|join us)\s*[:\-–]\s*",
-               "", s, flags=re.I)  # fmt: skip
+    s = re.sub(r"^(you'?re invited( to (judge|speak|review))?|invitation( to (judge|review|speak)( at| for)?)?|"
+               r"invite( to judge)?|join us( as a judge)?)\b\s*[:\-–]?\s*", "", s, flags=re.I)  # fmt: skip
     return s.strip()[:120]
 
 
@@ -112,13 +112,19 @@ async def run(ws: Case, mundane: Any = None, verifier: Any = None) -> dict[str, 
 
     if not mail.connected():
         return {"lines": ["skipped: Gmail isn't connected (Settings > Gmail)"], "cost_usd": 0.0, "finds": []}
+    from areao1.google import verify
+
     synced = await mailview.sync(ws, mundane)
     cost = float(synced.get("cost_usd") or 0.0)
+    confirmed = verify.confirm_replies(ws)  # organizers who answered a check-in
     svc = Service(ws, actor="opportunities")
     proposed: list[Candidate] = []
     looked: list[str] = []
+    threads = {c.source for c in ws.inbox().candidates}
     for item in finds(ws):
         looked.append(item.id)
+        if f"gmail:{item.thread_id}" in threads:
+            continue  # a reply in a thread already in the Inbox
         try:
             info = read_find(ws, item)
         except (mail.MailError, KeyError, ValueError):
@@ -142,7 +148,7 @@ async def run(ws: Case, mundane: Any = None, verifier: Any = None) -> dict[str, 
     ws.save_mailbox(box)
     verified = sum(1 for c in proposed if c.verification == "verified")
     line = (f"Opportunities: {len(proposed)} new in your Inbox ({verified} verified)" if proposed
-            else "Opportunities: nothing new")  # fmt: skip
+            else "Opportunities: nothing new") + (f"; {confirmed} confirmed by the organizer's reply" if confirmed else "")  # fmt: skip
     return {"lines": [*synced.get("lines", []), line], "cost_usd": round(cost, 6), "finds": proposed}
 
 
@@ -158,7 +164,11 @@ async def run_now(ws: Case, runner: Any = None) -> dict[str, Any]:
         except BudgetExceeded:
             return None, runner.route("classify")
 
-    return await run(ws, mundane, None)
+    from areao1.google import verify
+
+    ok, _ = runner.engine().available()
+    engine = runner.engine() if ok and hasattr(runner.engine(), "hosted_search") else None
+    return await run(ws, mundane, verify.verifier(engine, runner.route("web_search").model))
 
 
 def run_job(ws: Case, scheduled: bool = False) -> list[str]:

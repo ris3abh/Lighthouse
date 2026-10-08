@@ -373,6 +373,15 @@ class Workspace:
             self.after_change()
             return cand
 
+    def set_verification(self, candidate_id: str, verification: str, note: str) -> Candidate:
+        with self.lock:
+            inbox = self.inbox()
+            cand = self._candidate(inbox, candidate_id)
+            cand.verification, cand.verification_note = verification, note[:500]  # type: ignore[assignment]
+            self.save_inbox(inbox)
+            self.after_change()
+            return cand
+
     def accept_candidate(self, candidate_id: str, **edits: Any) -> Any:
         """Accept a candidate. Evidence becomes an exhibit (capture file or uploaded bytes, logged, re-scored);
         a tracker candidate (pipeline / deadline / letter) becomes a tracker entry and never an exhibit."""

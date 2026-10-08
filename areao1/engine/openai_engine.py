@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -263,39 +264,61 @@ class OpenAIEngine:
                 f"Denied: this run reached its limit of {request.max_searches} web searches. Don't search again: "
                 "finish with what you found, and say in your answer that the search limit was reached."
             ), False
+        model = request.search_model or request.model  # the mundane tier: searching is simple reading
+        try:
+            found = await self.hosted_search(client, query, domains, model)
+        except RuntimeError as exc:
+            return f"Error: {exc}", False
+        self._add_cost(result, model, found.usage, found.searches)
+        result.searches += found.searches
+        result.search_usd = round(result.search_usd + (found.cost_usd or found.searches * SEARCH_USD), 6)
+        await emit(AgentEvent("usage", found.usage))
+        seen = found.sources[:10]
+        return found.text + ("\n\nSources:\n" + "\n".join(f"- {u}" for u in seen) if seen else ""), True
+
+    async def hosted_search(self, client: httpx.AsyncClient | None, query: str, domains: list[str], model: str
+                            ) -> SearchResult:  # fmt: skip
+        """One hosted web search (OpenAI's, on this key), restricted to ``domains`` when given: its answer text,
+        source URLs, usage and cost. Used by web_search above and by the daily opportunity check (ADR 0016)."""
         tool: dict[str, Any] = {"type": "web_search"}
         if domains:
             tool["filters"] = {"allowed_domains": domains[:100]}
-        model = request.search_model or request.model  # the mundane tier: searching is simple reading
         body = {"model": model, "instructions": SEARCH_INSTRUCTIONS, "input": query, "tools": [tool],
-                "tool_choice": "required", "max_tool_calls": 1, "store": False, "include": ["web_search_call.action.sources"],
-                "reasoning": {"effort": "low"}}  # fmt: skip
-        r = await client.post(URL, json={k: v for k, v in body.items()})
+                "tool_choice": "required", "max_tool_calls": 1, "store": False,
+                "include": ["web_search_call.action.sources"], "reasoning": {"effort": "low"}}  # fmt: skip
+        own = client is None
+        client = client or self._client()
+        try:
+            r = await client.post(URL, json=body)
+        finally:
+            if own:
+                await client.aclose()
         if r.status_code != 200:
-            return f"Error: {_api_error(r.status_code, r.text)}", False
+            raise RuntimeError(_api_error(r.status_code, r.text))
         data = r.json()
         usage = usage_of(data.get("usage"))
         out = data.get("output") or []
         searches = sum(1 for i in out if i.get("type") == "web_search_call")
-        self._add_cost(result, model, usage, searches)
-        result.searches += searches
-        result.search_usd = round(
-            result.search_usd + (cost(model, usage, searches) or searches * SEARCH_USD), 6
-        )
-        await emit(AgentEvent("usage", usage))
         text, sources = "", []
         for item in out:
             if item.get("type") == "web_search_call":
-                for s in (item.get("action") or {}).get("sources") or []:
-                    if s.get("url"):
-                        sources.append(s["url"])
+                sources += [s["url"] for s in (item.get("action") or {}).get("sources") or [] if s.get("url")]
             elif item.get("type") == "message":
                 for part in item.get("content") or []:
                     if part.get("type") == "output_text":
                         text += part.get("text", "")
                         sources += [a["url"] for a in part.get("annotations") or [] if a.get("url")]
-        seen = list(dict.fromkeys(sources))[:10]
-        return text.strip() + ("\n\nSources:\n" + "\n".join(f"- {u}" for u in seen) if seen else ""), True
+        return SearchResult(text.strip(), list(dict.fromkeys(sources)), usage, searches,
+                            cost(model, usage, searches) or searches * SEARCH_USD)  # fmt: skip
+
+
+@dataclass
+class SearchResult:
+    text: str
+    sources: list[str]
+    usage: dict[str, int]
+    searches: int
+    cost_usd: float
 
 
 def _api_error(status: int, text: str) -> str:

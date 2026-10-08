@@ -180,6 +180,13 @@ class Service:
         return self._record("inbox.snooze", "candidate", lambda: self.ws.snooze_candidate(candidate_id, until),
                             target_id=candidate_id, before=before, summary=before.title)  # fmt: skip
 
+    def set_verification(self, candidate_id: str, verification: str, note: str) -> Candidate:
+        """An opportunity find's verification changed (ADR 0016), e.g. the organizer replied to the check-in."""
+        before = self._candidate(candidate_id)
+        return self._record("inbox.verify", "candidate",
+                            lambda: self.ws.set_verification(candidate_id, verification, note),
+                            target_id=candidate_id, before=before, summary=f"{before.title}: {verification}")  # fmt: skip
+
     def stage_upload(self, content: bytes, filename: str, criterion: str | None = None) -> Candidate:
         return self._record("inbox.upload", "candidate", lambda: self.ws.stage_upload(content, filename, criterion),
                             summary=filename)  # fmt: skip

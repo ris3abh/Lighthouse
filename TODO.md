@@ -179,7 +179,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] F2. Daily opportunity job (mission-style, off by default, every 24h when enabled): reads new mail with the
       Mail rules (incl. Promotions / Social), sender check, .eml / forward handling and the invited / completed
       stage rules; opportunity mail becomes Inbox items
-- [ ] F3. Verification per find: sender check; the event confirmed on its official page (or Devpost / MLH) with
+- [x] F3. Verification per find: sender check; the event confirmed on its official page (or Devpost / MLH) with
       matching dates (guarded web search + read_page on the cheap tier); if unsure, a short confirmation reply
       drafted to the organizer behind Approve & send, and the item stays "unconfirmed" until they answer
 - [ ] F4. Dedupe against scout leads and existing Inbox items; push notifications with the banter copy ("New

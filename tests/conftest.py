@@ -92,6 +92,22 @@ def no_real_mail(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def no_real_dns(monkeypatch):
+    """No test resolves a real host name: anything but this machine fails, unless a test fakes DNS itself (as
+    _public_dns does) or serves HTTP from respx, which never resolves."""
+    import socket
+
+    real = socket.getaddrinfo
+
+    def local_only(host, *a, **k):
+        if host in (None, "localhost", "127.0.0.1", "::1", "testserver") or str(host).endswith(".localhost"):
+            return real(host, *a, **k)
+        raise OSError(f"a test tried to resolve {host!r}")
+
+    monkeypatch.setattr(socket, "getaddrinfo", local_only)
+
+
+@pytest.fixture(autouse=True)
 def no_undo_wait(monkeypatch):
     """Approve & send sends at once in tests; test_undo_send sets the window itself."""
     from areao1.google import outreach

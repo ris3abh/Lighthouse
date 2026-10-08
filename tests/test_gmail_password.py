@@ -102,6 +102,7 @@ def test_google_is_gmail_only(demo_ws):
         "mailview",
         "opportunities",
         "outreach",
+        "verify",
     ]
     with TestClient(create_app(demo_ws, allowed_hosts=["testserver"])) as client:
         paths = {r.path for r in client.app.routes}
