@@ -2,7 +2,7 @@
 
 Running checklist against [SPEC.md](SPEC.md) section 11. Product-first ordering (section 11a).
 
-## Current build: Parts B–H (resume from here)
+## Current build: Parts B–K (resume from "Final run" below)
 
 One commit per numbered item with tests; push after each green CI run. ADRs first for big decisions. Tests never
 call real models or APIs. At every CHECKPOINT: stop, test rigorously, report (what shipped, laptop + phone
@@ -169,30 +169,58 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
 - [ ] CHECKPOINT 4 (Gmail): connect with an app password, Refresh threads, one approved send
       Reported 2026-10-07 (built and tested with fake IMAP / SMTP); the live run waits for the owner's app password
 
-### Part F: daily opportunity job
-- [ ] F1. Off-by-default 24h job over Gmail (IMAP, app password) for judging / reviewer / call invites
-- [ ] F2. Verification: email auth + sender domain matches the org's site; event confirmed on its official
-      page (or Devpost / MLH) with matching dates; else a confirmation reply draft (approve-tap), "unconfirmed"
-- [ ] F3. Inbox items at stage "invited" with verified / unconfirmed badge + push; phishing fixtures never
-      verified
-- [ ] CHECKPOINT 5 (opportunities): fixture runs + one live run on the owner's inbox
+### Final run (owner, 2026-10-07): Parts F–K in one continuous run
+No stops between parts; no live runs on the owner's Gmail, OpenAI key or real workspace until K2; everything that
+needs the owner goes into one "Needs you" list in the K4 report. One commit per item with tests; push after green CI.
 
-### Part G: vault without babysitting (ADR 0011)
-- [ ] G1. Change triggers instead of timers for fees and regulations (Federal Register + eCFR watch); a
-      blocked USCIS page is flagged only when a relevant rule changes
-- [ ] G2. Chrome extension (MV3): matches only vault/sources.yaml URLs, saves visited pages to the local app
-      with a one-time pairing token; never browses on its own
-- [ ] G3. Community snapshot library repo (opt-in sharing, CI validates URL / hash / structure, auto-pull)
-- [ ] G4. One notification with a direct link only when a relevant page changed and no snapshot exists
-- [ ] CHECKPOINT 6 (vault): extension loaded; Knowledge page fresh with no manual saves
+#### Part F: daily opportunity job (ADR 0016)
+- [ ] F1. Cap web searches per run (agent.max_searches, default 8, in areao1.yaml); at the cap further searches
+      are refused, the run finishes with what it has and its answer says the cap was reached
+- [ ] F2. Daily opportunity job (mission-style, off by default, every 24h when enabled): reads new mail with the
+      Mail rules (incl. Promotions / Social), sender check, .eml / forward handling and the invited / completed
+      stage rules; opportunity mail becomes Inbox items
+- [ ] F3. Verification per find: sender check; the event confirmed on its official page (or Devpost / MLH) with
+      matching dates (guarded web search + read_page on the cheap tier); if unsure, a short confirmation reply
+      drafted to the organizer behind Approve & send, and the item stays "unconfirmed" until they answer
+- [ ] F4. Dedupe against scout leads and existing Inbox items; push notifications with the banter copy ("New
+      signal detected: [what], verified" / "Unidentified signal..."); phishing fixtures never verified
 
-### Part H: constellation memory map (ADR 0012)
-- [ ] H1. Memory page: criteria = clusters, claims = stars (brightness = confidence, solid / hollow,
-      conflicts muted red, superseded fade), provenance trail on click, time slider, filters, 2,000+ claims
-- [ ] H2. Motion: fade-in, twinkle on pending only, eased zoom / pan, animated provenance path, date-order
-      replay; dark sky in both themes; reduced motion rules
-- [ ] CHECKPOINT 7 (final): walkthrough per persona from empty workspace to constellation; SPEC / TODO /
-      CHANGELOG; propose the next release version
+#### Part G: vault without babysitting (ADR 0011)
+- [ ] G1. Change-triggered freshness: Federal Register + eCFR APIs for rules affecting O-1 / EB-1A and fees; a
+      blocked USCIS page is flagged only when a relevant rule changes; timers only for sources with no signal
+- [ ] G2. Chrome MV3 capture extension (extension/): matches only vault/sources.yaml URLs, saves visited pages to
+      the local app with a one-time pairing token, never browses on its own; automated-browser test; packaged
+      for "load unpacked"
+- [ ] G3. community-vault/: README, manifest, hash-verified public-domain government snapshots, CI that validates
+      URL, hash and structure; opt-in sharing from the extension; installs pull updates; create the GitHub repo
+      only if gh is authenticated
+- [ ] G4. One notification with a direct link only when a relevant page changed and no snapshot exists anywhere
+
+#### Part H: constellation memory map (ADR 0012)
+- [ ] H1. Memory page: criteria = clusters, claims = stars (brightness = confidence, solid = approved, hollow =
+      pending, conflicts glow red, superseded fade); click = provenance trail to the raw source; filters by
+      criterion, entity, status, date; smooth at 2,000+ claims; phones
+- [ ] H2. Motion: fade-in, twinkle on pending only, gliding zoom / pan, animated provenance path, time slider
+      replays in date order, "Aligning the stars..." while loading; dark sky in both themes; reduced motion
+
+#### Part I: letters and loose ends
+- [ ] I1. Letter drafting from approved claims only (each sentence linked to claim ids), guardrails, for the
+      writer to review and sign; sent to the writer through outreach approval
+- [ ] I2. Claude export adapter hook ready; the redacted sample goes to "Needs you" if still missing
+- [ ] I3. NOTICE file (Area O1, created by Rishabh Sharma), carried into built packages
+- [ ] I4. Remove leftovers of removed features (Google Calendar, OAuth, Anthropic engine, demo workspace)
+
+#### Part J: demo filming workspace (dev-only, never shipped)
+- [ ] J1. scripts/film_demo.py: fictional "Maya" workspace, fake Gmail, scripted engine, seeded constellation
+      with history, a verified judging invite on a keypress, one drafted follow-up, one rule-check "verified"
+      answer; no real data, no network
+- [ ] J2. docs/filming.md: window size, theme, hiding bookmarks, keys and the events they trigger
+
+#### Part K: final
+- [ ] K1. Walkthrough as Maya, Ravi and Lena from an empty workspace to the constellation; screenshots, both themes
+- [ ] K2. Live checks on the owner's setup: one daily opportunity run on Gmail, one vault sync, one chat; costs
+- [ ] K3. SPEC.md, README, landing page, CHANGELOG, ADRs; prepare v0.2.0 (not published)
+- [ ] K4. Final report: per part, screenshots, costs, open issues, "Needs you"
 
 ## Phase 0 checklist
 
