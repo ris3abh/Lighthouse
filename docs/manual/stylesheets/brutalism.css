@@ -133,3 +133,6 @@
 .md-footer { border-top: 1px solid var(--frame); }
 .md-footer-meta { background: var(--paper); border-top: 1px solid var(--line); }
 .md-copyright { font-family: var(--md-code-font); font-size: 0.56rem; color: var(--muted); }
+
+/* Tool and setting names in tables stay on one line. */
+.md-typeset table:not([class]) td code { white-space: nowrap; }

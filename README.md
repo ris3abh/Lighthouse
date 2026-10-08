@@ -26,15 +26,13 @@
 Area O1 turns your work (papers, code, talks, press, judging) into a living evidence file for an
 extraordinary-ability case. Start from your LinkedIn PDF; it takes a few minutes.
 
-| | |
-|---|---|
-| <img src="docs/readme/icons/scoreboard.svg" width="20" alt=""> | **A criteria scoreboard.** Every O-1A or EB-1A criterion is banked, building or a gap, by the profile's rules. An invitation never counts as a completion. |
-| <img src="docs/readme/icons/inbox.svg" width="20" alt=""> | **An evidence inbox.** GitHub, Hugging Face, Semantic Scholar, OpenAlex, arXiv, ORCID and any web page propose evidence; nothing counts until you accept it. |
-| <img src="docs/readme/icons/memory.svg" width="20" alt=""> | **Memory you can trace.** Every fact is a claim quoting its source word for word, drawn as a sky you can click back to the raw page. |
-| <img src="docs/readme/icons/mail.svg" width="20" alt=""> | **Gmail, read-only.** Case mail sorted by rules, invitations checked against the sender and the event's official page, sends only after you approve. |
-| <img src="docs/readme/icons/rules.svg" width="20" alt=""> | **Rules that stay current.** Rule statements are checked against official sources that refresh when a rule actually changes. |
-| <img src="docs/readme/icons/letters.svg" width="20" alt=""> | **Letters from facts.** Drafts built only from approved claims, for your writers to rewrite and sign. |
-| <img src="docs/readme/icons/agent.svg" width="20" alt=""> | **Bring your own agent.** Chat with OpenAI, or let Claude Code and Codex read your case over MCP. |
+- <img src="docs/readme/icons/scoreboard.svg" width="18" alt="" align="top"> **A criteria scoreboard.** Every O-1A or EB-1A criterion is banked, building or a gap, by the profile's rules. An invitation never counts as a completion.
+- <img src="docs/readme/icons/inbox.svg" width="18" alt="" align="top"> **An evidence inbox.** GitHub, Hugging Face, Semantic Scholar, OpenAlex, arXiv, ORCID and any web page propose evidence; nothing counts until you accept it.
+- <img src="docs/readme/icons/memory.svg" width="18" alt="" align="top"> **Memory you can trace.** Every fact is a claim quoting its source word for word, drawn as a sky you can click back to the raw page.
+- <img src="docs/readme/icons/mail.svg" width="18" alt="" align="top"> **Gmail, read-only.** Case mail sorted by rules, invitations checked against the sender and the event's official page, sends only after you approve.
+- <img src="docs/readme/icons/rules.svg" width="18" alt="" align="top"> **Rules that stay current.** Rule statements are checked against official sources that refresh when a rule actually changes.
+- <img src="docs/readme/icons/letters.svg" width="18" alt="" align="top"> **Letters from facts.** Drafts built only from approved claims, for your writers to rewrite and sign.
+- <img src="docs/readme/icons/agent.svg" width="18" alt="" align="top"> **Bring your own agent.** Chat with OpenAI, or let Claude Code and Codex read your case over MCP.
 
 ## Install in one line
 
