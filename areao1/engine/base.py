@@ -34,6 +34,7 @@ class EngineRequest:
     model: str
     effort: str = "medium"
     web_search: bool = True
+    search_model: str | None = None  # the model that runs each web search (the mundane tier); None: ``model``
     max_turns: int = 25
     max_budget_usd: float | None = None
     task_budget_tokens: int | None = None

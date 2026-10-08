@@ -270,6 +270,7 @@ class AgentRunner:
             model=model,
             effort=cfg.agent.effort,
             web_search=cfg.agent.web_search,
+            search_model=self.route("web_search").model,
             max_turns=cfg.agent.max_turns,
             max_budget_usd=min(caps) if caps else None,
             task_budget_tokens=max(20_000, min(b.per_run_tokens, b.monthly_tokens - used_tokens)),

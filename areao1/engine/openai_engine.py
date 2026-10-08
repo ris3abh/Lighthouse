@@ -260,7 +260,8 @@ class OpenAIEngine:
         tool: dict[str, Any] = {"type": "web_search"}
         if domains:
             tool["filters"] = {"allowed_domains": domains[:100]}
-        body = {"model": request.model, "instructions": SEARCH_INSTRUCTIONS, "input": query, "tools": [tool],
+        model = request.search_model or request.model  # the mundane tier: searching is simple reading
+        body = {"model": model, "instructions": SEARCH_INSTRUCTIONS, "input": query, "tools": [tool],
                 "tool_choice": "required", "store": False, "include": ["web_search_call.action.sources"],
                 "reasoning": {"effort": "low"}}  # fmt: skip
         r = await client.post(URL, json={k: v for k, v in body.items()})
@@ -270,10 +271,10 @@ class OpenAIEngine:
         usage = usage_of(data.get("usage"))
         out = data.get("output") or []
         searches = sum(1 for i in out if i.get("type") == "web_search_call")
-        self._add_cost(result, request.model, usage, searches)
+        self._add_cost(result, model, usage, searches)
         result.searches += searches
         result.search_usd = round(
-            result.search_usd + (cost(request.model, usage, searches) or searches * SEARCH_USD), 6
+            result.search_usd + (cost(model, usage, searches) or searches * SEARCH_USD), 6
         )
         await emit(AgentEvent("usage", usage))
         text, sources = "", []

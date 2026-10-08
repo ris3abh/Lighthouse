@@ -36,6 +36,7 @@ TASKS: dict[str, Tier] = {
     "chat_extract": "mundane",
     "summarize": "mundane",
     "classify": "mundane",
+    "web_search": "mundane",
 }
 ENV: dict[Tier, str] = {
     "hard": "AREAO1_MODEL_HARD",

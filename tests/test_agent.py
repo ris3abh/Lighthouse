@@ -578,4 +578,9 @@ def test_searches_are_counted_and_priced_in_the_run(demo_ws):
         return await runner.wait((await runner.start("manual", "find calls")).id)
 
     run = anyio.run(go)
-    assert run.searches == 1 and run.search_cost_usd > 0.01
+    inp, _, out = PRICES["gpt-6-luna"]
+    assert fake.requests[0].search_model == "gpt-6-luna" and fake.api.searches[0]["model"] == "gpt-6-luna"
+    assert run.model == "gpt-6.1-sol"  # the run itself stays on its tier; only searching moves to mundane
+    assert run.searches == 1 and run.search_cost_usd == pytest.approx(
+        (10 * inp + 5 * out) / 1e6 + 0.01, abs=1e-6
+    )

@@ -30,7 +30,9 @@ the MCP server; that's a different thing from the engine that answers in the app
   (`EngineRequest.guard`) decides first, exactly as it did for the SDK's `WebSearch`, and only an allowed search
   runs, as one sub-request with OpenAI's hosted `web_search` tool (domain filter = `allowed_domains`). The
   result text, with its source URLs, goes back to the model. A hosted search tool in the main request would
-  run before any guard could see it, so it's never offered there.
+  run before any guard could see it, so it's never offered there. The search sub-request runs on the **mundane
+  tier** (`gpt-6-luna`; task `web_search` in the routing table): finding and summarizing results is simple reading,
+  and the run's own model reasons over what comes back.
 - **Nothing else is offered**: no hosted file search, code interpreter, computer use, shell or MCP tools. The
   only network the model reaches is through our tools (`read_page` keeps its private-address refusal).
 - **Streaming**: `response.output_text.delta` becomes `text_delta`; each finished message `text`; each
