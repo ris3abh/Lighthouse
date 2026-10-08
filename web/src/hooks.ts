@@ -119,3 +119,35 @@ export function useOnce() {
   const busy = useCallback((key: string) => inflight.current.has(key), []);
   return { run, busy };
 }
+
+/** Scroll to an element by id once it exists, and keep it in place while the page around it is still loading (panels
+ * that arrive later push it down): re-aims for up to three seconds, and stops as soon as the person scrolls (B7). */
+export function useScrollTo(id: string | null, ready: boolean) {
+  useEffect(() => {
+    if (!id || !ready) return;
+    let stop = false;
+    let timer = 0;
+    const cancel = () => {
+      stop = true;
+    };
+    const events = ["wheel", "touchstart", "keydown", "mousedown"] as const;
+    events.forEach((e) => window.addEventListener(e, cancel, { passive: true }));
+    const started = performance.now();
+    let first = true;
+    const tick = () => {
+      if (stop) return;
+      const el = document.getElementById(id);
+      if (el && (first || Math.abs(el.getBoundingClientRect().top) > 40)) {
+        el.scrollIntoView({ behavior: first ? "smooth" : "auto", block: "start" });
+        first = false;
+      }
+      if (performance.now() - started < 3000) timer = window.setTimeout(tick, 200);
+    };
+    tick();
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, cancel));
+    };
+  }, [id, ready]);
+}

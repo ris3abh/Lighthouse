@@ -859,13 +859,13 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         lt = next((x for x in ws.letters().letters if x.id == letter_id), None)
         if lt is None or not lt.draft_path or not (ws.root / lt.draft_path).is_file():
             raise HTTPException(404, "draft the letter first")
+        from areao1.criteria.contacts import contact_for
+
         contacts = ws.contacts().contacts
         contact = (
             next((c for c in contacts if c.id == body.contact_id), None)
             if body.contact_id
-            else next(
-                (c for c in contacts if c.name.strip().lower() == lt.name.strip().lower() and c.emails), None
-            )
+            else contact_for(contacts, lt)
         )
         if contact is None or not contact.emails:
             raise HTTPException(400, f"Add {lt.name} as a contact with an email first (Contacts).")

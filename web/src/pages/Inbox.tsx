@@ -158,7 +158,8 @@ function CandidateCard({ c, profile, onDone }: { c: Candidate; profile: Profile;
       onDone();
     } catch (e) {
       toast((e as Error).message, "error");
-      setBusy(false);
+    } finally {
+      setBusy(false); // a card that stays (Save without accepting) must be usable again (B1)
     }
   };
 

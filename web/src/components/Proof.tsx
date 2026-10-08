@@ -1,7 +1,7 @@
 import { Check, Link2, Minus, Upload, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api, type EvidenceCriterion, type ProofChecklist, type ProofItem } from "../api";
-import { useLoad } from "../hooks";
+import { useLoad, useScrollTo } from "../hooks";
 import { Button, Card, Chip, cx, plural, useToast } from "./ui";
 
 export interface ProofUpload {
@@ -26,9 +26,7 @@ export default function ProofPanel({
   onChanged: () => void;
 }) {
   const view = useLoad(() => api.proof(), [version]);
-  useEffect(() => {
-    if (focus && view.data) document.getElementById(`proof-${focus}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [focus, view.data]);
+  useScrollTo(focus ? `proof-${focus}` : null, !!view.data);
   const lists = view.data?.checklists ?? [];
   if (!lists.length) return null;
   const open = lists.filter((c) => c.missing).length;

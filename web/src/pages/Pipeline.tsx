@@ -113,7 +113,7 @@ export default function Pipeline() {
                     className={cx("cursor-grab border-b border-line bg-surface px-5 py-4 active:cursor-grabbing", item.stale && "border-l-[3px] border-l-alert")}
                   >
                     <div className="flex items-start gap-2">
-                      <h3 className="min-w-0 flex-1 text-[15px] leading-snug font-medium">
+                      <h3 className="min-w-0 flex-1 text-[15px] leading-snug font-medium break-words [overflow-wrap:anywhere]">
                         {item.url ? (
                           <a href={item.url} target="_blank" rel="noreferrer" className="link">
                             {item.title}

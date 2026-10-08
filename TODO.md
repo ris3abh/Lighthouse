@@ -265,7 +265,7 @@ never enters the packet as evidence.
   - [x] F2 B3 generalized: busy states and server-side idempotency keys for everything that costs or sends; one
         double-click test over all of them
   - [x] F3 B18: onboarding lookups get read-only tools; guard test
-  - [ ] F4 B1, B6 (merge letter writers into contacts), B7, B14, B20, B5, B8
+  - [x] F4 B1, B6 (merge letter writers into contacts), B7, B14, B20, B5, B8
   - [ ] F5 accessibility: B4, B9, B11, B12, B13, B15, B16, B17, download buttons inside links
   - [ ] F6 UX: friendly lookup errors, Memory empty filter message, one offline banner on Knowledge
   - [ ] F7 B19 (film_demo answers every chat) and the offline stub raises a DNS error

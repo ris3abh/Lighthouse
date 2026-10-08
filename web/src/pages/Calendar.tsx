@@ -199,7 +199,18 @@ export default function Calendar() {
         subtitle="Deadlines and pipeline follow-ups. Click a deadline to edit it, or drag it to another day. calendar.ics in your workspace updates with every change."
         actions={
           <>
-            <Button size="sm" onClick={() => navigator.clipboard?.writeText(subscribe).then(() => toast("Subscribe link copied"))}>
+            <Button
+              size="sm"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(subscribe);
+                  toast("Subscribe link copied");
+                } catch {
+                  // No clipboard permission (B20): show the link instead of failing silently.
+                  toast(`Copy this link into your calendar app: ${subscribe}`);
+                }
+              }}
+            >
               <Link2 /> Subscribe link
             </Button>
             <a href={api.calendarUrl} download="areao1.ics">

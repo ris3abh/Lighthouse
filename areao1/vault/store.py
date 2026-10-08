@@ -317,7 +317,11 @@ class Vault:
 
         async def one(source: VaultSource) -> None:
             async with limit:
-                results.append(await self._fetch(source, client, cache, state.get(source.id)))
+                try:
+                    results.append(await self._fetch(source, client, cache, state.get(source.id)))
+                except Exception as exc:  # anything unexpected fails this source, never the whole check (B14)
+                    results.append(self._failed(source, source.url, "error", f"{type(exc).__name__}: {exc}"[:500],
+                                                state.get(source.id)))  # fmt: skip
 
         try:
             async with anyio.create_task_group() as tg:

@@ -56,6 +56,8 @@ export default function ChatPanel({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => box.current?.focus(), [status?.available]); // opening Ask puts the cursor in the message box (B5)
 
   const live = useRunStream(runId, (run: AgentRunView) => {
     setTurns((t) => [
@@ -292,6 +294,7 @@ export default function ChatPanel({
       >
         <div className="flex items-end gap-2 border border-ink bg-surface focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ink">
           <textarea
+            ref={box}
             className="min-h-14 flex-1 resize-none bg-transparent px-3 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
             placeholder={runId ? "Working…" : "Ask about your case"}
             aria-label="Message"

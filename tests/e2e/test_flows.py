@@ -626,3 +626,49 @@ def test_double_clicking_anything_that_costs_or_sends_does_it_once(browser, serv
         dialog.get_by_role("button", name=re.compile("^Yes, look")).first.dblclick()
         page.wait_for_timeout(1500)
         assert sum(1 for p in posts if p.startswith("/onboarding/lookups/")) == 1
+
+
+# ------------------------------------------------------------------------------------------- QA fixes (F4)
+
+
+def test_qa_fixes_in_the_browser(browser, serve, qa):
+    """B5 Ask focuses the message box, B7 Evidence deep links land on the criterion, B8 long words wrap in a pipeline
+    card, B20 the calendar subscribe link copes without clipboard permission. (B1 is in the Inbox flow.)"""
+    srv = serve("film")
+    page = new_page(browser, qa)
+    with step(qa, page, "B5: Ask, then type"):
+        open_route(page, srv.base, "overview")
+        button(page, "^Ask$").click()
+        page.wait_for_timeout(500)
+        page.keyboard.type("Hello")
+        assert page.get_by_label("Message").input_value() == "Hello"
+        page.keyboard.press("Escape")
+    with step(qa, page, "B7: #/evidence?c=membership lands on Membership"):
+        open_route(page, srv.base, "overview")
+        page.evaluate("location.hash = '#/evidence?c=membership'")
+        page.wait_for_timeout(3500)
+        top = page.evaluate("document.getElementById('crit-membership').getBoundingClientRect().top")
+        assert -10 <= top <= 120, f"Membership is {top}px from the top"
+    with step(qa, page, "B8: a long word wraps inside its pipeline card"):
+        open_route(page, srv.base, "pipeline")
+        box = page.get_by_label("New idea")
+        box.fill("Keynote-" + "A" * 120 + " proposal")
+        box.press("Enter")
+        page.wait_for_timeout(800)
+        card = page.locator("[draggable]", has_text="Keynote-").first
+        spill = card.evaluate(
+            "(c) => [...c.querySelectorAll('*')].some((x) => x.scrollWidth > c.clientWidth + 1)"
+        )
+        assert not spill
+    with step(qa, page, "B20: no clipboard permission: the link is shown, nothing throws"):
+        open_route(page, srv.base, "calendar")
+        page.evaluate(
+            "() => { navigator.clipboard.writeText = () => Promise.reject(new DOMException('Write permission denied.', 'NotAllowedError')); }"
+        )
+        n = len(qa.errors())
+        button(page, "Subscribe link").click()
+        page.get_by_text(re.compile("Copy this link into your calendar app: webcal://")).wait_for(
+            timeout=3000
+        )
+        assert len(qa.errors()) == n
+    no_errors(qa)

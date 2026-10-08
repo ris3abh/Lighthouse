@@ -7,7 +7,7 @@ import PreflightPanel from "../components/Preflight";
 import ProofPanel, { type ProofUpload } from "../components/Proof";
 import { useRefresh } from "../App";
 import { Button, Card, Chip, CriterionName, cx, Empty, ErrorBox, Loading, Modal, PageHeader, plural, StatusBadge, useToast } from "../components/ui";
-import { today, useLoad } from "../hooks";
+import { today, useLoad, useScrollTo } from "../hooks";
 
 export default function Evidence({ focus, proof }: { focus: string | null; proof?: string | null }) {
   const { version, bump } = useRefresh();
@@ -34,9 +34,7 @@ export default function Evidence({ focus, proof }: { focus: string | null; proof
     }
   };
 
-  useEffect(() => {
-    if (focus && view.data) document.getElementById(`crit-${focus}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [focus, view.data]);
+  useScrollTo(focus ? `crit-${focus}` : null, !!view.data);
 
   if (view.error) return <ErrorBox error={view.error} retry={view.reload} />;
   if (!view.data) return <Loading />;

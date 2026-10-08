@@ -3,11 +3,28 @@ what it's linked to and its Gmail threads. Editing a letter writer's entry makes
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from areao1.criteria.case import Case
 
 LETTER_PREFIX = "letter:"
+HONORIFICS = {"dr", "prof", "professor", "mr", "mrs", "ms", "mx", "sir", "phd", "md", "jr", "sr"}
+
+
+def person_key(name: str) -> str:
+    """A name compared the way people mean it: "Dr. Priya Natarajan" and "Priya Natarajan, PhD" are one person."""
+    words = re.sub(r"[^\w\s]", " ", name.lower()).split()
+    return " ".join(w for w in words if w not in HONORIFICS)
+
+
+def contact_for(contacts: list[Any], letter: Any) -> Any:
+    """The stored contact a letter writer is: linked by id, else the same name (honorifics and punctuation aside)."""
+    linked = next((c for c in contacts if letter.id in c.letter_ids), None)
+    if linked is not None:
+        return linked
+    key = person_key(letter.name)
+    return next((c for c in contacts if key and person_key(c.name) == key), None)
 
 
 def threads_by_contact(ws: Case) -> dict[str, list[dict[str, Any]]]:
@@ -26,12 +43,20 @@ def views(ws: Case) -> list[dict[str, Any]]:
     pipeline = {p.id: p for p in ws.pipeline().items}
     threads = threads_by_contact(ws)
     stored = ws.contacts().contacts
-    linked = {lid for c in stored for lid in c.letter_ids}
+    # A letter writer who is already a contact (linked, or the same name) shows once, on that contact (B6).
+    merged: dict[str, list[str]] = {c.id: [lid for lid in c.letter_ids if lid in letters] for c in stored}
+    linked: set[str] = set()
+    for lt in letters.values():
+        c = contact_for(stored, lt)
+        if c is not None:
+            linked.add(lt.id)
+            if lt.id not in merged[c.id]:
+                merged[c.id].append(lt.id)
     out = []
     for c in stored:
         out.append({**c.model_dump(mode="json"), "virtual": False,
                     "letters": [{"id": lid, "name": letters[lid].name, "status": letters[lid].status}
-                                for lid in c.letter_ids if lid in letters],
+                                for lid in merged[c.id]],
                     "pipeline": [{"id": pid, "title": pipeline[pid].title, "stage": pipeline[pid].stage}
                                  for pid in c.pipeline_ids if pid in pipeline],
                     "threads": sorted(threads.get(c.id, []), key=lambda t: t["last_at"], reverse=True)})  # fmt: skip
