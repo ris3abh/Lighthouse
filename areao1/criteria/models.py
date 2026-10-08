@@ -240,6 +240,14 @@ class MailItem(_Model):
     by: Literal["rule", "learned", "model", "you"] = "rule"
     why: str = Field("", max_length=200, description="Which rule (or the model, or your move) put it here.")
     contact_ids: list[str] = Field(default_factory=list)
+    source: Literal["gmail", "eml"] = "gmail"
+    auth: dict[str, str | bool | None] | None = Field(
+        None,
+        description="Sender authentication from the original headers (verdict, spf, dkim, dmarc, by, ...).",
+    )
+    forwarded_part: str | None = Field(None, description="The attached original's MIME part, for a message "
+                                       "forwarded as an attachment; sender, subject and auth are the original's.")  # fmt: skip
+    file_sha: str | None = Field(None, description="For a dropped .eml: its snapshot in memory/sources.")
 
 
 class MailRule(_Model):

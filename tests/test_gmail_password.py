@@ -96,6 +96,7 @@ def test_google_is_gmail_only(demo_ws):
 
     assert sorted(p.stem for p in Path(google.__file__).parent.glob("*.py")) == [
         "__init__",
+        "eml",
         "gmail",
         "mail",
         "mailview",

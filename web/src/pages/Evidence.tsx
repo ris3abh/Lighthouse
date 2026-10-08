@@ -49,7 +49,7 @@ export default function Evidence({ focus }: { focus: string | null }) {
 
       <DropZone onFiles={(f) => sendToInbox(f)} busy={sending}>
         <Upload className="size-6" strokeWidth={1.5} aria-hidden />
-        <p className="display text-3xl">{sending ? "Uploading…" : "Drop certificates, letters, screenshots or PDFs"}</p>
+        <p className="display text-3xl">{sending ? "Uploading…" : "Drop certificates, letters, screenshots, PDFs or emails (.eml)"}</p>
         <p className="max-w-xl text-sm text-ink-2">
           or click to choose. They go to your Inbox with a suggested criterion and stage; nothing is filed until you accept. Drop
           onto a criterion below to propose it there.

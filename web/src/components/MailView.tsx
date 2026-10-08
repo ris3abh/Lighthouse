@@ -1,6 +1,7 @@
-import { ArrowUpRight, Inbox as InboxIcon, Mail, RefreshCw } from "lucide-react";
+import { ArrowUpRight, Download, Inbox as InboxIcon, Mail, RefreshCw, ShieldAlert, ShieldCheck, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, type ContactView, type MailCategory, type MailItemView, type MailText, type MailView as MailData } from "../api";
+import DropZone from "./DropZone";
 import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, Modal, plural, useToast } from "./ui";
 
 const MOVE_HIDE = "hide";
@@ -42,6 +43,30 @@ export default function MailView({ contacts, contact, setContact }: { contacts: 
     }
   };
 
+  const dropEml = async (files: File[]) => {
+    const emails = files.filter((f) => f.name.toLowerCase().endsWith(".eml"));
+    if (!emails.length) return toast("Only .eml files here. Other files go on the Evidence page.", "error");
+    setBusy(true);
+    try {
+      const cands = await api.uploadToInbox(emails);
+      toast(`${plural(cands.length, "email")} sent to the Inbox for review`);
+      await load();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const importOriginal = async (item: MailItemView) => {
+    try {
+      await api.importForwarded(item.id);
+      toast("The attached original is in your Inbox, with its sender check. Its file is kept.");
+      await load();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+
   const labels = Object.fromEntries(data.categories.map((c) => [c.id, c.label])) as Record<MailCategory, string>;
   const person = contacts.find((c) => c.id === contact);
   const mine = person ? data.items.filter((i) => i.contact_ids.includes(person.id)) : data.items;
@@ -78,6 +103,14 @@ export default function MailView({ contacts, contact, setContact }: { contacts: 
         ))}
       </div>
 
+      <DropZone onFiles={dropEml} busy={busy} accept=".eml,message/rfc822" multiple label="Drop .eml emails">
+        <p className="flex items-center gap-2 text-sm text-ink-2">
+          <Upload className="size-4" strokeWidth={1.5} aria-hidden />
+          Drop emails saved as .eml (from another account), or click to choose. Each one is checked for a verified sender and goes to your
+          Inbox; its file is kept.
+        </p>
+      </DropZone>
+
       <Card panel="mail">
         {!data.connected && !data.items.length ? (
           <Empty>
@@ -86,11 +119,11 @@ export default function MailView({ contacts, contact, setContact }: { contacts: 
         ) : shown.length === 0 ? (
           <Empty>{data.synced_at ? "Nothing in this category." : "Press Refresh mail to read your recent mail."}</Empty>
         ) : person ? (
-          <Threads items={shown} labels={labels} onOpen={setOpen} onMove={move} />
+          <Threads items={shown} labels={labels} onOpen={setOpen} onMove={move} onImport={importOriginal} />
         ) : (
           <ul>
             {shown.map((i) => (
-              <Row key={i.id} i={i} labels={labels} onOpen={() => setOpen(i)} onMove={(to) => move(i, to)} />
+              <Row key={i.id} i={i} labels={labels} onOpen={() => setOpen(i)} onMove={(to) => move(i, to)} onImport={() => importOriginal(i)} />
             ))}
           </ul>
         )}
@@ -128,7 +161,7 @@ function CatButton({ on, onClick, label, count }: { on: boolean; onClick: () => 
 }
 
 /** One contact's mail as threads, newest first; each thread lists its messages, sent and received. */
-function Threads({ items, labels, onOpen, onMove }: { items: MailItemView[]; labels: Record<MailCategory, string>; onOpen: (i: MailItemView) => void; onMove: (i: MailItemView, to: MailCategory | "hide") => void }) {
+function Threads({ items, labels, onOpen, onMove, onImport }: { items: MailItemView[]; labels: Record<MailCategory, string>; onOpen: (i: MailItemView) => void; onMove: (i: MailItemView, to: MailCategory | "hide") => void; onImport: (i: MailItemView) => void }) {
   const threads = new Map<string, MailItemView[]>();
   for (const i of items) threads.set(i.thread_id, [...(threads.get(i.thread_id) ?? []), i]);
   return (
@@ -141,7 +174,7 @@ function Threads({ items, labels, onOpen, onMove }: { items: MailItemView[]; lab
           </p>
           <ul>
             {msgs.map((i) => (
-              <Row key={i.id} i={i} labels={labels} onOpen={() => onOpen(i)} onMove={(to) => onMove(i, to)} nested />
+              <Row key={i.id} i={i} labels={labels} onOpen={() => onOpen(i)} onMove={(to) => onMove(i, to)} onImport={() => onImport(i)} nested />
             ))}
           </ul>
         </li>
@@ -150,7 +183,7 @@ function Threads({ items, labels, onOpen, onMove }: { items: MailItemView[]; lab
   );
 }
 
-function Row({ i, labels, onOpen, onMove, nested }: { i: MailItemView; labels: Record<MailCategory, string>; onOpen: () => void; onMove: (to: MailCategory | "hide") => void; nested?: boolean }) {
+function Row({ i, labels, onOpen, onMove, onImport, nested }: { i: MailItemView; labels: Record<MailCategory, string>; onOpen: () => void; onMove: (to: MailCategory | "hide") => void; onImport: () => void; nested?: boolean }) {
   const who = i.outgoing ? `To ${i.contacts[0] ?? i.to[0] ?? ""}` : i.from_name || i.from_addr;
   return (
     <li className={cx("grid gap-2 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:px-6", !nested && "border-b border-line last:border-b-0")} data-mail={i.id}>
@@ -161,11 +194,18 @@ function Row({ i, labels, onOpen, onMove, nested }: { i: MailItemView; labels: R
         </span>
         <span className="block truncate text-sm text-ink-2 hover:text-ink">{i.subject || "(no subject)"}</span>
         <span className="mt-1 block font-mono text-[10px] text-muted uppercase">
+          {i.source === "eml" ? "Dropped .eml · " : ""}
           {i.by === "model" ? "Sorted by the model" : i.by === "you" ? "You moved it" : i.why}
         </span>
+        <AuthBadge auth={i.auth} />
       </button>
       <div className="flex flex-wrap items-center gap-2">
         <Chip tone={i.category === "contacts" ? "muted" : "ink"}>{labels[i.category]}</Chip>
+        {i.forwarded_part && (
+          <Button size="sm" variant="ghost" onClick={onImport} title="Fetch the attached original and send it to the Inbox, with its sender check">
+            <Download /> Import original
+          </Button>
+        )}
         {i.candidate && (
           <a className="link inline-flex items-center gap-1 font-mono text-[10.5px] uppercase" href={`#/inbox?candidate=${encodeURIComponent(i.candidate.id)}`} title={i.candidate.title}>
             <InboxIcon className="size-3.5" aria-hidden /> In Inbox <ArrowUpRight className="size-3" aria-hidden />
@@ -189,6 +229,24 @@ function Row({ i, labels, onOpen, onMove, nested }: { i: MailItemView; labels: R
         </select>
       </div>
     </li>
+  );
+}
+
+/** The receiving server's sender check, from the original headers (ADR 0014, amendment). */
+function AuthBadge({ auth }: { auth: MailItemView["auth"] }) {
+  if (!auth) return null;
+  const how = auth.dmarc === "pass" ? "DMARC passed" : auth.dkim_domain ? `DKIM ${auth.dkim} for ${auth.dkim_domain}` : `DKIM ${auth.dkim ?? "none"}`;
+  const by = auth.by ? `, checked by ${auth.by}` : "";
+  if (auth.verdict === "verified")
+    return (
+      <span className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] text-ink-2 uppercase" title={`${how}${by}`}>
+        <ShieldCheck className="size-3" aria-hidden /> Verified sender
+      </span>
+    );
+  return (
+    <span className={cx("mt-1 inline-flex items-center gap-1 font-mono text-[10px] uppercase", auth.verdict === "failed" ? "text-alert" : "text-muted")} title={`${how}${by}`}>
+      <ShieldAlert className="size-3" aria-hidden /> {auth.verdict === "failed" ? "Sender check failed" : "Sender not verified"}
+    </span>
   );
 }
 

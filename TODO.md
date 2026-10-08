@@ -159,6 +159,10 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       opportunity scout $0.2203 (20 tool calls, 4 searches = $0.1306 of it, 6 sources, 6 Inbox proposals)
 - [x] E7 live check: rules-only refresh on the owner's Gmail ($0); found organizer mail in Promotions was never
       read (fixed, ab734a1). The HackMIT judging thread and DubHacks reply aren't in the connected account
+- [x] E8. Emails from other accounts (ADR 0014 amendment): .eml drops on Evidence, Inbox and Mail go through the
+      upload pipeline (original kept) with sender authentication from the original headers, the Mail view's
+      rules, criterion mapping and an invited / completed stage from the text; Gmail messages forwarded as an
+      attachment are sorted and verified by the attached original, which can be imported
 - [ ] CHECKPOINT 4 (Gmail): connect with an app password, Refresh threads, one approved send
       Reported 2026-10-07 (built and tested with fake IMAP / SMTP); the live run waits for the owner's app password
 

@@ -626,6 +626,10 @@ class Workspace:
         """(criterion, evidence_type, stage) guess for a dropped file. The domain layer knows the rubric."""
         return "", "document", None
 
+    def upload_fields(self, content: bytes, filename: str) -> dict[str, Any] | None:
+        """Candidate fields a domain layer reads from a dropped file's content (None: guess from the name)."""
+        return None
+
     def stage_upload(self, content: bytes, filename: str, criterion: str | None = None) -> Candidate:
         """A dropped file: snapshot it in memory/ and propose it in the Inbox. Accepting files it as an exhibit."""
         if len(content) > self.MAX_UPLOAD_BYTES:
@@ -639,20 +643,23 @@ class Workspace:
             if criterion != guessed_crit:
                 etype, stage = "document", None
         crit = criterion or guessed_crit
+        extra = self.upload_fields(content, name)  # e.g. an email: its sender check, category and stage
         with self.lock:
             obs = self.memory.record_file(content, filename=name, media_type=_media_type(name))
             title = re.sub(r"[_\-]+", " ", Path(name).stem).strip() or name
+            fields: dict[str, Any] = {"evidence_type": etype, "proposed_criterion": crit, "title": title[:120],
+                                      "summary": f"Uploaded {name} ({_size(len(content))}). Check the criterion, type "
+                                      "and stage, then accept.", "confidence": 0.6 if crit else 0.3, "stage": stage}  # fmt: skip
+            if extra:
+                fields.update(extra)
+                if criterion:  # dropped on a criterion: that wins
+                    fields["proposed_criterion"] = criterion
             cand = Candidate(
                 fingerprint=f"upload:{obs.sha256}",
                 source="upload",
-                evidence_type=etype,
-                proposed_criterion=crit,
-                title=title[:120],
-                summary=f"Uploaded {name} ({_size(len(content))}). Check the criterion, type and stage, then accept.",
-                confidence=0.6 if crit else 0.3,
-                stage=stage,  # type: ignore[arg-type]
                 attachment=obs.id,
                 source_tier="user",
+                **fields,
             )
             added = self.add_candidates([cand])
             if not added:

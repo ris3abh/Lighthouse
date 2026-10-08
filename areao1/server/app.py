@@ -1036,6 +1036,20 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
             raise HTTPException(400, str(exc)) from exc
         return mailview.view(ws)
 
+    @app.post("/api/mail/{gm_id}/import")
+    def mail_import(gm_id: str) -> dict[str, Any]:
+        """Import the original attached to a message forwarded as an attachment (PEEK): its file is kept and it goes
+        to the Inbox with its own sender check and stage, like a dropped .eml."""
+        from areao1.google import mail, mailview
+
+        try:
+            cand = mailview.import_forwarded(ws, gm_id)
+        except KeyError as exc:
+            raise HTTPException(404, "no forwarded original on that message") from exc
+        except mail.MailError as exc:
+            raise HTTPException(502, str(exc)) from exc
+        return cand.model_dump(mode="json")
+
     @app.get("/api/mail/{gm_id}/text")
     def mail_text(gm_id: str) -> JSONResponse:
         """Open a message: its text, fetched from Gmail now with PEEK, returned and never written to disk."""

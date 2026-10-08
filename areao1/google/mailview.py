@@ -179,11 +179,29 @@ def _item(
     h = msg["headers"]
     name, sender = parseaddr(h.get("From", ""))
     everyone = _addrs(h.get("From", ""), h.get("To", ""), h.get("Cc", ""))
+    fwd = msg.get("forwarded")
     return MailItem(id=msg["id"], thread_id=msg["thread_id"], at=datetime.fromtimestamp(msg["at"] / 1000, tz=UTC),
                     from_name=name[:200], from_addr=sender.lower()[:320], to=_addrs(h.get("To", ""))[:20],
                     subject=redact(h.get("Subject", ""))[:200], outgoing=bool(me) and sender.lower() == me,
                     category=category, by=by, why=why[:200],  # type: ignore[arg-type]
-                    contact_ids=sorted({contacts[a].id for a in everyone if a in contacts}))  # fmt: skip
+                    contact_ids=sorted({contacts[a].id for a in everyone if a in contacts}),
+                    source=msg.get("source", "gmail"), auth=_auth(msg.get("auth")),
+                    forwarded_part=fwd["part"] if fwd else None, file_sha=msg.get("file_sha"))  # fmt: skip
+
+
+def _auth(auth: dict[str, Any] | None) -> dict[str, Any] | None:
+    keys = ("verdict", "spf", "dkim", "dmarc", "dkim_domain", "from_domain", "aligned", "by")
+    return {k: auth.get(k) for k in keys} if auth else None
+
+
+def as_original(msg: dict[str, Any]) -> dict[str, Any]:
+    """A message forwarded as an attachment, seen as the attached original: its sender, subject and authentication
+    (the forward's own only prove who forwarded it). Anything else is returned as it is."""
+    fwd = msg.get("forwarded")
+    if not fwd:
+        return msg
+    return {**msg, "headers": {**fwd["headers"], "Content-Type": msg["headers"].get("Content-Type", "")},
+            "auth": fwd["auth"], "first_lines": ""}  # fmt: skip
 
 
 async def sync(ws: Case, mundane: Any = None, days: int = LOOKBACK_DAYS) -> dict[str, Any]:
@@ -202,8 +220,11 @@ async def sync(ws: Case, mundane: Any = None, days: int = LOOKBACK_DAYS) -> dict
     kept: list[MailItem] = []
     pending: list[dict[str, Any]] = []
     done: list[str] = []
+    new = [as_original(m) for m in new]
     for m in new:
         decided = by_rules(m, box.rules, contacts, me)
+        if decided is not None and m.get("forwarded"):
+            decided = (decided[0], decided[1], f"forwarded as an attachment; {decided[2]}")
         if decided is None:
             pending.append(m)
             continue
@@ -310,7 +331,57 @@ def view(ws: Case) -> dict[str, Any]:
 
 
 def open_item(ws: Case, gm_id: str) -> dict[str, Any]:
-    """The message's text, for reading: only for mail the view kept, fetched now and returned, never stored."""
-    if not any(i.id == gm_id for i in ws.mailbox().items):
+    """The message's text, for reading: only for mail the view kept. Gmail mail is fetched now and never stored; a
+    dropped .eml is read from its snapshot (the file you gave)."""
+    item = next((i for i in ws.mailbox().items if i.id == gm_id), None)
+    if item is None:
         raise KeyError(gm_id)
+    if item.source == "eml":
+        from areao1.google import eml
+
+        msg = eml.parse(_eml_bytes(ws, item.file_sha or ""))
+        return {k: str(msg.get(k.title(), "") or "") for k in ("from", "to", "cc", "subject", "date")} | {
+            "text": mail._text(msg)
+        }
+    if item.forwarded_part:
+        from areao1.google import eml
+
+        msg = eml.parse(mail.fetch_part(gm_id, item.forwarded_part))
+        return {k: str(msg.get(k.title(), "") or "") for k in ("from", "to", "cc", "subject", "date")} | {
+            "text": mail._text(msg)
+        }
     return mail.open_message(gm_id)
+
+
+def _eml_bytes(ws: Case, sha: str) -> bytes:
+    obs = next((o for o in ws.memory.observations() if o.sha256 == sha), None)
+    if obs is None:
+        raise KeyError(sha)
+    return ws.resolve_inside(obs.snapshot).read_bytes()
+
+
+def add_eml(ws: Case, info: dict[str, Any], sha: str) -> None:
+    """A dropped .eml that's case mail shows in the Mail view too (its file is the snapshot)."""
+    when = info["when"] or clock.utcnow()
+    contacts = {e: c for c in ws.contacts().contacts for e in c.emails}
+    msg = {"id": f"eml:{sha[:16]}", "thread_id": f"eml:{sha[:16]}", "at": int(when.timestamp() * 1000),
+           "headers": info["headers"], "auth": info["auth"], "source": "eml", "file_sha": sha}  # fmt: skip
+    item = _item(msg, info["category"], "rule", info["why"] or "dropped .eml", contacts, mail.address())
+    box = ws.mailbox()
+    if any(i.id == item.id for i in box.items):
+        return
+    box.items = sorted([*box.items, item], key=lambda i: i.at, reverse=True)
+    ws.save_mailbox(box)
+
+
+def import_forwarded(ws: Case, gm_id: str) -> Any:
+    """Import the original attached to a message forwarded as an attachment: fetched (PEEK) and run through the .eml
+    pipeline (a snapshot, an Inbox candidate with its sender check and stage)."""
+    from areao1.service import Service
+
+    item = next((i for i in ws.mailbox().items if i.id == gm_id), None)
+    if item is None or not item.forwarded_part:
+        raise KeyError(gm_id)
+    raw = mail.fetch_part(gm_id, item.forwarded_part)
+    name = re.sub(r"[^\w\- ]+", "", item.subject)[:60].strip() or "forwarded-original"
+    return Service(ws).stage_upload(raw, f"{name}.eml")

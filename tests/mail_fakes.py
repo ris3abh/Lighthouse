@@ -25,6 +25,8 @@ class Stored:
     content_type: str = "text/plain; charset=utf-8"
     tab: str = "primary"  # Gmail's category tab: primary, promotions, social, updates
     gm_msgid: int = 0
+    attached: bytes | None = None  # an original forwarded as an attachment (message/rfc822, part 2)
+    auth_results: str = ""  # an Authentication-Results header, as the receiving server wrote it
 
     def __post_init__(self) -> None:
         self.gm_msgid = self.gm_msgid or 1_800_000_000_000_000_000 + self.uid
@@ -35,7 +37,9 @@ class Stored:
             lines.append(f"Cc: {self.cc}")
         if self.message_id:
             lines.append(f"Message-ID: {self.message_id}")
-        lines.append(f"Content-Type: {self.content_type}")
+        if self.auth_results:
+            lines.append(f"Authentication-Results: {self.auth_results}")
+        lines.append(f"Content-Type: {'multipart/mixed; boundary=b' if self.attached else self.content_type}")
         return ("\r\n".join(lines) + "\r\n\r\n").encode()
 
     def addresses(self) -> set[str]:
@@ -124,11 +128,27 @@ class FakeGmail:
                 if command == "FETCH":
                     uids, spec = args
                     assert "RFC822" not in spec and "BODY[" not in spec, spec  # PEEK only: nothing turns read
-                    if "HEADER.FIELDS" not in spec:
+                    meta_only = "HEADER.FIELDS" in spec or spec == "(BODYSTRUCTURE)" or ".HEADER]" in spec
+                    if not meta_only:
                         assert gmail.bodies_ok, f"a body was fetched: {spec}"
                     out: list = []
                     for u in uids.split(","):
                         m = next(x for x in gmail.messages if x.uid == int(u))
+                        if spec == "(BODYSTRUCTURE)":
+                            text = '("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "7BIT" 10 1 NIL NIL NIL NIL)'
+                            fwd = '("MESSAGE" "RFC822" NIL NIL NIL "7BIT" 500 NIL ("TEXT" "PLAIN" NIL NIL NIL "7BIT" 1 1) 9 NIL NIL NIL NIL)'
+                            bs = f'({text}{fwd} "MIXED" ("BOUNDARY" "b") NIL NIL NIL)' if m.attached else text
+                            out.append(f"{m.uid} (UID {m.uid} BODYSTRUCTURE {bs})".encode())
+                            continue
+                        if part := re.search(r"BODY\.PEEK\[2(\.HEADER)?\]", spec):
+                            assert m.attached, "no attached original"
+                            b = (
+                                m.attached.split(b"\r\n\r\n", 1)[0] + b"\r\n\r\n"
+                                if part.group(1)
+                                else m.attached
+                            )
+                            out += [(f"{m.uid} (UID {m.uid} BODY[2] {{{len(b)}}}".encode(), b), b")"]
+                            continue
                         if "HEADER.FIELDS" in spec:
                             h = m.header_bytes()
                             meta = (f'{m.uid} (UID {m.uid} X-GM-MSGID {m.gm_msgid} X-GM-THRID {m.thrid} INTERNALDATE '

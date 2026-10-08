@@ -356,6 +356,24 @@ class Case(Workspace):
             self._save("letters.json", letters)
             self.after_change()
 
+    def upload_fields(self, content: bytes, filename: str) -> dict[str, Any] | None:
+        """A dropped .eml (ADR 0014, amendment): sender check, category, criterion and stage from the email itself;
+        case mail also shows in Contacts > Mail."""
+        if not filename.lower().endswith(".eml"):
+            return None
+        import hashlib
+
+        from areao1.core.workspace import _size
+        from areao1.google import eml, mailview
+
+        try:
+            info = eml.read(content, self)
+        except ValueError as exc:
+            raise WorkspaceError(f"{filename}: {exc}") from exc
+        if info["category"]:
+            mailview.add_eml(self, info, hashlib.sha256(content).hexdigest())
+        return eml.candidate_fields(info, filename, _size(len(content)))
+
     def classify_upload(self, filename: str) -> tuple[str, str, str | None]:
         from areao1.criteria.classify import classify
 

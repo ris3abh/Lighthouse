@@ -4,7 +4,8 @@ import { useRefresh } from "../App";
 import ClaimsPanel, { StageChip } from "../components/Claims";
 import RuleCheckView, { blocking } from "../components/RuleCheck";
 import TrackerCard, { TRACKER_LABEL } from "../components/TrackerCard";
-import { Paperclip } from "lucide-react";
+import { Paperclip, Upload } from "lucide-react";
+import DropZone from "../components/DropZone";
 import { Button, Card, Chip, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { today, useLoad, useRoute } from "../hooks";
 import Banter, { banterOk } from "../components/Banter";
@@ -13,6 +14,20 @@ import { banterText } from "../lib/banter";
 export default function Inbox() {
   const { version, bump } = useRefresh();
   const inbox = useLoad(() => Promise.all([api.inbox(), api.profile()]), [version]);
+  const toast = useToast();
+  const [sending, setSending] = useState(false);
+  const drop = async (files: File[]) => {
+    setSending(true);
+    try {
+      const cands = await api.uploadToInbox(files);
+      toast(`${cands.length} file${cands.length > 1 ? "s" : ""} added for review`);
+      bump();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setSending(false);
+    }
+  };
   const focus = useRoute().params.get("candidate"); // from the Mail view: "In Inbox"
   useEffect(() => {
     if (focus && inbox.data) document.querySelector(`[data-candidate="${CSS.escape(focus)}"]`)?.scrollIntoView({ block: "center" });
@@ -41,6 +56,12 @@ export default function Inbox() {
         title="Inbox"
         subtitle="Connectors and the agent propose; you decide. Nothing becomes evidence until you accept it, and accepting records your decision. It doesn't certify legal sufficiency."
       />
+      <DropZone onFiles={drop} busy={sending} label="Add files or emails to the Inbox">
+        <p className="flex items-center gap-2 text-sm text-ink-2">
+          <Upload className="size-4" strokeWidth={1.5} aria-hidden />
+          {sending ? "Adding…" : "Drop files or emails (.eml) here, or click to choose. Emails are checked for a verified sender."}
+        </p>
+      </DropZone>
       {candidates.length === 0 ? (
         <Card panel="inbox">
           <Empty>

@@ -639,6 +639,9 @@ export interface MailItemView {
   contact_ids: string[];
   contacts: string[];
   candidate: { id: string; title: string } | null;
+  source: "gmail" | "eml";
+  auth: { verdict: "verified" | "failed" | "unverified"; spf: string | null; dkim: string | null; dmarc: string | null; dkim_domain: string | null; by: string | null } | null;
+  forwarded_part: string | null;
 }
 export interface MailView {
   connected: boolean;
@@ -762,6 +765,7 @@ export const api = {
   syncMail: () => request<MailView>("POST", "/mail/sync"),
   moveMail: (id: string, category: MailCategory | "hide") => request<MailView>("PUT", `/mail/${enc(id)}`, { category }),
   setMailSorting: (on: boolean) => request<{ model_sorting: boolean }>("PUT", "/settings/mail", { model_sorting: on }),
+  importForwarded: (id: string) => request<Candidate>("POST", `/mail/${enc(id)}/import`),
   mailText: (id: string) => request<MailText>("GET", `/mail/${enc(id)}/text`),
   gmailStatus: () => request<GmailStatus>("GET", "/gmail"),
   connectGmail: (email: string, password: string) => request<GmailStatus>("PUT", "/gmail", { email, password }),

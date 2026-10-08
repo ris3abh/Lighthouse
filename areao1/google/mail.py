@@ -219,7 +219,10 @@ def send(msg: Any) -> None:
 
 # ------------------------------------------------------------------ the Mail view: case mail, still read-only
 
-VIEW_FIELDS = "FROM TO CC SUBJECT DATE MESSAGE-ID CONTENT-TYPE CONTENT-TRANSFER-ENCODING"
+VIEW_FIELDS = (
+    "FROM TO CC SUBJECT DATE MESSAGE-ID CONTENT-TYPE CONTENT-TRANSFER-ENCODING AUTHENTICATION-RESULTS "
+    "ARC-AUTHENTICATION-RESULTS"
+)
 _UID = re.compile(rb"UID (\d+)")
 _MSGID = re.compile(rb"X-GM-MSGID (\d+)")
 FIRST_BYTES = 2048  # "the first lines": enough for a greeting and the ask, never the whole message
@@ -279,7 +282,9 @@ def recent(
                                                               "Content-Transfer-Encoding")}  # fmt: skip
                 out[int(uid.group(1))] = {"id": gm.group(1).decode(), "thread_id": format(int(meta.group(1)), "x"),
                                           "at": _internaldate(meta.group(2).decode()), "headers": headers,
-                                          "first_lines": "", "bulk": int(uid.group(1)) in tabs}  # fmt: skip
+                                          "first_lines": "", "bulk": int(uid.group(1)) in tabs,
+                                          "auth": authentication(msg), "forwarded": None}  # fmt: skip
+        _forwarded(conn, out)
         unseen = [u for u, m in out.items() if seen is None or not seen(m["id"])]
         for i in range(0, len(unseen), BATCH):
             batch = ",".join(str(u) for u in unseen[i : i + BATCH])
@@ -374,3 +379,131 @@ def _html_text(html: str) -> str:
     p = Text()
     p.feed(html)
     return re.sub(r"\n\s*\n+", "\n\n", "".join(p.out)).strip()
+
+
+# ------------------------------------------------------------------ forwarded as an attachment
+
+
+def authentication(msg: Any) -> dict[str, Any]:
+    from areao1.google.eml import authentication as auth
+
+    return auth(msg)
+
+
+def _forwarded(conn: Any, out: dict[int, dict[str, Any]]) -> None:
+    """Messages with an attached original (message/rfc822), found from BODYSTRUCTURE (metadata, not content): read
+    the original's headers (PEEK) so it's sorted and authenticated as itself, not as the forward."""
+    from email.parser import BytesParser
+    from email.policy import default
+
+    mixed = [
+        u
+        for u, m in out.items()
+        if m["headers"].get("Content-Type", "").lower().startswith("multipart/mixed")
+    ]
+    for i in range(0, len(mixed), BATCH):
+        _, data = conn.uid("FETCH", ",".join(str(u) for u in mixed[i : i + BATCH]), "(BODYSTRUCTURE)")
+        for raw in _joined(data):
+            uid = _UID.search(raw)
+            at = raw.find(b"BODYSTRUCTURE ")
+            if uid is None or at < 0 or int(uid.group(1)) not in out:
+                continue
+            part = next((p for p, t in body_parts(parse_list(raw[at + 14 :])) if t == "message/rfc822"), None)
+            if part is None:
+                continue
+            _, hdr = conn.uid("FETCH", uid.group(1).decode(), f"(BODY.PEEK[{part}.HEADER])")
+            body = next((p[1] for p in hdr or [] if isinstance(p, tuple)), b"")
+            orig = BytesParser(policy=default).parsebytes(body, headersonly=True)
+            if not orig.get("From"):
+                continue
+            out[int(uid.group(1))]["forwarded"] = {
+                "part": part, "headers": {k: str(orig.get(k, "")) for k in ("From", "To", "Cc", "Subject", "Date")},
+                "auth": authentication(orig)}  # fmt: skip
+
+
+def fetch_part(gm_id: str, part: str) -> bytes:
+    """One MIME part of a message (an attached original), fetched with PEEK: it stays unread in Gmail."""
+    if not gm_id.isdigit() or not re.fullmatch(r"\d+(\.\d+)*", part):
+        raise MailError("That isn't a Gmail message part.")
+    with session() as conn:
+        conn.select(_all_mail(conn), readonly=True)
+        _, data = conn.uid("SEARCH", "X-GM-MSGID", gm_id)
+        found = (data[0] or b"").split()
+        if not found:
+            raise MailError("Gmail no longer has that message (it may have been deleted).")
+        _, data = conn.uid("FETCH", found[0].decode(), f"(BODY.PEEK[{part}])")
+    raw = next((p[1] for p in data or [] if isinstance(p, tuple)), b"")
+    if not raw:
+        raise MailError("Gmail returned an empty attachment.")
+    return raw
+
+
+def _joined(data: Any) -> list[bytes]:
+    """FETCH responses as one bytes line per message (literals folded back in)."""
+    out: list[bytes] = []
+    cur = b""
+    for p in data or []:
+        if isinstance(p, tuple):
+            cur += p[0] + b'"' + p[1].replace(b'"', b"'") + b'"'
+        else:
+            cur += p
+            out.append(cur)
+            cur = b""
+    if cur:
+        out.append(cur)
+    return out
+
+
+def parse_list(raw: bytes) -> Any:
+    """An IMAP parenthesized list (as in BODYSTRUCTURE) as nested Python lists of str / None."""
+    pos = 0
+    text = raw.decode(errors="replace")
+
+    def value() -> Any:
+        nonlocal pos
+        while pos < len(text) and text[pos] == " ":
+            pos += 1
+        if pos >= len(text):
+            return None
+        c = text[pos]
+        if c == "(":
+            pos += 1
+            items = []
+            while pos < len(text) and text[pos] != ")":
+                items.append(value())
+                while pos < len(text) and text[pos] == " ":
+                    pos += 1
+            pos += 1
+            return items
+        if c == '"':
+            pos += 1
+            buf = []
+            while pos < len(text) and text[pos] != '"':
+                if text[pos] == "\\":
+                    pos += 1
+                buf.append(text[pos])
+                pos += 1
+            pos += 1
+            return "".join(buf)
+        start = pos
+        while pos < len(text) and text[pos] not in " ()":
+            pos += 1
+        atom = text[start:pos]
+        return None if atom.upper() == "NIL" else atom
+
+    return value()
+
+
+def body_parts(node: Any, prefix: str = "") -> list[tuple[str, str]]:
+    """(part number, type/subtype) for each leaf of a BODYSTRUCTURE, numbered as IMAP numbers them."""
+    if not isinstance(node, list) or not node:
+        return []
+    if isinstance(node[0], list):  # multipart: children first, then the subtype
+        from itertools import takewhile
+
+        out: list[tuple[str, str]] = []
+        for i, child in enumerate(takewhile(lambda c: isinstance(c, list), node)):  # parameters come after
+            out += body_parts(child, f"{prefix}.{i + 1}" if prefix else str(i + 1))
+        return out
+    kind = f"{str(node[0]).lower()}/{str(node[1]).lower()}" if len(node) > 1 else str(node[0]).lower()
+    return [(prefix or "1", kind)]
