@@ -224,7 +224,10 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
       13 blocked as expected, 4 community snapshots imported, change signals tightened after the run), chat
       ($0.034, gpt-6.1-sol mid, its rule sentence verified against the community Policy Manual snapshot)
 - [x] K3. SPEC.md, README, landing page, CHANGELOG, ADRs; v0.2.0 prepared (version, changelog, docs/releases-v0.2.0.md; not tagged or published)
-- [ ] K4. Final report: per part, screenshots, costs, open issues, "Needs you"
+- [x] K4. Final report (2026-10-08). Needs the owner: enable GitHub Pages; rename the repo to areao1; tag and
+      publish v0.2.0; reserve the PyPI names areao1 / area01; decide on domains; a redacted sample of the
+      dated-file Claude export; load and pair the capture extension; turn on the daily opportunity check if wanted;
+      bring the HackMIT / DubHacks mail in from the other account (.eml or forward as attachment)
 
 ## Phase 0 checklist
 
