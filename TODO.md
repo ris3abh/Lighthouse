@@ -247,7 +247,7 @@ are dropped; every draft is labeled "Draft for attorney review", no eligibility 
 never enters the packet as evidence.
 
 - [x] ADRs 0017 proof recipes, 0018 preflight, 0019 final merits, 0020 review packet; SPEC ground rules + guards
-- [ ] 0. Zenodo DOI badge (concept DOI 10.5281/zenodo.23202416, always the latest; v0.2.0 is 10.5281/zenodo.23242002)
+- [x] 0. Zenodo DOI badge (concept DOI 10.5281/zenodo.23202416, always the latest; v0.2.0 is 10.5281/zenodo.23242002)
       in the README; CITATION.cff with both
 - [ ] 1. Proof recipes: profiles/recipes/*.yaml per criterion; a checklist when an activity reaches accepted /
       completed / granted / published (exhibits) or done (pipeline); each item links an upload or an existing

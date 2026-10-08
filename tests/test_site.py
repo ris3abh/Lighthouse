@@ -46,6 +46,20 @@ def test_readme_is_short_and_points_to_the_docs():
     assert "claude mcp add areao1 -- areao1 mcp" in readme and "codex mcp add areao1 -- areao1 mcp" in readme
 
 
+def test_the_doi_is_the_concept_doi_everywhere():
+    concept, v020 = "10.5281/zenodo.23202416", "10.5281/zenodo.23242002"  # Zenodo: all versions / v0.2.0
+    readme = (ROOT / "README.md").read_text()
+    top = readme.split("## What it does", 1)[0]
+    assert f"zenodo.org/badge/DOI/{concept}.svg" in top and f"https://doi.org/{concept}" in top
+    cff = yaml.safe_load((ROOT / "CITATION.cff").read_text())
+    assert cff["doi"] == concept  # "always the latest version"
+    assert {i["value"] for i in cff["identifiers"]} == {concept, v020}
+    import tomllib
+
+    released = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"]
+    assert cff["version"] == released
+
+
 def test_page_shows_the_install_lines_exactly_as_the_readme():
     text = html.unescape(PAGE.read_text())
     for line in _readme_install_lines():

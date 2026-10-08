@@ -10,6 +10,7 @@
 [![License: Apache-2.0](https://img.shields.io/github/license/ris3abh/areao1?color=0b0b0a)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/ris3abh/areao1?include_prereleases&sort=semver&color=0b0b0a)](https://github.com/ris3abh/areao1/releases)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-0b0b0a)](pyproject.toml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23202416.svg)](https://doi.org/10.5281/zenodo.23202416)
 
 [**Docs**](https://ris3abh.github.io/areao1/docs/) ·
 [Getting started](https://ris3abh.github.io/areao1/docs/getting-started/) ·
