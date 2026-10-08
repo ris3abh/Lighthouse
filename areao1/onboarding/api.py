@@ -32,7 +32,7 @@ class StepBody(BaseModel):
 
 
 class AiBody(BaseModel):
-    choice: Literal["key", "skip"]  # an Anthropic API key; claude.ai login isn't offered (ADR 0013 §4)
+    choice: Literal["key", "skip"]  # an OpenAI API key (ADR 0015 §3)
 
 
 class LookupBody(BaseModel):
@@ -209,7 +209,7 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
             from areao1.onboarding.linkedin import extract_with_model
 
             try:
-                model = runner.route("pdf").model if runner is not None else ws.config().agent.models.check
+                model = runner.route("pdf").model if runner is not None else ws.config().agent.models.mid
                 parsed = await extract_with_model(text, model_judge, model)
                 parser = "model" if parsed else "none"
             except Exception:

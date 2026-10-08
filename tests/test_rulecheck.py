@@ -352,17 +352,23 @@ def test_engine_judge_is_one_toolless_turn_and_reports_usage():
     engine = FakeEngine(
         [("usage", {"input_tokens": 900, "output_tokens": 40}), ("text", '{"claims": []}')], cost=0.002
     )
-    reply = anyio.run(lambda: engine_judge(engine)("sys", "prompt", "claude-sonnet-5-5"))
+    reply = anyio.run(lambda: engine_judge(engine)("sys", "prompt", "gpt-6.1-sol"))
     req = engine.requests[0]
     assert (
         engine.tool_names == []
         and req.web_search is False
         and req.max_turns == 1
-        and req.model == "claude-sonnet-5-5"
+        and req.model == "gpt-6.1-sol"
     )
     assert (
         reply.text == '{"claims": []}'
-        and reply.usage == {"input_tokens": 900, "output_tokens": 40}
+        and reply.usage
+        == {
+            "input_tokens": 900,
+            "output_tokens": 40,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+        }
         and reply.cost_usd == 0.002
     )
 

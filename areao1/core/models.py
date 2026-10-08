@@ -445,17 +445,33 @@ class AgentBudget(_Model):
 
 
 class AgentModels(_Model):
-    """Model per run type: chat (the chat panel), task (a run started by hand), mission (scheduled)."""
+    """One model per tier (ADR 0015 §2): change a line to upgrade a tier. Which tasks use which tier is a fixed
+    table (agent/routing.py)."""
 
-    chat: str = "claude-opus-5-5"
-    task: str = "claude-opus-5-5"
-    mission: str = "claude-sonnet-5-5"
-    check: str = Field("claude-sonnet-5-5", description="Rule-check judge (one short call per checked text).")
-    mundane: str = Field("claude-haiku-4-5-20251001", description="Bulk, simple reading (chat-history extraction). "
-                         "Part D's router sends more work here.")  # fmt: skip
+    hard: str = Field("gpt-6.1-sol", description="Chat, hand-started runs, letters.")
+    mid: str = Field("gpt-6.1-sol", description="Missions, the rule-check judge, PDFs, cheap-mode chat.")
+    mundane: str = Field("gpt-6-luna", description="Chat extraction, long-chat summaries, mail sorting.")
 
+    @model_validator(mode="before")
+    @classmethod
+    def _from_claude_slots(cls, data: Any) -> Any:
+        # Before ADR 0015: per-run-type slots (chat, task, mission, check) and Claude model names. Those load as
+        # the OpenAI defaults; a non-Claude model set in a slot carries over to its tier.
+        if not isinstance(data, dict):
+            return data
+        old = {"chat": "hard", "task": "hard", "mission": "mid", "check": "mid"}
+        if not (set(data) & set(old)) and not any(str(v).startswith("claude") for v in data.values()):
+            return data
+        from areao1.core import migrate
 
-RUN_TYPE = {"chat": "chat", "manual": "task", "scheduled": "mission"}
+        out: dict[str, Any] = {}
+        for key, value in data.items():
+            tier = old.get(key, key)
+            if tier in ("hard", "mid", "mundane") and not str(value).startswith("claude"):
+                out.setdefault(tier, value)
+        migrate.note("agent.models now has one line per tier (hard, mid, mundane) on OpenAI; Claude models "
+                     "were replaced with the defaults (ADR 0015).")  # fmt: skip
+        return out
 
 
 class MissionsConfig(_Model):
@@ -479,7 +495,6 @@ class AgentConfig(_Model):
             legacy = data.pop("model")
             models = dict(data.get("models") or {})
             models.setdefault("chat", legacy)
-            models.setdefault("task", legacy)
             data["models"] = models
         return data
 
@@ -491,9 +506,6 @@ class AgentConfig(_Model):
     max_turns: int = Field(25, ge=1, le=200)
     budget: AgentBudget = Field(default_factory=AgentBudget)
     autopilot: AutopilotConfig = Field(default_factory=AutopilotConfig)
-
-    def model_for(self, kind: str) -> str:
-        return getattr(self.models, RUN_TYPE.get(kind, "task"))
 
 
 DEFAULT_SCHEDULES: dict[str, str] = {
@@ -531,7 +543,13 @@ class MailConfig(_Model):
 class WorkspaceConfig(_File):
     workspace_name: str = "my-case"
     profile: str = Field("", description="Active profile id; the domain layer supplies the default.")
-    engine: Literal["claude_code", "codex", "api"] = "claude_code"
+    engine: Literal["openai"] = Field("openai", description="The agent engine (ADR 0015: OpenAI only).")
+
+    @field_validator("engine", mode="before")
+    @classmethod
+    def _engine_is_openai(cls, v: Any) -> str:
+        return "openai"  # claude_code, codex and api from before ADR 0015 load as OpenAI
+
     server: ServerConfig = Field(default_factory=ServerConfig)
     vault: VaultConfig = Field(default_factory=VaultConfig)
     outreach: OutreachConfig = Field(default_factory=OutreachConfig)

@@ -1,9 +1,7 @@
-"""Model routing (ADR 0009 §2): three tiers, picked by task from a fixed table, never by a model call.
+"""Model routing (ADR 0009 §2, ADR 0015 §2): three tiers, picked by task from a fixed table, never by a model call.
 
-Tiers come from the environment or the workspace `.env` (AREAO1_MODEL_HARD / _MID / _MUNDANE). The mundane
-tier uses OpenAI when an OpenAI key is set (OPENAI_API_KEY, or `openai:api_key` in the keychain), else Claude
-Haiku. A model set in areao1.yaml that differs from the shipped default still wins, so a workspace that
-chose its models keeps them."""
+A tier's model is, in order: AREAO1_MODEL_HARD / _MID / _MUNDANE from the environment or the workspace `.env`, the
+tier's line in areao1.yaml (`agent.models`), or the shipped default below. All tiers run on OpenAI."""
 
 from __future__ import annotations
 
@@ -18,9 +16,12 @@ from areao1.core.secrets import _read_dotenv, get_secret
 
 Tier = Literal["hard", "mid", "mundane"]
 
-DEFAULTS: dict[Tier, str] = {"hard": "claude-opus-5-5", "mid": "claude-sonnet-5-5",
-                             "mundane": "claude-haiku-4-5-20251001"}  # fmt: skip
-OPENAI_MUNDANE = "gpt-5-mini"
+# One line per tier: upgrade a tier by changing its line (or agent.models in areao1.yaml).
+DEFAULTS: dict[Tier, str] = {
+    "hard": "gpt-6.1-sol",
+    "mid": "gpt-6.1-sol",
+    "mundane": "gpt-6-luna",
+}
 OPENAI_KEY_REF = "openai:api_key"
 
 # task -> tier. Run kinds (chat, manual, scheduled) are tasks too.
@@ -36,17 +37,18 @@ TASKS: dict[str, Tier] = {
     "summarize": "mundane",
     "classify": "mundane",
 }
-# The areao1.yaml slot that overrides each task, when it was changed from the shipped default.
-SLOT: dict[str, str] = {"chat": "chat", "cheap_chat": "chat", "manual": "task", "letter": "task",
-                        "scheduled": "mission", "check": "check", "pdf": "check", "chat_extract": "mundane",
-                        "summarize": "mundane", "classify": "mundane"}  # fmt: skip
+ENV: dict[Tier, str] = {
+    "hard": "AREAO1_MODEL_HARD",
+    "mid": "AREAO1_MODEL_MID",
+    "mundane": "AREAO1_MODEL_MUNDANE",
+}
 
 
 @dataclass(frozen=True)
 class Route:
     task: str
     tier: Tier
-    provider: Literal["anthropic", "openai"]
+    provider: Literal["openai"]
     model: str
 
 
@@ -76,27 +78,11 @@ def route(
     if cheap and task == "chat":
         task = "cheap_chat"
     tier = TASKS.get(task, "hard")
-    slot = SLOT.get(task)
-    shipped = AgentModels()
-    if models is not None and slot and getattr(models, slot) != getattr(shipped, slot):
-        model = getattr(models, slot)
-        return Route(
-            task,
-            tier,
-            "anthropic" if model.startswith("claude") else "openai",
-            model,
-        )
-    if tier == "mundane" and openai_key(workspace):
-        return Route(task, tier, "openai", _env("AREAO1_MODEL_MUNDANE", workspace) or OPENAI_MUNDANE)
-    env = {
-        "hard": "AREAO1_MODEL_HARD",
-        "mid": "AREAO1_MODEL_MID",
-        "mundane": "AREAO1_MODEL_MUNDANE",
-    }[tier]
-    model = _env(env, workspace) or DEFAULTS[tier]
-    if tier == "mundane" and not model.startswith("claude"):
-        model = DEFAULTS["mundane"]  # an OpenAI model name without an OpenAI key: stay on Claude
-    return Route(task, tier, "anthropic", model)
+    env = _env(ENV[tier], workspace)
+    if env and env.startswith("claude"):
+        env = None  # a Claude model from before ADR 0015: use the tier's OpenAI model
+    model = env or getattr(models or AgentModels(), tier) or DEFAULTS[tier]
+    return Route(task, tier, "openai", model)
 
 
 def table(

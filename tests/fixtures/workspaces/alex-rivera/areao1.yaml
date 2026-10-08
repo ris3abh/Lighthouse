@@ -2,7 +2,7 @@
 schema_version: 1
 workspace_name: demo-workspace
 profile: o1a
-engine: claude_code
+engine: openai
 server:
   host: 127.0.0.1
   port: 7777
@@ -57,10 +57,9 @@ notifications:
   - 0
 agent:
   models:
-    chat: claude-opus-5-5
-    task: claude-opus-5-5
-    mission: claude-sonnet-5-5
-    check: claude-sonnet-5-5
+    hard: gpt-6.1-sol
+    mid: gpt-6.1-sol
+    mundane: gpt-6-luna
   missions:
     opportunity_scout: false
     what_changed: false

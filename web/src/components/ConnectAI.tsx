@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 import { api, type AiStatus } from "../api";
 import { Button, Chip, useToast } from "./ui";
 
-/** Connect your AI (S3, ADR 0013 §4): an Anthropic API key, checked with a free request and kept in the OS keychain.
- * It's the only option: claude.ai login isn't allowed in third-party products. Shared by onboarding (with
- * `onChoose`) and Settings. */
+/** Connect your AI (ADR 0015 §3): an OpenAI API key, checked with a free request and kept in the OS keychain. Shared by
+ * onboarding (with `onChoose`) and Settings. */
 export default function ConnectAI({ onChoose, busy }: { onChoose?: (choice: "key") => void; busy?: boolean }) {
   const toast = useToast();
   const [status, setStatus] = useState<AiStatus | null>(null);
@@ -59,13 +58,13 @@ export default function ConnectAI({ onChoose, busy }: { onChoose?: (choice: "key
         }}
       >
         <label className="min-w-0 flex-1 basis-64">
-          <span className="label">{status.key === "keychain" ? "Replace your Anthropic API key" : "Anthropic API key (console.anthropic.com > API keys)"}</span>
+          <span className="label">{status.key === "keychain" ? "Replace your OpenAI API key" : "OpenAI API key (platform.openai.com > API keys)"}</span>
           <input
             className="input font-mono"
             type="password"
             autoComplete="off"
             spellCheck={false}
-            placeholder="sk-ant-…"
+            placeholder="sk-…"
             value={key}
             onChange={(e) => setKey(e.target.value)}
           />
@@ -80,7 +79,7 @@ export default function ConnectAI({ onChoose, busy }: { onChoose?: (choice: "key
         )}
       </form>
       <p className="font-mono text-[10.5px] leading-relaxed text-muted uppercase">
-        Checked with a free request to Anthropic · kept in this computer's keychain · {status.cost}
+        Checked with a free request to OpenAI · kept in this computer's keychain · {status.cost}
       </p>
     </div>
   );

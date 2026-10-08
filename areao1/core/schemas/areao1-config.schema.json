@@ -97,33 +97,24 @@
     },
     "AgentModels": {
       "additionalProperties": false,
-      "description": "Model per run type: chat (the chat panel), task (a run started by hand), mission (scheduled).",
+      "description": "One model per tier (ADR 0015 \u00a72): change a line to upgrade a tier. Which tasks use which tier is a fixed\ntable (agent/routing.py).",
       "properties": {
-        "chat": {
-          "default": "claude-opus-5-5",
-          "title": "Chat",
+        "hard": {
+          "default": "gpt-6.1-sol",
+          "description": "Chat, hand-started runs, letters.",
+          "title": "Hard",
           "type": "string"
         },
-        "check": {
-          "default": "claude-sonnet-5-5",
-          "description": "Rule-check judge (one short call per checked text).",
-          "title": "Check",
-          "type": "string"
-        },
-        "mission": {
-          "default": "claude-sonnet-5-5",
-          "title": "Mission",
+        "mid": {
+          "default": "gpt-6.1-sol",
+          "description": "Missions, the rule-check judge, PDFs, cheap-mode chat.",
+          "title": "Mid",
           "type": "string"
         },
         "mundane": {
-          "default": "claude-haiku-4-5-20251001",
-          "description": "Bulk, simple reading (chat-history extraction). Part D's router sends more work here.",
+          "default": "gpt-6-luna",
+          "description": "Chat extraction, long-chat summaries, mail sorting.",
           "title": "Mundane",
-          "type": "string"
-        },
-        "task": {
-          "default": "claude-opus-5-5",
-          "title": "Task",
           "type": "string"
         }
       },
@@ -467,12 +458,9 @@
       "$ref": "#/$defs/ConnectorConfig"
     },
     "engine": {
-      "default": "claude_code",
-      "enum": [
-        "claude_code",
-        "codex",
-        "api"
-      ],
+      "const": "openai",
+      "default": "openai",
+      "description": "The agent engine (ADR 0015: OpenAI only).",
       "title": "Engine",
       "type": "string"
     },

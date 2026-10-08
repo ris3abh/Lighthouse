@@ -440,13 +440,13 @@ function RunDetail({ runId, onChanged }: { runId: string; onChanged: () => void 
   );
 }
 
-/** "hard claude-opus-5-5 · mid claude-sonnet-5-5 · mundane gpt-5-mini (OpenAI)": the three tiers (ADR 0009). */
+/** "hard gpt-6.1-sol · mid gpt-6.1-sol · mundane gpt-6-luna": the three tiers (ADR 0009, ADR 0015). */
 function tiers(status: AgentStatus): string {
   const by = (tier: string) => status.routes.find((r) => r.tier === tier);
   return (["hard", "mid", "mundane"] as const)
     .map((tier) => {
       const r = by(tier);
-      return r ? `${tier} ${r.model}${r.provider === "openai" ? " (OpenAI)" : ""}` : "";
+      return r ? `${tier} ${r.model}` : "";
     })
     .filter(Boolean)
     .join(" · ");

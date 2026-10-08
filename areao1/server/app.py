@@ -232,6 +232,9 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     from areao1.google import forget_oauth
 
     forget_oauth()  # a Google sign-in from before Gmail-only leaves the keychain (ADR 0014, amendment)
+    from areao1.engine.connect import forget_anthropic
+
+    forget_anthropic()  # an Anthropic key from before OpenAI-only leaves the keychain (ADR 0015)
     for d in (
         ws.outreach().drafts
     ):  # approved, but the app stopped inside the undo window: not sent, a draft again
@@ -1051,7 +1054,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
 
     @app.put("/api/ai/key")
     def ai_key(body: KeyBody) -> dict[str, Any]:
-        """Check an Anthropic key with the free model-list request, then keep it in the OS keychain only."""
+        """Check an OpenAI key with the free model-list request, then keep it in the OS keychain only."""
         from areao1.engine import connect
 
         ok, why = connect.check_key(body.key)

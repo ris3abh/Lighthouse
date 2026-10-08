@@ -1,4 +1,5 @@
-"""Agent layer (ADR 0005): engine adapters, grounded tools, the service layer, budgets. No model is called."""
+"""Agent layer (ADR 0005, ADR 0015): the OpenAI engine, grounded tools, the service layer, budgets. No model is
+called: OpenAI is the scripted fake in agent_fakes.py."""
 
 from __future__ import annotations
 
@@ -7,8 +8,9 @@ import re
 import socket
 
 import anyio
+import httpx
 import pytest
-from agent_fakes import FakeEngine
+from agent_fakes import FakeEngine, ScriptedResponses, openai_usage, sse
 
 from areao1.agent import tools as agent_tools
 from areao1.agent.redact import redact
@@ -17,7 +19,7 @@ from areao1.agent.tools import RunContext, UnsafeURL, build_tools, check_url, ht
 from areao1.core.models import AgentRun
 from areao1.engine import get_engine
 from areao1.engine.base import AgentEvent, AgentTool, EngineRequest, EngineUnavailable
-from areao1.engine.claude_code import BLOCKED_BUILTINS, ClaudeAgentEngine
+from areao1.engine.openai_engine import PRICES, OpenAIEngine, cost
 
 PAGE = """<html><head><title>MLH Fall 2026 judges</title><script>var x=1</script></head>
 <body><nav>menu</nav><h1>Judges</h1><p>Alex Rivera will judge the ML track at MLH Fall 2026, held October 24.</p>
@@ -37,89 +39,188 @@ def _tools(ws, run=None):
     return ctx, {t.name: t for t in build_tools(ctx)}
 
 
-# ----------------------------------------------------------------------------- the Claude adapter
+# ----------------------------------------------------------------------------- the OpenAI engine
 
 
-def test_claude_adapter_is_locked_down():
-    tools = [AgentTool("get_scoreboard", "x", {"type": "object", "properties": {}}, None, True),  # type: ignore[arg-type]
-             AgentTool("propose_deadline", "x", {"type": "object", "properties": {}}, None, False)]  # type: ignore[arg-type]  # fmt: skip
-    req = EngineRequest(system_prompt="sys", prompt="hi", model="claude-opus-5-5", effort="medium",
-                        max_budget_usd=1.5, task_budget_tokens=50_000)  # fmt: skip
-    opts = ClaudeAgentEngine(query=lambda **k: None).options(req, tools)
-    assert opts.tools == ["WebSearch"]  # the only built-in tool
-    assert set(opts.allowed_tools) == {
-        "WebSearch",
-        "mcp__areao1__get_scoreboard",
-        "mcp__areao1__propose_deadline",
-    }
-    for blocked in ("Bash", "Read", "Write", "Edit", "WebFetch", "Glob", "Grep"):
-        assert blocked in opts.disallowed_tools and blocked in BLOCKED_BUILTINS
-    assert opts.strict_mcp_config is True and list(opts.mcp_servers) == ["areao1"]
-    assert opts.setting_sources == []  # no user settings, hooks or CLAUDE.md
-    assert opts.permission_mode == "dontAsk"
-    assert "no-session-persistence" in opts.extra_args  # no transcripts in ~/.claude
-    assert opts.model == "claude-opus-5-5" and opts.effort == "medium"
-    assert opts.max_budget_usd == 1.5 and opts.task_budget["total"] == 50_000
-    assert opts.include_partial_messages is True
-    no_web = ClaudeAgentEngine(query=lambda **k: None).options(
-        EngineRequest("s", "p", "m", web_search=False), tools
-    )
-    assert no_web.tools == [] and "WebSearch" not in no_web.allowed_tools
+def _tool(name, read_only=True, handler=None):
+    async def default(args):
+        return f"{name} ok"
+
+    return AgentTool(name, "x", {"type": "object", "properties": {}}, handler or default, read_only)
 
 
-def test_claude_adapter_translates_the_sdk_stream():
-    from claude_agent_sdk import (
-        AssistantMessage,
-        ResultMessage,
-        StreamEvent,
-        TextBlock,
-        ToolResultBlock,
-        ToolUseBlock,
-        UserMessage,
-    )  # fmt: skip
-
-    async def fake_query(*, prompt, options):
-        yield StreamEvent(uuid="u1", session_id="s", event={"type": "content_block_delta",
-                                                            "delta": {"type": "text_delta", "text": "Look"}})  # fmt: skip
-        tool_use = ToolUseBlock(id="t1", name="mcp__areao1__list_gaps", input={})
-        usage = {"input_tokens": 1000, "output_tokens": 50, "cache_read_input_tokens": 9000}
-        yield AssistantMessage(content=[tool_use], model="m", usage=usage, message_id="msg1")
-        yield AssistantMessage(
-            content=[TextBlock(text="")], model="m", usage=usage, message_id="msg1"
-        )  # same msg
-        yield UserMessage(
-            content=[ToolResultBlock(tool_use_id="t1", content=[{"type": "text", "text": "2 gaps"}])]
-        )
-        yield AssistantMessage(content=[TextBlock(text="You have 2 gaps.")], model="m",
-                               usage={"input_tokens": 1200, "output_tokens": 30}, message_id="msg2")  # fmt: skip
-        yield ResultMessage(subtype="success", duration_ms=10, duration_api_ms=9, is_error=False, num_turns=2,
-                            session_id="s", stop_reason="end_turn", total_cost_usd=0.0123, usage={}, result="done")  # fmt: skip
-
+def _collect():
     events: list[AgentEvent] = []
 
     async def emit(ev):
         events.append(ev)
 
-    result = anyio.run(
-        lambda: ClaudeAgentEngine(query=fake_query).run(EngineRequest("s", "p", "m"), [], emit)
+    return events, emit
+
+
+def test_openai_engine_offers_only_our_tools_and_stores_nothing():
+    engine = FakeEngine([("text", "hi")])
+    req = EngineRequest(system_prompt="sys", prompt="hello", model="gpt-6.1-sol", effort="high")
+    anyio.run(
+        lambda: engine.run(req, [_tool("get_scoreboard"), _tool("propose_deadline", False)], _collect()[1])
     )
-    kinds = [e.type for e in events]
-    assert kinds == ["text_delta", "tool_call", "usage", "tool_result", "text", "usage"]
-    assert events[1].data == {"id": "t1", "name": "list_gaps", "input": {}}
-    assert events[3].data["summary"] == "2 gaps" and events[3].data["ok"] is True
-    assert events[2].data["input_tokens"] == 1000 and events[2].data["cache_read_input_tokens"] == 9000
+    [body] = engine.api.bodies
     assert (
-        result.text == "You have 2 gaps." and result.cost_usd == 0.0123 and result.stop_reason == "end_turn"
+        body["model"] == "gpt-6.1-sol"
+        and body["instructions"] == "sys"
+        and body["reasoning"] == {"effort": "high"}
     )
+    assert (
+        body["store"] is False
+        and body["include"] == ["reasoning.encrypted_content"]
+        and body["stream"] is True
+    )
+    assert [(t["type"], t["name"]) for t in body["tools"]] == [("function", "get_scoreboard"),
+                                                              ("function", "propose_deadline"), ("function", "web_search")]  # fmt: skip
+    assert body["input"] == [{"role": "user", "content": "hello"}]
+    assert len(body["prompt_cache_key"]) == 32  # stable per workspace and model, no prompt content
+    again = FakeEngine([("text", "hi")])
+    anyio.run(
+        lambda: again.run(req, [_tool("get_scoreboard"), _tool("propose_deadline", False)], _collect()[1])
+    )
+    assert again.api.bodies[0]["prompt_cache_key"] == body["prompt_cache_key"]
+    assert {k: v for k, v in again.api.bodies[0].items() if k != "input"} == {
+        k: v for k, v in body.items() if k != "input"
+    }
 
 
-def test_codex_is_stubbed_behind_the_same_interface():
-    codex = get_engine("codex")
-    assert codex.available()[0] is False
+def test_openai_engine_translates_the_stream_and_prices_the_run():
+    api = ScriptedResponses([("tool", "list_gaps", {}),
+                             ("usage", {"input_tokens": 1000, "output_tokens": 50, "cache_read_input_tokens": 9000}),
+                             ("text", "You have 2 gaps."), ("usage", {"input_tokens": 1200, "output_tokens": 30})])  # fmt: skip
+    engine = OpenAIEngine(transport=httpx.MockTransport(api), key="sk-test")
+
+    async def gaps(args):
+        return "2 gaps"
+
+    events, emit = _collect()
+    result = anyio.run(
+        lambda: engine.run(EngineRequest("s", "p", "gpt-6.1-sol"), [_tool("list_gaps", handler=gaps)], emit)
+    )
+    assert [e.type for e in events] == ["usage", "tool_call", "tool_result", "text_delta", "text", "usage"]
+    assert events[1].data == {"id": "call_1", "name": "list_gaps", "input": {}}
+    assert events[2].data == {"id": "call_1", "ok": True, "summary": "2 gaps"}
+    assert events[0].data == {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+    }
+    assert events[5].data == {
+        "input_tokens": 2200,
+        "output_tokens": 80,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 9000,
+    }
+    assert result.text == "You have 2 gaps." and result.stop_reason == "end_turn"
+    inp, cached, out = PRICES["gpt-6.1-sol"]
+    assert result.cost_usd == pytest.approx((2200 * inp + 9000 * cached + 80 * out) / 1e6)
+    second = api.bodies[1]["input"]
+    assert second[1]["type"] == "function_call" and second[2] == {
+        "type": "function_call_output",
+        "call_id": "call_1",
+        "output": "2 gaps",
+    }
+
+
+def test_cost_counts_cache_writes_and_searches_and_unknown_models_have_none():
+    u = {
+        "input_tokens": 100,
+        "output_tokens": 10,
+        "cache_creation_input_tokens": 1000,
+        "cache_read_input_tokens": 0,
+    }
+    inp, _, out = PRICES["gpt-6-luna"]
+    assert cost("gpt-6-luna", u, searches=2) == pytest.approx(
+        (100 * inp + 1000 * inp * 1.25 + 10 * out) / 1e6 + 0.02
+    )
+    assert cost("some-new-model", u) is None
+
+
+def test_reasoning_goes_back_encrypted_on_the_next_turn():
+    reasoning = {"type": "reasoning", "id": "rs_1", "encrypted_content": "gAAA…", "summary": []}
+    call = {"type": "function_call", "id": "fc_1", "call_id": "c1", "name": "list_gaps", "arguments": "{}"}
+    bodies = []
+
+    def handler(request):
+        bodies.append(json.loads(request.content))
+        if len(bodies) == 1:
+            events = [{"type": "response.output_item.done", "output_index": 0, "item": reasoning},
+                      {"type": "response.output_item.done", "output_index": 1, "item": call},
+                      {"type": "response.completed", "response": {"status": "completed", "usage": openai_usage({})}}]  # fmt: skip
+        else:
+            msg = {"type": "message", "content": [{"type": "output_text", "text": "done"}]}
+            events = [{"type": "response.output_item.done", "output_index": 0, "item": msg},
+                      {"type": "response.completed", "response": {"status": "completed", "usage": openai_usage({})}}]  # fmt: skip
+        return httpx.Response(200, content=sse(events))
+
+    engine = OpenAIEngine(transport=httpx.MockTransport(handler), key="sk-test")
+    result = anyio.run(lambda: engine.run(EngineRequest("s", "p", "m"), [_tool("list_gaps")], _collect()[1]))
+    assert result.text == "done" and bodies[1]["input"][1] == reasoning and bodies[1]["input"][2] == call
+
+
+def test_the_engine_enforces_the_dollar_cap_and_max_turns():
+    many = [("tool", "list_gaps", {}), ("usage", {"input_tokens": 400_000})] * 5 + [("text", "never")]
+    engine = OpenAIEngine(transport=httpx.MockTransport(ScriptedResponses(many)), key="sk-test")
+    req = EngineRequest("s", "p", "gpt-6.1-sol", max_budget_usd=1.0)
+    result = anyio.run(lambda: engine.run(req, [_tool("list_gaps")], _collect()[1]))
+    assert result.stop_reason == "budget: max_budget_usd" and result.cost_usd == pytest.approx(
+        1.6
+    )  # stops between turns
+    loop = OpenAIEngine(
+        transport=httpx.MockTransport(ScriptedResponses([("tool", "list_gaps", {})] * 9)), key="sk-test"
+    )
+    result = anyio.run(
+        lambda: loop.run(EngineRequest("s", "p", "m", max_turns=3), [_tool("list_gaps")], _collect()[1])
+    )
+    assert result.stop_reason == "max_turns"
+
+
+def test_tool_errors_bad_arguments_and_unknown_tools_go_back_to_the_model():
+    async def boom(args):
+        raise ValueError("no such deadline")
+
+    api = ScriptedResponses([("tool", "broken", {}), ("tool", "nope", {}), ("text", "sorry")])
+    engine = OpenAIEngine(transport=httpx.MockTransport(api), key="sk-test")
+    anyio.run(
+        lambda: engine.run(EngineRequest("s", "p", "m"), [_tool("broken", handler=boom)], _collect()[1])
+    )
+    assert api.tool_outputs == [("broken", False, "Error: no such deadline"),
+                                ("nope", False, "Error: there is no tool named 'nope'")]  # fmt: skip
+
+
+def test_api_errors_are_plain():
+    def refused(request):
+        return httpx.Response(401, json={"error": {"message": "Incorrect API key provided"}})
+
+    engine = OpenAIEngine(transport=httpx.MockTransport(refused), key="sk-test")
+    with pytest.raises(RuntimeError, match="refused the API key"):
+        anyio.run(lambda: engine.run(EngineRequest("s", "p", "m"), [], _collect()[1]))
+    failing = OpenAIEngine(
+        transport=httpx.MockTransport(ScriptedResponses([("fail", "overloaded")])), key="sk-test"
+    )
+    with pytest.raises(RuntimeError, match="overloaded"):
+        anyio.run(lambda: failing.run(EngineRequest("s", "p", "m"), [], _collect()[1]))
+
+
+def test_openai_is_the_only_engine(monkeypatch):
+    from areao1.core.models import WorkspaceConfig
+    from areao1.engine import connect
+
+    for name in ("openai", "claude_code", "codex"):
+        assert isinstance(get_engine(name), OpenAIEngine)
+    assert WorkspaceConfig.model_validate({"engine": "claude_code"}).engine == "openai"
+    monkeypatch.setattr(connect, "stored_key", lambda: None)
+    no_key = OpenAIEngine(transport=httpx.MockTransport(ScriptedResponses([])))
+    ok, why = no_key.available()
+    assert ok is False and "OpenAI API key" in why
     with pytest.raises(EngineUnavailable):
-        anyio.run(lambda: codex.run(EngineRequest("s", "p", "m"), [], None))
-    with pytest.raises(EngineUnavailable):
-        get_engine("gpt-whatever")
+        anyio.run(lambda: no_key.run(EngineRequest("s", "p", "m"), [], _collect()[1]))
 
 
 # ----------------------------------------------------------------------------- web reading
@@ -285,9 +386,16 @@ def test_per_run_token_cap_stops_the_run(demo_ws):
     cfg = demo_ws.config()
     cfg.agent.budget.per_run_tokens = 5_000
     demo_ws.save_config(cfg)
-    runner, _ = _runner(demo_ws, [("usage", {"input_tokens": 4000, "output_tokens": 500}),
-                                  ("usage", {"input_tokens": 4000, "output_tokens": 500}),
-                                  ("text", "never reached")])  # fmt: skip
+    runner, _ = _runner(
+        demo_ws,
+        [
+            ("usage", {"input_tokens": 4000, "output_tokens": 500}),
+            ("tool", "list_gaps", {}),
+            ("usage", {"input_tokens": 4000, "output_tokens": 500}),
+            ("tool", "list_gaps", {}),
+            ("text", "never reached"),
+        ],
+    )  # fmt: skip  (usage arrives once per model turn)
 
     async def go():
         return await runner.wait((await runner.start("manual", "go")).id)
@@ -347,11 +455,11 @@ def test_stream_replays_then_ends(demo_ws):
 def test_unavailable_engine_is_reported(demo_ws):
     class Missing(FakeEngine):
         def available(self):
-            return False, "The `claude` CLI isn't on PATH."
+            return False, "Add an OpenAI API key in Settings > Your AI."
 
     runner = AgentRunner(demo_ws, engine=Missing())
     assert runner.status()["available"] is False
-    with pytest.raises(EngineUnavailable, match="claude"):
+    with pytest.raises(EngineUnavailable, match="OpenAI API key"):
         anyio.run(runner.start, "manual", "hi")
 
 
@@ -382,14 +490,11 @@ def test_read_page_never_snapshots_an_empty_page(
     assert len(demo_ws.memory.observations()) == before and ctx.run.sources == []
 
 
-def test_model_per_run_type(demo_ws):
+def test_one_model_per_tier(demo_ws):
     cfg = demo_ws.config()
-    assert (cfg.agent.models.chat, cfg.agent.models.task, cfg.agent.models.mission) == (
-        "claude-opus-5-5",
-        "claude-opus-5-5",
-        "claude-sonnet-5-5",
-    )
-    cfg.agent.models.task = "claude-sonnet-5-5"
+    assert (cfg.agent.models.hard, cfg.agent.models.mid, cfg.agent.models.mundane) == ("gpt-6.1-sol", "gpt-6.1-sol",
+                                                                                       "gpt-6-luna")  # fmt: skip
+    cfg.agent.models.hard = "gpt-6-astra"  # upgrading a tier is one line
     demo_ws.save_config(cfg)
     runner, engine = _runner(demo_ws, [("text", "ok")])
 
@@ -397,21 +502,24 @@ def test_model_per_run_type(demo_ws):
         run = await runner.start(kind, "hi")
         return (await runner.wait(run.id)).model
 
-    assert anyio.run(go, "chat") == "claude-opus-5-5"
-    assert anyio.run(go, "manual") == "claude-sonnet-5-5"
-    assert anyio.run(go, "scheduled") == "claude-sonnet-5-5"
-    assert [r.model for r in engine.requests] == ["claude-opus-5-5", "claude-sonnet-5-5", "claude-sonnet-5-5"]
+    assert anyio.run(go, "chat") == "gpt-6-astra"
+    assert anyio.run(go, "manual") == "gpt-6-astra"
+    assert anyio.run(go, "scheduled") == "gpt-6.1-sol"
+    assert [r.model for r in engine.requests] == ["gpt-6-astra", "gpt-6-astra", "gpt-6.1-sol"]
 
 
-def test_legacy_single_model_config_still_loads():
+def test_claude_era_model_config_still_loads():
     from areao1.core.models import AgentConfig
 
     cfg = AgentConfig.model_validate({"model": "claude-opus-5", "effort": "high"})
-    assert (cfg.models.chat, cfg.models.task, cfg.models.mission) == (
-        "claude-opus-5",
-        "claude-opus-5",
-        "claude-sonnet-5-5",
+    assert (cfg.models.hard, cfg.models.mid, cfg.models.mundane) == (
+        "gpt-6.1-sol",
+        "gpt-6.1-sol",
+        "gpt-6-luna",
     )
+    cfg = AgentConfig.model_validate({"models": {"chat": "claude-opus-5-5", "task": "claude-opus-5-5",
+                                                 "mission": "gpt-5.5", "check": "claude-sonnet-5-5"}})  # fmt: skip
+    assert (cfg.models.hard, cfg.models.mid) == ("gpt-6.1-sol", "gpt-5.5")  # a non-Claude choice carries over
 
 
 # ----------------------------------------------------------------------------- prompt caching

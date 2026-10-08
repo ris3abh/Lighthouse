@@ -1,20 +1,15 @@
-"""Agent engine adapters behind one interface (ADR 0005): Claude Agent SDK today, Codex stubbed."""
+"""The agent engine behind one interface (ADR 0005, ADR 0015): the OpenAI Responses API."""
 
 from __future__ import annotations
 
 from areao1.engine.base import Engine, EngineUnavailable
 
 
-def get_engine(name: str) -> Engine:
-    if name == "claude_code":
-        from areao1.engine.claude_code import ClaudeAgentEngine
+def get_engine(name: str = "openai") -> Engine:
+    """The engine named in areao1.yaml. Only OpenAI is left; older names load as OpenAI (ADR 0015)."""
+    from areao1.engine.openai_engine import OpenAIEngine
 
-        return ClaudeAgentEngine()
-    if name == "codex":
-        from areao1.engine.codex import CodexEngine
-
-        return CodexEngine()
-    raise EngineUnavailable(f"engine {name!r} isn't available (use claude_code)")
+    return OpenAIEngine()
 
 
 __all__ = ["Engine", "EngineUnavailable", "get_engine"]

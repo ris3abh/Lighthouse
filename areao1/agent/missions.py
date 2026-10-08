@@ -155,7 +155,7 @@ def missions_status(ws: Case, runner: AgentRunner) -> list[dict[str, Any]]:
         last = last_run(runner, m.name)
         out.append({"name": m.name, "title": m.title, "enabled": getattr(cfg, m.name), "job": m.job,
                     "schedule": jobs.get(m.job, {}).get("schedule"), "next_run": jobs.get(m.job, {}).get("next_run"),
-                    "model": ws.config().agent.models.mission,
+                    "model": runner.route("scheduled").model,
                     "last_run": {"id": last.id, "at": last.started_at.isoformat(), "proposals": len(last.proposals),
                                  "cost_usd": last.cost_usd} if last else None})  # fmt: skip
     return out

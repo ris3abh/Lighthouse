@@ -61,8 +61,8 @@ def test_scout_runs_on_the_mission_model_and_notifies(demo_ws, monkeypatch):
     assert lines[0].startswith("Opportunity scout: done, 1 proposal,")
     [run] = AgentRunner(demo_ws, engine=engine).runs()
     assert run.kind == "scheduled" and run.mission == "opportunity_scout"
-    assert run.model == demo_ws.config().agent.models.mission == "claude-sonnet-5-5"
-    assert engine.requests[0].model == "claude-sonnet-5-5"
+    assert run.model == demo_ws.config().agent.models.mid == "gpt-6.1-sol"
+    assert engine.requests[0].model == "gpt-6.1-sol"
     assert "opportunity scout" in engine.requests[0].prompt.lower()
     [note] = rec.sent
     assert note.event == "mission" and "1 suggestion " in note.title and f"run={run.id}" in note.url
@@ -117,7 +117,7 @@ def test_api_status_toggle_and_run_now(demo_ws, monkeypatch):
         status = {m["name"]: m for m in c.get("/api/agent/missions").json()}
         assert status["opportunity_scout"]["enabled"] is False
         assert status["what_changed"]["schedule"] == "0 7 * * *"
-        assert status["opportunity_scout"]["model"] == "claude-sonnet-5-5"
+        assert status["opportunity_scout"]["model"] == "gpt-6.1-sol"
         r = c.put("/api/settings/missions", json={"opportunity_scout": True}, headers=W)
         assert r.json()["opportunity_scout"] is True and demo_ws.changes()[-1].action == "settings.missions"
         assert c.get("/api/settings").json()["missions"]["opportunity_scout"] is True

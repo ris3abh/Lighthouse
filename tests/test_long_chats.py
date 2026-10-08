@@ -46,7 +46,7 @@ def test_a_long_chat_is_summarized_and_the_originals_kept(demo_ws):
         SUMMARY in chat_prompt and "turn 0 " not in chat_prompt and f"turn {24 - KEEP_TURNS} " in chat_prompt
     )
     [summ] = [r for r in runs if r["task"] == "summarize"]
-    assert summ["tier"] == "mundane" and summ["model"] == "claude-haiku-4-5-20251001"
+    assert summ["tier"] == "mundane" and summ["model"] == "gpt-6-luna"
 
 
 def test_a_short_chat_is_replayed_as_it_is(demo_ws):
@@ -79,9 +79,9 @@ def test_summaries_go_through_the_same_guardrails(demo_ws):
 def test_cheap_mode_runs_chat_on_the_mid_tier(demo_ws):
     with TestClient(create_app(demo_ws, allowed_hosts=["testserver"], engine=FakeEngine())) as c:
         status = c.put("/api/settings/agent", headers=W, json={"cheap_mode": True}).json()
-        assert status["cheap_mode"] and status["model"] == "claude-sonnet-5-5"
+        assert status["cheap_mode"] and status["model"] == "gpt-6.1-sol"
         run = _chat(c, None, "hello")
-        assert (run["tier"], run["model"]) == ("mid", "claude-sonnet-5-5")
+        assert (run["tier"], run["model"]) == ("mid", "gpt-6.1-sol")
         c.put("/api/settings/agent", headers=W, json={"cheap_mode": False})
         assert _chat(c, None, "hello")["tier"] == "hard"
     assert demo_ws.changes()[-1].action == "settings.agent"

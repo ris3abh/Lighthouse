@@ -67,7 +67,7 @@ def test_chat_streams_tool_calls_and_saves_the_conversation(demo_ws):
 def test_manual_run_status_and_errors(demo_ws):
     with TestClient(create_app(demo_ws, allowed_hosts=["testserver"], engine=FakeEngine())) as c:
         status = c.get("/api/agent/status").json()
-        assert status["available"] is True and status["models"]["mission"] == "claude-sonnet-5-5"
+        assert status["available"] is True and status["models"]["mid"] == "gpt-6.1-sol"
         assert status["budget"]["monthly_tokens"] == 10_000_000
         r = c.post("/api/agent/runs", json={"prompt": "Summarize my week"}, headers=W)
         run_id = r.json()["run_id"]

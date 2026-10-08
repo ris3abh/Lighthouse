@@ -18,7 +18,6 @@ from areao1.agent.search_policy import SearchPolicy
 from areao1.agent.tools import RunContext, build_tools
 from areao1.core.models import AgentRun
 from areao1.engine.base import EngineRequest
-from areao1.engine.claude_code import ClaudeAgentEngine, _guard_hook
 from areao1.vault import Vault, load_manifest
 from areao1.vault.rulecheck import RuleChecker
 
@@ -32,7 +31,7 @@ def _policy():
 
 def _ask(policy, query, domains=None):
     data = {"query": query, **({"allowed_domains": domains} if domains is not None else {})}
-    return anyio.run(lambda: policy("WebSearch", data))
+    return anyio.run(lambda: policy("web_search", data))
 
 
 # ----------------------------------------------------------------------------- the search policy
@@ -59,26 +58,41 @@ def test_rule_searches_need_the_vault_first_then_tier1_then_tier2():
     assert [e["denied"] is None for e in p.log] == [False, False, False, False, False, True, True]
 
 
-def test_claude_engine_wires_the_guard_as_a_websearch_hook():
+def test_the_openai_engine_asks_the_guard_before_any_search_runs():
+    """web_search is our function tool: a refused search never reaches OpenAI's hosted search; an allowed one runs
+    once, restricted to allowed_domains."""
+    calls = []
+
     async def guard(tool, data):
+        calls.append((tool, data))
         return "nope" if "fee" in data.get("query", "") else None
 
-    opts = ClaudeAgentEngine(query=lambda **k: None).options(
-        EngineRequest(system_prompt="s", prompt="p", model="m", guard=guard), []
+    engine = FakeEngine([("search", {"query": "filing fee"}),
+                         ("search", {"query": "cfp", "allowed_domains": ["uscis.gov"]}), ("text", "ok")])  # fmt: skip
+    events = []
+
+    async def emit(ev):
+        events.append(ev)
+
+    anyio.run(
+        lambda: engine.run(EngineRequest(system_prompt="s", prompt="p", model="m", guard=guard), [], emit)
     )
-    [matcher] = opts.hooks["PreToolUse"]
-    assert matcher.matcher == "WebSearch"
-    hook = _guard_hook(guard)
-    denied = anyio.run(
-        lambda: hook({"tool_name": "WebSearch", "tool_input": {"query": "filing fee"}}, "t1", {})
+    assert [c[1]["query"] for c in calls] == ["filing fee", "cfp"] and calls[0][0] == "web_search"
+    assert [(n, ok) for n, ok, _ in engine.tool_outputs] == [("web_search", False), ("web_search", True)]
+    assert engine.tool_outputs[0][2] == "Denied: nope"
+    [search] = engine.api.searches  # only the allowed one ran
+    assert search["input"] == "cfp" and search["tools"] == [
+        {"type": "web_search", "filters": {"allowed_domains": ["uscis.gov"]}}
+    ]
+    assert search["store"] is False
+    main = engine.api.bodies[0]
+    assert [t["name"] for t in main["tools"]] == ["web_search"]  # a function tool, never the hosted one
+    assert not any(t.get("type") == "web_search" for t in main["tools"])
+    off = FakeEngine([("text", "x")])
+    anyio.run(
+        lambda: off.run(EngineRequest(system_prompt="s", prompt="p", model="m", web_search=False), [], emit)
     )
-    assert denied["hookSpecificOutput"] == {"hookEventName": "PreToolUse", "permissionDecision": "deny",
-                                            "permissionDecisionReason": "nope"}  # fmt: skip
-    assert anyio.run(lambda: hook({"tool_name": "WebSearch", "tool_input": {"query": "cfp"}}, "t2", {})) == {}
-    no_guard = ClaudeAgentEngine(query=lambda **k: None).options(
-        EngineRequest(system_prompt="s", prompt="p", model="m"), []
-    )
-    assert no_guard.hooks is None
+    assert "tools" not in off.api.bodies[0]
 
 
 # ----------------------------------------------------------------------------- the agent, end to end
@@ -106,13 +120,13 @@ def test_runs_enforce_vault_first(ws, http_mock, public_dns):  # noqa: F811
         return await runner.wait((await runner.start("manual", "what does EB-1A need?")).id)
 
     run = anyio.run(go)
-    searches = [(ok, out) for name, ok, out in engine.tool_outputs if name == "WebSearch"]
+    searches = [(ok, out) for name, ok, out in engine.tool_outputs if name == "web_search"]
     assert [ok for ok, _ in searches] == [False, False, True, True]
     assert "search_vault first" in searches[0][1] and "allowed_domains" in searches[1][1]
     vault_out = json.loads(next(out for name, ok, out in engine.tool_outputs if name == "search_vault"))
     assert vault_out["results"] and any(r["tier"] == 1 and r["fresh"] for r in vault_out["results"])
     assert engine.requests[0].guard is not None
-    assert any(i.tool == "WebSearch" and i.ok is False for i in run.timeline if i.type == "tool_call")
+    assert any(i.tool == "web_search" and i.ok is False for i in run.timeline if i.type == "tool_call")
 
 
 def test_search_vault_refetches_stale_sources_before_use(ws, http_mock, public_dns, monkeypatch):  # noqa: F811

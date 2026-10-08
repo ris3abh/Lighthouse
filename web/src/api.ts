@@ -443,7 +443,7 @@ export interface AgentStatus {
   model: string;
   models: { chat: string; task: string; mission: string };
   cheap_mode: boolean;
-  routes: { task: string; tier: "hard" | "mid" | "mundane"; provider: "anthropic" | "openai"; model: string }[];
+  routes: { task: string; tier: "hard" | "mid" | "mundane"; provider: "openai"; model: string }[];
   effort: string;
   web_search: boolean;
   budget: { per_run_tokens: number; per_run_usd: number | null; monthly_tokens: number; monthly_usd: number | null };
@@ -661,7 +661,6 @@ export interface GmailStatus {
   email: string | null;
 }
 export interface AiStatus {
-  cli: "installed" | "bundled" | "missing";
   key: "keychain" | "environment" | null;
   ready: boolean;
   how: string;

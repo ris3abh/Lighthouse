@@ -40,7 +40,7 @@ def lighthouse_era(tmp_path, monkeypatch):
     old_cfg.mkdir(parents=True)
     (old_cfg / "config.json").write_text(json.dumps({"workspace": str(ws.root)}))
     keyring.set_password("lighthouse-gc", "github:maya", "ghp_lighthouse_era_token")
-    monkeypatch.setenv("LIGHTHOUSE_MODEL_HARD", "claude-opus-5")
+    monkeypatch.setenv("LIGHTHOUSE_MODEL_HARD", "gpt-6-astra")
     monkeypatch.setenv("LIGHTHOUSE_GC_SPEC", "ignored-by-the-app")
     return ws.root, tmp_path
 
@@ -76,7 +76,7 @@ def test_a_lighthouse_era_setup_is_found_and_moved_once(lighthouse_era, launched
     # old environment variables still work, with a notice naming the new one
     from areao1.agent.routing import route
 
-    assert route("chat").model == "claude-opus-5"
+    assert route("chat").model == "gpt-6-astra"
     said = " ".join(migrate.NOTICES)
     for needle in ("AREAO1_MODEL_HARD", "areao1.yaml", "keychain", "copied your settings"):
         assert needle in said, needle

@@ -40,27 +40,28 @@ def user_config(tmp_path_factory, monkeypatch):
 
 @pytest.fixture(autouse=True)
 def no_real_model(monkeypatch):
-    """Tests never call a real model: the real engine reports itself unavailable, whatever this machine has
-    installed or logged in. Tests that need an agent inject the scripted FakeEngine."""
-    from areao1.engine.claude_code import ClaudeAgentEngine
+    """Tests never call a real model: the OpenAI engine without a scripted transport reports itself unavailable and
+    refuses to run, whatever key this machine has. Tests that need an agent inject FakeEngine (agent_fakes.py)."""
+    from areao1.engine.openai_engine import OpenAIEngine
 
-    real = ClaudeAgentEngine.available
+    for name in ("OPENAI_API_KEY", "AREAO1_MODEL_HARD", "AREAO1_MODEL_MID", "AREAO1_MODEL_MUNDANE"):
+        monkeypatch.delenv(name, raising=False)
+    real = OpenAIEngine.available
 
     def available(self):
-        if self._query is not None:  # a test injected a scripted query function
+        if self._transport is not None:  # a test injected a scripted transport
             return real(self)
         return False, "no real model in tests"
 
-    monkeypatch.setattr(ClaudeAgentEngine, "available", available)
-
-    real_run = ClaudeAgentEngine.run
+    monkeypatch.setattr(OpenAIEngine, "available", available)
+    real_run = OpenAIEngine.run
 
     async def run(self, *a, **k):
-        if self._query is None:
+        if self._transport is None:
             raise AssertionError("a test tried to call a real model")
         return await real_run(self, *a, **k)
 
-    monkeypatch.setattr(ClaudeAgentEngine, "run", run)
+    monkeypatch.setattr(OpenAIEngine, "run", run)
 
 
 @pytest.fixture(autouse=True)

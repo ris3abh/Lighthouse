@@ -17,7 +17,8 @@ from typing import Any
 
 from areao1.agent.guardrails import guard_answer, log_refusal
 from areao1.agent.prompt import SYSTEM_PROMPT
-from areao1.agent.routing import Route, openai_key, route, table
+from areao1.agent.redact import redact
+from areao1.agent.routing import Route, route, table
 from areao1.agent.search_policy import SearchPolicy
 from areao1.agent.tools import RunContext, build_tools
 from areao1.core import clock
@@ -33,7 +34,6 @@ from areao1.core.workspace import NotFound, WorkspaceError, _atomic_write, dump_
 from areao1.criteria.case import Case
 from areao1.engine import get_engine
 from areao1.engine.base import AgentEvent, Engine, EngineRequest, EngineUnavailable, StopRun
-from areao1.engine.openai_chat import openai_judge
 from areao1.vault import Vault
 from areao1.vault.rulecheck import Judge, RuleChecker, engine_judge, notify_conflicts
 
@@ -131,21 +131,25 @@ class AgentRunner:
         return route(task, cfg.agent.models, self.ws.root, cheap=cfg.agent.cheap_mode)
 
     def mundane(self, task: str = "chat_extract") -> tuple[Judge | None, Route]:
-        """The judge for bulk, simple reading: OpenAI when its key is set, else Claude Haiku on the engine. None when
-        neither is available. Refuses once the monthly cap is reached, like any run."""
+        """The judge for bulk, simple reading, on the mundane tier. Its input is redacted (privacy.redact_before_llm),
+        as tool results are. None when no AI is connected. Refuses once the monthly cap is reached, like any run."""
         how = self.route(task)
         b, month = self.ws.config().agent.budget, self.month_usage()
         if b.monthly_usd is not None and float(month["usd"] or 0.0) >= b.monthly_usd:
             raise BudgetExceeded(
                 f"monthly budget reached (${float(month['usd'] or 0):.2f} of ${b.monthly_usd:.2f})"
             )
-        if how.provider == "openai":
-            key = openai_key(self.ws.root)
-            return (
-                openai_judge(key, redact_input=self.ws.config().privacy.redact_before_llm) if key else None
-            ), how
         ok, _ = self.engine().available()
-        return (self.judge() if ok else None), how
+        if not ok:
+            return None, how
+        judge = self.judge()
+        if not self.ws.config().privacy.redact_before_llm:
+            return judge, how
+
+        async def redacted(system: str, prompt: str, model: str) -> Any:
+            return await judge(redact(system), redact(prompt), model)
+
+        return redacted, how
 
     def save(self, run: AgentRun) -> None:
         _atomic_write(self.runs_dir / f"{run.id}.json", dump_model(run))
