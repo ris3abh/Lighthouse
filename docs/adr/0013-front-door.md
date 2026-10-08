@@ -1,5 +1,7 @@
 # 0013. The front door: one line to a running onboarding
 
+> Superseded in part by [ADR 0015](0015-openai-engine.md) (2026-10-07): the amendment (an Anthropic API key; now an OpenAI key).
+
 - Status: accepted
 - Date: 2026-10-07
 - Phase: build Part S (S1–S5), between Parts C and D

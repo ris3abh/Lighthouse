@@ -95,7 +95,7 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       tracker auto-apply with undo; criterion-affecting -> Inbox; outreach needs approval); coverage test.
       agent/actions.py maps each page action to a tool or gives the reason it's yours; direct tools only in runs
       you started (missions keep the Inbox); Undo in the chat reply; deletes, letter writers and to-dos undoable
-- [x] D2. Three tiers from .env (hard = claude-opus-5-5, mid = claude-sonnet-5-5, mundane = small OpenAI
+- [x] D2. Three tiers from .env (then hard = claude-opus-5-5, mid = claude-sonnet-5-5, mundane = small OpenAI; now ADR 0015
       model), rule-based router by task type, redaction + guardrails on every provider, .env.example.
       agent/routing.py (a areao1.yaml model that differs from the default still wins); OpenAI only for
       tool-less mundane reading, redacted, capped and costed (gpt-5-mini by default; prices in openai_chat.py);
@@ -152,6 +152,11 @@ website connector (126df15). G1's "fees from eCFR 8 CFR part 106" also shipped (
       domains, subject keywords), then the mundane tier on headers + first lines; moving teaches a sender rule;
       PEEK-only reads of a read-only mailbox; text fetched on open, never written; links to Inbox candidates
 - [ ] E7 live check: Refresh mail on the owner's Gmail (sends first lines of unsorted mail to the mundane tier)
+- [x] G0. OpenAI is the only engine (ADR 0015): Responses API engine with our tool loop, guarded web search,
+      prompt caching, price table, dollar cap; tiers one line each (hard/mid gpt-6.1-sol, mundane gpt-6-luna);
+      OpenAI key only (Anthropic key removed on start); the suite's FakeEngine runs the real engine against a
+      scripted Responses API; Claude Code skill + AGENTS.md Codex section in every workspace
+- [ ] G0 live check: one chat and one opportunity-scout run on OpenAI, with costs (waits for the owner's key)
 - [ ] CHECKPOINT 4 (Gmail): connect with an app password, Refresh threads, one approved send
       Reported 2026-10-07 (built and tested with fake IMAP / SMTP); the live run waits for the owner's app password
 

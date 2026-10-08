@@ -47,7 +47,8 @@ USCIS. Criteria profiles are community-maintained summaries of public regulation
    into an Inbox; the user accepts, edits or rejects. Approval records a decision; it does not certify truth or
    legal sufficiency.
 5. **Thin app, fat agent.** The app does data, UI, scheduling and connectors. Writing, judgment and drafting go
-   to the agent engine (Claude Code / Codex / API), which is swappable.
+   to the agent engine (OpenAI's Responses API, ADR 0015); Claude Code and Codex drive the case from outside
+   over the MCP server.
 6. **Local-first, secrets never in Git.** Server binds to 127.0.0.1. Tokens live in the OS keychain. No
    telemetry. Optional Docker for an always-on private box.
 7. **Reusable core, domain profiles.** `areao1.core` knows nothing about immigration. O-1A, EB-1A and the
@@ -345,15 +346,16 @@ editable in Settings):
 push. Each event type can route to a different channel.
 
 **Calendar.** calendar.ics is generated from deadlines + pipeline follow-ups and served at a local subscribe
-URL. Optional one-way push to Google Calendar via OAuth.
+URL. Google Calendar imports the file (no sync: ADR 0014, amendment).
 
 **Agent engine.** (Design: `docs/adr/0005-agent-layer.md`.) The harness is locked down to web search
 plus Area O1's own tools; agent writes go through the service layer and only *propose* to the Inbox
 (autopilot rules may auto-apply a narrow class of tracker updates with undo); every run is recorded in
 `agent/runs/` with its sources, proposals, changes and cost; per-run and monthly budgets live in
-`areao1.yaml`. One adapter interface, three implementations: Claude Code (`claude -p` headless), Codex
-(`codex exec`), or direct Anthropic/OpenAI API. Skills live in `skills/` and are copied into each workspace's
-`.claude/skills/` (and an AGENTS.md for Codex):
+`areao1.yaml`. One adapter interface; the implementation is OpenAI's Responses API with our own tool loop, three
+model tiers (hard and mid `gpt-6.1-sol`, mundane `gpt-6-luna`, one line each) and web search as a guarded
+function tool (ADR 0015). Claude Code and Codex use Area O1 from outside over the MCP server: each workspace gets
+a skill in `.claude/skills/areao1/` and an AGENTS.md section for Codex. Planned skills:
 
 - dashboard-generate, metrics-snapshot, evidence-intake, criteria-status, deadline-notify
 - opportunity-scan, gmail-triage, letter-draft, petition-outline (EB-1 final-merits narrative)
@@ -379,7 +381,7 @@ areao1/
 │   │                        # semantic_scholar.py openalex.py orcid.py arxiv.py manual.py
 │   ├── jobs/                # scheduler + sync, snapshot, deadlines, triage, scan, digest
 │   ├── notify/              # desktop.py email.py slack.py discord.py ntfy.py
-│   ├── engine/              # claude_code.py codex.py api.py
+│   ├── engine/              # base.py openai_engine.py connect.py
 │   ├── mcp/                 # MCP server
 │   └── server/              # FastAPI routes, serves built web UI
 ├── web/                     # React + Vite + Tailwind dashboard
@@ -428,7 +430,7 @@ criteria: [...], asks: [letter, membership_ref], status, draft_path, last_contac
 | Web UI | React + Vite + Tailwind + Recharts, built into the Python package | one `pipx install areao1` gives everything |
 | Storage | files in Git; SQLite cache in `.areao1/` (gitignored) | rebuildable index, fast queries for charts |
 | Secrets | OS keychain via keyring; .env fallback (gitignored) | tokens never touch Git |
-| Agent | Claude Code (default) / Codex / API adapter | config-swappable |
+| Agent | OpenAI Responses API (one engine interface); Claude Code / Codex over MCP | ADR 0015 |
 | Distribution | pipx, Docker image, GitHub Actions template | local, always-on box, or cloud-triggered |
 
 Security and privacy requirements:
@@ -474,7 +476,7 @@ against the fictional fixture workspace and your own.
 
 ### Phase 1c — Agent layer (see ADR 0005)
 
-- [x] Agent engine: Claude Agent SDK adapter (Codex stubbed behind the same interface), web search on, the MCP
+- [x] Agent engine: Claude Agent SDK adapter (replaced by the OpenAI engine, ADR 0015), web search on, the MCP
       read tools attached, plus write tools that call the service layer: they propose to the Inbox, or
       auto-apply per autopilot rules. Per-run and monthly token budget caps in areao1.yaml. Model mocked
       in tests.

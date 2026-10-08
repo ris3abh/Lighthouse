@@ -29,7 +29,7 @@ private workspace at `~/AreaO1`.
 
 - **Your LinkedIn profile as a PDF** (on LinkedIn: Profile > More > Save to PDF). It's read on your computer,
   with emails and phone numbers removed first. You can also skip it.
-- **Optionally, an Anthropic API key** for chat and web lookups (everything else works without one).
+- **Optionally, an OpenAI API key** for chat and web lookups (everything else works without one).
 
 Area O1 runs on your computer and serves the dashboard only to it (127.0.0.1). Your case is a folder of
 plain files in its own git repo, and it's yours.
@@ -159,20 +159,24 @@ about immigration. Profiles and scoring live in a separate layer, so other domai
 | `areao1 validate` | check every workspace file against its schema and naming rules |
 | `areao1 notify test` | send a test notification to every routed channel |
 | `areao1 secret set <ref>` | store a token / webhook URL / SMTP password in the OS keychain |
-| `areao1 mcp` | MCP server over stdio for Claude Code, Claude desktop or any MCP client: read tools plus `propose_context`, which sends notes to your Inbox ([setup](docs/mcp.md)) |
+| `areao1 mcp` | MCP server over stdio for Claude Code, Codex, Claude desktop or any MCP client: read tools plus `propose_context`, which sends notes to your Inbox ([setup](docs/mcp.md)) |
 
 ### Ask the agent
 
-Click **Ask** on any page to open the chat panel. The agent (Claude, through the Claude Agent SDK) reads
+Click **Ask** on any page to open the chat panel. The agent (OpenAI, through the Responses API) reads
 your workspace and the web. Each step is shown as it happens: searches, pages read, which workspace files
 a tool touched. It can't change anything itself. Suggestions land in your **Inbox** and link there, and
 evidence it proposes must quote the page it read, word for word. Conversations are saved in your
-workspace (`agent/conversations/`); nothing is kept in `~/.claude`. You need Claude Code installed and logged
-in (or `ANTHROPIC_API_KEY`). Spend is capped per run and per month in `areao1.yaml`:
+workspace (`agent/conversations/`); nothing is stored at OpenAI (`store: false`). Add an OpenAI API key in
+Settings > Your AI (kept in your OS keychain) or set `OPENAI_API_KEY`. Models are one line per tier, and spend
+is capped per run and per month, in `areao1.yaml` ([ADR 0015](docs/adr/0015-openai-engine.md)):
 
 ```yaml
 agent:
-  models: {chat: claude-opus-5-5, task: claude-opus-5-5, mission: claude-sonnet-5-5}
+  models:
+    hard: gpt-6.1-sol      # chat, tasks you start, letters ($2 / $10 per 1M tokens in / out)
+    mid: gpt-6.1-sol       # missions, the rule check, PDFs, cheap-mode chat
+    mundane: gpt-6-luna    # chat extraction, long-chat summaries, mail sorting ($0.10 / $0.50)
   effort: medium
   web_search: true
   budget: {per_run_tokens: 300000, per_run_usd: 2.0, monthly_tokens: 10000000, monthly_usd: 50.0}
@@ -207,14 +211,20 @@ import the `.ics` there.
 
 ### Gmail
 
-Connect Gmail with an app password (Settings > Gmail): Area O1 reads only the headers of threads with your
-contacts and sends only drafts you approve. See [docs/gmail.md](docs/gmail.md).
+Connect Gmail with an app password (Settings > Gmail). Contacts > Mail shows case-relevant mail only (invites,
+judging, reviewer requests, letters, press, awards, contact threads), sorted by rules (model sorting is an
+opt-in setting), read-only. Area O1 sends only drafts you approve, with 10 seconds to undo. See
+[docs/gmail.md](docs/gmail.md).
 
-### Use it from Claude Code (or any MCP client)
+### Use it from Claude Code, Codex (or any MCP client)
 
 ```sh
-claude mcp add areao1 -- areao1 mcp -w ~/my-case
+claude mcp add areao1 -- areao1 mcp -w ~/my-case    # Claude Code
+codex mcp add areao1 -- areao1 mcp -w ~/my-case     # Codex
 ```
+
+Every workspace includes a Claude Code skill (`.claude/skills/areao1/`) and an `AGENTS.md` section for Codex that
+explain the tools and the rules. Neither needs an OpenAI key; that's only for Area O1's own chat.
 
 The server is **read-only**: `get_scoreboard`, `list_gaps`, `query_claims(entity, as_of)`,
 `get_provenance(claim_id)` and `what_changed(since)`. Agents see each claim's verbatim source quote and review

@@ -1,5 +1,7 @@
 # 5. Agent layer: engine adapters, grounded tools, the service layer, budgets
 
+> Superseded in part by [ADR 0015](0015-openai-engine.md) (2026-10-07): §1–2 and §7 (the Claude Agent SDK adapter, its lockdown and cache notes).
+
 Date: 2026-10-06 · Status: accepted (Phase 1c items 1–3; autopilot and missions follow in items 4–6)
 
 ## Context

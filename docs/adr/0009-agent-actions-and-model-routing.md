@@ -1,5 +1,7 @@
 # 0009. Chat can do what the pages do; three model tiers; long chats
 
+> Superseded in part by [ADR 0015](0015-openai-engine.md) (2026-10-07): §2's model table (tiers are one line each, all OpenAI).
+
 - Status: accepted
 - Date: 2026-10-07
 - Phase: build Part D (D1–D3)
