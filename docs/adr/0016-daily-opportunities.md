@@ -52,6 +52,12 @@ the job), and the item stays unconfirmed until a later message from that sender 
 **confirmed (they replied)**. If the sender check failed (spoofing, a DMARC fail, a look-alike domain with no
 authentication), the find is **suspicious**: no reply is drafted, so nothing confirms a phisher's address.
 
+Because anyone can register a domain with working DMARC and a copied page, two more signals make a find suspicious
+before any page is fetched: a **look-alike** sender domain (a near miss of the event's own name or of a known
+organizer or platform: digits for letters, `rn` for `m`, one or two characters off; an event's own domain may be
+hyphenated, a known one may not), and a **hidden domain** (`examplehacks.org.evil.example`). A free mail address
+can't be confirmed by a page on the organizer's site (only Devpost / MLH count for it).
+
 ### 4. De-duplication and notifications
 
 A find is skipped when the Inbox (pending or snoozed, scout leads included), the pipeline or an earlier find

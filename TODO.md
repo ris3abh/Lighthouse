@@ -182,7 +182,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] F3. Verification per find: sender check; the event confirmed on its official page (or Devpost / MLH) with
       matching dates (guarded web search + read_page on the cheap tier); if unsure, a short confirmation reply
       drafted to the organizer behind Approve & send, and the item stays "unconfirmed" until they answer
-- [ ] F4. Dedupe against scout leads and existing Inbox items; push notifications with the banter copy ("New
+- [x] F4. Dedupe against scout leads and existing Inbox items; push notifications with the banter copy ("New
       signal detected: [what], verified" / "Unidentified signal..."); phishing fixtures never verified
 
 #### Part G: vault without babysitting (ADR 0011)

@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 from areao1.core import clock
 from areao1.criteria.case import Case
 from areao1.criteria.models import MailItem
-from areao1.google import eml, opportunities
+from areao1.google import eml, mailview, opportunities
 
 PLATFORMS = ("devpost.com", "mlh.io")
 FREEMAIL = ("gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "yahoo.com", "icloud.com",
@@ -46,6 +46,41 @@ def allowed_domains(sender_domain: str) -> list[str]:
 def on_allowed(url: str, domains: list[str]) -> bool:
     h = host(url)
     return bool(h) and any(h == d or h.endswith("." + d) for d in domains)
+
+
+def _lev(a: str, b: str) -> int:
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def _skeleton(label: str) -> str:
+    """What a look-alike reads as: digits and letter pairs that imitate letters, and hyphens, folded away."""
+    s = label.lower().replace("-", "")
+    for a, b in (("rn", "m"), ("vv", "w"), ("0", "o"), ("1", "l"), ("3", "e"), ("5", "s"), ("i", "l")):
+        s = s.replace(a, b)
+    return s
+
+
+def imitation(sender_domain: str, event: str, known: list[str]) -> str | None:
+    """Why the sender's domain looks deceptive, or None: a domain hidden in a subdomain (examplehacks.org.evil.co),
+    or a near-miss of the event's name or a known organizer (examp1ehacks.org, example-hacks.org for
+    examplehacks.org)."""
+    d = sender_domain.lower()
+    if re.search(r"\.(com|org|net|edu|gov|io)\.[a-z0-9-]+\.[a-z]{2,}$", d):
+        return f"{d} hides another domain in front of its real one ({eml._org(d)})"
+    label = eml._org(d).split(".")[0]
+    named = "".join(tokens(event))
+    for brand in {named, *(eml._org(k).split(".")[0] for k in known)}:
+        if len(brand) < 6 or label == brand or (brand == named and label.replace("-", "") == brand):
+            continue  # the brand itself (an event's own domain may be hyphenated; a known domain's isn't)
+        if _skeleton(label) == _skeleton(brand) or (len(label) >= 6 and _lev(label, brand) <= 2):
+            return f"{eml._org(d)} looks like an imitation of {brand}"
+    return None
 
 
 def tokens(name: str) -> list[str]:
@@ -136,6 +171,20 @@ def verifier(engine: Any = None, model: str = "", fetch: Any = None) -> Any:
         sender = eml.describe(auth) if auth.get("verdict") else "No sender check"
         if auth.get("verdict") == "failed":
             return "suspicious", f"{sender}. No check-in was drafted.", None, 0.0
+        domain = parseaddr(info["headers"].get("From", ""))[1].rpartition("@")[2].lower()
+        known = [
+            *mailview.DOMAINS,
+            *PLATFORMS,
+            *(e.rpartition("@")[2] for c in ws.contacts().contacts for e in c.emails),
+        ]
+        fake = imitation(domain, info["event"], known)
+        if fake:
+            return (
+                "suspicious",
+                f"The sender's domain is suspicious: {fake}. No check-in was drafted.",
+                None,
+                0.0,
+            )
         url, why, cost = (None, "web confirmation is off", 0.0)
         if ws.config().opportunities.verify_on_web:
             url, why, cost = await confirm_on_web(ws, info, engine, model, fetch)

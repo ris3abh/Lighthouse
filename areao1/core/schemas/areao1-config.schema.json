@@ -375,6 +375,7 @@
               "sync_error",
               "mission",
               "vault",
+              "opportunity",
               "test"
             ]
           },

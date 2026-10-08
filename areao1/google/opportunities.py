@@ -66,6 +66,50 @@ def event_name(subject: str) -> str:
     return s.strip()[:120]
 
 
+def _words(title: str) -> set[str]:
+    from areao1.google.verify import tokens
+
+    return set(tokens(event_name(title)))
+
+
+def duplicate_of(ws: Case, title: str, url: str | None = None) -> str | None:
+    """What already tracks this opportunity: an Inbox item (pending or snoozed, scout leads included), a pipeline
+    item or an exhibit with the same URL, or a title whose words cover this one's (or the other way round)."""
+    mine = _words(title)
+    seen: list[tuple[str, str, str | None]] = [(f"Inbox: {c.title}", c.title, c.raw_url) for c in ws.inbox().candidates
+                                               if c.status != "rejected"]  # fmt: skip
+    seen += [(f"Pipeline: {p.title}", p.title, p.url) for p in ws.pipeline().items]
+    seen += [(f"Exhibit: {e.title}", e.title, e.source_url) for e in ws.exhibits().exhibits]
+    for label, other, other_url in seen:
+        if url and other_url and url.rstrip("/") == other_url.rstrip("/") and "mail.google.com" not in url:
+            return label
+        theirs = _words(other)
+        y1, y2 = set(re.findall(r"\b20\d\d\b", title)), set(re.findall(r"\b20\d\d\b", other))
+        if y1 and y2 and not y1 & y2:
+            continue  # Example Hacks 2025 isn't Example Hacks 2026
+        if len(mine) >= 2 and len(theirs) >= 2 and len(mine & theirs) / min(len(mine), len(theirs)) >= 0.8:
+            return label
+    return None
+
+
+def notify(ws: Case, cand: Candidate, event: str) -> None:
+    """One notification per new find (ADR 0016 §4), with the banter lines for verified and unverified finds."""
+    from areao1 import banter
+    from areao1.jobs.alerts import dashboard_url
+    from areao1.notify import Notification, send
+
+    url = dashboard_url(ws, f"inbox?candidate={cand.id}")
+    if cand.verification == "verified":
+        title, body = banter.line("signal_verified", what=event), cand.verification_note
+    elif cand.verification == "suspicious":
+        title, body = f"Suspicious invitation: {event}", ("The sender check failed, so nothing was drafted and the "
+                                                          "item is marked suspicious in your Inbox.")  # fmt: skip
+    else:
+        title, body = banter.line("signal_unverified"), f"{event}. {cand.verification_note}"
+    send(ws, Notification("opportunity", title, body[:1500], url=url, minimal_body="A new opportunity is in your Inbox.",
+                          key=f"opportunity:{cand.id}"))  # fmt: skip
+
+
 def gmail_link(item: MailItem) -> str:
     return f"https://mail.google.com/mail/u/0/#all/{item.thread_id}"
 
@@ -121,10 +165,14 @@ async def run(ws: Case, mundane: Any = None, verifier: Any = None) -> dict[str, 
     proposed: list[Candidate] = []
     looked: list[str] = []
     threads = {c.source for c in ws.inbox().candidates}
+    skipped = 0
     for item in finds(ws):
         looked.append(item.id)
         if f"gmail:{item.thread_id}" in threads:
             continue  # a reply in a thread already in the Inbox
+        if duplicate_of(ws, item.subject):
+            skipped += 1
+            continue  # already tracked (a scout lead, an Inbox item, the pipeline)
         try:
             info = read_find(ws, item)
         except (mail.MailError, KeyError, ValueError):
@@ -140,15 +188,20 @@ async def run(ws: Case, mundane: Any = None, verifier: Any = None) -> dict[str, 
             )
         else:
             verification, note, url = "unconfirmed", eml.describe(info["auth"]), None
+        if url and duplicate_of(ws, info["event"] or item.subject, url):
+            skipped += 1
+            continue
         cand = svc.propose_candidate(candidate(item, info, verification, note, url))
         if cand is not None:
             proposed.append(cand)
+            notify(ws, cand, info["event"] or item.subject)
     box = ws.mailbox()
     box.processed = [*box.processed, *looked][-5000:]
     ws.save_mailbox(box)
     verified = sum(1 for c in proposed if c.verification == "verified")
     line = (f"Opportunities: {len(proposed)} new in your Inbox ({verified} verified)" if proposed
-            else "Opportunities: nothing new") + (f"; {confirmed} confirmed by the organizer's reply" if confirmed else "")  # fmt: skip
+            else "Opportunities: nothing new") + (f"; {confirmed} confirmed by the organizer's reply" if confirmed else "") + (
+        f"; {skipped} already tracked" if skipped else "")  # fmt: skip
     return {"lines": [*synced.get("lines", []), line], "cost_usd": round(cost, 6), "finds": proposed}
 
 

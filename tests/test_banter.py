@@ -24,7 +24,11 @@ PLACES = {
     "eb1a_first_switch": {"App.tsx"},
 }
 LANDING_LINES = {"hero", "tagline_visit", "tagline_billing", "disclaimer"}
-LATER = {"constellation_loading", "signal_verified", "signal_unverified"}
+LATER = {"constellation_loading"}
+PY_PLACES = {
+    "signal_verified": {"areao1/google/opportunities.py"},
+    "signal_unverified": {"areao1/google/opportunities.py"},
+}
 # Serious surfaces: deadlines and countdowns, rule-check warnings, conflicts, refusals, errors, status, filing.
 SERIOUS_FILES = ["pages/Overview.tsx", "pages/Evidence.tsx", "pages/Calendar.tsx", "pages/Knowledge.tsx",
                  "pages/Agent.tsx", "components/RuleCheck.tsx", "components/Briefing.tsx",
@@ -41,7 +45,10 @@ def _uses() -> dict[str, set[str]]:
 
 
 def test_every_line_is_used_only_where_it_is_listed():
-    assert set(LINES) == set(PLACES) | LANDING_LINES | LATER
+    assert set(LINES) == set(PLACES) | LANDING_LINES | LATER | set(PY_PLACES)
+    for f in (ROOT / "areao1").rglob("*.py"):  # notifications use their lines only where listed
+        for key in re.findall(r'banter\.line\("(\w+)"', f.read_text()):
+            assert str(f.relative_to(ROOT)) in PY_PLACES.get(key, set()), (key, f)
     for key, files in _uses().items():
         assert files <= PLACES.get(key, set()), f"{key} used in {files - PLACES.get(key, set())}"
     tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.split()
@@ -51,6 +58,8 @@ def test_every_line_is_used_only_where_it_is_listed():
             if f.endswith((".json", ".pdf", ".png", ".woff2", ".test.ts")) or f.startswith(
                 ("docs/adr", "tests/", "CHANGELOG", "TODO")
             ):
+                continue
+            if f in PY_PLACES.get(key, set()):
                 continue
             if f.removeprefix("web/src/") in PLACES.get(
                 key, set()

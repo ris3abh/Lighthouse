@@ -400,12 +400,15 @@ class ChannelConfig(_Model):
     topic: str | None = None
 
 
-NotificationEvent = Literal["deadline", "digest", "new_candidates", "sync_error", "mission", "vault", "test"]
+NotificationEvent = Literal[
+    "deadline", "digest", "new_candidates", "sync_error", "mission", "vault", "opportunity", "test"
+]
 
 
 def _default_routes() -> dict[NotificationEvent, list[str]]:
     return {"deadline": ["desktop"], "digest": ["desktop"], "new_candidates": ["desktop"],
-            "sync_error": ["desktop"], "mission": ["desktop"], "vault": ["desktop"], "test": ["desktop"]}  # fmt: skip
+            "sync_error": ["desktop"], "mission": ["desktop"], "vault": ["desktop"], "opportunity": ["desktop"],
+            "test": ["desktop"]}  # fmt: skip
 
 
 class NotificationsConfig(_Model):
