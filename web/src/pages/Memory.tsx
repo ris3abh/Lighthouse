@@ -28,7 +28,8 @@ const STATUS_LABEL: Record<StarStatus, string> = { approved: "approved", pending
 export default function Memory({ claim }: { claim?: string | null }) {
   const data = useLoad(() => api.constellation(), []);
   const [view, setView] = useState<"sky" | "list">("sky");
-  const [filters, setFilters] = useState<Filters>({ criterion: "all", entity: "", statuses: new Set(DEFAULT_STATUSES), from: null, until: null });
+  const ALL: Filters = { criterion: "all", entity: "", statuses: new Set(DEFAULT_STATUSES), from: null, until: null };
+  const [filters, setFilters] = useState<Filters>(ALL);
   const [selected, setSelected] = useState<string | null>(claim ?? null); // #/memory?claim=<id> opens its trail
   useEffect(() => setSelected(claim ?? null), [claim]);
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
@@ -63,6 +64,14 @@ export default function Memory({ claim }: { claim?: string | null }) {
       ) : (
         <>
           <FilterBar c={c} filters={filters} setFilters={setFilters} />
+          {!c.stars.some((st) => visible(st, filters)) && (
+            <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 border border-frame bg-surface px-5 py-3 text-sm">
+              <span>Nothing matches these filters. {plural(c.stars.length, "claim")} are hidden by them.</span>
+              <Button size="sm" onClick={() => setFilters(ALL)}>
+                Clear filters
+              </Button>
+            </div>
+          )}
           {view === "sky" ? (
             <Sky c={c} filters={filters} selected={selected} onSelect={setSelected} />
           ) : (

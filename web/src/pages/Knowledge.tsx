@@ -17,10 +17,14 @@ function freshness(s: VaultSourceStatus): { label: string; tone: "ink" | "outlin
   return s.fresh ? { label: "fresh", tone: "ink" } : { label: "stale", tone: "outline" };
 }
 
+/** A fetch that failed because the network isn't there (not a blocked or broken page). */
+const NETWORK = /can't resolve|nodename|name or service|connecterror|connect|timed? ?out|network|offline|unreachable/i;
+
 export default function Knowledge() {
   const { version, bump } = useRefresh();
   const toast = useToast();
   const once = useOnce(); // the vault sync reads the network: once per click (B3)
+  const [offline, setOffline] = useState(0); // sources that couldn't be reached on the last check
   const data = useLoad(() => api.knowledge(), [version]);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -44,7 +48,13 @@ export default function Knowledge() {
       const results = await api.knowledgeSync(sources, force);
       const changed = results.filter((r) => r.status === "changed").length;
       const failed = results.filter((r) => r.status === "unreadable" || r.status === "error").length;
-      toast(results.length ? `Checked ${results.length}: ${changed} changed${failed ? `, ${failed} couldn't be read` : ""}` : "Everything is fresh");
+      const unreachable = results.filter((r) => r.status === "error" && NETWORK.test(r.error ?? "")).length;
+      if (results.length && (unreachable === results.length || (unreachable && !navigator.onLine))) {
+        setOffline(unreachable); // one banner, not a red toast per source (F6)
+      } else {
+        setOffline(0);
+        toast(results.length ? `Checked ${results.length}: ${changed} changed${failed ? `, ${failed} couldn't be read` : ""}` : "Everything is fresh");
+      }
       bump();
     } catch (e) {
       toast((e as Error).message, "error");
@@ -66,6 +76,17 @@ export default function Knowledge() {
           </Button>
         }
       />
+      {offline > 0 && (
+        <div role="status" className="mb-8 flex flex-wrap items-center justify-between gap-3 border border-frame bg-surface px-5 py-4 text-sm">
+          <span>
+            <strong className="font-semibold">You seem to be offline.</strong> {plural(offline, "official source")} couldn't be reached. Check your connection,
+            then check again.
+          </span>
+          <Button size="sm" onClick={() => sync()} disabled={busy !== null}>
+            <RefreshCw /> Check again
+          </Button>
+        </div>
+      )}
       <CaptureExtension />
       {!k.enabled && (
         <p className="mb-8 border border-alert bg-surface px-5 py-4 text-sm text-ink">

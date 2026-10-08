@@ -116,7 +116,8 @@ def test_an_unreachable_site_says_why_and_can_be_retried(fresh, http_mock, monke
     monkeypatch.setattr(socket, "getaddrinfo", no_dns)
     view = c.post(f"/api/onboarding/lookups/{lk['id']}", headers=W, json={"accept": True}).json()
     failed = view["state"]["lookups"][0]
-    assert failed["status"] == "unreachable" and failed["result"].startswith("Couldn't reach the site")
+    assert failed["status"] == "unreachable"
+    assert failed["result"] == "Couldn't reach jordan-example.example. Check your connection, then Retry."
     assert view["state"]["step"] == "lookups"
     assert (
         c.post("/api/onboarding/step", headers=W, json={"step": "lookups_done"}).status_code == 200
@@ -204,3 +205,26 @@ def test_a_list_answer_from_the_chip_input_is_kept_item_for_item(fresh):  # noqa
         "/api/onboarding/answer", headers=W, json={"id": "publications", "action": "fix", "value": chips}
     ).json()
     assert {line["key"]: line["value"] for line in view["panel"]}["publications"] == chips  # no re-splitting
+
+
+def test_lookup_errors_name_the_site_and_hide_the_internals(fresh, http_mock):  # noqa: F811
+    """F6: "Couldn't reach arXiv. Check your connection, then Retry." — not the connector's raw error."""
+    import httpx
+
+    c = _at_lookups(fresh, {"publications": ["Sparse Routing for Example Transformers"]})
+    http_mock.get(url__regex=r"https://export\.arxiv\.org/api/query.*").mock(
+        side_effect=httpx.ConnectError("down")
+    )
+    lk = c.post("/api/onboarding/lookups/papers", headers=W, json={"accept": True}).json()["state"][
+        "lookups"
+    ][0]
+    assert (lk["status"], lk["result"]) == (
+        "unreachable",
+        "Couldn't reach arXiv. Check your connection, then Retry.",
+    )
+    from areao1.onboarding.api import classify
+
+    assert classify(RuntimeError("arxiv: HTTP 403 Forbidden"), "arXiv")[1] == (
+        "arXiv blocked automated reading. Save the page yourself and drop it in the Inbox."
+    )
+    assert "Traceback" not in classify(ValueError("weird internal thing"), "ORCID")[1]

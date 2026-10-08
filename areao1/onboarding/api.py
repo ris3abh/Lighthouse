@@ -124,23 +124,36 @@ def _refresh_finds(state: OnboardingState, runner: Any) -> bool:
     return changed
 
 
-def classify(exc: Exception) -> tuple[str, str]:
-    """A lookup error as (status, plain reason): the site couldn't be reached, it blocked us, or something else."""
-    msg = str(exc)
-    low = msg.lower()
+SITES = {"papers": "arXiv", "github": "GitHub", "orcid": "ORCID"}
+
+
+def site_name(kind: str, targets: list[str] | None = None) -> str:
+    """The site a lookup reads, the way a person would say it."""
+    if kind in SITES:
+        return SITES[kind]
+    from urllib.parse import urlparse
+
+    host = urlparse(targets[0]).hostname if targets and "://" in targets[0] else None
+    return host.removeprefix("www.") if host else "the site"
+
+
+def classify(exc: Exception, site: str = "the site") -> tuple[str, str]:
+    """A lookup error as (status, plain reason) in the person's words, without internal detail: the site couldn't be
+    reached, it blocked automated reading, or something else went wrong. Every one can be retried."""
+    low = str(exc).lower()
     if any(s in low for s in ("can't resolve", "name or service", "nodename", "timed out", "timeout", "connect",
-                              "unreachable", "no route", "ssl")):  # fmt: skip
-        return "unreachable", f"Couldn't reach the site ({msg[:160]}). Check the address, or try again later."
+                              "unreachable", "no route", "ssl", "network error", "offline")):  # fmt: skip
+        return "unreachable", f"Couldn't reach {site}. Check your connection, then Retry."
     if any(
         s in low for s in ("403", "429", "blocked", "captcha", "unreadable", "forbidden", "too many requests")
     ):
         return (
             "blocked",
-            f"The site blocked automated reading ({msg[:160]}). Save the page yourself and drop it in the Inbox.",
+            f"{site} blocked automated reading. Save the page yourself and drop it in the Inbox.",
         )
     if "private" in low or "not allowed" in low or "unsafe" in low:
-        return "failed", f"That address isn't a public web page ({msg[:160]})."
-    return "failed", f"Something went wrong: {msg[:200]}"
+        return "failed", "That address isn't a public web page. Check it, then Retry."
+    return "failed", f"Something went wrong reading {site}. Retry, or skip it for now."
 
 
 def todos_for(ws: Case, state: OnboardingState) -> list[Any]:
@@ -404,7 +417,7 @@ def mount(app: FastAPI, ws: Case, svc: Service, judge: Any = None, runner: Any =
                 )  # sync connectors
                 lk.status = status  # type: ignore[assignment]
             except Exception as exc:  # say what happened; onboarding carries on
-                lk.status, lk.result = classify(exc)  # type: ignore[assignment]
+                lk.status, lk.result = classify(exc, site_name(lk.kind, lk.targets))  # type: ignore[assignment]
         _advance(state)
         svc.onboarding_save(state, "onboarding.lookup", summary=f"{lookup_id}: {lk.status}")
         return view_now()

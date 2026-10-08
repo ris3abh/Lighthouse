@@ -457,9 +457,10 @@ def test_knowledge_pairing_and_check(browser, serve, qa):
     with step(qa, page, "get a pairing code"):
         button(page, "Get a pairing code").click()
         page.get_by_text("Good for ten minutes, once.").wait_for(timeout=5000)
-    with step(qa, page, "check what's due (offline: sources show as unreadable, nothing breaks)"):
+    with step(qa, page, "check what's due offline: one banner, not a toast per source (F6)"):
         button(page, "Check what's due").click()
-        page.wait_for_timeout(4000)
+        page.get_by_text("You seem to be offline.").wait_for(timeout=15000)
+        assert page.locator("[data-toast], [role=alert]").filter(has_text="couldn't be read").count() == 0
     no_errors(qa)
 
 
@@ -471,6 +472,12 @@ def test_constellation_filters_slider_and_star(browser, serve, qa):
         page.locator("select").first.select_option("judging")
         button(page, "^Pending$").click()
         page.wait_for_timeout(400)
+    with step(qa, page, "a filter that matches nothing says so, and Clear filters brings the sky back (F6)"):
+        page.get_by_placeholder("A paper, repo, event or person").fill("zzzz-nothing-matches-this")
+        page.get_by_text("Nothing matches these filters.").wait_for(timeout=3000)
+        button(page, "Clear filters").click()
+        assert not page.get_by_text("Nothing matches these filters.").count()
+        page.locator("select").first.select_option("judging")
     with step(qa, page, "the time slider shows the case up to a date"):
         slider = page.get_by_label("Show the case up to this date")
         slider.focus()
