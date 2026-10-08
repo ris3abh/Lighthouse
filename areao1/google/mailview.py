@@ -198,7 +198,7 @@ async def sync(ws: Case, mundane: Any = None, days: int = LOOKBACK_DAYS) -> dict
     result: dict[str, Any] = {"cost_usd": 0.0}
     asked = pending[:MODEL_MAX]
     judge, how = mundane() if (mundane and asked) else (None, None)
-    if judge is not None and asked:
+    if judge is not None and how is not None and asked:
         answers, (cost, usage) = await classify(asked, judge, how.model)
         result.update(cost_usd=cost, usage=usage, route=how)
         for m in asked:
