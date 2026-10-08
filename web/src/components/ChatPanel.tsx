@@ -359,7 +359,7 @@ function TurnView({ t, streaming }: { t: Turn; streaming?: boolean }) {
       ) : (
         t.text && <Markdown text={t.text} />
       )}
-      {streaming && (!items || items.length === 0) && <span className="inline-block size-2 animate-tool-pulse bg-ink" aria-label="Thinking" />}
+      {streaming && (!items || items.length === 0) && <span className="inline-block size-2 animate-tool-pulse bg-ink" role="status" aria-label="Thinking" />}
       <RuleCheckView check={t.check} compact />
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10.5px] text-muted uppercase">
         {t.meta && <span>{t.meta}</span>}

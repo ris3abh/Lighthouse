@@ -66,14 +66,16 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
 
   return (
     <div className="flex flex-col gap-8">
+      <h1 className="sr-only">Overview: where your case stands</h1>
       {/* hero: where the case stands */}
       <section data-panel="scoreboard inbox deadlines" className="card grid animate-rise grid-cols-2 @2xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] @5xl:grid-cols-[2fr_1fr_1fr]">
         <div className="col-span-2 border-b border-line p-5 md:p-8 @2xl:col-span-1 @2xl:row-span-2 @2xl:border-r @2xl:border-b-0 @5xl:row-span-1">
           <p className="eyebrow">{board.profile_name}</p>
           <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2">
-            <a href="#/evidence" className="display text-[88px] leading-[0.8] hover:text-ink-2 md:text-[132px]" aria-label={`${board.banked} banked of ${board.threshold} needed`}>
+            <a href="#/evidence" className="display text-[88px] leading-[0.8] hover:text-ink-2 md:text-[132px]">
               <CountUp value={board.banked} />
               <span className="text-muted">/{board.threshold}</span>
+              <span className="sr-only"> criteria banked of the {board.threshold} needed</span>
             </a>
             <div className="pb-2 font-mono text-xs leading-relaxed text-ink-2">
               <p>CRITERIA BANKED / NEEDED</p>
@@ -130,8 +132,9 @@ export default function OverviewPage({ data, error, retry }: { data: Overview | 
                       {c.matched_signals.length > 0 && <span className="uppercase">· {plural(c.matched_signals.length, "signal")}</span>}
                     </span>
                   </span>
-                  <span className="display text-4xl text-ink-2" aria-label={`${c.exhibit_count} exhibits`}>
+                  <span className="display text-4xl text-ink-2">
                     {c.exhibit_count}
+                    <span className="sr-only"> exhibits</span>
                   </span>
                 </a>
               </li>

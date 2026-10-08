@@ -91,7 +91,7 @@ export default function DropZone({
       {...bind}
       role="button"
       tabIndex={0}
-      aria-label={label}
+      title={label}
       onClick={() => input.current?.click()}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), input.current?.click())}
       className={cx(

@@ -57,7 +57,9 @@ export default function Letters() {
                   <th className="px-3 py-3 font-medium">Status</th>
                   <th className="px-3 py-3 font-medium">Last contact</th>
                   <th className="px-3 py-3 font-medium">Draft</th>
-                  <th />
+                  <th>
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

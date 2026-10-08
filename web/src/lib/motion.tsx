@@ -86,7 +86,8 @@ export function CountUp({ value, decimals, className }: { value: number; decimal
   const d = decimals ?? (Number.isInteger(value) ? 0 : 2);
   const shown = useCountUp(value, { start: seen });
   return (
-    <span ref={ref} className={className} aria-label={format(value, d)}>
+    <span ref={ref} className={className}>
+      <span className="sr-only">{format(value, d)}</span>
       <span aria-hidden>{format(seen ? shown : 0, d)}</span>
     </span>
   );

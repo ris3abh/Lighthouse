@@ -20,23 +20,32 @@ const VARIANTS: Record<Variant, string> = {
   danger: "border border-line text-ink-2 hover:border-ink hover:text-ink",
 };
 
+function buttonClass(variant: Variant, size: "sm" | "md", className?: string) {
+  return cx(
+    "inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-4 [&_svg]:shrink-0",
+    size === "sm" ? "h-8 px-3 text-xs" : "h-10 px-4 text-sm",
+    VARIANTS[variant],
+    className,
+  );
+}
+
 export function Button({
   variant = "secondary",
   size = "md",
   className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: "sm" | "md"; ref?: React.Ref<HTMLButtonElement> }) {
-  return (
-    <button
-      {...props}
-      className={cx(
-        "inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-4 [&_svg]:shrink-0",
-        size === "sm" ? "h-8 px-3 text-xs" : "h-10 px-4 text-sm",
-        VARIANTS[variant],
-        className,
-      )}
-    />
-  );
+  return <button {...props} className={buttonClass(variant, size, className)} />;
+}
+
+/** A link that looks like a button (a download, a page): one control, not a button inside a link. */
+export function ButtonLink({
+  variant = "secondary",
+  size = "md",
+  className,
+  ...props
+}: React.AnchorHTMLAttributes<HTMLAnchorElement> & { variant?: Variant; size?: "sm" | "md" }) {
+  return <a {...props} className={buttonClass(variant, size, className)} />;
 }
 
 /** Status by fill and by the status palette (ADR 0007): banked solid green, building half amber, gap hollow ink,

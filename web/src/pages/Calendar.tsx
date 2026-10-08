@@ -2,7 +2,7 @@ import { Trash2, Check, ChevronLeft, ChevronRight, Download, Link2, Plus } from 
 import { useEffect, useMemo, useState } from "react";
 import { api, type DeadlineItem, type JobStatus, type PipelineCard } from "../api";
 import { useRefresh } from "../App";
-import { Button, Card, Chip, cx, Empty, ErrorBox, Loading, Modal, PageHeader, plural, Segmented, useToast } from "../components/ui";
+import { Button, ButtonLink, Card, Chip, cx, Empty, ErrorBox, Loading, Modal, PageHeader, plural, Segmented, useToast } from "../components/ui";
 import { withViewTransition } from "../lib/motion";
 import { today, useLoad } from "../hooks";
 
@@ -213,11 +213,9 @@ export default function Calendar() {
             >
               <Link2 /> Subscribe link
             </Button>
-            <a href={api.calendarUrl} download="areao1.ics">
-              <Button size="sm" tabIndex={-1}>
-                <Download /> .ics
-              </Button>
-            </a>
+            <ButtonLink size="sm" href={api.calendarUrl} download="areao1.ics">
+              <Download /> .ics
+            </ButtonLink>
           </>
         }
       />
@@ -240,7 +238,7 @@ export default function Calendar() {
             </div>
             <Segmented label="Calendar view" size="sm" value={view} onChange={switchView} options={[{ value: "month", label: "Month" }, { value: "week", label: "Week" }]} />
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" role="region" aria-label={`${heading}: the calendar grid`} tabIndex={0}>
             <div className="min-w-[640px]" style={{ viewTransitionName: "cal-grid" }}>
               <div className="grid grid-cols-7 border-b border-line">
                 {(view === "month" ? WEEKDAYS : weekDays.map((d, i) => `${WEEKDAYS[i]} ${d.getDate()}`)).map((d) => (
@@ -311,10 +309,10 @@ export default function Calendar() {
                 );
               }}
             >
-              <input className="input" required placeholder="e.g. IEEE Senior Member application" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              <input className="input" required aria-label="Deadline title" placeholder="e.g. IEEE Senior Member application" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
-                <input type="date" required className="input" value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} />
-                <select className="input" value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
+                <input type="date" required className="input" aria-label="Due date" value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} />
+                <select className="input" aria-label="Kind of deadline" value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
                   {KINDS.map((k) => (
                     <option key={k}>{k}</option>
                   ))}

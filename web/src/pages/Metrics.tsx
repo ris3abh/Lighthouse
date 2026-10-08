@@ -3,7 +3,7 @@ import { api, type Series } from "../api";
 import { useRefresh } from "../App";
 import { Camera, Download } from "lucide-react";
 import TrendChart, { inRange, RangePicker, type Range } from "../components/TrendChart";
-import { Button, Card, Chip, cx, Delta, Empty, ErrorBox, Loading, PageHeader, plural, useToast } from "../components/ui";
+import { Button, ButtonLink, Card, Chip, cx, Delta, Empty, ErrorBox, Loading, PageHeader, plural, useToast } from "../components/ui";
 import { CountUp } from "../lib/motion";
 import { useLoad } from "../hooks";
 
@@ -66,11 +66,9 @@ export default function Metrics({ focus }: { focus: string | null }) {
                 <option key={s}>{s}</option>
               ))}
             </select>
-            <a href={api.exportUrl} download>
-              <Button size="sm" tabIndex={-1}>
-                <Download /> CSV
-              </Button>
-            </a>
+            <ButtonLink size="sm" href={api.exportUrl} download>
+              <Download /> CSV
+            </ButtonLink>
             <Button size="sm" variant="primary" disabled={busy} onClick={snapshot}>
               <Camera /> {busy ? "Snapshotting…" : "Snapshot now"}
             </Button>
@@ -119,9 +117,9 @@ function ItemCard({ series, highlighted, range }: { series: Series[]; highlighte
         </h2>
       </header>
       <div className="grid @3xl:grid-cols-[260px_minmax(0,1fr)]">
-        <ul className="flex overflow-x-auto border-b border-line @3xl:max-h-[400px] @3xl:flex-col @3xl:overflow-x-hidden @3xl:overflow-y-auto @3xl:border-r @3xl:border-b-0" role="tablist">
+        <ul className="flex overflow-x-auto border-b border-line @3xl:max-h-[400px] @3xl:flex-col @3xl:overflow-x-hidden @3xl:overflow-y-auto @3xl:border-r @3xl:border-b-0" role="tablist" aria-label={`${item} metrics`}>
           {series.map((s) => (
-            <li key={s.metric} className="shrink-0 border-r border-line @3xl:border-r-0 @3xl:border-b">
+            <li key={s.metric} role="presentation" className="shrink-0 border-r border-line @3xl:border-r-0 @3xl:border-b">
               <button
                 role="tab"
                 aria-selected={s.metric === active}
