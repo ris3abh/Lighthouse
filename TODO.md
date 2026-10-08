@@ -237,7 +237,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] D2. Landing page: the dashboard's O1 logo in the header and favicon, prominent links to the docs
 - [x] D3. README rewritten short (banner, badges, screenshot, features, install, MCP, privacy, links); details moved
       to the docs; checkout path fixed
-- [ ] D4. brag-output/ in .gitignore
+- [x] D4. brag-output/ in .gitignore
 
 ## Phase 0 checklist
 

@@ -27,3 +27,6 @@ areao1/_data/
 !.env.example
 extension-e2e/node_modules
 film-maya/
+
+# local brag-document output
+brag-output/
