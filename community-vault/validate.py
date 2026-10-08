@@ -1,6 +1,6 @@
 """Validate the community snapshot library: structure, official URLs, hashes. Run by CI on every push and PR.
 
-    python validate.py            # exit 1 with the problems listed, 0 when everything checks out
+python validate.py            # exit 1 with the problems listed, 0 when everything checks out
 """
 
 from __future__ import annotations
@@ -55,7 +55,9 @@ def problems(root: Path = ROOT) -> list[str]:
             out.append(f"{where}: bad source_id {e['source_id']!r}")
         u = urlparse(e["url"])
         host = (u.hostname or "").lower()
-        if u.scheme != "https" or not (host.endswith(".gov") or any(host == d or host.endswith("." + d) for d in official)):
+        if u.scheme != "https" or not (
+            host.endswith(".gov") or any(host == d or host.endswith("." + d) for d in official)
+        ):
             out.append(f"{where}: {e['url']} isn't on an official U.S. government domain")
         if e["license"] != LICENSE:
             out.append(f"{where}: license must be {LICENSE} (U.S. government works, 17 U.S.C. § 105)")
@@ -77,7 +79,9 @@ def problems(root: Path = ROOT) -> list[str]:
         if hashlib.sha256(data).hexdigest() != e["sha256"]:
             out.append(f"{where}: {e['file']} doesn't match its sha256")
         if VOLATILE.search(data):
-            out.append(f"{where}: {e['file']} still has per-visit tokens (form / feedback / CSRF); empty them")
+            out.append(
+                f"{where}: {e['file']} still has per-visit tokens (form / feedback / CSRF); empty them"
+            )
         key = (e["source_id"], e["sha256"])
         if key in seen:
             out.append(f"{where}: duplicate of an earlier entry")

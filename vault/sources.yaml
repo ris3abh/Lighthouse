@@ -54,6 +54,27 @@ tier1_domains: [uscis.gov, ecfr.gov, federalregister.gov, travel.state.gov, just
                 dhs.gov, govinfo.gov]
 tier2_domains: [uscourts.gov, supremecourt.gov, courtlistener.com]
 
+# Change signals (ADR 0011): a source naming a signal stays fresh until a relevant rule takes effect (Federal Register
+# final rules from USCIS / DHS matched by CFR part or terms, or an eCFR amendment of a listed section). Sources with
+# no signal (processing times, the Visa Bulletin) keep their freshness window.
+signals:
+  o1:
+    terms: ["O-1", "O-1A", "extraordinary ability", "nonimmigrant classification for aliens of extraordinary"]
+    cfr_parts: [214]
+    ecfr_sections: ["214.2"]
+  eb1:
+    terms: ["EB-1", "EB-1A", "extraordinary ability", "first preference", "outstanding professors"]
+    cfr_parts: [204]
+    ecfr_sections: ["204.5"]
+  fees:
+    terms: ["fee schedule", "filing fee", "premium processing", "fee rule"]
+    cfr_parts: [103, 106]
+    ecfr_sections: ["106.2", "106.4"]
+  forms:
+    terms: ["Form I-129", "Form I-140", "I-129", "I-140", "form edition"]
+    cfr_parts: [106]
+    ecfr_sections: ["106.2"]
+
 sources:
   # --------------------------------------------------------------------------- Tier 1: regulations, statute
   - id: ecfr-8cfr-214-2-o
@@ -115,6 +136,7 @@ sources:
     tier: 1
     manual: true
     kind: policy
+    signal: o1
     topics: [o1a]
   - id: uscis-pm-6-f-2
     title: "USCIS Policy Manual, Volume 6, Part F, Chapter 2: extraordinary ability"
@@ -122,6 +144,7 @@ sources:
     tier: 1
     manual: true
     kind: policy
+    signal: eb1
     topics: [eb1a]
 
   # --------------------------------------------------------------------------- Tier 1: USCIS pages and forms
@@ -131,6 +154,7 @@ sources:
     tier: 1
     manual: true
     kind: guidance
+    signal: o1
     topics: [o1a]
   - id: uscis-eb1
     title: "USCIS: employment-based immigration, first preference EB-1"
@@ -138,6 +162,7 @@ sources:
     tier: 1
     manual: true
     kind: guidance
+    signal: eb1
     topics: [eb1a]
   - id: uscis-i-129
     title: "Form I-129, Petition for a Nonimmigrant Worker (edition, instructions, where to file)"
@@ -145,6 +170,7 @@ sources:
     tier: 1
     manual: true
     kind: form
+    signal: forms
     topics: [o1a]
   - id: uscis-i-140
     title: "Form I-140, Immigrant Petition for Alien Workers (edition, instructions, where to file)"
@@ -152,6 +178,7 @@ sources:
     tier: 1
     manual: true
     kind: form
+    signal: forms
     topics: [eb1a]
   - id: uscis-g-1055
     title: "USCIS fee schedule, Form G-1055 (PDF)"
@@ -159,6 +186,7 @@ sources:
     tier: 1
     manual: true
     kind: fees
+    signal: fees
     topics: [o1a, eb1a]
     secondary_to: ecfr-8cfr-106-2
   - id: uscis-premium-processing
@@ -167,6 +195,7 @@ sources:
     tier: 1
     manual: true
     kind: processing_times
+    signal: fees
     topics: [o1a, eb1a]
   - id: uscis-processing-times
     title: "USCIS case processing times"
