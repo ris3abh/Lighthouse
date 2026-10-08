@@ -214,7 +214,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] J1. scripts/film_demo.py: fictional "Maya" workspace, fake Gmail, scripted engine, seeded constellation
       with history, a verified judging invite on a keypress, one drafted follow-up, one rule-check "verified"
       answer; no real data, no network
-- [ ] J2. docs/filming.md: window size, theme, hiding bookmarks, keys and the events they trigger
+- [x] J2. docs/filming.md: window size, theme, hiding bookmarks, keys and the events they trigger
 
 #### Part K: final
 - [ ] K1. Walkthrough as Maya, Ravi and Lena from an empty workspace to the constellation; screenshots, both themes

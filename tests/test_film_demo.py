@@ -74,3 +74,17 @@ def test_it_never_ships():
     assert not any(
         p.startswith("scripts") for p in project["tool"]["hatch"]["build"]["targets"]["sdist"]["include"]
     )
+
+
+def test_the_filming_checklist_covers_window_theme_bookmarks_and_keys():
+    doc = (ROOT / "docs" / "filming.md").read_text()
+    for needle in (
+        "Window size",
+        "Hide the bookmarks bar",
+        "Theme",
+        "Reduce motion",
+        "| `j` |",
+        "| `u` |",
+        "| `r` |",
+    ):
+        assert needle in doc, needle
