@@ -211,7 +211,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] I4. Remove leftovers of removed features (Google Calendar, OAuth, Anthropic engine, demo workspace)
 
 #### Part J: demo filming workspace (dev-only, never shipped)
-- [ ] J1. scripts/film_demo.py: fictional "Maya" workspace, fake Gmail, scripted engine, seeded constellation
+- [x] J1. scripts/film_demo.py: fictional "Maya" workspace, fake Gmail, scripted engine, seeded constellation
       with history, a verified judging invite on a keypress, one drafted follow-up, one rule-check "verified"
       answer; no real data, no network
 - [ ] J2. docs/filming.md: window size, theme, hiding bookmarks, keys and the events they trigger

@@ -26,3 +26,4 @@ areao1/_data/
 /.claude/
 !.env.example
 extension-e2e/node_modules
+film-maya/
