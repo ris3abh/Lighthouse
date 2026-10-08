@@ -43,8 +43,10 @@ extension, only for listed URLs, and only on 127.0.0.1. Its host permissions are
 government pages (17 U.S.C. § 105), each with its URL, source id, capture date and SHA-256, the snapshot files, and a
 CI workflow that validates URL (listed official domains only), hash and structure. Installs pull the manifest on
 vault-watch and import a snapshot for a manual source only when it's newer than the local copy and its hash matches.
-Sharing is opt-in (`vault.share_captures`): captures of Tier 1 pages are written to a local outbox with the exact
-manifest entry and file to contribute; nothing is uploaded automatically.
+Sharing is opt-in (the extension's checkbox): captures of Tier 1 pages are written to a local outbox with the exact
+manifest entry and file to contribute; nothing is uploaded automatically. Per-visit values a page carries (form,
+feedback and CSRF tokens, nonces) are emptied first, since they can be tied to whoever captured it, and the library's
+CI rejects snapshots that still have them.
 
 ### 4. One notification, only when it matters (G4)
 

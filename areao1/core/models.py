@@ -534,6 +534,12 @@ DEFAULT_SCHEDULES: dict[str, str] = {
 
 class VaultConfig(_Model):
     enabled: bool = Field(True, description="Fetch the public sources listed in the vault manifest.")
+    community: bool = Field(True, description="Pull hash-verified snapshots of blocked official pages from the "
+                            "community library (ADR 0011 §3).")  # fmt: skip
+    community_url: str = Field("https://raw.githubusercontent.com/ris3abh/areao1-community-vault/main",
+                               description="Where the community library's manifest.json lives.")  # fmt: skip
+    share_captures: bool = Field(False, description="Prepare captures of public government pages for the community "
+                                 "library (written to a local outbox; nothing is uploaded).")  # fmt: skip
 
 
 class OutreachConfig(_Model):

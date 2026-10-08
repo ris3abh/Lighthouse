@@ -1264,7 +1264,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         if not capture.authorized(ws, request.headers.get("authorization")):
             raise HTTPException(401, "pair the extension again (Settings > Knowledge)")
         try:
-            return capture.capture(ws, body.url, body.title, body.html)
+            return capture.capture(ws, body.url, body.title, body.html, body.share)
         except LookupError as exc:
             raise HTTPException(404, str(exc)) from exc
         except ValueError as exc:

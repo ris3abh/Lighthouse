@@ -354,9 +354,9 @@ class Vault:
         return await anyio.to_thread.run_sync(self._store, source, page.url, title, text, eff, prev, "fetch")
 
     def _store(self, source: VaultSource, url: str, title: str, text: str, eff: date | None,
-               prev: dict[str, Any] | None, origin: str) -> VaultFetch:  # fmt: skip
+               prev: dict[str, Any] | None, origin: str, checked_at: datetime | None = None) -> VaultFetch:  # fmt: skip
         sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
-        now = utcnow()
+        now = checked_at or utcnow()
         previous = prev.get("sha") if prev else None
         with self.db() as con:
             if sha == previous:
@@ -384,8 +384,9 @@ class Vault:
         return entry
 
     def import_file(
-        self, source_id: str, content: bytes, filename: str = "", content_type: str = ""
-    ) -> VaultFetch:
+        self, source_id: str, content: bytes, filename: str = "", content_type: str = "",
+        checked_at: datetime | None = None, origin: str = "manual",
+    ) -> VaultFetch:  # fmt: skip
         """Store a page the person saved from their browser (for sites that block automated reading) as that
         source's snapshot. It goes through the same extraction and cut, and counts as checked now."""
         source = self.manifest.source(source_id)
@@ -408,7 +409,7 @@ class Vault:
             )
         prev = self.state().get(source.id)
         url = source.url if "{" not in source.url else (prev or {}).get("url") or source.url
-        return self._store(source, url, title, text, effective_date(text, raw), prev, "manual")
+        return self._store(source, url, title, text, effective_date(text, raw), prev, origin, checked_at)
 
     def _failed(
         self, source: VaultSource, url: str, status: str, error: str, prev: dict[str, Any] | None

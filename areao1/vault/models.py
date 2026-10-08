@@ -155,8 +155,10 @@ class VaultFetch(_Model):
     tier: Tier
     fetched_at: datetime = Field(default_factory=utcnow)
     status: FetchStatus
-    origin: Literal["fetch", "manual", "agent"] = Field(
-        "fetch", description="manual: imported from a saved page; agent: an official page the agent read."
+    origin: Literal["fetch", "manual", "agent", "community"] = Field(
+        "fetch",
+        description="manual: imported from a saved page (or the capture extension); agent: an official page "
+        "the agent read; community: a hash-verified snapshot from the community library.",
     )
     sha256: str | None = None
     previous_sha256: str | None = None

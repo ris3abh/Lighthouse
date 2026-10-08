@@ -191,7 +191,7 @@ needs the owner goes into one "Needs you" list in the K4 report. One commit per 
 - [x] G2. Chrome MV3 capture extension (extension/): matches only vault/sources.yaml URLs, saves visited pages to
       the local app with a one-time pairing token, never browses on its own; automated-browser test; packaged
       for "load unpacked"
-- [ ] G3. community-vault/: README, manifest, hash-verified public-domain government snapshots, CI that validates
+- [x] G3. community-vault/: README, manifest, hash-verified public-domain government snapshots, CI that validates
       URL, hash and structure; opt-in sharing from the extension; installs pull updates; create the GitHub repo
       only if gh is authenticated
 - [ ] G4. One notification with a direct link only when a relevant page changed and no snapshot exists anywhere

@@ -76,9 +76,12 @@ def run_watch(ws: Workspace, scheduled: bool = False, client: httpx.AsyncClient 
     vault = Vault(ws)
 
     async def go() -> tuple[list[str], list[VaultFetch]]:
-        from areao1.vault import signals
+        from areao1.vault import community, signals
 
         changed = await signals.check(vault, client)  # change signals first: they decide what's stale
+        changed += await community.pull(
+            ws, vault, client
+        )  # then a newer snapshot from anywhere (ADR 0011 §3-4)
         return changed, await vault.sync(tier1_daily=True, client=client)
 
     signal_lines, results = anyio.run(go)

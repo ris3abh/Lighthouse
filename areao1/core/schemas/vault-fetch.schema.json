@@ -83,11 +83,12 @@
     },
     "origin": {
       "default": "fetch",
-      "description": "manual: imported from a saved page; agent: an official page the agent read.",
+      "description": "manual: imported from a saved page (or the capture extension); agent: an official page the agent read; community: a hash-verified snapshot from the community library.",
       "enum": [
         "fetch",
         "manual",
-        "agent"
+        "agent",
+        "community"
       ],
       "title": "Origin",
       "type": "string"

@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "official_domains": [
+    "courtlistener.com",
+    "dhs.gov",
+    "ecfr.gov",
+    "federalregister.gov",
+    "govinfo.gov",
+    "justice.gov",
+    "supremecourt.gov",
+    "travel.state.gov",
+    "uscis.gov",
+    "uscode.house.gov",
+    "uscourts.gov"
+  ],
+  "snapshots": [
+    {
+      "source_id": "uscis-i-129",
+      "url": "https://www.uscis.gov/i-129",
+      "captured_at": "2026-10-06T12:00:00+00:00",
+      "sha256": "a92df55e2d2faeeca38bbe7cf0ef5e052cf34f85a3bda73888d9ada8e31ed229",
+      "file": "snapshots/a92df55e2d2faeeca38bbe7cf0ef5e052cf34f85a3bda73888d9ada8e31ed229.html",
+      "license": "public-domain-us-gov",
+      "note": "Seed snapshot recorded for Area O1's test suite; per-visit tokens emptied."
+    },
+    {
+      "source_id": "uscis-g-1055",
+      "url": "https://www.uscis.gov/sites/default/files/document/forms/g-1055.pdf",
+      "captured_at": "2026-10-06T12:00:00+00:00",
+      "sha256": "a32dea5b2f415cb868a4d9289f2e8e4c9dc275bfb43416b981ae8433096007f5",
+      "file": "snapshots/a32dea5b2f415cb868a4d9289f2e8e4c9dc275bfb43416b981ae8433096007f5.html",
+      "license": "public-domain-us-gov",
+      "note": "Seed snapshot recorded for Area O1's test suite; per-visit tokens emptied."
+    },
+    {
+      "source_id": "uscis-pm-2-m-4",
+      "url": "https://www.uscis.gov/policy-manual/volume-2-part-m-chapter-4",
+      "captured_at": "2026-10-06T12:00:00+00:00",
+      "sha256": "9c0e2d65e705d61580c5b2cc505031fa82fa54cdb4ce9a2abae0f208c480746b",
+      "file": "snapshots/9c0e2d65e705d61580c5b2cc505031fa82fa54cdb4ce9a2abae0f208c480746b.html",
+      "license": "public-domain-us-gov",
+      "note": "Seed snapshot recorded for Area O1's test suite; per-visit tokens emptied."
+    },
+    {
+      "source_id": "uscis-pm-6-f-2",
+      "url": "https://www.uscis.gov/policy-manual/volume-6-part-f-chapter-2",
+      "captured_at": "2026-10-06T12:00:00+00:00",
+      "sha256": "3da5611e56fa1cb7b12369cf9387343855d5028bd80c777932e9ce96b4e3c2b3",
+      "file": "snapshots/3da5611e56fa1cb7b12369cf9387343855d5028bd80c777932e9ce96b4e3c2b3.html",
+      "license": "public-domain-us-gov",
+      "note": "Seed snapshot recorded for Area O1's test suite; per-visit tokens emptied."
+    }
+  ]
+}

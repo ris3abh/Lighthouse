@@ -105,7 +105,7 @@ def watched(ws: Workspace) -> list[dict[str, Any]]:
     return out
 
 
-def capture(ws: Workspace, url: str, title: str, html: str) -> dict[str, Any]:
+def capture(ws: Workspace, url: str, title: str, html: str, share: bool = False) -> dict[str, Any]:
     """Import a page the extension saved, if its URL is one of the watched pages."""
     k = key(url)
     hit = next((w for w in watched(ws) if k and k in w["keys"]), None)
@@ -113,5 +113,11 @@ def capture(ws: Workspace, url: str, title: str, html: str) -> dict[str, Any]:
         raise LookupError("That page isn't in your vault's source list; nothing was saved.")
     if not html.strip():
         raise ValueError("The page was empty.")
-    result = Vault(ws).import_file(hit["id"], html.encode("utf-8"), f"{(title or hit['title'])[:80]}.html")
-    return {"source_id": hit["id"], "status": result.status, "sha256": result.sha256}
+    vault = Vault(ws)
+    result = vault.import_file(hit["id"], html.encode("utf-8"), f"{(title or hit['title'])[:80]}.html")
+    shared = None
+    if share:  # opt-in in the extension: prepared locally, never uploaded
+        from areao1.vault import community
+
+        shared = community.stage_share(ws, vault, hit["id"], url, html.encode("utf-8"))
+    return {"source_id": hit["id"], "status": result.status, "sha256": result.sha256, "shared": bool(shared)}

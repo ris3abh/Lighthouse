@@ -57,6 +57,10 @@ class Pages:
     def install(self, rules: list | None = None, versions: dict | None = None):
         r = self.router
         r.get("https://www.ecfr.gov/api/versioner/v1/titles.json").respond(json=TITLES)
+        # the community library (ADR 0011 §3): empty by default
+        r.get("https://raw.githubusercontent.com/ris3abh/areao1-community-vault/main/manifest.json").respond(
+            json={"version": 1, "snapshots": []}
+        )
         # change signals (ADR 0011): Federal Register final rules and eCFR amendment dates, none by default
         r.get("https://www.federalregister.gov/api/v1/documents.json",
               params__contains={"conditions[type][]": "RULE"}).respond(json={"results": rules or []})  # fmt: skip

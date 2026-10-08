@@ -465,10 +465,28 @@
     "VaultConfig": {
       "additionalProperties": false,
       "properties": {
+        "community": {
+          "default": true,
+          "description": "Pull hash-verified snapshots of blocked official pages from the community library (ADR 0011 \u00a73).",
+          "title": "Community",
+          "type": "boolean"
+        },
+        "community_url": {
+          "default": "https://raw.githubusercontent.com/ris3abh/areao1-community-vault/main",
+          "description": "Where the community library's manifest.json lives.",
+          "title": "Community Url",
+          "type": "string"
+        },
         "enabled": {
           "default": true,
           "description": "Fetch the public sources listed in the vault manifest.",
           "title": "Enabled",
+          "type": "boolean"
+        },
+        "share_captures": {
+          "default": false,
+          "description": "Prepare captures of public government pages for the community library (written to a local outbox; nothing is uploaded).",
+          "title": "Share Captures",
           "type": "boolean"
         }
       },
