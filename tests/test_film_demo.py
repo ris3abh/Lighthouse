@@ -41,16 +41,31 @@ def test_maya_builds_offline_with_history_a_follow_up_and_a_verified_answer(film
     assert [d.drafted_by for d in ws.outreach().drafts] == ["follow-up"]
     assert ws.person().name == "Maya Chen" and ws.onboarding().status == "done"
     with TestClient(create_app(ws, allowed_hosts=["testserver"], engine=film.film_engine())) as c:
-        run_id = c.post(
-            "/api/agent/chat", headers={"X-AreaO1": "1"}, json={"message": "Where do I stand?"}
-        ).json()["run_id"]
-        for _ in range(100):
-            run = c.get(f"/api/agent/runs/{run_id}").json()
-            if run["status"] != "running":
-                break
-            anyio.run(anyio.sleep, 0.05)
-    assert run["status"] == "done" and film.RULE in run["text"]
-    assert [x["status"] for x in run["rule_check"]["claims"]] == ["verified"]
+        answers = []
+        for question in ("Where do I stand?", "And what should I do next?"):  # every question answered (B19)
+            run_id = c.post("/api/agent/chat", headers={"X-AreaO1": "1"}, json={"message": question}).json()[
+                "run_id"
+            ]
+            for _ in range(100):
+                run = c.get(f"/api/agent/runs/{run_id}").json()
+                if run["status"] != "running":
+                    break
+                anyio.run(anyio.sleep, 0.05)
+            answers.append(run)
+    for run in answers:
+        assert run["status"] == "done" and film.RULE in run["text"]
+        assert [x["status"] for x in run["rule_check"]["claims"]] == ["verified"]
+
+
+def test_offline_looks_like_a_real_outage(film, monkeypatch):
+    import socket
+
+    from areao1 import web
+
+    monkeypatch.setattr(socket, "getaddrinfo", socket.getaddrinfo)  # restored after the test
+    film.no_network()
+    with pytest.raises(web.UnsafeURL, match="can't resolve"):  # the app's own handling, as on a plane
+        web.check_url("https://www.uscis.gov/policy-manual")
 
 
 def test_the_keypress_invites(film, tmp_path):

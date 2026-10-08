@@ -49,7 +49,8 @@ def no_network() -> None:
     def local_only(host, *a, **k):  # type: ignore[no-untyped-def]
         if host in (None, "localhost", "127.0.0.1", "::1"):
             return real(host, *a, **k)
-        raise OSError(f"film_demo is offline (tried {host!r})")
+        # The same error a real outage gives (DNS can't resolve), so the app shows what it would offline.
+        raise socket.gaierror(socket.EAI_NONAME, f"film_demo is offline (tried {host!r})")
 
     socket.getaddrinfo = local_only  # type: ignore[assignment]
 
@@ -68,8 +69,9 @@ def fake_keychain() -> None:
     keyring.delete_password = lambda s, k: store.pop((s, k), None)
 
 
-def film_engine():  # type: ignore[no-untyped-def]
-    """The scripted engine: the same grounded chat answer, and a judge that verifies its rule sentence."""
+def film_engine(steps: list | None = None):  # type: ignore[no-untyped-def]
+    """The scripted engine: the same grounded chat answer to every question (not only the first), and a judge that
+    verifies its rule sentence. ``steps`` replaces the script (the QA suite adds an undoable chat action)."""
     from agent_fakes import FakeEngine
     from test_rulecheck import FakeJudge
 
@@ -78,15 +80,18 @@ def film_engine():  # type: ignore[no-untyped-def]
 
     judge = FakeJudge(rules=[(RULE[:40], QUOTE, "entails", None)], not_rules=["You have two banked"])
 
+    script = steps or [("tool", "get_scoreboard", {}), ("tool", "list_gaps", {}), ("text", ANSWER)]
+
     class FilmEngine(FakeEngine):
         async def run(self, request, tools, emit):  # type: ignore[no-untyped-def]
             if request.system_prompt.startswith(JUDGE_SYSTEM[:60]):
                 reply = await judge(request.system_prompt, request.prompt, request.model)
                 await emit(AgentEvent("usage", reply.usage))
                 return EngineResult(text=reply.text, cost_usd=0.0, stop_reason="end_turn")
+            self.script = list(script)  # every question gets the answer, not only the first (B19)
             return await super().run(request, tools, emit)
 
-    return FilmEngine([("tool", "get_scoreboard", {}), ("tool", "list_gaps", {}), ("text", ANSWER)], cost=0.0)
+    return FilmEngine(list(script), cost=0.0)
 
 
 def build(root: Path) -> None:

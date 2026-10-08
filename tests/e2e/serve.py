@@ -50,20 +50,9 @@ def engine():  # type: ignore[no-untyped-def]
     """The scripted engine: every chat reads the scoreboard, adds one deadline (an undoable chat action) and answers."""
     from film_demo import ANSWER, film_engine
 
-    from areao1.vault.rulecheck import JUDGE_SYSTEM
-
-    eng = film_engine()
-    steps = [("tool", "get_scoreboard", {}), ("tool", "add_deadline", {"title": "QA follow-up deadline", "due": "2026-12-01", "kind": "other"}),
-             ("text", ANSWER)]  # fmt: skip
-    base_run = eng.run
-
-    async def run(request, tools, emit):  # type: ignore[no-untyped-def]
-        if not request.system_prompt.startswith(JUDGE_SYSTEM[:60]):
-            eng.script = list(steps)  # the same scripted answer for every chat, not only the first
-        return await base_run(request, tools, emit)
-
-    eng.run = run  # type: ignore[method-assign]
-    return eng
+    return film_engine([("tool", "get_scoreboard", {}),
+                        ("tool", "add_deadline", {"title": "QA follow-up deadline", "due": "2026-12-01", "kind": "other"}),
+                        ("text", ANSWER)])  # fmt: skip
 
 
 def prepare(scenario: str, root: Path):  # type: ignore[no-untyped-def]
