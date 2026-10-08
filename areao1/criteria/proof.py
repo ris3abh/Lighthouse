@@ -54,10 +54,16 @@ def _has_keyword(text: str, item: RecipeItem) -> bool:
 
 
 def _matches_exhibit(item: RecipeItem, ex: Exhibit) -> bool:
+    """An activity matches when its type and stage both fit what the item names: a thank-you filed as a
+    judge_invite at "completed" is the completion, not the invitation, and an award notice isn't the certificate.
+    A document with no stage matches by its type."""
     m = item.match
-    return bool(
-        (m.evidence_types and ex.evidence_type in m.evidence_types) or (m.stages and ex.stage in m.stages)
-    )
+    if ex.stage is None:  # a document, not an activity: its type says what it is
+        return bool(m.evidence_types and ex.evidence_type in m.evidence_types)
+    if not m.evidence_types and not m.stages:
+        return False
+    types_ok = not m.evidence_types or ex.evidence_type in m.evidence_types
+    return types_ok and (not m.stages or ex.stage in m.stages)
 
 
 def _anchor_items(recipe: Recipe, evidence_type: str | None) -> bool:

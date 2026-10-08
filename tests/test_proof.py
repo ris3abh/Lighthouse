@@ -75,6 +75,20 @@ def test_a_checklist_appears_once_an_activity_reaches_a_stage_that_matters(ws):
     assert f"pipeline:{item.id}" in {a["anchor"] for a in proof.anchors(ws)}
 
 
+def test_an_item_with_a_stage_needs_the_activity_at_that_stage(ws):
+    thanks = _exhibit(ws, "Thank you for judging Example Hacks 2026", stage="completed", kind="judge_invite")
+    status = {i["id"]: i["status"] for i in _list(ws, f"exhibit:{thanks.id}")["items"]}
+    assert (
+        status["completion"] == "done" and status["invitation"] == "missing"
+    )  # typed judge_invite, but completed
+    cert = _exhibit(
+        ws, "Example Prize certificate", crit="awards", kind="award_certificate"
+    )  # a document, no stage
+    won = _exhibit(ws, "Won the Example Prize", stage="granted", crit="awards", kind="award_notice")
+    item = next(i for i in _list(ws, f"exhibit:{won.id}")["items"] if i["id"] == "certificate")
+    assert [s["id"] for s in item["suggestions"]] == [cert.id]  # matched by its type
+
+
 def test_items_are_done_only_by_exhibits_linked_uploaded_or_waived(ws):
     done = _exhibit(ws, "Judged Example Hacks 2026", stage="completed")
     page = _exhibit(ws, "Example Hacks 2026 judges page")
