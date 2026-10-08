@@ -1,5 +1,5 @@
 """Grounded drafting (SPEC §2a.2, §2a.3): every generated sentence that states a fact cites the approved claims it
-rests on, or it's dropped; no eligibility verdicts or approval probabilities; every draft carries the label.
+rests on, or it's dropped; no eligibility verdicts and no odds; every draft carries the label.
 
 Used by letter drafts (letters.py) and the review packet's outline (ADR 0020)."""
 
