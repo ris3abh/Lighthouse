@@ -58,17 +58,17 @@ tier2_domains: [uscourts.gov, supremecourt.gov, courtlistener.com]
 # final rules from USCIS / DHS matched by CFR part or terms, or an eCFR amendment of a listed section). Sources with
 # no signal (processing times, the Visa Bulletin) keep their freshness window.
 signals:
-  o1:
+  o1:  # part 214 covers every nonimmigrant class, so a rule must name O-1 or extraordinary ability
     terms: ["O-1", "O-1A", "extraordinary ability", "nonimmigrant classification for aliens of extraordinary"]
-    cfr_parts: [214]
+    cfr_parts: []
     ecfr_sections: ["214.2"]
   eb1:
     terms: ["EB-1", "EB-1A", "extraordinary ability", "first preference", "outstanding professors"]
     cfr_parts: [204]
     ecfr_sections: ["204.5"]
-  fees:
+  fees:  # part 106 is the fee schedule; part 103 is general procedure (bonds, public charge), not fees
     terms: ["fee schedule", "filing fee", "premium processing", "fee rule"]
-    cfr_parts: [103, 106]
+    cfr_parts: [106]
     ecfr_sections: ["106.2", "106.4"]
   forms:
     terms: ["Form I-129", "Form I-140", "I-129", "I-140", "form edition"]

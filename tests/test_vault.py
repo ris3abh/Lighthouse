@@ -598,3 +598,27 @@ def test_one_reminder_only_when_a_relevant_change_has_no_newer_snapshot_anywhere
 
     capture.capture(ws, "https://www.uscis.gov/i-129", "I-129", fresh.decode() + "<!-- visited -->")
     assert vault.lapsed_manual() == []
+
+
+def test_broad_cfr_parts_dont_count_as_o1_or_fee_changes(ws, pages):
+    """Found live: rules on bonds and public charge (part 103) and on another visa class (part 214) aren't changes
+    to O-1 pages or fees; only a rule naming them, or the fee schedule (part 106), is."""
+    from areao1.vault import signals
+
+    def rule(n, title, parts):
+        return {"document_number": n, "title": title, "abstract": "", "effective_on": "2026-08-01", "html_url": "x",
+                "cfr_references": [{"title": 8, "part": p} for p in parts]}  # fmt: skip
+
+    pages.router.routes.clear()
+    pages.install(rules=[rule("1", "Immigration Bonds; Technical Amendment", [103]),
+                         rule("2", "Changes for Lightering Vessel Crew Nonimmigrants", [214]),
+                         rule("3", "Fee Schedule Adjustment", [106]),
+                         rule("4", "Updates to the O-1 Classification", [214])])  # fmt: skip
+    vault = Vault(ws)
+    anyio.run(signals.check, vault, None)
+    got = sorted(
+        (e["id"].split(":")[1], e["signal"])
+        for e in signals.load(vault)["events"]
+        if e["feed"] == "federal_register"
+    )
+    assert got == [("3", "fees"), ("3", "forms"), ("4", "o1")]
