@@ -226,9 +226,13 @@ FIRST_BYTES = 2048  # "the first lines": enough for a greeting and the ask, neve
 BULK = "-category:promotions -category:social"
 
 
-def recent(emails: list[str], days: int, limit: int, seen: Any = None) -> list[dict[str, Any]]:
-    """Recent mail for the Mail view: everything in the last ``days`` (minus Gmail's Promotions and Social tabs)
-    plus anything to or from ``emails``, newest first, at most ``limit``. Headers for all of them; the first bytes
+def recent(
+    emails: list[str], days: int, limit: int, seen: Any = None, bulk_terms: str = ""
+) -> list[dict[str, Any]]:
+    """Recent mail for the Mail view: everything in the last ``days`` (minus Gmail's Promotions and Social tabs),
+    the mail in those two tabs that matches ``bulk_terms`` (Gmail search terms: organizers file invitations there
+    too), and anything to or from ``emails``; newest first. ``limit`` caps the plain recent mail only: contact
+    and keyword matches are always included. Headers for all of them; the first bytes
     of the text only for messages ``seen`` (a callable on the Gmail message ID) hasn't seen, so the classifier can
     read their first lines. Read-only mailbox, PEEK fetches only: nothing turns read, nothing is moved or labelled.
     Returned in memory; the caller decides what (if anything) is kept."""
@@ -238,14 +242,24 @@ def recent(emails: list[str], days: int, limit: int, seen: Any = None) -> list[d
     safe = [e for e in emails if re.fullmatch(r"[^@\s\"\\()]+@[^@\s\"\\()]+", e)]
     with session() as conn:
         conn.select(_all_mail(conn), readonly=True)
-        uids: set[int] = set()
-        for raw in [
-            f"newer_than:{days}d {BULK}",
-            *(f"from:{e} OR to:{e} OR cc:{e} newer_than:{days}d" for e in safe),
-        ]:
+
+        def search(raw: str) -> set[int]:
             _, data = conn.uid("SEARCH", "X-GM-RAW", f'"{raw}"')
-            uids |= {int(u) for u in (data[0] or b"").split()}
-        newest = sorted(uids, reverse=True)[:limit]
+            return {int(u) for u in (data[0] or b"").split()}
+
+        general = search(f"newer_than:{days}d {BULK}")
+        matched: set[int] = set()  # contacts and keyword hits are never cut by ``limit``
+        tabs = (
+            search(f"newer_than:{days}d (category:promotions OR category:social) ({bulk_terms})")
+            if bulk_terms
+            else set()
+        )
+        matched |= tabs
+        for e in safe:
+            matched |= search(f"from:{e} OR to:{e} OR cc:{e} newer_than:{days}d")
+        tabs -= general | (matched - tabs)  # found only in Promotions / Social
+        newest = sorted(matched | set(sorted(general - matched, reverse=True)[: max(0, limit - len(matched))]),
+                        reverse=True)  # fmt: skip
         out: dict[int, dict[str, Any]] = {}
         for i in range(0, len(newest), BATCH):
             batch = ",".join(str(u) for u in newest[i : i + BATCH])
@@ -265,7 +279,7 @@ def recent(emails: list[str], days: int, limit: int, seen: Any = None) -> list[d
                                                               "Content-Transfer-Encoding")}  # fmt: skip
                 out[int(uid.group(1))] = {"id": gm.group(1).decode(), "thread_id": format(int(meta.group(1)), "x"),
                                           "at": _internaldate(meta.group(2).decode()), "headers": headers,
-                                          "first_lines": ""}  # fmt: skip
+                                          "first_lines": "", "bulk": int(uid.group(1)) in tabs}  # fmt: skip
         unseen = [u for u, m in out.items() if seen is None or not seen(m["id"])]
         for i in range(0, len(unseen), BATCH):
             batch = ",".join(str(u) for u in unseen[i : i + BATCH])

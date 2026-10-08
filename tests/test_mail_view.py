@@ -243,3 +243,69 @@ def test_model_sorting_is_off_by_default_and_a_setting(ws, people, fake):
     view = c.get("/api/mail").json()
     assert (view["unsorted"], view["model_sorting"]) == (2, False)
     assert "Quick question" not in (ws.root / "data" / "mail.json").read_text()  # unsorted mail isn't kept
+
+
+def test_organizer_mail_in_the_promotions_tab_is_still_sorted(ws, people, fake):
+    """A hackathon platform's notices often land in Promotions: the tab is searched for rule keywords and organizer
+    domains only, and the rules decide. Plain promotions stay unread."""
+    fake.add(1, D, "Example Hacks <team@examplehacks.test>", "alex@gmail.com",
+             "ExampleHacks 2026 x Platform: Spring Hackathon: Registration confirmed", tab="promotions")  # fmt: skip
+    fake.add(
+        2,
+        D,
+        "Judges <judges@examplehacks.test>",
+        "alex@gmail.com",
+        "Judge applications are open",
+        tab="social",
+    )
+    fake.add(3, D, "Devpost <no-reply@devpost.com>", "alex@gmail.com", "Your weekly picks", tab="promotions")
+    fake.add(4, D, "Shop <deals@shop.example>", "alex@gmail.com", "50% off everything", tab="promotions")
+    fake.add(
+        5,
+        D,
+        "Brand <news@brand.example>",
+        "alex@gmail.com",
+        "Stream the keynote, then judge for yourself",
+        tab="promotions",
+    )  # fmt: skip  (a judge keyword gets it fetched; "keynote" alone can't sort it)
+    fake.add(6, D, "Studio <tv@studio.example>", "alex@gmail.com", "Award-nominated shows", tab="promotions")
+    anyio.run(mailview.sync, ws, None)
+    by = {i.subject: (i.category, i.why) for i in ws.mailbox().items}
+    assert by["ExampleHacks 2026 x Platform: Spring Hackathon: Registration confirmed"][0] == "judging"
+    assert by["Judge applications are open"][0] == "judging"
+    assert by["Your weekly picks"] == ("judging", "organizer domain devpost.com")
+    assert "50% off everything" not in by and "Award-nominated shows" not in by
+    assert (
+        by["Stream the keynote, then judge for yourself"][0] == "judging"
+    )  # judging words are trusted there
+    searched = [
+        c[3]
+        for c in fake.commands
+        if c[:3] == ("UID", "SEARCH", "X-GM-RAW") and "category:promotions OR" in c[3]
+    ]
+    assert len(searched) == 1 and "subject:hackathon" in searched[0] and "from:devpost.com" in searched[0]
+    fetched = {
+        int(u)
+        for c in fake.commands
+        if c[:2] == ("UID", "FETCH") and "HEADER.FIELDS" in c[3]
+        for u in c[2].split(",")
+    }
+    assert 4 not in fetched  # the plain promotion was never fetched
+
+
+def test_the_cap_never_drops_contact_or_keyword_mail(ws, people, fake, monkeypatch):
+    monkeypatch.setattr(mailview, "LIMIT", 3)
+    fake.add(1, D, "Omar Haddad <omar@mlh.example>", "alex@gmail.com", "Older note")
+    fake.add(
+        2,
+        D,
+        "Platform <team@examplehacks.test>",
+        "alex@gmail.com",
+        "Spring Hackathon: you're in",
+        tab="promotions",
+    )
+    for n in range(3, 9):  # newer plain mail, more than the cap
+        fake.add(n, D, f"News {n} <n{n}@digest.example>", "alex@gmail.com", f"Digest {n}")
+    anyio.run(mailview.sync, ws, None)
+    kept = {i.subject for i in ws.mailbox().items}
+    assert kept == {"Older note", "Spring Hackathon: you're in"}

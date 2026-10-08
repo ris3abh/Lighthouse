@@ -59,6 +59,19 @@ DOMAINS: dict[str, str] = {
     "editorialmanager.com": "reviewer", "manuscriptcentral.com": "reviewer", "scholarone.com": "reviewer",
     "sessionize.com": "invites", "papercall.io": "invites", "hopin.com": "invites",
 }  # fmt: skip
+# Promotions and Social are skipped, except mail matching these (organizers' invitations land there too, e.g. a
+# hackathon platform's notices). A coarse Gmail search; the rules above still decide.
+BULK_WORDS = ("hackathon", "judge", "judging", "jury", "juror", "referee", "manuscript", "reviewer")
+BULK_CATEGORIES = (
+    "judging",
+    "reviewer",
+)  # what a keyword alone can sort from those tabs; the rest is marketing
+
+
+def bulk_terms() -> str:
+    return " OR ".join([*(f"subject:{w}" for w in BULK_WORDS), *(f"from:{d}" for d in DOMAINS)])
+
+
 FREEMAIL = (
     "gmail.com",
     "googlemail.com",
@@ -132,7 +145,7 @@ def by_rules(msg: dict[str, Any], rules: list[MailRule], contacts: dict[str, Con
         return "contacts", "rule", f"contact: {c.name}"
     if sender and sender != me and (d := _domain_rule(sender)):
         return d[0], "rule", f"organizer domain {d[1]}"
-    if kw:
+    if kw and (not msg.get("bulk") or kw[0] in BULK_CATEGORIES):  # "keynote" in a promotion is marketing
         return kw[0], "rule", f"subject says {kw[1]!r}"
     return None
 
@@ -182,7 +195,9 @@ async def sync(ws: Case, mundane: Any = None, days: int = LOOKBACK_DAYS) -> dict
     seen = set(box.seen) | {_hash(i.id) for i in box.items}
     contacts = {e: c for c in ws.contacts().contacts for e in c.emails}
     me = mail.address()
-    msgs = mail.recent(sorted(contacts), days, LIMIT, seen=lambda gm: _hash(gm) in seen)
+    msgs = mail.recent(
+        sorted(contacts), days, LIMIT, seen=lambda gm: _hash(gm) in seen, bulk_terms=bulk_terms()
+    )
     new = [m for m in msgs if _hash(m["id"]) not in seen]
     kept: list[MailItem] = []
     pending: list[dict[str, Any]] = []

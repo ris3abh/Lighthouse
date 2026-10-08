@@ -37,7 +37,7 @@ limits are Area O1's own rules, each covered by tests:
   attachments, and nothing turns read. Each contact's last touch follows their newest thread.
 - **The Mail view** (Contacts > Mail): case-relevant mail only, in seven categories (Invites, Judging &
   hackathons, Reviewer requests, Letter writers, Press & media, Awards & memberships, Other contact threads).
-  Press **Refresh mail** to read the last 30 days (Promotions and Social skipped): headers, plus the first lines
+  Press **Refresh mail** to read the last 30 days (Promotions and Social skipped, except mail there about judging, hackathons or reviewing, or from a known organizer): headers, plus the first lines
   of new messages so they can be sorted. Rules sort first (your contacts, known organizer domains, subject
   keywords, and senders you taught by moving a message). What no rule sorts stays unshown, unless you turn on
   **model sorting** (Settings > Gmail, off by default): then it goes to the small, cheap model tier, redacted. Area O1 keeps who, when and the redacted subject of case mail and nothing at all of the rest. Opening

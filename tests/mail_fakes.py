@@ -109,6 +109,13 @@ class FakeGmail:
                 if command == "SEARCH":
                     assert args[0] == "X-GM-RAW"
                     raw = args[1].strip('"')
+                    if "(category:promotions OR category:social)" in raw:  # the tabs, keyword-filtered
+                        words = re.findall(r"subject:(\w+)", raw)
+                        domains = re.findall(r"from:([\w.-]+\.\w+)(?=\s|\))", raw)
+                        hits = [str(m.uid) for m in gmail.messages if m.tab in ("promotions", "social")
+                                and (any(w in m.subject.lower() for w in words)
+                                     or any(a.endswith("@" + d) or a.endswith("." + d) for a in m.addresses() for d in domains))]  # fmt: skip
+                        return "OK", [" ".join(hits).encode()]
                     wanted = set(re.findall(r"(?:from|to|cc):(\S+)", raw))
                     hidden = set(re.findall(r"-category:(\w+)", raw))
                     hits = [str(m.uid) for m in gmail.messages
