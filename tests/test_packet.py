@@ -174,3 +174,21 @@ def test_the_ui_builds_a_review_packet_and_never_a_petition():
     assert "Build review packet" in ui and LABEL in ui
     for verb in ("Generate petition", "Submit", "File petition", "File with", "petition generator"):
         assert verb.lower() not in ui.lower(), verb
+
+
+def test_the_merits_section_is_named_for_the_profile(ws):
+    _case(ws)
+
+    def texts(m):
+        out = ws.root / "exports" / m["name"]
+        pdf = "\n".join(page.extract_text() for page in PdfReader(out / "packet.pdf").pages[:8])
+        with zipfile.ZipFile(out / "packet.docx") as z:
+            return pdf, z.read("word/document.xml").decode()
+
+    pdf, doc = texts(packet.build(ws))  # O-1A: the totality of the evidence
+    assert "Totality of the evidence" in pdf and "Totality of the evidence" in doc
+    assert "Final merits" not in pdf and "Final merits" not in doc
+    c = TestClient(create_app(ws, allowed_hosts=["testserver"]))
+    c.put("/api/profile", headers=W, json={"id": "eb1a"})
+    pdf, doc = texts(packet.build(ws))  # EB-1A keeps its final merits step
+    assert "Final merits" in pdf and "Final merits" in doc and "Totality of the evidence" not in pdf

@@ -335,6 +335,17 @@ class Packet:
     profile: str
     as_of: datetime
     input_hash: str = ""
+    profile_id: str = "o1a"
+
+    @property
+    def merits_title(self) -> str:
+        """EB-1A has a final merits step (Kazarian); O-1A weighs the totality of the evidence."""
+        return "Final merits" if self.profile_id == "eb1a" else "Totality of the evidence"
+
+    @property
+    def sections(self) -> tuple[str, ...]:
+        return ("Contents", "Exhibit index", "Claim, exhibit, page and quote", "Outline", self.merits_title,
+                "Open preflight issues")  # fmt: skip
 
 
 def _styles() -> Any:
@@ -357,10 +368,6 @@ def _styles() -> Any:
             "h3", parent=ss["BodyText"], fontName="Helvetica-Bold", fontSize=9.5, leading=13, spaceBefore=6
         ),
     }
-
-
-SECTIONS = ("Contents", "Exhibit index", "Claim, exhibit, page and quote", "Outline", "Final merits",
-            "Open preflight issues")  # fmt: skip
 
 
 def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str, int]]:
@@ -403,7 +410,7 @@ def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str
                        para("Built by Area O1 from the person's workspace for attorney review. It is not a petition, "
                             "it is not legal advice, and it makes no eligibility determination.", "small"),
                        PageBreak(), section("Contents")]  # fmt: skip
-    for name in SECTIONS[1:]:
+    for name in p.sections[1:]:
         page = toc.get(name)
         flow.append(para(f"{name} {'.' * 8} page {page}" if page else name))
     flow.append(para(f"Exhibits {'.' * 8} pages {p.items[0].start}–{p.items[-1].start + p.items[-1].pages - 1}"
@@ -453,7 +460,7 @@ def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str
             Paragraph(escape(text) + (f"<super>{','.join(marks)}</super>" if marks else ""), st["body"])
         )
     flush()
-    flow += [PageBreak(), section("Final merits")]
+    flow += [PageBreak(), section(p.merits_title)]
     if p.merits is not None:
         flow.append(para(p.merits.framing, "small"))
         flow.append(table(["Theme", "Status", "Why", "Rule"],
@@ -616,7 +623,7 @@ def docx(p: Packet) -> bytes:
             notes.append(note)
             refs += f'<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteReference w:id="{len(notes)}"/></w:r>'
         body.append(f"<w:p>{_run(text)}{refs}</w:p>")
-    body.append(_p("Final merits", "Heading1"))
+    body.append(_p(p.merits_title, "Heading1"))
     if p.merits is not None:
         body.append(_p(p.merits.framing))
         body.append(
@@ -798,7 +805,8 @@ def gather(ws: Any, vault: Any = None) -> Packet:
     except Exception:  # final merits is a summary here; its absence never stops the packet
         merits = None
     p = Packet(items=items, rows=rows, outline=text, dropped=dropped, issues=issues, merits=merits,
-               person=ws.person().name, profile=ws.profile().name, as_of=as_of(ws, items))  # fmt: skip
+               person=ws.person().name, profile=ws.profile().name, as_of=as_of(ws, items),
+               profile_id=ws.profile().id)  # fmt: skip
     p.input_hash = input_hash(ws, p)
     return p
 

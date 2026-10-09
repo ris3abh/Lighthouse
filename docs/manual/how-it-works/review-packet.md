@@ -26,7 +26,7 @@ export (ZIP)** and **Matrix (CSV)**.
 | Exhibit index | Exhibits by criterion: number, title, date, type, stage and page range in the PDF. |
 | Claim, exhibit, page and quote | Every approved fact an exhibit cites, the exhibit, the page its quote is on, and the quote. |
 | Outline | One sentence per approved fact, each ending with its exhibit and a footnote. |
-| Final merits | The themes and the standard from [Final merits](../tour/merits.md). |
+| Totality of the evidence (O-1A) or Final merits (EB-1A) | The themes and the standard from [Final merits](../tour/merits.md). |
 | Open preflight issues | What [preflight](preflight.md) found and you haven't dismissed. |
 | Exhibits | Each exhibit behind a cover sheet: PDFs as they are, images placed on a page, text captures typeset. |
 
