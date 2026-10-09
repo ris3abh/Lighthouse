@@ -47,3 +47,25 @@ PDFs has is the provenance chain: claim to exhibit to the page and quote.
 - The packet is a snapshot: it doesn't update when the workspace changes. Building again writes a new folder;
   the same inputs give the same files.
 - "Petition", "file" and "submit" stay out of the UI's verbs; the guard test checks the labels.
+
+## Amendment (2026-10-08, after Checkpoint B)
+
+The first outline wrote each sentence from the claim's raw parts ("Maya Chen: award received 17, Exhibit C1-01.
+[clm_…]"), which read as a template and leaked ids. Now:
+
+- **One plain sentence per approved claim**, from a template chosen by the exhibit's evidence type and the claim's
+  predicate (`areao1/criteria/sentences.py`): "Maya received the Northwind Engineering Excellence Award in 2024
+  (Exhibit C1-01)." A template fires only when its predicate is the exhibit's headline fact (it must match the
+  whole predicate, so `award_selectivity` never becomes "received 3 of 412 nominees") and every slot it needs
+  reads as words. A count whose unit is known gets a metric sentence ("FastQueue had 4,800 GitHub stars as of
+  September 2025"); anything else quotes the exhibit ("Exhibit C1-01 states: “…”"), which is always true to it.
+- **Claim ids become footnotes** in the .docx (real Word footnotes) and the PDF (numbered notes under each
+  criterion): each says the exhibit, the page, the packet page and the quote. Full ids appear only in
+  `matrix.csv` and in the machine-readable provenance files. The matrix's claim column uses the same sentence.
+- The grounding rule is unchanged: every sentence is built from exactly one approved, current claim and cites it;
+  any sentence that reads as an eligibility verdict is dropped, even when it's a quote.
+- A guard (`sentences.problems`) names what would make a line unreadable: an unfilled slot, `None`, a raw id, a
+  snake_case word, or a predicate spelled out before a number. The tests run it over every template and value
+  shape, and over every reader-facing line of Maya's and Ravi's packets.
+- In the packet's issue table, a low-severity rule with more than three issues is one row naming the first few;
+  `preflight.json` keeps every issue.

@@ -22,6 +22,11 @@ VERDICT = re.compile(
 FRAME = re.compile(r"^(dear\b|to whom it may concern|sincerely|respectfully|regards|best\b|#|\[)", re.I)
 
 
+def is_verdict(sentence: str) -> bool:
+    """An eligibility verdict or a probability, in anyone's voice."""
+    return bool(VERDICT.search(sentence) or guard_answer(sentence)[1])
+
+
 def cited_ids(sentence: str) -> list[str]:
     return [i.strip() for m in CITE.finditer(sentence) for i in m.group(1).split(",")]
 
@@ -38,7 +43,7 @@ def keep_grounded(text: str, allowed: set[str]) -> tuple[str, list[str], list[st
             r"(?<=[.!?\]])\s+(?=[A-Z]|\[(?!clm_))", para.strip()
         ):  # a citation stays with its sentence
             ids = cited_ids(sentence)
-            if VERDICT.search(sentence) or guard_answer(sentence)[1]:
+            if is_verdict(sentence):
                 dropped.append(sentence)  # never an eligibility verdict or a probability, in anyone's voice
             elif FRAME.match(sentence.strip()) or (sentence.strip().startswith("[") and not ids):
                 out.append(sentence)  # greeting, closing, heading, a placeholder for the writer

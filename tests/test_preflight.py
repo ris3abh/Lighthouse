@@ -57,13 +57,13 @@ def test_a_document_citing_a_superseded_value_and_two_documents_disagreeing(ws):
         and sup[0]["severity"] == "high"
         and sup[0]["title"] == "Example Weekly profile cites an outdated value"
     )
-    assert "1840 (2025-06-01) is now 2100 (2026-09-01)" in sup[0]["detail"]
+    assert "1,840 (2025-06-01) is now 2,100 (2026-09-01)" in sup[0]["detail"]
     assert {r["id"] for r in sup[0]["refs"]} == {press.id, old.id, new.id}
     [mm] = [i for i in report["issues"] if i["kind"] == "metric_mismatch"]
     assert (
         mm["severity"] == "medium"
-        and "1840 (2025-06-01)" in mm["detail"]
-        and "2100 (2026-09-01)" in mm["detail"]
+        and "1,840 (2025-06-01)" in mm["detail"]
+        and "2,100 (2026-09-01)" in mm["detail"]
     )
     assert {r["type"] for r in mm["refs"]} >= {"exhibit", "letter", "claim"}
     assert all(r["link"] for r in mm["refs"])  # every ref links to its page

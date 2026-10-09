@@ -132,6 +132,13 @@ class _Ctx:
         return sorted(d for d, ids in self.cites.items() if claim_id in ids)
 
 
+def shown_value(v: Any) -> str:
+    """A value as a reader sees it (52,000, not 52000)."""
+    from areao1.criteria.sentences import plain
+
+    return plain(v) or str(v)
+
+
 def _issue(
     kind: str, severity: str, title: str, detail: str, refs: list[dict[str, Any]], *key: str
 ) -> dict[str, Any]:
@@ -155,7 +162,7 @@ def superseded_cited(x: _Ctx) -> list[dict[str, Any]]:
         ref = x.doc_ref(doc)
         pairs = [(cid, x.head(cid)) for cid in old]
         shown = "; ".join(
-            f"{x.claims[o].value} ({x.when(o)}) is now {x.claims[n].value} ({x.when(n)})"
+            f"{shown_value(x.claims[o].value)} ({x.when(o)}) is now {shown_value(x.claims[n].value)} ({x.when(n)})"
             for o, n in pairs[:3]
         )
         more = f"; and {len(pairs) - 3} more" if len(pairs) > 3 else ""
@@ -277,7 +284,7 @@ def metric_mismatch(x: _Ctx) -> list[dict[str, Any]]:
         ent = x.entities.get(subject)
         docs = sorted({d for cid in ids for d in x.documents_citing(cid)})
         shown = "; ".join(
-            f"{v} ({', '.join(x.when(c) for c in cs)})"
+            f"{shown_value(v)} ({', '.join(x.when(c) for c in cs)})"
             for v, cs in sorted(by_value.items(), key=lambda kv: str(kv[0]))
         )
         out.append(_issue("metric_mismatch", "medium",

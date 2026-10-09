@@ -6,8 +6,9 @@
 - A table of contents and a per-criterion exhibit index with each exhibit's page range in the review PDF.
 - The claim -> exhibit -> page/quote matrix: for every approved claim an exhibit cites, the page the quote is on
   (found by searching the exhibit's text; "not found" when it isn't, never guessed).
-- An outline drafted only from approved claims: every sentence ends with the claim ids behind it; anything else,
-  and any eligibility verdict, is dropped (grounding.keep_grounded).
+- An outline drafted only from approved claims, one plain sentence per claim from a template for its evidence type
+  (sentences.py), each ending with its exhibit and a footnote that gives the page and the quote. Claim ids appear only
+  in matrix.csv (and the machine-readable provenance); any eligibility verdict is dropped (grounding).
 - The open preflight issues (ADR 0018) and the final-merits summary (ADR 0019).
 
 Outputs go to ``exports/packet-<as of>-<input hash>/``: packet.docx (Office Open XML written here), packet.pdf
@@ -32,7 +33,8 @@ from xml.sax.saxutils import escape
 
 from areao1.core import clock
 from areao1.core.models import NON_EVIDENTIARY_TIERS, Claim, Exhibit
-from areao1.criteria.grounding import LABEL, keep_grounded
+from areao1.criteria import sentences
+from areao1.criteria.grounding import CITE, LABEL, is_verdict
 
 IMAGES = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 TEXTS = {".md", ".txt", ".html", ".htm", ".csv", ".eml", ".json"}
@@ -73,6 +75,22 @@ class Row:
     @property
     def packet_page(self) -> int | None:
         return self.item.start + self.page if self.page else None
+
+    def fact(self, person: str) -> sentences.Fact:
+        e = self.item.exhibit
+        return sentences.Fact(person=sentences.first_name(person), predicate=self.claim.predicate,
+                              value=self.claim.value, evidence_type=e.evidence_type, exhibit=self.item.number,
+                              excerpt=self.claim.excerpt, on=self.claim.event_date or e.date,
+                              org=e.organization.strip(), work=self.subject)  # fmt: skip
+
+    def where(self) -> str:
+        """The footnote: where the quote is, and the quote."""
+        if self.page:
+            at = f"Exhibit {self.item.number}, page {self.page}" + (f" (packet page {self.packet_page})"
+                                                                     if self.item.start else "")  # fmt: skip
+        else:
+            at = f"Exhibit {self.item.number} (the quote wasn't found in its text)"
+        return f"{at}: “{sentences._clip(self.claim.excerpt)}”"
 
 
 # ------------------------------------------------------------------------------------------------------- inputs
@@ -143,24 +161,61 @@ def _value(v: Any) -> str:
     return v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
 
 
-def outline(items: list[Item], rows: list[Row]) -> tuple[str, list[str], list[str]]:
-    """An outline from approved claims only, one sentence per claim, each citing it. Returns (text, cited, dropped)."""
+def outline(items: list[Item], rows: list[Row], person: str = "") -> tuple[str, list[str], list[str]]:
+    """An outline from approved claims only: one sentence per claim, from its evidence type's template, ending with
+    ``[claim id]`` (the renderers turn it into a footnote). Returns (text, cited, dropped)."""
     lines = [f"# Outline ({LABEL.lower()})", ""]
     by_crit: dict[str, list[Row]] = {}
-    order: list[str] = []
     for r in rows:
-        if r.item.criterion not in by_crit:
-            order.append(r.item.criterion)
         by_crit.setdefault(r.item.criterion, []).append(r)
-    for crit in order:
+    cited, dropped = [], []
+    for crit, mine in by_crit.items():
         lines.append(f"## {crit}")
-        for r in by_crit[crit]:
-            when = f" ({r.claim.event_date.isoformat()})" if r.claim.event_date else ""
-            fact = f"{r.subject}: {r.claim.predicate.replace('_', ' ')} {_value(r.claim.value)}{when}"
-            lines.append(f"{fact.rstrip('.')}, Exhibit {r.item.number}. [{r.claim.id}]")
+        for r in mine:
+            text = sentences.sentence(r.fact(person))
+            if is_verdict(text):
+                dropped.append(text)  # never an eligibility verdict, even quoted
+                continue
+            lines.append(f"{text} [{r.claim.id}]")
+            cited.append(r.claim.id)
         lines.append("")
-    allowed = {r.claim.id for r in rows}
-    return keep_grounded("\n".join(lines), allowed)
+    return "\n".join(lines).strip(), cited, dropped
+
+
+def footnoted(outline_text: str, rows: list[Row]) -> list[tuple[str, str, list[str]]]:
+    """The outline as (kind, text, footnotes) lines: kind is "h2" or "p"; each sentence's claim ids become
+    footnotes saying where the quote is. Numbering runs through the outline."""
+    by_id = {r.claim.id: r for r in rows}
+    out: list[tuple[str, str, list[str]]] = []
+    for line in outline_text.splitlines():
+        if line.startswith("## "):
+            out.append(("h2", line[3:], []))
+        elif line.strip() and not line.startswith("# "):
+            ids = [i.strip() for m in CITE.finditer(line) for i in m.group(1).split(",")]
+            out.append(("p", CITE.sub("", line).rstrip(), [by_id[i].where() for i in ids if i in by_id]))
+    return out
+
+
+def grouped(issues: list[dict[str, Any]], most: int = 3) -> list[dict[str, Any]]:
+    """The issues for a reader: a low-severity rule with more than ``most`` issues becomes one row naming the first
+    few (preflight.json keeps every one)."""
+    by_rule: dict[str, list[dict[str, Any]]] = {}
+    for i in issues:
+        by_rule.setdefault(i.get("kind", i["id"]), []).append(i)
+    out: list[dict[str, Any]] = []
+    for i in issues:
+        same = by_rule[i.get("kind", i["id"])]
+        if i["severity"] != "low" or len(same) <= most:
+            out.append(i)
+        elif i is same[0]:
+            names = "; ".join(x["title"] for x in same[:most])
+            out.append({"severity": "low", "title": f"{len(same)} similar issues",
+                        "detail": f"{names}; and {len(same) - most} more (all in preflight.json)."})  # fmt: skip
+    return out
+
+
+def humanize(slug: str) -> str:
+    return slug.replace("_", " ")
 
 
 def _sha(path: Path) -> str:
@@ -347,7 +402,7 @@ def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str
     for crit in crits:
         flow.append(Paragraph(escape(crit), st["h2"]))
         flow.append(table(["No.", "Title", "Date", "Type", "Stage", "Pages"],
-                          [[it.number, it.exhibit.title, it.exhibit.date.isoformat(), it.exhibit.evidence_type,
+                          [[it.number, it.exhibit.title, it.exhibit.date.isoformat(), humanize(it.exhibit.evidence_type),
                             it.exhibit.stage or "", it.range if it.start else ""] for it in p.items if it.criterion == crit],
                           [48, 190, 62, 92, 60, 52]))  # fmt: skip
         flow.append(Spacer(1, 10))
@@ -356,21 +411,35 @@ def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str
                   "and the quote itself. \"Not found\" means the quote isn't in the exhibit's text (a scan, an image); "
                   "the page is never guessed.", "small"), Spacer(1, 6)]  # fmt: skip
     flow.append(table(["Claim", "Exhibit", "Page", "Quote"],
-                      [[f"{r.subject}: {r.claim.predicate.replace('_', ' ')} = {_value(r.claim.value)} ({r.claim.id})",
-                        r.item.number, f"p. {r.page} · packet {r.packet_page}" if r.page and r.item.start else
+                      [[sentences.label(r.fact(p.person)), r.item.number, f"p. {r.page} · packet {r.packet_page}" if r.page and r.item.start else
                         (f"p. {r.page}" if r.page else "not found"), r.claim.excerpt[:400]] for r in p.rows]
                       or [["No approved claims are cited yet.", "", "", ""]],
                       [170, 50, 70, 214]))  # fmt: skip
     flow += [PageBreak(), section("Outline"), para(LABEL, "label"),
              para("Drafted from approved claims only. Each sentence ends with the claims behind it; anything else was "
                   "left out. A starting point for the attorney to rewrite.", "small"), Spacer(1, 6)]  # fmt: skip
-    for line in p.outline.splitlines():
-        if line.startswith("## "):
-            flow.append(Paragraph(escape(line[3:]), st["h2"]))
-        elif line.startswith("# ") or not line.strip():
+    notes: list[str] = []
+
+    def flush() -> None:
+        for k, note in enumerate(notes, len(seen) - len(notes) + 1):
+            flow.append(Paragraph(f"<super>{k}</super> {escape(note)}", st["small"]))
+        notes.clear()
+
+    seen: list[str] = []
+    for kind, text, foot in footnoted(p.outline, p.rows):
+        if kind == "h2":
+            flush()
+            flow.append(Paragraph(escape(text), st["h2"]))
             continue
-        else:
-            flow.append(para(line))
+        marks = []
+        for note in foot:
+            seen.append(note)
+            notes.append(note)
+            marks.append(str(len(seen)))
+        flow.append(
+            Paragraph(escape(text) + (f"<super>{','.join(marks)}</super>" if marks else ""), st["body"])
+        )
+    flush()
     flow += [PageBreak(), section("Final merits")]
     if p.merits is not None:
         flow.append(para(p.merits.framing, "small"))
@@ -382,7 +451,7 @@ def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str
                               [[s.text, s.title or s.source_id, s.status] for s in p.merits.standard], [262, 182, 60]))  # fmt: skip
     flow += [PageBreak(), section("Open preflight issues")]
     flow.append(table(["Severity", "Issue", "Detail"],
-                      [[i["severity"], i["title"], i.get("detail", "")] for i in p.issues]
+                      [[i["severity"], i["title"], i.get("detail", "")] for i in grouped(p.issues)]
                       or [["", "No open issues.", ""]], [56, 170, 278]))  # fmt: skip
     buf = io.BytesIO()
     doc = Doc(buf, pagesize=letter, invariant=1, title="Review packet", author="Area O1", subject=LABEL,
@@ -404,7 +473,7 @@ def _cover_sheet(it: Item) -> bytes:
     y = h - 200
     e = it.exhibit
     for line in (e.title, it.criterion, f"Date {e.date.isoformat()}" + (" (unconfirmed)" if e.date_unconfirmed else ""),
-                 f"Type {e.evidence_type}" + (f" · stage {e.stage}" if e.stage else ""), e.organization or "",
+                 f"Type {humanize(e.evidence_type)}" + (f" · stage {e.stage}" if e.stage else ""), e.organization or "",
                  e.source_url or ""):  # fmt: skip
         if line:
             c.drawString(72, y, line[:95])
@@ -516,19 +585,23 @@ def docx(p: Packet) -> bytes:
     for crit in dict.fromkeys(it.criterion for it in p.items):
         body.append(_p(crit, "Heading2"))
         body.append(_tbl(["No.", "Title", "Date", "Type", "Stage", "Pages"],
-                         [[it.number, it.exhibit.title, it.exhibit.date.isoformat(), it.exhibit.evidence_type,
+                         [[it.number, it.exhibit.title, it.exhibit.date.isoformat(), humanize(it.exhibit.evidence_type),
                            it.exhibit.stage or "", it.range] for it in p.items if it.criterion == crit]))  # fmt: skip
     body.append(_p("Claim, exhibit, page and quote", "Heading1"))
     body.append(_tbl(["Claim", "Exhibit", "Page", "Quote"],
-                     [[f"{r.subject}: {r.claim.predicate.replace('_', ' ')} = {_value(r.claim.value)} ({r.claim.id})",
-                       r.item.number, f"p. {r.page} (packet {r.packet_page})" if r.page else "not found", r.claim.excerpt]
+                     [[sentences.label(r.fact(p.person)), r.item.number, f"p. {r.page} (packet {r.packet_page})" if r.page else "not found", r.claim.excerpt]
                       for r in p.rows]))  # fmt: skip
     body += [_p("Outline", "Heading1"), _p(LABEL, "Label")]
-    for line in p.outline.splitlines():
-        if line.startswith("## "):
-            body.append(_p(line[3:], "Heading2"))
-        elif line.strip() and not line.startswith("# "):
-            body.append(_p(line))
+    notes: list[str] = []
+    for kind, text, foot in footnoted(p.outline, p.rows):
+        if kind == "h2":
+            body.append(_p(text, "Heading2"))
+            continue
+        refs = ""
+        for note in foot:
+            notes.append(note)
+            refs += f'<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteReference w:id="{len(notes)}"/></w:r>'
+        body.append(f"<w:p>{_run(text)}{refs}</w:p>")
     body.append(_p("Final merits", "Heading1"))
     if p.merits is not None:
         body.append(_p(p.merits.framing))
@@ -542,7 +615,7 @@ def docx(p: Packet) -> bytes:
     body.append(
         _tbl(
             ["Severity", "Issue", "Detail"],
-            [[i["severity"], i["title"], i.get("detail", "")] for i in p.issues],
+            [[i["severity"], i["title"], i.get("detail", "")] for i in grouped(p.issues)],
         )
     )
     sect = ('<w:sectPr><w:headerReference w:type="default" r:id="rIdHeader"/>'
@@ -558,6 +631,17 @@ def docx(p: Packet) -> bytes:
               '</w:pPr>' + _run("Page ") + '<w:fldSimple w:instr="PAGE">' + _run("1") + "</w:fldSimple>" + _run(" of ")
               + '<w:fldSimple w:instr="NUMPAGES">' + _run("1") + "</w:fldSimple></w:p></w:ftr>")  # fmt: skip
 
+    footnotes = (f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:footnotes {W_NS}>'
+                 '<w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>'
+                 '<w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r>'
+                 "</w:p></w:footnote>"
+                 + "".join(f'<w:footnote w:id="{k}"><w:p><w:pPr><w:pStyle w:val="FootnoteText"/></w:pPr><w:r><w:rPr>'
+                           f'<w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteRef/></w:r>{_run(" " + note)}'
+                           "</w:p></w:footnote>" for k, note in enumerate(notes, 1))
+                 + "</w:footnotes>")  # fmt: skip
+    settings = (f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings {W_NS}><w:footnotePr>'
+                '<w:footnote w:id="-1"/><w:footnote w:id="0"/></w:footnotePr></w:settings>')  # fmt: skip
+
     def style(sid: str, name: str, size: int, bold: bool) -> str:
         b = "<w:b/>" if bold else ""
         return (f'<w:style w:type="paragraph" w:styleId="{sid}"><w:name w:val="{name}"/><w:basedOn w:val="Normal"/>'
@@ -570,6 +654,10 @@ def docx(p: Packet) -> bytes:
               '<w:name w:val="Normal"/><w:qFormat/></w:style>' + style("Title", "Title", 44, True)
               + style("Heading1", "heading 1", 30, True) + style("Heading2", "heading 2", 24, True)
               + style("Label", "Label", 22, True)
+              + '<w:style w:type="paragraph" w:styleId="FootnoteText"><w:name w:val="footnote text"/>'
+              '<w:basedOn w:val="Normal"/><w:rPr><w:sz w:val="16"/></w:rPr></w:style>'
+              '<w:style w:type="character" w:styleId="FootnoteReference"><w:name w:val="footnote reference"/>'
+              '<w:rPr><w:vertAlign w:val="superscript"/></w:rPr></w:style>'
               + '<w:style w:type="table" w:styleId="TableGrid"><w:name w:val="Table Grid"/></w:style></w:styles>')  # fmt: skip
     rel = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
     parts = {
@@ -582,6 +670,8 @@ def docx(p: Packet) -> bytes:
             '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
             '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>'
             '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>'
+            '<Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>'
+            '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>'
             "</Types>"
         ),
         "_rels/.rels": (
@@ -594,12 +684,16 @@ def docx(p: Packet) -> bytes:
             '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             f'<Relationship Id="rIdStyles" Type="{rel}/styles" Target="styles.xml"/>'
             f'<Relationship Id="rIdHeader" Type="{rel}/header" Target="header1.xml"/>'
-            f'<Relationship Id="rIdFooter" Type="{rel}/footer" Target="footer1.xml"/></Relationships>'
+            f'<Relationship Id="rIdFooter" Type="{rel}/footer" Target="footer1.xml"/>'
+            f'<Relationship Id="rIdFootnotes" Type="{rel}/footnotes" Target="footnotes.xml"/>'
+            f'<Relationship Id="rIdSettings" Type="{rel}/settings" Target="settings.xml"/></Relationships>'
         ),
         "word/document.xml": document,
         "word/styles.xml": styles,
         "word/header1.xml": header,
         "word/footer1.xml": footer,
+        "word/footnotes.xml": footnotes,
+        "word/settings.xml": settings,
     }
     return _zip({k: v.encode("utf-8") for k, v in parts.items()})
 
@@ -678,7 +772,7 @@ def gather(ws: Any, vault: Any = None) -> Packet:
     for it in items:
         render_exhibit(ws, it)
     rows = matrix(ws, items)
-    text, _, dropped = outline(items, rows)
+    text, _, dropped = outline(items, rows, ws.person().name)
     issues = [i for i in preflight.run(ws, save=False)["issues"] if not i.get("dismissed")]
     try:
         merits = merits_view.report(ws, vault)
@@ -705,14 +799,15 @@ def input_hash(ws: Any, p: Packet) -> str:
     return hashlib.sha256(json.dumps(inputs, sort_keys=True, default=str).encode()).hexdigest()
 
 
-def matrix_csv(rows: list[Row]) -> bytes:
+def matrix_csv(rows: list[Row], person: str = "") -> bytes:
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
     w.writerow(["exhibit", "exhibit_title", "claim_id", "subject", "predicate", "value", "exhibit_page", "packet_page",
-                "quote"])  # fmt: skip
+                "quote", "sentence"])  # fmt: skip
     for r in rows:
         w.writerow([r.item.number, r.item.exhibit.title, r.claim.id, r.subject, r.claim.predicate, _value(r.claim.value),
-                    r.page or "not found", r.packet_page or "", r.claim.excerpt])  # fmt: skip
+                    r.page or "not found", r.packet_page or "", r.claim.excerpt,
+                    sentences.label(r.fact(person))])  # fmt: skip
     return buf.getvalue().encode("utf-8")
 
 
@@ -720,7 +815,7 @@ def build(ws: Any, vault: Any = None) -> dict[str, Any]:
     """Build the packet into exports/packet-<as of>-<hash>/ and return its manifest."""
     p = gather(ws, vault)
     pdf = review_pdf(p)  # sets each exhibit's pages first; the .docx index uses them
-    files: dict[str, bytes] = {"packet.docx": docx(p), "packet.pdf": pdf, "matrix.csv": matrix_csv(p.rows),
+    files: dict[str, bytes] = {"packet.docx": docx(p), "packet.pdf": pdf, "matrix.csv": matrix_csv(p.rows, p.person),
                                "preflight.json": _dump(p.issues)}  # fmt: skip
     plain, prov = provenance(ws, p.rows)
     files["provenance.json"] = _dump(plain)

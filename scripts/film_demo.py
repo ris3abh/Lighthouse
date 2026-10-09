@@ -33,6 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))  # the suite's fakes: FakeGmail, FakeEngine, FakeJudge
+sys.path.insert(0, str(ROOT / "scripts"))
 
 ANSWER = ("Here's where you stand. Judging and original contributions look strong, and press is building. EB-1A "
           "requires evidence of at least three of the ten criteria. Your next useful step is the "
@@ -117,22 +118,83 @@ def build(root: Path) -> None:
     ws.save_onboarding(OnboardingState(status="done", step="done"))
 
     rng = random.Random(2026)
-    topics = [("judged_event", "Judged {n} at Example Hackathon Series", 70), ("award_received", "Won {n} engineering award", 25),
-              ("press_mention", "Featured in Example Tech Weekly issue {n}", 35), ("paper_published", "Published paper {n} at Example Systems Conf", 30),
-              ("citation_count", "Paper citations reached {n}", 40), ("repo_stars", "Open-source repo stars reached {n}00", 90),
-              ("role_title", "Led platform team {n}", 25), ("membership_granted", "Admitted to Example Engineering Society tier {n}", 15),
-              ("model_downloads", "Library downloads reached {n}k a month", 70)]  # fmt: skip
+    # Every value reads as what it is (an event, a title, a count), never a bare index: the packet and Memory
+    # show them to people.
+    cities = [
+        "Seattle",
+        "Portland",
+        "Austin",
+        "Denver",
+        "Boston",
+        "Chicago",
+        "Toronto",
+        "Atlanta",
+        "Phoenix",
+        "Miami",
+        "Raleigh",
+        "Madison",
+    ]
+    projects = [
+        "FastQueue",
+        "trace-small",
+        "queue-bench",
+        "fq-operator",
+        "spool",
+        "tidepool",
+        "ledgerline",
+        "hopper",
+        "batchwise",
+        "relaykit",
+        "drift-check",
+        "keel",
+    ]
+    papers = [
+        "Queues at scale",
+        "Backpressure without tears",
+        "Exactly-once, mostly",
+        "Tracing small models",
+        "Spooling for the edge",
+        "Fair scheduling in practice",
+        "Ledger replication",
+        "Hop-by-hop retries",
+        "Batching under load",
+        "Relays and fan-out",
+        "Detecting drift",
+        "Keeping clusters level",
+    ]
+
+    def topic(pred: str, k: int, i: int, d: date) -> tuple[str, object, str]:
+        """(subject name, value, the sentence it was read from)."""
+        c, proj, paper = cities[k], projects[k], papers[k]
+        return {
+            "judged_event": (f"Example Hackathon Series {c}", f"Example Hackathon Series {c} {d.year}",
+                             f"Judged the Example Hackathon Series {c} {d.year} finals."),
+            "award_received": (f"Example Hackathon Series {c}", f"{c} mentor award {d.year}",
+                               f"Won the Example Hackathon Series {c} mentor award {d.year}."),
+            "press_mention": (f"Example Tech Weekly, {c} edition", f"Example Tech Weekly, {c} edition, {d:%B %Y}",
+                              f"Featured in Example Tech Weekly, {c} edition, {d:%B %Y}."),
+            "paper_published": (paper, paper, f"Published “{paper}” at Example Systems Conf {d.year}."),
+            "citation_count": (paper, 3 * (i + 1), f"“{paper}” has {3 * (i + 1)} citations."),
+            "repo_stars": (proj, 100 * (i + 1), f"{proj} has {100 * (i + 1):,} stars on GitHub."),
+            "role_title": (proj, f"Tech lead, {proj}", f"Led the {proj} team as tech lead."),
+            "membership_granted": (f"Example Engineering Society, {c} chapter", f"Example Engineering Society, {c} chapter",
+                                   f"Admitted to the Example Engineering Society, {c} chapter."),
+            "model_downloads": (proj, 1000 * (i + 1), f"{proj} was downloaded {1000 * (i + 1):,} times a month."),
+        }[pred]  # fmt: skip
+
+    topics = [("judged_event", 70), ("award_received", 25), ("press_mention", 35), ("paper_published", 30),
+              ("citation_count", 40), ("repo_stars", 90), ("role_title", 25), ("membership_granted", 15),
+              ("model_downloads", 70)]  # fmt: skip
     start, days = date(2024, 1, 15), (date.today() - date(2024, 1, 15)).days
     claims = []
-    for t, (pred, phrase, count) in enumerate(topics):
+    for t, (pred, count) in enumerate(topics):
         lines, drafts = [], []
         for i in range(count):
-            text = phrase.format(n=i + 1) + "."
-            lines.append(text)
             when = start + timedelta(days=int(days * (i + rng.random()) / count))
-            drafts.append(ClaimDraft(subject=f"artifact:{pred}-{i % 12}", subject_kind="artifact",
-                                     subject_name=phrase.split(" {n}")[0].split(" at ")[-1][:40], predicate=pred,
-                                     value=i + 1, excerpt=text, event_date=when,
+            name, value, text = topic(pred, i % 12, i, when)
+            lines.append(text)
+            drafts.append(ClaimDraft(subject=f"artifact:{pred}-{i % 12}", subject_kind="artifact", subject_name=name,
+                                     predicate=pred, value=value, excerpt=text, event_date=when,
                                      confidence=rng.choice(["high", "high", "medium", "low"])))  # fmt: skip
         claims += ws.memory.record(Evidence(connector=["github", "openalex", "upload", "website"][t % 4],
                                             source_url=f"https://maya-chen.example/source/{pred}",
@@ -143,35 +205,12 @@ def build(root: Path) -> None:
     edges = [Edge(type="SUPERSEDES", src=b.id, dst=a.id) for a, b in zip(cites, cites[1:], strict=False)]
     edges += [Edge(type="CONTRADICTS", src=claims[i].id, dst=claims[i + 1].id) for i in (12, 140, 260)]
     ws.memory._append("edges", edges)
-    # Two criteria banked (judging, contributions), two building (awards, press): a case partway there.
-    # Each exhibit is a real (fictional) PDF whose second page quotes the claims it's cited for, so the review
-    # packet's matrix finds the page; dated across three years, with who issued it.
-    current = {c.id for c in ws.memory._current_claims().values()}
-    newest = [c for c in claims if c.id in current]
-    for crit, kind, pred, title, signals, on, org in (
-        ("judging", "panel_letter", "judged_event", "Judging at Example Hackathon Series", ["selective_event", "multiple_instances"],
-         date(2024, 11, 9), "Example Hackathon Series"),
-        ("judging", "program_committee", "judged_event", "Program committee, Example Systems Conf", ["selective_event"],
-         date(2025, 6, 2), "Example Systems Conf"),
-        ("original_contributions", "open_source_project", "repo_stars", "Open-source adoption", ["widely_adopted", "used_by_others"],
-         date(2025, 9, 15), "Acme Robotics"),
-        ("original_contributions", "adoption_evidence", "model_downloads", "Library used across Example Corp", ["sustained_activity"],
-         date(2026, 3, 3), "Example Corp"),
-        ("awards", "award_certificate", "award_received", "Example engineering award", [], date(2024, 5, 20),
-         "Example Engineering Foundation"),
-        ("press", "press_article", "press_mention", "Example Tech Weekly profile", [], date(2025, 2, 11), "Example Tech Weekly"),
-    ):  # fmt: skip
-        cited = [c for c in newest if c.predicate == pred][:8]
-        ws.memory.decide([c.id for c in cited], "approved", rationale="reviewed")
-        if pred == "press_mention":  # one outdated value still cited, for preflight to flag
-            cited.append(next(c for c in old if c.predicate == pred and c.id not in current))
-        ex = ws.add_exhibit_file(content=_exhibit_pdf(title, org, [c.excerpt for c in cited]), filename=f"{pred}.pdf",
-                                 criterion=crit, evidence_type=kind, title=title, on=on, signals=signals,
-                                 stage="completed")  # fmt: skip
-        exhibits = ws.exhibits()
-        next(e for e in exhibits.exhibits if e.id == ex.id).organization = org
-        ws.save_exhibits(exhibits)
-        ws.memory.cite(ex.id, [c.id for c in cited])
+    # Two criteria banked (judging, contributions), two building (awards, press): a case partway there. Each
+    # exhibit is a real (fictional) PDF quoting what it's cited for, dated across three years, with who issued it
+    # (scripts/demo_cases.py); one outdated readership figure stays cited, for preflight to flag.
+    import demo_cases
+
+    demo_cases.add_case(ws, "maya")
     ws.after_change()
 
     # Metrics history (fortnightly, since 2024), the pipeline and deadlines, so every page has something to show.
@@ -220,16 +259,7 @@ def build(root: Path) -> None:
         relationship="recommender",
         org="Example University",
     )
-    ws.add_letter(
-        name="Dr. Priya Natarajan",
-        relationship="independent",
-        credentials="Professor of Computer Science",
-        criteria=["judging"],
-    )
-    ws.add_letter(name="Dr. Lena Ortiz", relationship="independent", credentials="Principal engineer, Acme Robotics",
-                  criteria=["original_contributions"])  # fmt: skip
-    ws.add_letter(name="Sam Rivera", relationship="employer", credentials="Director of engineering, Example Corp",
-                  criteria=["original_contributions"])  # fmt: skip
+    demo_cases.add_letters(ws, "maya")
     quiet = datetime.now(UTC) - timedelta(days=9)
     ws.save_threads(GmailThreads(threads=[GmailThread(id="18f1", subject="Judging the spring finals", contact_ids=[omar.id], last_at=quiet,
                                                       last_from="you", last_message_id="<maya-1@mail.example>")]))  # fmt: skip
@@ -243,30 +273,6 @@ def build(root: Path) -> None:
 
 
 _GMAIL: list = [None]
-
-
-def _exhibit_pdf(title: str, org: str, quotes: list[str]) -> bytes:
-    """A two-page fictional exhibit: a letterhead page, then the facts it documents."""
-    import io
-
-    from reportlab.pdfgen import canvas
-
-    buf = io.BytesIO()
-    c = canvas.Canvas(buf, invariant=1)
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(72, 720, org)
-    c.setFont("Helvetica", 12)
-    c.drawString(72, 690, title)
-    c.drawString(72, 660, "Fictional exhibit for the Area O1 demo. Every name here is invented.")
-    c.showPage()
-    c.setFont("Helvetica", 11)
-    y = 720
-    for q in quotes:
-        c.drawString(72, y, q)
-        y -= 18
-    c.showPage()
-    c.save()
-    return buf.getvalue()
 
 
 def invite(ws_root: Path, verified: bool = True) -> None:
