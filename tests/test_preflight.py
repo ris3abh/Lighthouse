@@ -40,33 +40,77 @@ def _kinds(report):
     return [(i["kind"], i["severity"], i["title"]) for i in report["issues"]]
 
 
-def test_a_document_citing_a_superseded_value_and_two_documents_disagreeing(ws):
+def _stars(ws):
     old = _claim(
         ws, "artifact:fastqueue", "stars", 1840, url="https://press.example/fastqueue", when=date(2025, 6, 1)
     )
-    press = _exhibit(ws, "Example Weekly profile", crit="press", kind="press_article")
-    ws.memory.cite(press.id, [old.id])
     new = _claim(ws, "artifact:fastqueue", "stars", 2100, connector="github", url="https://api.github.example/repos/x",
                  when=date(2026, 9, 1))  # fmt: skip
+    return old, new
+
+
+def _of(report, kind):
+    return [i for i in report["issues"] if i["kind"] == kind]
+
+
+def test_a_document_from_back_then_citing_the_value_it_had_then_is_not_outdated(ws):
+    old, new = _stars(ws)
+    press = _exhibit(ws, "Example Weekly profile", crit="press", kind="press_article", on=date(2026, 2, 1))
+    ws.memory.cite(press.id, [old.id])  # written before the newer count existed
     lt = ws.add_letter(name="Dr. Example Writer", relationship="independent", criteria=["press"])
     ws.memory.cite(f"letter:{lt.id}", [new.id])
     report = preflight.run(ws, save=False)
-    sup = [i for i in report["issues"] if i["kind"] == "superseded_cited"]
+    assert _of(report, "superseded_cited") == []
+    assert _of(report, "metric_mismatch") == []  # stars change over time; both values are dated: a history
+
+
+def test_a_document_presenting_an_older_value_as_current_is_outdated(ws):
+    old, new = _stars(ws)
+    later = _exhibit(ws, "Example Weekly follow-up", crit="press", kind="press_article", on=date(2026, 9, 20))
+    ws.memory.cite(later.id, [old.id])  # dated after the newer count, citing only the old one
+    lt = ws.add_letter(name="Dr. Example Writer", relationship="independent", criteria=["press"])
+    ws.memory.cite(f"letter:{lt.id}", [old.id])  # a letter speaks as of today
+    sup = {i["refs"][0]["id"]: i for i in _of(preflight.run(ws, save=False), "superseded_cited")}
+    assert set(sup) == {later.id, lt.id}
+    i = sup[later.id]
+    assert i["severity"] == "high" and i["title"] == "Example Weekly follow-up cites an outdated value"
+    assert "1,840 (2025-06-01) is now 2,100 (2026-09-01)" in i["detail"] and "reads as current" in i["detail"]
+    assert {r["id"] for r in i["refs"]} == {later.id, old.id, new.id}
+    assert all(r["link"] for r in i["refs"])
+
+
+def test_citing_both_values_is_history_and_an_undated_old_value_is_outdated(ws):
+    old, new = _stars(ws)
+    both = _exhibit(ws, "Growth chart", crit="press", kind="press_article", on=date(2026, 9, 20))
+    ws.memory.cite(both.id, [old.id, new.id])
+    assert _of(preflight.run(ws, save=False), "superseded_cited") == []
+    undated = _claim(ws, "artifact:spool", "stars", 300, url="https://press.example/spool")
+    _claim(ws, "artifact:spool", "stars", 900, connector="github", url="https://api.github.example/repos/s",
+           when=date(2026, 9, 1))  # fmt: skip
+    early = _exhibit(ws, "Spool launch post", crit="press", kind="press_article", on=date(2025, 1, 1))
+    ws.memory.cite(early.id, [undated.id])
+    [i] = _of(preflight.run(ws, save=False), "superseded_cited")
     assert (
-        len(sup) == 1
-        and sup[0]["severity"] == "high"
-        and sup[0]["title"] == "Example Weekly profile cites an outdated value"
+        i["refs"][0]["id"] == early.id
+        and "300 (undated)" in i["detail"]
+        and "Give the old value its date" in i["detail"]
     )
-    assert "1,840 (2025-06-01) is now 2,100 (2026-09-01)" in sup[0]["detail"]
-    assert {r["id"] for r in sup[0]["refs"]} == {press.id, old.id, new.id}
-    [mm] = [i for i in report["issues"] if i["kind"] == "metric_mismatch"]
+
+
+def test_values_that_should_agree_still_differ(ws):
+    a = _claim(ws, "event:example-hacks", "panel_size", 9, when=date(2025, 3, 1))
+    b = _claim(ws, "event:example-hacks", "panel_size", 12, url="upload:other.txt", when=date(2025, 3, 1))
+    e1 = _exhibit(ws, "Judges page")
+    e2 = _exhibit(ws, "Organizer letter", on=date(2026, 3, 1))
+    ws.memory.cite(e1.id, [a.id])
+    ws.memory.cite(e2.id, [b.id])
+    [mm] = _of(preflight.run(ws, save=False), "metric_mismatch")  # not a metric that changes over time
     assert (
-        mm["severity"] == "medium"
-        and "1,840 (2025-06-01)" in mm["detail"]
-        and "2,100 (2026-09-01)" in mm["detail"]
+        mm["severity"] == "medium" and "9 (2025-03-01)" in mm["detail"] and "12 (2025-03-01)" in mm["detail"]
     )
-    assert {r["type"] for r in mm["refs"]} >= {"exhibit", "letter", "claim"}
-    assert all(r["link"] for r in mm["refs"])  # every ref links to its page
+    assert {r["type"] for r in mm["refs"]} >= {"exhibit", "claim"}
+    assert preflight.time_varying("monthly_readers") and preflight.time_varying("citation_count")
+    assert not preflight.time_varying("panel_size")
 
 
 def test_drafts_citing_unapproved_or_missing_claims(ws):

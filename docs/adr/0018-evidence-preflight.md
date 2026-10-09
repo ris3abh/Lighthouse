@@ -49,3 +49,17 @@ The agent and MCP clients run preflight through one read-only tool, `run_preflig
 `data/preflight.json`, not a change record. Only **Run preflight** on Evidence and `areao1 preflight` save the
 report. An optional `min_severity` (`high`, `medium`, `low`) keeps the issues at or above it. The MCP server marks
 it read-only to the client, like the other read tools.
+
+## Amendment (2026-10-09): dated history isn't an error
+
+- **Outdated** (high) now means a document presents an older value as current: it cites a value a newer one
+  replaced, and either the old value has no date in its source (no `event_date`; `valid_from` alone is when Area O1
+  learned it), or the document speaks from after the newer value (a letter or draft, read as of today, or an
+  exhibit dated on or after the newer value) without also citing the newer one. A document from back then citing
+  the value it had then is a record of that time.
+- **Differs** (medium) no longer fires for a time-varying metric (readers, stars, citations, downloads, followers,
+  counts...) when every value is dated: those are a history. Values that should agree (a panel size, two dates
+  of one event) still differ.
+- The filming workspace's press profile (C3-01) was flagged high ("cites an outdated value") and medium
+  ("readers differs") because it states last year's readership with its date next to the current figure. Both
+  were false positives; neither fires now.

@@ -152,24 +152,63 @@ def _issue(
     }
 
 
+def _dated(c: Any) -> bool:
+    """The source gave the value a date (valid_from alone is only when Area O1 learned it)."""
+    return c.event_date is not None
+
+
+def _doc_date(x: _Ctx, doc: str) -> date:
+    """When a document speaks from: an exhibit's own date; a letter or draft is read as of today."""
+    kind, _, ident = doc.partition(":")
+    ex = x.exhibits.get(ident) if kind == "exhibit" else None
+    return ex.date if ex is not None else clock.today()
+
+
+def time_varying(predicate: str) -> bool:
+    """A metric that changes over time (readers, stars, citations, downloads...): two dated values aren't a
+    contradiction, they're a history."""
+    from areao1.criteria.sentences import METRICS
+
+    words = set(predicate.lower().split("_"))
+    return bool(words & (set(METRICS) | {"count", "members", "attendees", "subscribers"}))
+
+
 def superseded_cited(x: _Ctx) -> list[dict[str, Any]]:
-    """One issue per document that cites values a newer one replaced."""
+    """One issue per document that presents an older value as current: it cites a value a newer one replaced, and
+    either the old value is undated, or the document speaks from after the newer value (a letter, a draft, or an
+    exhibit dated later) without citing the newer one. A document from back then citing the value it had then is a
+    record of that time, not an error."""
     out = []
     for doc, ids in sorted(x.cites.items()):
-        old = [cid for cid in sorted(ids) if cid in x.claims and cid in x.newer]
-        if not old:
+        when = _doc_date(x, doc)
+        pairs = []
+        for cid in sorted(ids):
+            if cid not in x.claims or cid not in x.newer:
+                continue
+            head = x.head(cid)
+            old, new = x.claims[cid], x.claims.get(head)
+            if new is None:
+                continue
+            new_from = new.event_date or new.valid_from
+            if not _dated(old):
+                pairs.append((cid, head, "undated"))
+            elif head not in ids and (new_from is None or when >= new_from):
+                pairs.append((cid, head, "as current"))
+        if not pairs:
             continue
         ref = x.doc_ref(doc)
-        pairs = [(cid, x.head(cid)) for cid in old]
         shown = "; ".join(
-            f"{shown_value(x.claims[o].value)} ({x.when(o)}) is now {shown_value(x.claims[n].value)} ({x.when(n)})"
-            for o, n in pairs[:3]
+            f"{shown_value(x.claims[o].value)} ({x.when(o) if why != 'undated' else 'undated'}) is now "
+            f"{shown_value(x.claims[n].value)} ({x.when(n)})"
+            for o, n, why in pairs[:3]
         )
         more = f"; and {len(pairs) - 3} more" if len(pairs) > 3 else ""
+        hint = (" Give the old value its date, or cite the newer one." if any(w == "undated" for *_, w in pairs)
+                else " It reads as current; cite the newer value, or say the date of the old one.")  # fmt: skip
         title = (f"{ref['label']} cites an outdated value" if len(pairs) == 1
                  else f"{ref['label']} cites {len(pairs)} outdated values")  # fmt: skip
-        refs = [ref, *(r for o, n in pairs[:5] for r in (x.claim_ref(o), x.claim_ref(n)))]
-        out.append(_issue("superseded_cited", "high", title, f"{shown}{more}.", refs, doc))
+        refs = [ref, *(r for o, n, _ in pairs[:5] for r in (x.claim_ref(o), x.claim_ref(n)))]
+        out.append(_issue("superseded_cited", "high", title, f"{shown}{more}.{hint}", refs, doc))
     return out
 
 
@@ -267,7 +306,8 @@ def conflicting_facts(x: _Ctx) -> list[dict[str, Any]]:
 
 
 def metric_mismatch(x: _Ctx) -> list[dict[str, Any]]:
-    """Two documents citing different values of the same metric (both shown, with dates)."""
+    """Documents citing different values of the same metric (both shown, with dates). Not for a time-varying
+    metric whose values are all dated: 40,000 readers in 2024 and 52,000 in 2025 are both true."""
     out = []
     chains: dict[tuple[str, str], set[str]] = {}
     for ids in x.cites.values():
@@ -281,6 +321,8 @@ def metric_mismatch(x: _Ctx) -> list[dict[str, Any]]:
             by_value.setdefault(x.claims[cid].value, []).append(cid)
         if len(by_value) < 2:
             continue
+        if time_varying(predicate) and all(_dated(x.claims[c]) for c in ids):
+            continue  # dated values of a metric that changes: a history, not a disagreement
         ent = x.entities.get(subject)
         docs = sorted({d for cid in ids for d in x.documents_citing(cid)})
         shown = "; ".join(

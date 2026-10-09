@@ -46,7 +46,7 @@ class X:
     org: str
     claims: list[C]
     signals: list[str] = field(default_factory=list)
-    stale: C | None = None  # an older value of one of the claims, still cited (preflight flags it)
+    stale: C | None = None  # an older, dated value the document also states (a history: preflight leaves it)
 
 
 CASES: dict[str, list[X]] = {

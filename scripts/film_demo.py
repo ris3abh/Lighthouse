@@ -207,7 +207,7 @@ def build(root: Path) -> None:
     ws.memory._append("edges", edges)
     # Two criteria banked (judging, contributions), two building (awards, press): a case partway there. Each
     # exhibit is a real (fictional) PDF quoting what it's cited for, dated across three years, with who issued it
-    # (scripts/demo_cases.py); one outdated readership figure stays cited, for preflight to flag.
+    # (scripts/demo_cases.py); the press profile also states last year's readership, dated (a history, not an error).
     import demo_cases
 
     demo_cases.add_case(ws, "maya")
@@ -260,6 +260,10 @@ def build(root: Path) -> None:
         org="Example University",
     )
     demo_cases.add_letters(ws, "maya")
+    # A true positive for preflight: Dr. Natarajan's letter cites last year's readership as if it were current.
+    priya = next(lt for lt in ws.letters().letters if lt.name == "Dr. Priya Natarajan")
+    last_year = next(c for c in ws.memory.claims() if c.predicate == "monthly_readers" and c.value == 40000)
+    ws.memory.cite(f"letter:{priya.id}", [last_year.id])
     quiet = datetime.now(UTC) - timedelta(days=9)
     ws.save_threads(GmailThreads(threads=[GmailThread(id="18f1", subject="Judging the spring finals", contact_ids=[omar.id], last_at=quiet,
                                                       last_from="you", last_message_id="<maya-1@mail.example>")]))  # fmt: skip

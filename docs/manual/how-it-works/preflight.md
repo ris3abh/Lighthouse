@@ -31,11 +31,11 @@ list for you to read, not a gate.
 
 | Rule | Severity | What it means | What to do |
 |---|---|---|---|
-| Outdated value cited | high | An exhibit, letter or draft cites a value that a newer one replaced, such as 1,840 stars when memory now says 2,100. | Update the document to the current value, or keep it and make sure it's dated. |
+| Outdated value cited | high | A document presents an older value as current: it cites a value a newer one replaced, and either the old value has no date, or the document speaks from after the newer value (a letter or draft, or an exhibit dated later) without citing the newer one. A document from back then citing the value it had then is a record of that time, and isn't flagged. | Cite the newer value, or say the date of the old one. |
 | Unsupported claim cited | high | A letter or draft cites a claim that isn't approved, or doesn't exist in memory. | Approve the claim in the Inbox or Memory, or redraft without it. |
 | Facts disagree (names) | high | Approved claims give different names for the same person or organization. | Find which document is wrong and correct it. |
 | Facts disagree (titles, employers, dates) | medium | Approved claims give different job titles or employers for the same subject, the same event has two dates, or an exhibit's date is more than three days from the event its source describes. | If it changed over time, that's fine: make sure each document is dated. Otherwise fix the wrong one. |
-| Metric differs | medium | Documents cite different values of the same metric. Both values are shown with their dates. | Use one dated value, or say each document's date. |
+| Metric differs | medium | Documents cite different values of the same figure, such as a panel size. A metric that changes over time (readers, stars, citations, downloads) isn't flagged when every value is dated: 40,000 readers in 2024 and 52,000 in 2025 are both true. | Find which document is wrong, or date each value. |
 | Invited, not completed | medium | An exhibit is at `invited` with no matching completed exhibit, or an activity at `accepted` has no completion proof linked in its [proof checklist](proof-recipes.md). | Save the thank-you, certificate or program once it's done. |
 | No primary copy | medium | An exhibit is only a capture (`.md`, `.html`, `.htm` or `.txt`) with no PDF, image, `.eml` or `.docx` copy from the same address or linked to it. | Save the page or email as a PDF (or the original `.eml`) and upload it. |
 | Fact without an exhibit | low | An approved, current claim that no exhibit cites. One issue per person or entity. | File the primary document behind it. |
