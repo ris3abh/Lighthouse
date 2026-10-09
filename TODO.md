@@ -273,7 +273,7 @@ never enters the packet as evidence.
   - [x] F9 Inbox bulk review (groups, filters, selection, batch actions with one Undo batch, keyboard)
   - [x] F10 chat-import extraction: notes low priority and collapsed, proposed only with a person, date, deadline or
         case item; near-duplicates merged; count what remains of the owner's 397
-  - [ ] F11 areao1 qa --runs 3: new summary table
+  - [x] F11 areao1 qa --runs 3: new summary table
 - [x] 3. Final merits workspace: sustained-acclaim timeline, rule-computed themes with reasons, OpenAlex field
       benchmarks where available, rule-checked Kazarian / Policy Manual citations
 - [x] 4. Review packet builder: exhibit numbering (C4-01), TOC, per-criterion index, claim -> exhibit -> page/quote

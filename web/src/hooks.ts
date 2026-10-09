@@ -137,7 +137,7 @@ export function useScrollTo(id: string | null, ready: boolean) {
     const tick = () => {
       if (stop) return;
       const el = document.getElementById(id);
-      if (el && (first || Math.abs(el.getBoundingClientRect().top) > 40)) {
+      if (el && (first || Math.abs(el.getBoundingClientRect().top) > 4)) { // a panel above that finishes loading moves it a little too
         el.scrollIntoView({ behavior: first ? "smooth" : "auto", block: "start" });
         first = false;
       }
