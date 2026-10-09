@@ -48,6 +48,13 @@ All notable changes to this project are documented here. The format follows
 - Chat-history imports propose a note only when it names a person, a date or deadline, or a case item;
   near-duplicates are merged; notes are low priority and collapsed.
 - Preflight shows values as people write them (52,000, not 52000).
+- Proof recipes: an activity at `invited` gets a two-item checklist (the invitation, your acceptance), and the
+  full recipe once the acceptance is saved; uploads from a checklist start with the item's evidence type and
+  stage; mail from the activity's verified organizer matches even when its subject doesn't name the activity.
+- The agent's and MCP's preflight tool is `run_preflight` (was `list_preflight_issues` and `preflight`):
+  read-only, nothing saved, with an optional `min_severity`.
+- Inbox keys: `a` and `r` decide one card with **Undo** in the message that follows; accepting evidence by
+  keypress asks first.
 
 ### Fixed
 - Accessibility: labeled deadline fields, screen-reader text for animated numbers, download buttons no longer

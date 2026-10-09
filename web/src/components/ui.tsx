@@ -294,16 +294,22 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
 
 // ---------------------------------------------------------------- toasts
 
-type Toast = { id: number; text: string; tone: "ok" | "error" };
-const ToastCtx = createContext<(text: string, tone?: Toast["tone"]) => void>(() => {});
+type ToastAction = { label: string; run: () => void };
+type Toast = { id: number; text: string; tone: "ok" | "error"; action?: ToastAction };
+const ToastCtx = createContext<(text: string, tone?: Toast["tone"], action?: ToastAction) => void>(() => {});
 
+/** Toasts, bottom right. One with an action (Undo) stays longer and its button closes it. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const push = useCallback((text: string, tone: Toast["tone"] = "ok") => {
-    const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, text, tone }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tone === "error" ? 7000 : 3500);
-  }, []);
+  const drop = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
+  const push = useCallback(
+    (text: string, tone: Toast["tone"] = "ok", action?: ToastAction) => {
+      const id = Date.now() + Math.random();
+      setToasts((t) => [...t, { id, text, tone, action }]);
+      setTimeout(() => drop(id), action ? 10000 : tone === "error" ? 7000 : 3500);
+    },
+    [drop],
+  );
   return (
     <ToastCtx.Provider value={push}>
       {children}
@@ -311,12 +317,25 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
+            role={t.action ? "status" : undefined}
             className={cx(
-              "pointer-events-auto max-w-sm animate-rise border px-4 py-3 text-sm",
+              "pointer-events-auto flex max-w-sm animate-rise items-center gap-3 border px-4 py-3 text-sm",
               t.tone === "error" ? "border-alert bg-alert text-on-alert" : "border-ink bg-ink text-on-ink",
             )}
           >
-            {t.text}
+            <span className="min-w-0 flex-1">{t.text}</span>
+            {t.action && (
+              <button
+                type="button"
+                className="shrink-0 font-medium underline underline-offset-2"
+                onClick={() => {
+                  drop(t.id);
+                  t.action!.run();
+                }}
+              >
+                {t.action.label}
+              </button>
+            )}
           </div>
         ))}
       </div>

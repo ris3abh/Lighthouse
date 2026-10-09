@@ -285,6 +285,9 @@ never enters the packet as evidence.
         Maya's and Ravi's packets rebuilt (scripts/demo_cases.py)
   - [x] B-2 Pipeline cards focusable, moved with the arrow keys and buttons (focus follows); crawler checks it
   - [x] B-3 checkpoint and QA output in a gitignored out/ (out/qa, out/packets), not brag-output/
+- [x] ADR vs code decisions (owner, 2026-10-09): ADR 0017 trigger as coded plus an invited mini-checklist;
+      checklist uploads preset type and stage; mail matching by verified organizer domain too; a read-only
+      run_preflight agent/MCP tool (ADR 0018); Inbox a/r with an undo toast and evidence confirmation; QA re-run
 - [x] 5. Docs pages per feature (proof recipes, preflight, final merits, review packet, bulk review), SPEC.md,
       CHANGELOG; v0.3.0 prepared (version, CITATION.cff, docs/releases-v0.3.0.md; not tagged or published)
 

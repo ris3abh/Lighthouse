@@ -57,7 +57,7 @@ export function useSelection(order: string[]) {
 
 export function SelectRow({ id, checked, onToggle, focused, children }: { id: string; checked: boolean; onToggle: (id: string, range: boolean) => void; focused: boolean; children: ReactNode }) {
   return (
-    <div className={`flex items-start border-b border-line last:border-b-0 ${focused ? "outline-2 -outline-offset-2 outline-ink" : ""}`} data-row={id}>
+    <div className={`flex items-start border-b border-line last:border-b-0 ${focused ? "outline-2 -outline-offset-2 outline-ink" : ""}`} data-row={id} data-focused={focused || undefined}>
       <label className="flex shrink-0 cursor-pointer items-center px-3 pt-7 md:pl-5" title="Select (shift-click for a range)">
         <input
           type="checkbox"
@@ -252,8 +252,9 @@ export function UndoBanner({ last, onUndone }: { last: { batch: string; label: s
   );
 }
 
-/** j / k move between cards, x selects, a accepts, r rejects the focused card. Not while typing. */
-export function useInboxKeys(order: string[], toggle: (id: string, range: boolean) => void) {
+/** j / k move between cards, x selects, a accepts, r rejects the focused card (through ``decide``, so each keypress
+ * is one undoable decision). Not while typing. */
+export function useInboxKeys(order: string[], toggle: (id: string, range: boolean) => void, decide: (id: string, action: "accept" | "reject") => void) {
   const [cursor, setCursor] = useState<string | null>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -267,22 +268,33 @@ export function useInboxKeys(order: string[], toggle: (id: string, range: boolea
         setCursor(id);
         document.querySelector(`[data-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" });
       };
-      const press = (label: RegExp) => {
-        if (!cursor) return;
-        const row = document.querySelector(`[data-row="${CSS.escape(cursor)}"]`);
-        const b = [...(row?.querySelectorAll("button") ?? [])].find((x) => label.test(x.textContent?.trim() ?? ""));
-        (b as HTMLButtonElement | undefined)?.click();
-      };
       if (e.key === "j") move(i + 1);
       else if (e.key === "k") move(i - 1);
       else if (e.key === "x" && cursor) toggle(cursor, false);
-      else if (e.key === "a") press(/^(Accept|Add|Keep)/);
-      else if (e.key === "r") press(/^(Reject|Dismiss)/);
+      else if ((e.key === "a" || e.key === "r") && cursor) decide(cursor, e.key === "a" ? "accept" : "reject");
       else return;
       e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cursor, order, toggle]);
+  }, [cursor, order, toggle, decide]);
   return cursor;
+}
+
+/** Accepting evidence from the keyboard asks first, like the bulk Accept: it files an exhibit. */
+export function KeyAcceptConfirm({ candidate, busy, onCancel, onConfirm }: { candidate: Candidate; busy: boolean; onCancel: () => void; onConfirm: () => void }) {
+  return (
+    <Modal title="Accept as evidence?" onClose={onCancel}>
+      <p className="text-sm text-ink-2">
+        “{candidate.title}” will be filed as an exhibit under its criterion, and the claims behind it approved. You can undo it from the message that
+        follows.
+      </p>
+      <div className="mt-4 flex justify-end gap-2 border-t border-line pt-4">
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button variant="primary" disabled={busy} onClick={onConfirm}>
+          File 1 exhibit
+        </Button>
+      </div>
+    </Modal>
+  );
 }

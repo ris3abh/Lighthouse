@@ -761,6 +761,61 @@ def test_bulk_review_of_a_long_inbox(browser, serve, qa):
     no_errors(qa)
 
 
+def test_inbox_keys_decide_one_with_undo_and_confirm_evidence(browser, serve, qa):
+    """a / r on the focused card: one decision with Undo in its toast; accepting evidence asks first."""
+    srv = serve("film")
+    page = new_page(browser, qa)
+    open_route(page, srv.base, "inbox")
+    kinds = {c["id"]: c["kind"] for c in api(srv, "/inbox")}
+
+    def status(cid):  # "pending" while it waits in the Inbox, else "gone"
+        return next((c.get("status", "pending") for c in api(srv, "/inbox") if c["id"] == cid), "gone")
+
+    page.evaluate("() => document.activeElement && document.activeElement.blur()")
+
+    def until(cid, want):  # the toast text can linger from a step before; the Inbox is the truth
+        for _ in range(100):
+            if status(cid) == want:
+                return
+            page.wait_for_timeout(100)
+        raise AssertionError(f"{cid} never became {want}")
+
+    def focus(kind_ok):  # press j until the focused card is the kind wanted
+        for _ in range(len(kinds) + 1):
+            page.keyboard.press("j")
+            cid = page.evaluate("() => document.querySelector('[data-focused]')?.getAttribute('data-row')")
+            if cid and kind_ok(kinds.get(cid)):
+                return cid
+        raise AssertionError("no such card")
+
+    with step(qa, page, "r rejects the focused card; Undo in the toast brings it back"):
+        cid = focus(lambda k: k == "evidence")
+        page.keyboard.press("r")
+        page.get_by_text(re.compile("^Rejected: ")).wait_for(timeout=10000)
+        until(cid, "gone")  # no longer pending
+        page.get_by_role("button", name="Undo", exact=True).click()
+        until(cid, "pending")
+    with step(qa, page, "a on evidence asks first; Cancel changes nothing"):
+        page.evaluate("() => document.activeElement && document.activeElement.blur()")
+        cid = focus(lambda k: k == "evidence")
+        page.keyboard.press("a")
+        dialog = page.get_by_role("dialog", name="Accept as evidence?")
+        dialog.wait_for(timeout=5000)
+        dialog.get_by_role("button", name="Cancel").click()
+        assert status(cid) == "pending"
+    with step(qa, page, "a, then File 1 exhibit: accepted, with Undo"):
+        page.evaluate("() => document.activeElement && document.activeElement.blur()")
+        page.keyboard.press("a")
+        page.get_by_role("dialog", name="Accept as evidence?").get_by_role(
+            "button", name="File 1 exhibit"
+        ).click()
+        page.get_by_text(re.compile("^Accepted: ")).wait_for(timeout=10000)
+        until(cid, "gone")
+        page.get_by_role("button", name="Undo", exact=True).click()
+        until(cid, "pending")
+    no_errors(qa)
+
+
 def test_build_review_packet_and_download_it(browser, serve, qa):
     srv = serve("film")
     page = new_page(browser, qa)

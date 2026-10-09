@@ -71,12 +71,16 @@ instead".
 | `j` | Move to the next card. |
 | `k` | Move to the previous card. |
 | `x` | Select or unselect the card you're on. |
-| `a` | Press the card's **Accept**, **Add…** or **Keep…** button. |
-| `r` | Press the card's **Reject** or **Dismiss** button. |
+| `a` | Accept the card you're on (for a tracker: add it to your deadlines, pipeline, letters or metrics). |
+| `r` | Reject the card you're on (for a tracker: dismiss it). |
 
 The card you're on has an outline. Keys do nothing while you're typing in a field, while a dialog is open, or with
-Cmd, Ctrl or Alt held. `a` and `r` decide one card, the same as clicking its button, so they don't ask for
-confirmation and aren't part of a batch.
+Cmd, Ctrl or Alt held.
+
+`a` and `r` decide one card at a time, and each keypress can be undone: the message that follows ("Rejected:
+Invitation to judge…") has an **Undo** button for about ten seconds. Accepting evidence by keypress asks first, the
+same "Accept as evidence?" question as the bulk Accept, because it files an exhibit: **File 1 exhibit** to go ahead,
+**Cancel** to leave it.
 
 ## One Undo per batch
 

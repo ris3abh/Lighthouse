@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, type Candidate, DATE_SOURCE, type Profile } from "../api";
 import { useRefresh } from "../App";
 import ClaimsPanel, { StageChip } from "../components/Claims";
@@ -6,7 +6,7 @@ import RuleCheckView, { blocking } from "../components/RuleCheck";
 import TrackerCard, { TRACKER_LABEL } from "../components/TrackerCard";
 import { Paperclip, Upload } from "lucide-react";
 import DropZone from "../components/DropZone";
-import { BulkBar, Filters, GroupCheckbox, KIND_LABEL, matchesFilter, SelectRow, UndoBanner, useInboxKeys, useSelection } from "../components/BulkReview";
+import { BulkBar, Filters, GroupCheckbox, KeyAcceptConfirm, KIND_LABEL, matchesFilter, SelectRow, UndoBanner, useInboxKeys, useSelection } from "../components/BulkReview";
 import type { InboxFilter } from "../api";
 import { Button, Card, Chip, Empty, ErrorBox, Loading, PageHeader, useToast } from "../components/ui";
 import { today, useLoad, useRoute } from "../hooks";
@@ -41,7 +41,51 @@ export default function Inbox() {
   const candidates = all.filter((c) => matchesFilter(c, filter, (x) => x.group ?? ""));
   const order = orderOf(candidates, inbox.data?.[1]);
   const sel = useSelection(order);
-  const cursor = useInboxKeys(order, sel.toggle);
+  // a / r from the keyboard: one decision, through the bulk door so it has a batch, with Undo in its toast.
+  // Accepting evidence asks first (it files an exhibit).
+  const [keyConfirm, setKeyConfirm] = useState<Candidate | null>(null);
+  const [keyBusy, setKeyBusy] = useState(false);
+  const runKey = useCallback(
+    async (c: Candidate, action: "accept" | "reject", confirm_evidence = false) => {
+      setKeyBusy(true);
+      try {
+        const r = await api.bulkInbox({ action, ids: [c.id], confirm_evidence });
+        if (r.batch) {
+          const batch = r.batch;
+          const label = `${action === "accept" ? "Accepted" : c.kind === "evidence" ? "Rejected" : "Dismissed"}: ${c.title}`;
+          toast(label, "ok", {
+            label: "Undo",
+            run: async () => {
+              try {
+                await api.undoBatch(batch);
+                toast(`Undone: ${c.title} is back in the Inbox`);
+              } catch (e) {
+                toast((e as Error).message, "error");
+              }
+              bump();
+            },
+          });
+        } else toast(r.failed[0]?.why ?? "Nothing changed", "error");
+        bump();
+      } catch (e) {
+        toast((e as Error).message, "error");
+      } finally {
+        setKeyBusy(false);
+        setKeyConfirm(null);
+      }
+    },
+    [toast, bump],
+  );
+  const decide = useCallback(
+    (id: string, action: "accept" | "reject") => {
+      const c = all.find((x) => x.id === id);
+      if (!c) return;
+      if (action === "accept" && c.kind === "evidence") setKeyConfirm(c);
+      else runKey(c, action);
+    },
+    [all, runKey],
+  );
+  const cursor = useInboxKeys(order, sel.toggle, decide);
   if (inbox.error) return <ErrorBox error={inbox.error} retry={inbox.reload} />;
   if (!inbox.data) return <Loading />;
   const [, profile, groupList] = inbox.data;
@@ -86,6 +130,9 @@ export default function Inbox() {
           bump();
         }}
       />
+      {keyConfirm && (
+        <KeyAcceptConfirm candidate={keyConfirm} busy={keyBusy} onCancel={() => setKeyConfirm(null)} onConfirm={() => runKey(keyConfirm, "accept", true)} />
+      )}
       <BulkBar
         picked={sel.picked}
         matching={order}
