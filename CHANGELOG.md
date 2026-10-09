@@ -55,8 +55,20 @@ All notable changes to this project are documented here. The format follows
   read-only, nothing saved, with an optional `min_severity`.
 - Inbox keys: `a` and `r` decide one card with **Undo** in the message that follows; accepting evidence by
   keypress asks first.
+- Review packet: the cover is titled with the person's name; the exhibit index says how exhibits are numbered;
+  the outline is grouped by exhibit (main fact, figures, details); templates keep the source's verb and only its
+  names, and a date the quote doesn't state reads "as captured on <date>"; O-1A packets title the merits section
+  "Totality of the evidence" (EB-1A keeps "Final merits").
+- The standard is quoted in whole sentences, word for word, with section citations (checked against the live
+  Policy Manual and the Ninth Circuit's Kazarian opinion); "verified" means an exact substring of the vault's copy.
+- Preflight: "outdated" only when a document presents an older value as current or cites it undated; dated values
+  of a metric that changes over time no longer "differ".
+
 
 ### Fixed
+- Uploaded emails appeared in the review PDF as raw MIME source and Word files as their zip bytes; they're
+  re-rendered as readable text now (web pages with a line per block), each saying so, with the original in the
+  attorney ZIP. Typeset text wraps at word boundaries, so quotes across a line break are found.
 - Accessibility: labeled deadline fields, screen-reader text for animated numbers, download buttons no longer
   nested in links, and Pipeline cards that can be reached with Tab and moved with the arrow keys (the focus moves
   with the card).
