@@ -50,7 +50,12 @@ DESCRIBE = (
     return { key, n: seen[key] - 1, tag: el.tagName.toLowerCase(), type: el.getAttribute('type') || '',
              role: el.getAttribute('role') || '', name: name(el), href: el.getAttribute('href') || '',
              visible: vis(el), disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true',
-             focusable: el.tabIndex >= 0, draggable: el.getAttribute('draggable') === 'true' };
+             focusable: el.tabIndex >= 0, draggable: el.getAttribute('draggable') === 'true',
+             keys: el.getAttribute('aria-keyshortcuts') || '',
+             // a keyboard way to do what dragging does: the control itself opens an editor, or it moves with keys
+             // or with buttons inside it
+             no_drag_keys: el.getAttribute('draggable') === 'true' && !['button', 'a'].includes(el.tagName.toLowerCase())
+                           && !el.getAttribute('aria-keyshortcuts') && !el.querySelector('button[aria-label^="Move"]') };
   });
 }"""
 )
@@ -90,6 +95,10 @@ def _keyboard_reached(page: Any, limit: int = 900) -> set[str]:
 def _exercise(page: Any, el: Any, d: dict[str, Any], tmp: Path) -> str:
     """Use one control the way a person would. Returns what was done."""
     tag, typ = d["tag"], d["type"]
+    if d["draggable"] and d["keys"]:  # a card that moves with the arrow keys: focus it and press the first
+        el.focus()
+        page.keyboard.press(d["keys"].split()[0])
+        return "keys"
     if tag == "input" and typ == "file":
         f = tmp / "qa-upload.pdf"
         f.write_bytes(PDF)
@@ -180,6 +189,9 @@ def test_every_control_on_the_route(route, browser, serve, qa, tmp_path):
             qa.add(
                 "keyboard_unreachable", f"{e['tag']} “{e['name']}” isn't reachable with Tab", element=e["key"]
             )
+        if e["no_drag_keys"]:
+            qa.add("drag_only", f"{e['tag']} “{e['name']}” can only be dragged: give it arrow keys or move buttons",
+                   element=e["key"])  # fmt: skip
     elements.sort(key=lambda e: bool(RISKY.search(e["name"])))  # risky ones last
     counts = {"exercised": 0, "static": 0}
     retry: list[dict[str, Any]] = []
@@ -211,7 +223,7 @@ def test_every_control_on_the_route(route, browser, serve, qa, tmp_path):
         ):
             counts["static"] += 1  # external: checked, not followed (offline)
             return
-        if e["draggable"]:
+        if e["draggable"] and not e["keys"]:
             counts["static"] += 1  # drag and drop: covered by the flow tests
             return
         current = handle.evaluate("(el) => el.getAttribute('aria-pressed') === 'true' || el.getAttribute('aria-checked') === 'true' "

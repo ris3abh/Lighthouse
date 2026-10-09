@@ -397,6 +397,25 @@ def test_pipeline_moves(browser, serve, qa):
         card.get_by_role("button", name="Move right").click()
         page.wait_for_timeout(700)
         assert next(i for i in api(srv, "/pipeline") if i["id"] == item["id"])["stage"] == "applied"
+    with step(qa, page, "Tab to the card, then move it with the arrow keys; the focus goes with it"):
+        page.locator("body").focus()
+        for _ in range(80):
+            page.keyboard.press("Tab")
+            if page.evaluate("(id) => document.activeElement?.dataset.card === id", item["id"]):
+                break
+        else:
+            raise AssertionError("Tab never reached the card")
+        page.keyboard.press("ArrowRight")
+        page.wait_for_timeout(700)
+        assert next(i for i in api(srv, "/pipeline") if i["id"] == item["id"])["stage"] == "waiting"
+        assert page.evaluate(
+            "() => [document.activeElement?.dataset.card, document.activeElement?.dataset.stage]"
+        ) == [item["id"], "waiting"]
+        page.keyboard.press("ArrowLeft")
+        page.wait_for_timeout(700)
+        assert next(i for i in api(srv, "/pipeline") if i["id"] == item["id"])["stage"] == "applied"
+        page.keyboard.press("ArrowRight")
+        page.wait_for_timeout(700)
     with step(qa, page, "drag it to Done"):
         card = page.locator("[draggable]", has_text=item["title"]).first
         card.drag_to(page.get_by_role("heading", name="Done").first)

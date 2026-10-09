@@ -279,7 +279,12 @@ never enters the packet as evidence.
 - [x] 4. Review packet builder: exhibit numbering (C4-01), TOC, per-criterion index, claim -> exhibit -> page/quote
       matrix, an outline drafted only from approved claims, .docx, review PDF with continuous pagination, attorney
       export ZIP (packet, originals, matrix CSV, preflight issues, provenance JSON / PROV-JSON); reproducible
-- [ ] CHECKPOINT B: Maya's packet (.docx, PDF, matrix CSV)
+- [x] CHECKPOINT B reached (2026-10-08): Maya's packet (.docx, PDF, matrix CSV); mostly approved, with fixes:
+  - [x] B-1 outline: natural per-evidence-type sentences, claim ids as footnotes (full ids in matrix.csv only), a
+        guard against unfilled or raw slots in any reader-facing line; Maya's demo data reads as real facts;
+        Maya's and Ravi's packets rebuilt (scripts/demo_cases.py)
+  - [x] B-2 Pipeline cards focusable, moved with the arrow keys and buttons (focus follows); crawler checks it
+  - [x] B-3 checkpoint and QA output in a gitignored out/ (out/qa, out/packets), not brag-output/
 - [ ] 5. Docs pages per feature, SPEC.md, CHANGELOG; v0.3.0 prepared (not published)
 
 ## Phase 0 checklist

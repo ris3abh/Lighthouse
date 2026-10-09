@@ -23,7 +23,17 @@ export default function Pipeline() {
   const [over, setOver] = useState<Stage | null>(null);
   const [title, setTitle] = useState("");
   const [moved, setMoved] = useState<Record<string, Stage>>({}); // optimistic stage while a move saves
+  // A card moved with the keys or the arrow buttons keeps the focus once it lands in its new column.
+  const [follow, setFollow] = useState<{ id: string; stage: Stage } | null>(null);
   useEffect(() => setMoved({}), [data.data]);
+  useEffect(() => {
+    if (!follow) return;
+    const card = document.querySelector<HTMLElement>(`[data-card="${follow.id}"][data-stage="${follow.stage}"]`);
+    if (card) {
+      card.focus();
+      setFollow(null);
+    }
+  });
 
   if (data.error) return <ErrorBox error={data.error} retry={data.reload} />;
   if (!data.data) return <Loading />;
@@ -49,6 +59,13 @@ export default function Pipeline() {
     if (!(await save(() => api.updatePipeline(item.id, { stage }), `Moved to ${stage}`)))
       withViewTransition(() => setMoved((m) => Object.fromEntries(Object.entries(m).filter(([k]) => k !== item.id)) as Record<string, Stage>));
   };
+  /** Arrow keys (on a focused card) and the arrow buttons move a card one column; the focus goes with it. */
+  const step = (item: PipelineCard, ci: number, by: -1 | 1) => {
+    const to = STAGES[ci + by];
+    if (!to) return;
+    setFollow({ id: item.id, stage: to.id });
+    move(item, to.id);
+  };
   const drop = (e: DragEvent, stage: Stage) => {
     e.preventDefault();
     setOver(null);
@@ -62,7 +79,7 @@ export default function Pipeline() {
       <PageHeader
         eyebrow={`${plural(items.length, "item")}${stale ? ` · ${stale} stale` : ""}`}
         title="Pipeline"
-        subtitle="In-flight work. Drag cards between columns. Items with no movement for 14+ days are flagged stale."
+        subtitle="In-flight work. Drag cards between columns, or focus a card and press the left and right arrow keys. Items with no movement for 14+ days are flagged stale."
       />
       <div className="grid gap-4 @3xl:grid-cols-2 @6xl:grid-cols-4">
         {STAGES.map((col, ci) => {
@@ -104,13 +121,29 @@ export default function Pipeline() {
                 {cards.map((item) => (
                   <article
                     key={item.id}
+                    data-card={item.id}
+                    data-stage={col.id}
                     draggable
+                    tabIndex={0}
+                    aria-label={`${item.title}, in ${col.label}`}
+                    aria-roledescription="card"
+                    aria-keyshortcuts={[ci > 0 && "ArrowLeft", ci < STAGES.length - 1 && "ArrowRight"].filter(Boolean).join(" ")}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget || e.altKey || e.ctrlKey || e.metaKey) return;
+                      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                        e.preventDefault();
+                        step(item, ci, e.key === "ArrowLeft" ? -1 : 1);
+                      }
+                    }}
                     onDragStart={(e) => {
                       e.dataTransfer.setData("text/x-areao1-pipeline", item.id);
                       e.dataTransfer.effectAllowed = "move";
                     }}
                     style={{ viewTransitionName: `pl-${item.id}` }}
-                    className={cx("cursor-grab border-b border-line bg-surface px-5 py-4 active:cursor-grabbing", item.stale && "border-l-[3px] border-l-alert")}
+                    className={cx(
+                      "cursor-grab border-b border-line bg-surface px-5 py-4 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink active:cursor-grabbing",
+                      item.stale && "border-l-[3px] border-l-alert",
+                    )}
                   >
                     <div className="flex items-start gap-2">
                       <h3 className="min-w-0 flex-1 text-[15px] leading-snug font-medium break-words [overflow-wrap:anywhere]">
@@ -150,10 +183,24 @@ export default function Pipeline() {
                           onChange={(e) => save(() => api.updatePipeline(item.id, { follow_up: e.target.value || null }))}
                         />
                       </label>
-                      <Button size="sm" variant="ghost" className="h-7 px-1.5" disabled={ci === 0} aria-label="Move left" onClick={() => move(item, STAGES[ci - 1].id)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-1.5"
+                        disabled={ci === 0}
+                        aria-label={ci > 0 ? `Move left to ${STAGES[ci - 1].label}` : "Move left"}
+                        onClick={() => step(item, ci, -1)}
+                      >
                         <ArrowLeft />
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 px-1.5" disabled={ci === STAGES.length - 1} aria-label="Move right" onClick={() => move(item, STAGES[ci + 1].id)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-1.5"
+                        disabled={ci === STAGES.length - 1}
+                        aria-label={ci < STAGES.length - 1 ? `Move right to ${STAGES[ci + 1].label}` : "Move right"}
+                        onClick={() => step(item, ci, 1)}
+                      >
                         <ArrowRight />
                       </Button>
                     </div>
