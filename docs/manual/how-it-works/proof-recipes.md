@@ -23,8 +23,15 @@ An activity gets a proof checklist when it reaches a stage that matters:
 - a [pipeline](../tour/pipeline.md) item moved to done,
 - an approved claim at one of those stages that no exhibit cites yet.
 
+A document with no stage (a certificate, a page) doesn't get one: it's usually the proof for an activity.
 Self-reported exhibits don't get a checklist, and neither does an exhibit you linked as another activity's proof.
 For more on stages, see [Invited vs completed](invited-vs-completed.md).
+
+### At "invited": two items first
+
+An activity still at `invited` gets a short checklist, "Invited: save these now": **the invitation** (usually done
+already, by the invitation itself) and **your acceptance or the organizer's confirmation**. Once you save the
+acceptance, the activity counts as accepted and the full recipe takes over, with both items already done.
 
 The checklist is worked out each time you open the page, from the recipe and what you've saved. Nothing is
 generated ahead of time, so a recipe edit applies to every activity at once.
@@ -46,7 +53,7 @@ For each missing item you can:
 
 | Button | What it does |
 |---|---|
-| **Upload** | Opens **Save proof** for that criterion, with the item's label as the title. The file is filed as an exhibit and linked to the item. |
+| **Upload** | Opens **Save proof** for that criterion, with the item's label as the title and its evidence type and stage already set (the thank-you is filed at `completed`, the acceptance at `accepted`). The file is filed as an exhibit and linked to the item. |
 | **Link** | Choose an existing exhibit. "Looks like a match" lists up to three likely ones; "Link (2 likely)" says how many. |
 | **Not applicable** | Say why it doesn't apply, then **Save**. The item is struck through. |
 
@@ -70,7 +77,11 @@ Area O1 also looks for proof you may already have. A rule-based matcher (no AI m
 keywords with:
 
 - **incoming mail** in your [Mail view](../connectors/gmail.md), after a Gmail sync: the subject must contain one of
-  the item's keywords and share a distinctive word with the activity's title,
+  the item's keywords, and the message must belong to the activity. It does when its subject shares a distinctive
+  word with the activity's title, or when it comes from the activity's organizer with a verified sender (the same
+  sender check as in Mail). The organizer is the site the activity came from, or whoever sent you verified mail
+  naming it, usually the invitation. So "Re: Saturday - thanks for judging!" from the organizer counts; the same
+  subject from a look-alike domain, a failed sender check or a free mail address doesn't,
 - **pages from your sources**, after a source sync: the same test on the page's title or address.
 
 A match becomes an evidence candidate in the [Inbox](../tour/inbox.md), titled with the item's label, such as "The

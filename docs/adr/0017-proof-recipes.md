@@ -49,3 +49,27 @@ what should be preserved now, while it's still easy to get.
   recipes avoid "required" language.
 - The packet (ADR 0020) and preflight (ADR 0018) read the same checklists, so "invited without completed proof"
   has one definition.
+
+## Amendment (2026-10-09)
+
+The code and this record had drifted; the owner chose, item by item:
+
+1. **When a checklist appears (keep the code).** An exhibit at `accepted`, `completed`, `granted` or `published`,
+   a pipeline item moved to `done`, and an approved claim at one of those stages that no exhibit cites yet. A
+   document with no stage gets no checklist of its own (it is usually *the proof* for one), and neither does a
+   self-reported exhibit or an exhibit already linked as another activity's proof. **New: at `invited`**, an
+   activity gets a two-item checklist, the invitation and your acceptance (the recipe's own `invitation` and
+   `acceptance` items when it has them, generic ones otherwise). The invitation is usually done by the anchor
+   itself. Once the acceptance is saved, the activity counts as accepted and the full recipe follows. An
+   invitation with no completion keeps its own preflight rule; the "accepted, no completion proof" rule applies
+   from `accepted` only, so the two never double up.
+2. **Uploads from a checklist are preset.** Each item carries a `preset`: the first evidence type it names that
+   the criterion accepts (else the activity's own type), and the stage it names. The upload form starts from it,
+   and the API fills it in when the form leaves either empty, so "the thank-you" is filed as the completion and
+   ticks its item.
+3. **Mail matching uses the sender's domain as well as the subject.** A message still needs one of the item's
+   keywords in its subject. It belongs to the activity when its subject shares a distinctive word with it, *or*
+   when its sender is the activity's organizer: the organization of a sender who passed the sender check (DMARC,
+   or DKIM aligned with From; ADR 0014) and who is the host of the activity's source address or a verified sender
+   of mail naming the activity (the invitation). A reply titled "Re: Saturday - thanks for judging!" from the
+   organizer matches; the same subject from a look-alike domain, a failed check or a free mail provider doesn't.

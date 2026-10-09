@@ -62,8 +62,8 @@ exhibit. A different issue, even a similar one, shows up open.
 
 - the **Preflight** panel on Evidence,
 - `areao1 preflight` in the terminal,
-- the in-app agent's `list_preflight_issues` tool and the `preflight` [MCP tool](../mcp/tools.md), which check
-  fresh and write nothing,
+- the `run_preflight` tool, for the in-app agent and [MCP clients](../mcp/tools.md#run_preflight): it checks fresh
+  and is read-only, so it saves nothing,
 - the [review packet](review-packet.md).
 
 ## In the review packet

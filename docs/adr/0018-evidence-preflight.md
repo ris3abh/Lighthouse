@@ -41,3 +41,11 @@ was never followed by proof of completion. Each one is cheap to fix early and ex
   "Senior Engineer" don't conflict; a real disagreement still shows both values with their sources.
 - Severity is about how likely a reviewer is to notice, never about the case's chances: no score, no
   probability (SPEC §2a).
+
+## Amendment (2026-10-09)
+
+The agent and MCP clients run preflight through one read-only tool, `run_preflight` (it replaces the agent's
+`list_preflight_issues` and the MCP `preflight` tool). It computes the issues fresh and writes nothing: not
+`data/preflight.json`, not a change record. Only **Run preflight** on Evidence and `areao1 preflight` save the
+report. An optional `min_severity` (`high`, `medium`, `low`) keeps the issues at or above it. The MCP server marks
+it read-only to the client, like the other read tools.

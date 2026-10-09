@@ -11,6 +11,7 @@ The examples use made-up data for a made-up person, Maya Chen. Results are trimm
 | [`query_claims`](#query_claims) | `entity`, `as_of` (optional) | no |
 | [`get_provenance`](#get_provenance) | `claim_id` | no |
 | [`what_changed`](#what_changed) | `since` | no |
+| [`run_preflight`](#run_preflight) | `min_severity` (optional) | no |
 | [`propose_context`](#propose_context) | `text`, `title`, `topic`, `client` (all but `text` optional) | adds a note to the Inbox |
 
 The read tools are marked read-only to the client. They score the case in memory and never change a workspace file. The only thing they may touch is the disposable search index under `.areao1/cache/`.
@@ -279,6 +280,36 @@ Everything recorded on or after a date. A good way to start a session where the 
 ```
 
 A date that isn't `YYYY-MM-DD` fails with a message saying so.
+
+## run_preflight
+
+Runs [evidence preflight](../how-it-works/preflight.md) now: what a reviewer would notice (outdated or unsupported
+values cited, facts that disagree, metrics that differ, invitations without completed proof, captures without a
+primary copy, undated exhibits). It's read-only: the issues are computed fresh and nothing is saved, not even
+`data/preflight.json`. Only **Run preflight** on Evidence and `areao1 preflight` save the report.
+
+**Parameters:**
+
+| Name | Type | Meaning |
+|---|---|---|
+| `min_severity` | string, optional | `high`, `medium` or `low` (the default, every issue). Keeps issues at or above it. |
+
+**Returns:**
+
+| Field | Meaning |
+|---|---|
+| `summary` | One line, such as "Preflight: 3 open issues (1 high, 2 medium, 0 low) across 12 exhibits and 40 claims". |
+| `counts` | Open issues by severity. |
+| `issues[]` | Each open issue: `id`, `kind`, `severity`, `title`, `detail` and `refs` (the claims, exhibits, letters or drafts involved, with links). Dismissed issues are left out. At most 100. |
+| `more` | How many more matched beyond the first 100. |
+
+Severity says how noticeable an issue is to a reader. It says nothing about approval.
+
+**Example call:**
+
+```json
+{"min_severity": "high"}
+```
 
 ## propose_context
 

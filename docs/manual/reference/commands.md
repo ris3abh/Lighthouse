@@ -211,7 +211,7 @@ claude mcp add areao1 -- areao1 mcp -w ~/my-case    # Claude Code
 codex mcp add areao1 -- areao1 mcp -w ~/my-case     # Codex
 ```
 
-Its tools are `get_scoreboard`, `list_gaps`, `query_claims`, `get_provenance` and `what_changed`, plus `propose_context`, which sends notes to your Inbox. See [MCP and agents](../mcp/index.md).
+Its tools are `get_scoreboard`, `list_gaps`, `query_claims`, `get_provenance`, `what_changed` and `run_preflight`, plus `propose_context`, which sends notes to your Inbox. See [MCP and agents](../mcp/index.md).
 
 ## Scheduled jobs
 

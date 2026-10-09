@@ -325,14 +325,16 @@ class Service:
 
     # ------------------------------------------------------------------ proof recipes (ADR 0017)
 
-    def _proof_item(self, anchor: str, item: str) -> None:
+    def _proof_item(self, anchor: str, item: str) -> dict[str, Any]:
+        """The checklist row for this item (with its upload preset), or NotFound."""
         from areao1.criteria import proof
 
-        if not any(
-            c["anchor"] == anchor and any(i["id"] == item for i in c["items"])
-            for c in proof.checklists(self.ws)
-        ):
-            raise NotFound(f"no proof item {item!r} for {anchor!r}")
+        for c in proof.checklists(self.ws):
+            if c["anchor"] == anchor:
+                for row in c["items"]:
+                    if row["id"] == item:
+                        return dict(row)
+        raise NotFound(f"no proof item {item!r} for {anchor!r}")
 
     def link_proof(self, anchor: str, item: str, exhibit_id: str) -> ProofLink:
         """This exhibit preserves that proof item. A self-reported exhibit can be linked but never marks it done."""

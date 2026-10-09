@@ -8,6 +8,8 @@ export interface ProofUpload {
   anchor: string;
   item: string;
   label: string;
+  evidence_type: string | null;
+  stage: string | null;
 }
 
 /** Proof recipes (ADR 0017): for each accepted / completed / granted / published activity, the proof worth saving
@@ -199,7 +201,7 @@ function Item({
         {missing && !linking && !waiving && (
           <>
             {crit && (
-              <Button size="sm" onClick={() => onUpload(crit, { anchor: c.anchor, item: i.id, label: i.label })}>
+              <Button size="sm" onClick={() => onUpload(crit, { anchor: c.anchor, item: i.id, label: i.label, ...i.preset })}>
                 <Upload /> Upload
               </Button>
             )}

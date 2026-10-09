@@ -40,7 +40,14 @@ WRITE_TO_INBOX = ToolAnnotations(
     read_only_hint=False, destructive_hint=False, idempotent_hint=True, open_world_hint=False
 )
 
-READ_TOOLS = ("get_scoreboard", "list_gaps", "query_claims", "get_provenance", "what_changed", "preflight")
+READ_TOOLS = (
+    "get_scoreboard",
+    "list_gaps",
+    "query_claims",
+    "get_provenance",
+    "what_changed",
+    "run_preflight",
+)
 TOOL_NAMES = (*READ_TOOLS, "propose_context")
 
 
@@ -80,15 +87,15 @@ def build_server(ws: Case) -> MCPServer:
         return tools.what_changed(ws, since)
 
     @server.tool(annotations=READ_ONLY)
-    def preflight() -> dict[str, Any]:
-        """Evidence preflight (ADR 0018): issues a reviewer would notice (outdated or unsupported values cited, facts
-        that disagree, invited without completed proof, captures without a primary copy, undated exhibits), each with
-        the claims and exhibits involved. Computed fresh; nothing is written. Severity says how noticeable an issue is."""
+    def run_preflight(min_severity: str = "low") -> dict[str, Any]:
+        """Evidence preflight (ADR 0018), run now: issues a reviewer would notice (outdated or unsupported values
+        cited, facts that disagree, metrics that differ, invited without completed proof, captures without a
+        primary copy, undated exhibits), each with the claims and exhibits involved. Read-only: computed fresh, and
+        nothing is written. min_severity is "high", "medium" or "low" (all). Severity says how noticeable an issue
+        is, never anything about approval."""
         from areao1.criteria import preflight as pf
 
-        report = pf.run(ws, save=False)
-        return {"summary": pf.summary(report), "counts": report["counts"],
-                "issues": [i for i in report["issues"] if not i["dismissed"]][:100]}  # fmt: skip
+        return pf.read_only_view(ws, min_severity)
 
     @server.tool(annotations=WRITE_TO_INBOX)
     def propose_context(text: str, title: str = "", topic: str = "", client: str = "") -> dict[str, Any]:

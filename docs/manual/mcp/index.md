@@ -28,6 +28,7 @@ Your AI tool needs no OpenAI key for any of this.
 | `query_claims` | Facts about a repo, paper, person or event, each quoting its source. |
 | `get_provenance` | The full trail behind one fact. |
 | `what_changed` | Everything recorded since a date. |
+| `run_preflight` | What a reviewer would notice, checked now. Saves nothing. |
 | `propose_context` | The only write: a note to your Inbox, marked self-reported. |
 
 Five tools only read. `propose_context` adds a note to your Inbox and nothing else. A note never becomes evidence and never counts toward a criterion.

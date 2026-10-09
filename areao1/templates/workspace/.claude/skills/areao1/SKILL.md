@@ -26,7 +26,7 @@ Run it in this workspace folder (or pass the folder's path). `claude mcp list` s
 | `list_gaps()` | What's missing per criterion: exhibits, signals, in-progress items, pending Inbox candidates. |
 | `query_claims(entity, as_of?)` | Facts about a person, paper, repo or event, each quoting its source verbatim. |
 | `get_provenance(claim_id)` | Where a claim came from: snapshot, verified excerpt, reviews, versions. |
-| `preflight()` | What a reviewer would notice: outdated or unsupported values cited, facts that disagree, invited without completed proof, captures without a primary copy, undated exhibits, each with its claims and exhibits. Nothing is written. |
+| `run_preflight(min_severity?)` | Runs preflight now: what a reviewer would notice: outdated or unsupported values cited, facts that disagree, invited without completed proof, captures without a primary copy, undated exhibits, each with its claims and exhibits. Nothing is written. |
 | `propose_context(text, title?, topic?, client?)` | The only write: a note to the person's Inbox, self-reported. Pass `client="Claude Code"`. |
 
 ## How to work

@@ -413,3 +413,19 @@ def summary(report: dict[str, Any]) -> str:
     total = sum(c.values())
     return (f"Preflight: {total} open issue{'s' if total != 1 else ''} ({c['high']} high, {c['medium']} medium, "
             f"{c['low']} low) across {report['exhibits']} exhibits and {report['claims']} claims")  # fmt: skip
+
+
+SEVERITY_ORDER = ("high", "medium", "low")
+
+
+def read_only_view(ws: Any, min_severity: str = "low", limit: int = 100) -> dict[str, Any]:
+    """Run preflight fresh and return the open issues, for the agent's and MCP's run_preflight tool. Read-only: it
+    writes nothing (not data/preflight.json, not a change record); only Run preflight on Evidence and
+    ``areao1 preflight`` save the report. ``min_severity`` keeps issues at or above it."""
+    if min_severity not in SEVERITY_ORDER:
+        raise ValueError(f"min_severity must be one of {', '.join(SEVERITY_ORDER)}")
+    keep = set(SEVERITY_ORDER[: SEVERITY_ORDER.index(min_severity) + 1])
+    report = run(ws, save=False)
+    issues = [i for i in report["issues"] if not i["dismissed"] and i["severity"] in keep]
+    return {"summary": summary(report), "counts": report["counts"], "issues": issues[:limit],
+            "more": max(0, len(issues) - limit)}  # fmt: skip

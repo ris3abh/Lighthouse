@@ -307,6 +307,8 @@ export interface ProofItem {
   exhibit_title: string | null;
   note: string;
   suggestions: { id: string; title: string }[];
+  /** What an upload for this item is: the form starts with it. */
+  preset: { evidence_type: string | null; stage: string | null };
 }
 
 export interface ProofChecklist {

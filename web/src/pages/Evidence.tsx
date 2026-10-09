@@ -339,8 +339,11 @@ function UploadModal({ crit, proof, onClose, onDone }: { crit: EvidenceCriterion
   const toast = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState(proof ? proof.label : "");
-  const [type, setType] = useState(crit.evidence_types[0] ?? "");
-  const [stage, setStage] = useState(/invite/.test(crit.evidence_types[0] ?? "") ? "invited" : "");
+  // From a proof checklist, the item says what this is (ADR 0017): "the thank-you" is a completion, the invitation
+  // an invitation.
+  const firstType = proof?.evidence_type ?? crit.evidence_types[0] ?? "";
+  const [type, setType] = useState(firstType);
+  const [stage, setStage] = useState(proof ? (proof.stage ?? "") : /invite/.test(firstType) ? "invited" : "");
   const [date, setDate] = useState(today());
   const [summary, setSummary] = useState("");
   const [signals, setSignals] = useState<string[]>([]);

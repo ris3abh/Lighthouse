@@ -583,7 +583,7 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
     async def upload(
         file: UploadFile = File(...),
         criterion: str = Form(...),
-        evidence_type: str = Form(...),
+        evidence_type: str = Form("", description="Required, unless a proof item presets it"),
         title: str = Form(...),
         on: dt.date = Form(..., alias="date"),
         summary: str = Form(""),
@@ -596,8 +596,12 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
         content = await file.read(MAX_UPLOAD_BYTES + 1)
         if len(content) > MAX_UPLOAD_BYTES:
             raise HTTPException(413, "file is larger than 25 MB")
-        if proof_anchor:
-            svc._proof_item(proof_anchor, proof_item)  # before filing anything
+        if proof_anchor:  # before filing anything; the item says what the upload is when the form didn't
+            preset = svc._proof_item(proof_anchor, proof_item)["preset"]
+            evidence_type = evidence_type or preset["evidence_type"] or ""
+            stage = stage or preset["stage"] or ""
+        if not evidence_type:
+            raise HTTPException(400, "evidence_type is required")
         exhibit = svc.add_exhibit_file(
             content=content,
             filename=file.filename or "upload.bin",
