@@ -192,3 +192,26 @@ def test_the_merits_section_is_named_for_the_profile(ws):
     c.put("/api/profile", headers=W, json={"id": "eb1a"})
     pdf, doc = texts(packet.build(ws))  # EB-1A keeps its final merits step
     assert "Final merits" in pdf and "Final merits" in doc and "Totality of the evidence" not in pdf
+
+
+def test_the_cover_names_the_person_and_the_index_explains_the_numbers(ws):
+    _case(ws)
+    person = ws.person()
+    person.name = "Maya Chen"
+    ws.save_person(person)
+    m = packet.build(ws)
+    out = ws.root / "exports" / m["name"]
+    reader = PdfReader(out / "packet.pdf")
+    cover = reader.pages[0].extract_text()
+    assert cover.splitlines()[0] == "Maya Chen" and "from Maya Chen's workspace" in cover
+    assert "the person" not in cover.lower() and reader.metadata.title == "Review packet: Maya Chen"
+    index = next(p.extract_text() for p in reader.pages if p.extract_text().startswith("Exhibit index"))
+    flat = " ".join(index.split())
+    assert (
+        "numbered by criterion, in the order the O-1A Extraordinary Ability profile lists them (C1 Awards"
+        in flat
+    )
+    assert "within a criterion, by date and then title" in flat
+    with zipfile.ZipFile(out / "packet.docx") as z:
+        doc = z.read("word/document.xml").decode()
+    assert "Maya Chen" in doc and "numbered by criterion" in doc and "The person" not in doc

@@ -336,6 +336,18 @@ class Packet:
     as_of: datetime
     input_hash: str = ""
     profile_id: str = "o1a"
+    criteria: list[str] = field(default_factory=list)  # the profile's criteria, in order (C1 is the first)
+
+    @property
+    def name(self) -> str:
+        return self.person.strip() or "Unnamed beneficiary"
+
+    @property
+    def numbering(self) -> str:
+        order = ", ".join(f"C{n} {label}" for n, label in enumerate(self.criteria, 1))
+        return (f"Exhibits are numbered by criterion, in the order the {self.profile} profile lists them ({order}); "
+                "within a criterion, by date and then title. A number with no exhibits is a criterion with none "
+                "counted yet.")  # fmt: skip
 
     @property
     def merits_title(self) -> str:
@@ -402,12 +414,12 @@ def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str
                                ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke)]))  # fmt: skip
         return t
 
-    flow: list[Any] = [Spacer(1, 120), Paragraph("Review packet", st["h1"]), para(LABEL, "label"), Spacer(1, 12),
-                       para(f"{p.person or 'The person'} · {p.profile}"),
+    flow: list[Any] = [Spacer(1, 120), Paragraph(escape(p.name), st["h1"]),
+                       para(f"Review packet · {p.profile}"), para(LABEL, "label"), Spacer(1, 12),
                        para(f"As of {clock.local_date(p.as_of).isoformat()} · {len(p.items)} numbered exhibits · "
                             f"{len(p.rows)} cited claims · {len(p.issues)} open preflight issues"),
                        para(f"Input hash {p.input_hash}", "small"), Spacer(1, 18),
-                       para("Built by Area O1 from the person's workspace for attorney review. It is not a petition, "
+                       para(f"Built by Area O1 from {p.name}'s workspace for attorney review. It is not a petition, "
                             "it is not legal advice, and it makes no eligibility determination.", "small"),
                        PageBreak(), section("Contents")]  # fmt: skip
     for name in p.sections[1:]:
@@ -415,7 +427,7 @@ def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str
         flow.append(para(f"{name} {'.' * 8} page {page}" if page else name))
     flow.append(para(f"Exhibits {'.' * 8} pages {p.items[0].start}–{p.items[-1].start + p.items[-1].pages - 1}"
                      if p.items and p.items[0].start else "Exhibits"))  # fmt: skip
-    flow += [PageBreak(), section("Exhibit index")]
+    flow += [PageBreak(), section("Exhibit index"), para(p.numbering, "small"), Spacer(1, 6)]
     crits = list(dict.fromkeys(it.criterion for it in p.items))
     if not crits:
         flow.append(para("No counted exhibits yet."))
@@ -475,7 +487,7 @@ def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str
                       [[i["severity"], i["title"], i.get("detail", "")] for i in grouped(p.issues)]
                       or [["", "No open issues.", ""]], [56, 170, 278]))  # fmt: skip
     buf = io.BytesIO()
-    doc = Doc(buf, pagesize=letter, invariant=1, title="Review packet", author="Area O1", subject=LABEL,
+    doc = Doc(buf, pagesize=letter, invariant=1, title=f"Review packet: {p.name}", author="Area O1", subject=LABEL,
               creator="Area O1", topMargin=54, bottomMargin=60)  # fmt: skip
     doc.build(flow)
     return buf.getvalue(), found
@@ -549,7 +561,7 @@ def review_pdf(p: Packet) -> bytes:
         writer.append(PdfReader(io.BytesIO(_cover_sheet(it))))
         writer.append(PdfReader(io.BytesIO(it.pdf)))
     _stamp(writer)
-    writer.add_metadata({"/Title": "Review packet", "/Subject": LABEL, "/Producer": "Area O1",
+    writer.add_metadata({"/Title": f"Review packet: {p.name}", "/Subject": LABEL, "/Producer": "Area O1",
                          "/Creator": "Area O1"})  # fmt: skip
     buf = io.BytesIO()
     writer.write(buf)
@@ -598,11 +610,11 @@ W_NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
 def docx(p: Packet) -> bytes:
     """An editable Word document (Office Open XML, written directly): the front matter of the packet. Every page
     carries the label in its header and "Page n of N" in its footer."""
-    body = [_p("Review packet", "Title"), _p(LABEL, "Label"),
-            _p(f"{p.person or 'The person'} · {p.profile} · as of {clock.local_date(p.as_of).isoformat()}"),
-            _p(f"Input hash {p.input_hash}"),
-            _p("Built by Area O1 for attorney review. It is not a petition, it is not legal advice, and it makes no "
-               "eligibility determination."), _p("Exhibit index", "Heading1")]  # fmt: skip
+    body = [_p(p.name, "Title"), _p(f"Review packet · {p.profile} · as of {clock.local_date(p.as_of).isoformat()}"),
+            _p(LABEL, "Label"), _p(f"Input hash {p.input_hash}"),
+            _p(f"Built by Area O1 from {p.name}'s workspace for attorney review. It is not a petition, it is not legal "
+               "advice, and it makes no eligibility determination."), _p("Exhibit index", "Heading1"),
+            _p(p.numbering)]  # fmt: skip
     for crit in dict.fromkeys(it.criterion for it in p.items):
         body.append(_p(crit, "Heading2"))
         body.append(_tbl(["No.", "Title", "Date", "Type", "Stage", "Pages"],
@@ -806,7 +818,8 @@ def gather(ws: Any, vault: Any = None) -> Packet:
         merits = None
     p = Packet(items=items, rows=rows, outline=text, dropped=dropped, issues=issues, merits=merits,
                person=ws.person().name, profile=ws.profile().name, as_of=as_of(ws, items),
-               profile_id=ws.profile().id)  # fmt: skip
+               profile_id=ws.profile().id,
+               criteria=[c.short_label or c.label for c in ws.profile().criteria])  # fmt: skip
     p.input_hash = input_hash(ws, p)
     return p
 

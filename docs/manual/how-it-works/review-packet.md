@@ -21,9 +21,9 @@ export (ZIP)** and **Matrix (CSV)**.
 
 | Section | What it holds |
 |---|---|
-| Cover | Your name, the profile, the date, the counts and the input hash. |
+| Cover | Your name as its title, the profile, the date, the counts and the input hash. |
 | Contents | Each section's page. |
-| Exhibit index | Exhibits by criterion: number, title, date, type, stage and page range in the PDF. |
+| Exhibit index | A note on how exhibits are numbered, then exhibits by criterion: number, title, date, type, stage and page range in the PDF. |
 | Claim, exhibit, page and quote | Every approved fact an exhibit cites, the exhibit, the page its quote is on, and the quote. |
 | Outline | One sentence per approved fact, each ending with its exhibit and a footnote. |
 | Totality of the evidence (O-1A) or Final merits (EB-1A) | The themes and the standard from [Final merits](../tour/merits.md). |
