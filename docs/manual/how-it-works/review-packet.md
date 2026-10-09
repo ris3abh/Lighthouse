@@ -32,6 +32,23 @@ export (ZIP)** and **Matrix (CSV)**.
 
 The PDF numbers its pages straight through, exhibits included ("Page 12 of 140").
 
+### How each exhibit appears
+
+Every exhibit starts with a cover sheet (its number, title, criterion, date, type, organization and source), then
+its content:
+
+| Uploaded as | In the review PDF |
+|---|---|
+| PDF | The original pages, embedded as they are. A scan's words can't be searched, so its quotes show as "not found". |
+| Image (.png, .jpg, .gif, .webp) | The image on its own page, scaled to fit, with a line saying its words can't be searched. |
+| Email (.eml) | Re-rendered as text the way you'd read it: From, To, Date, Subject, the message body and the attachments' names. Not the raw message source. |
+| Web page (.html) or capture (.md) | Re-rendered as text: the page's words, a line per paragraph; scripts and styles left out. |
+| Word document (.docx) | Re-rendered as text: its paragraphs, without the formatting. |
+| Anything else | A page saying the file can't be shown as pages. |
+
+A re-rendered exhibit says so at the top of its first page. The original file, byte for byte, is always in the
+attorney export ZIP, named by its exhibit number (`exhibits/C4-01_…`), so your attorney can file the original.
+
 ### Exhibit numbers
 
 Counted exhibits are numbered per criterion: `C<n>-<nn>`, where `n` is the criterion's place in your profile

@@ -37,7 +37,6 @@ from areao1.criteria import sentences
 from areao1.criteria.grounding import CITE, LABEL, is_verdict
 
 IMAGES = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
-TEXTS = {".md", ".txt", ".html", ".htm", ".csv", ".eml", ".json"}
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 FILES = ("packet.docx", "packet.pdf", "matrix.csv", "preflight.json", "provenance.json", "provenance.prov.json",
          "manifest.json", "attorney-export.zip")  # fmt: skip
@@ -269,7 +268,60 @@ def _typeset(title: str, text: str) -> bytes:
 
 
 def _wrap(line: str, width: int) -> str:
-    return "\n".join(line[i : i + width] for i in range(0, max(len(line), 1), width))
+    """At word boundaries, so a quote that spans a line break is still found (whitespace is collapsed for the
+    search); a word longer than a line is split."""
+    import textwrap
+
+    return "\n".join(textwrap.wrap(line, width, break_long_words=True, break_on_hyphens=False)) or ""
+
+
+BLOCK = re.compile(
+    r"(?i)<\s*(br|/p|/div|/h[1-6]|/li|/tr|/blockquote|/section|/article|/header|/footer)\b[^>]*>"
+)
+
+
+def html_text(markup: str) -> str:
+    """A web page's readable text: scripts and styles dropped, a line break per block, entities decoded."""
+    import html
+
+    text = re.sub(r"(?is)<(script|style|noscript|template)\b.*?</\1>", "", markup)
+    text = BLOCK.sub("\n", text)
+    text = html.unescape(re.sub(r"<[^>]+>", " ", text))
+    lines = [re.sub(r"[ \t\u00a0]+", " ", ln).strip() for ln in text.splitlines()]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
+
+def eml_text(data: bytes) -> str:
+    """An email as a person reads it: From, To, Cc, Date and Subject, the body (the plain-text part, else the
+    HTML part's text), and the attachments by name. Not the raw MIME source."""
+    from email import message_from_bytes, policy
+
+    msg = message_from_bytes(data, policy=policy.default)
+    head = [f"{k}: {msg[k]}" for k in ("From", "To", "Cc", "Date", "Subject") if msg[k]]
+    body = ""
+    part = msg.get_body(preferencelist=("plain", "html"))  # type: ignore[attr-defined]
+    if part is not None:
+        content = part.get_content()
+        body = html_text(content) if part.get_content_subtype() == "html" else content
+    names = [a.get_filename() or a.get_content_type() for a in msg.iter_attachments()]  # type: ignore[attr-defined]
+    tail = ["", "Attachments: " + ", ".join(names)] if names else []
+    return "\n".join([*head, "", body.strip(), *tail])
+
+
+def docx_text(data: bytes) -> str:
+    """A Word document's paragraphs, as text (formatting, images and tables' layout aren't kept)."""
+    import zipfile as zf
+    from xml.etree import ElementTree as ElementTree
+
+    w = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    with zf.ZipFile(io.BytesIO(data)) as z:
+        root = ElementTree.fromstring(z.read("word/document.xml"))
+    paras = ["".join(t.text or "" for t in p.iter(f"{w}t")) for p in root.iter(f"{w}p")]
+    return "\n".join(paras).strip()
+
+
+READABLE = {".eml": "an email", ".docx": "a Word document", ".html": "a web page", ".htm": "a web page",
+            ".md": "a capture", ".txt": "a text file", ".csv": "a CSV file", ".json": "a JSON file"}  # fmt: skip
 
 
 def _image(path: Path) -> bytes:
@@ -282,8 +334,11 @@ def _image(path: Path) -> bytes:
     img = ImageReader(str(path))
     iw, ih = img.getSize()
     w, h = letter
-    scale = min((w - 72) / iw, (h - 108) / ih, 1.0)
-    c.drawImage(img, (w - iw * scale) / 2, (h - ih * scale) / 2, iw * scale, ih * scale)
+    scale = min((w - 72) / iw, (h - 144) / ih, 1.0)
+    c.drawImage(img, (w - iw * scale) / 2, (h - 36 - ih * scale) / 2, iw * scale, ih * scale)
+    c.setFont("Helvetica", 8)
+    c.drawString(36, h - 40, f"The image {path.name}, as uploaded (scaled to fit). Its words can't be searched, so a "
+                             "quote from it shows as not found.")  # fmt: skip
     c.showPage()
     c.save()
     return buf.getvalue()
@@ -306,12 +361,21 @@ def render_exhibit(ws: Any, it: Item) -> None:
         if ext in IMAGES:
             it.pdf, it.texts = _image(path), [""]
             return
-        text = path.read_text(encoding="utf-8", errors="replace")
-        if ext in (".html", ".htm"):
-            text = re.sub(
-                r"\s+\n", "\n", re.sub(r"<[^>]+>", " ", re.sub(r"(?is)<(script|style).*?</\1>", "", text))
-            )
-        it.pdf = _typeset(it.exhibit.title, text)
+        data = path.read_bytes()
+        if ext == ".eml":
+            text = eml_text(data)
+        elif ext == ".docx":
+            text = docx_text(data)
+        elif ext in (".html", ".htm"):
+            text = html_text(data.decode("utf-8", errors="replace"))
+        elif ext in READABLE:
+            text = data.decode("utf-8", errors="replace")
+        else:  # a format the packet can't show as pages (.xlsx, .zip, ...): say so, never print its bytes
+            text = (f"This exhibit is a {ext or 'binary'} file, which the review PDF can't show as pages. The original "
+                    f"is in the attorney export ZIP.")  # fmt: skip
+        note = (f"Re-rendered as text from {path.name} ({READABLE.get(ext, 'a file')}): the words, not the original "
+                f"layout. The original file is in the attorney export ZIP, named by its exhibit number.")  # fmt: skip
+        it.pdf = _typeset(it.exhibit.title, f"{note}\n\n{text}")
         it.texts = _pdf_texts(it.pdf)
         it.texts = it.texts or [text]
     except Exception as exc:  # a missing or unreadable file is shown, not skipped

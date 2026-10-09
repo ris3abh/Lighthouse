@@ -215,3 +215,66 @@ def test_the_cover_names_the_person_and_the_index_explains_the_numbers(ws):
     with zipfile.ZipFile(out / "packet.docx") as z:
         doc = z.read("word/document.xml").decode()
     assert "Maya Chen" in doc and "numbered by criterion" in doc and "The person" not in doc
+
+
+def _render(ws, name, data):
+    e = ws.add_exhibit_file(content=data, filename=name, criterion="judging", evidence_type="panel_letter",
+                            title=name, on=date(2026, 3, 1))  # fmt: skip
+    it = packet.Item(
+        number="C4-09", exhibit=next(x for x in ws.exhibits().exhibits if x.id == e.id), criterion="Judging"
+    )
+    packet.render_exhibit(ws, it)
+    return it
+
+
+def test_uploaded_files_appear_as_their_pages_or_as_readable_text(ws):
+    from email.message import EmailMessage
+
+    from PIL import Image
+
+    pdf = _render(ws, "certificate.pdf", _pdf("Certificate of appreciation", "Maya Chen judged the finals"))
+    assert pdf.pdf == (ws.root / pdf.exhibit.file).read_bytes() and len(pdf.texts) == 2  # the original pages
+
+    m = EmailMessage()
+    m["From"], m["To"], m["Subject"] = (
+        "Lakeside Hacks <judges@lakesidehacks.example>",
+        "maya@example.com",
+        "Thanks",
+    )
+    m["Date"] = "Sat, 03 Oct 2026 18:00:00 +0000"
+    m.set_content("Hi Maya, thank you for judging the systems track at Lakeside Hacks 2026. Your scores picked "
+                  "the 12 winning teams out of 340 submissions.")  # fmt: skip
+    m.add_alternative("<p>Hi Maya, thank you for <b>judging</b>.</p>", subtype="html")
+    m.add_attachment(b"%PDF-1.4", maintype="application", subtype="pdf", filename="certificate.pdf")
+    eml = "\n".join(_render(ws, "thanks.eml", bytes(m)).texts)
+    assert (
+        "From: Lakeside Hacks <judges@lakesidehacks.example>" in eml and "Attachments: certificate.pdf" in eml
+    )
+    assert "Content-Type" not in eml and "boundary" not in eml and "=\n" not in eml  # not the raw MIME source
+    assert "Re-rendered as text from" in eml and "attorney export ZIP" in eml
+    assert packet.find_page("Your scores picked the 12 winning teams out of 340 submissions.", [eml]) == 1
+
+    html = "\n".join(_render(ws, "judges.html", b"<html><script>x()</script><h1>Judges</h1><p>Maya Chen &amp; "
+                                                b"Sam Lee</p></html>").texts)  # fmt: skip
+    assert "Judges\nMaya Chen & Sam Lee" in html and "x()" not in html
+
+    docx = _render(ws, "letter.docx", packet.docx(packet.gather(ws)))  # a real Word document
+    assert "Re-rendered as text from" in docx.texts[0] and "Exhibit index" in "\n".join(docx.texts)
+    assert "PK" not in "".join(docx.texts)  # never the zip's bytes
+
+    blob = "\n".join(_render(ws, "sheet.xlsx", b"PK\x03\x04 binary").texts)
+    assert "can't show as pages" in blob and "PK" not in blob
+
+    buf = io.BytesIO()
+    Image.new("RGB", (400, 300), "white").save(buf, "PNG")
+    img = _render(ws, "photo.png", buf.getvalue())
+    assert (
+        len(img.texts) == 1 and "can't be searched" in PdfReader(io.BytesIO(img.pdf)).pages[0].extract_text()
+    )
+
+
+def test_a_quote_across_a_wrapped_line_is_still_found(ws):
+    long = "word " * 15 + "Maya Chen served as a judge for the systems track finals at Lakeside Hacks 2026."
+    it = _render(ws, "note.txt", long.encode())
+    assert packet.find_page("Maya Chen served as a judge for the systems track finals at Lakeside Hacks 2026.",
+                            it.texts) == 1  # fmt: skip
