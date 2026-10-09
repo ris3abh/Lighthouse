@@ -1,5 +1,5 @@
 {
-  "about": "Where each vault fixture came from. tests/test_standard_quotes.py checks the files still match these hashes; scripts/check_vault_fixtures.py fetches the live sources again and repeats the check (network).",
+  "about": "Where each vault fixture came from. tests/test_standard_quotes.py checks the files still match these hashes; scripts/check_vault_fixtures.py fetches the live sources again and repeats the check (network: run weekly by .github/workflows/vault-fixtures.yml, never on push).",
   "fixtures": [
     {
       "file": "uscis-pm-eb1-extraordinary.html.gz",

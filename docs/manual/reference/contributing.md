@@ -86,6 +86,12 @@ Any create, update or move a page or the agent makes goes through `areao1/servic
 
 ## The filming workspace
 
+The vault's test fixtures (the Policy Manual chapters and Kazarian) are real copies of the sources, recorded in
+`tests/fixtures/vault/SOURCES.json`. `python scripts/check_vault_fixtures.py` fetches the live sources and checks the
+fixtures and every quoted passage of the standard still match them. It uses the network, so CI never runs it on
+push; a weekly workflow (`.github/workflows/vault-fixtures.yml`) does, and opens an issue labeled `vault-wording`
+when a source's wording changes.
+
 To record a demo, `scripts/film_demo.py` builds a fictional, offline workspace (Gmail, the AI and the keychain are all in-memory fakes) and serves it:
 
 ```sh

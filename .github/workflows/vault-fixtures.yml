@@ -1,0 +1,70 @@
+name: Vault sources (weekly)
+
+# Re-checks the vault test fixtures and every quoted passage of the standard against the live sources (the USCIS
+# Policy Manual chapters and the Ninth Circuit's Kazarian opinion). It uses the network, so it never runs on push or
+# in pull requests; only weekly and by hand. If a source's wording changed it opens an issue (or comments on the
+# one already open). If a source can't be reached, the run fails and nothing is concluded about its wording.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: vault-fixtures
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Live sources still say what we quote
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install
+        run: python -m pip install -e .
+      - name: Check against the live sources
+        id: check
+        run: |
+          set +e
+          python scripts/check_vault_fixtures.py --report report.md
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - name: Open or update the issue (wording changed)
+        if: steps.check.outputs.code == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create vault-wording --color B60205 --force \
+            --description "A vault source's wording no longer matches what Area O1 quotes" >/dev/null
+          {
+            echo "The weekly check found that a source no longer says what the vault fixtures or the quoted standard say."
+            echo "Review the passages below; update the quote (profiles/*.yaml) and the fixture (tests/fixtures/vault, SOURCES.json) from the new wording, citing the new section if it moved."
+            echo
+            cat report.md
+            echo
+            echo "Run: $RUN_URL"
+          } > body.md
+          open=$(gh issue list --label vault-wording --state open --json number -q '.[0].number')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body-file body.md
+          else
+            gh issue create --title "Vault source wording changed ($(date -u +%Y-%m-%d))" --label vault-wording --body-file body.md
+          fi
+          exit 1  # the run shows red too
+      - name: Fail when a source couldn't be reached
+        if: steps.check.outputs.code == '2'
+        run: |
+          echo "::error::A source couldn't be fetched (blocked or down); nothing was concluded about its wording."
+          exit 1
