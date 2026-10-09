@@ -276,7 +276,7 @@ never enters the packet as evidence.
   - [ ] F11 areao1 qa --runs 3: new summary table
 - [x] 3. Final merits workspace: sustained-acclaim timeline, rule-computed themes with reasons, OpenAlex field
       benchmarks where available, rule-checked Kazarian / Policy Manual citations
-- [ ] 4. Review packet builder: exhibit numbering (C4-01), TOC, per-criterion index, claim -> exhibit -> page/quote
+- [x] 4. Review packet builder: exhibit numbering (C4-01), TOC, per-criterion index, claim -> exhibit -> page/quote
       matrix, an outline drafted only from approved claims, .docx, review PDF with continuous pagination, attorney
       export ZIP (packet, originals, matrix CSV, preflight issues, provenance JSON / PROV-JSON); reproducible
 - [ ] CHECKPOINT B: Maya's packet (.docx, PDF, matrix CSV)

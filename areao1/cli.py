@@ -309,6 +309,23 @@ def preflight(workspace: WorkspaceOpt = None) -> None:
 
 
 @app.command()
+def packet(workspace: WorkspaceOpt = None) -> None:
+    """Build review packet (ADR 0020): numbered exhibits, the claim/exhibit/page matrix, an outline from approved
+    claims, the open preflight issues and final merits, as .docx, PDF and an attorney ZIP under exports/. Every page
+    is labeled "Draft for attorney review"."""
+    from areao1.service import Service
+    from areao1.vault.store import Vault
+
+    try:
+        ws = find_workspace(workspace)
+        m = Service(ws).build_packet(Vault(ws))
+    except WorkspaceError as exc:
+        raise _fail(str(exc)) from exc
+    typer.echo(f"Built exports/{m['name']}/ ({m['pages']} pages, {len(m['exhibits'])} exhibits, {m['claims']} claims, "
+               f"{m['open_issues']} open preflight issues). Draft for attorney review.")  # fmt: skip
+
+
+@app.command()
 def up(
     port: Annotated[int | None, typer.Option(help="Port (default from areao1.yaml, 7777)")] = None,
     scheduler: Annotated[

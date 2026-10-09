@@ -740,3 +740,23 @@ def test_bulk_review_of_a_long_inbox(browser, serve, qa):
         page.keyboard.press("x")
         assert page.get_by_text("1 selected").is_visible()
     no_errors(qa)
+
+
+def test_build_review_packet_and_download_it(browser, serve, qa):
+    srv = serve("film")
+    page = new_page(browser, qa)
+    open_route(page, srv.base, "evidence")
+    with step(qa, page, "Build review packet, then download the review PDF"):
+        button(page, "Build review packet").click()
+        link = page.get_by_role("link", name=re.compile("Review PDF"))
+        link.wait_for(timeout=30000)
+        href = link.get_attribute("href")
+        body = page.evaluate("async (h) => { const r = await fetch(h); const b = new Uint8Array(await r.arrayBuffer());"
+                             " return [r.status, String.fromCharCode(...b.slice(0, 5))]; }", href)  # fmt: skip
+        assert body == [200, "%PDF-"]
+        [built] = api(srv, "/packets")
+        assert built["label"] == "Draft for attorney review" and built["claims"] > 0
+    with step(qa, page, "The final merits page shows themes with their rules"):
+        open_route(page, srv.base, "merits")
+        assert page.get_by_text(re.compile("letter writers are independent")).is_visible()
+    no_errors(qa)

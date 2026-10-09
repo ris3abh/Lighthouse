@@ -26,7 +26,7 @@ PDF = b"%PDF-1.4 fictional\n"
 PAGE_PREFIXES = ("/api/inbox", "/api/pipeline", "/api/letters", "/api/deadlines", "/api/exhibits", "/api/profile",
                  "/api/criteria", "/api/changes", "/api/settings/autopilot",
                  "/api/settings/missions", "/api/settings/agent", "/api/settings/mail", "/api/settings/opportunities", "/api/rulecheck/briefing", "/api/rulecheck/inbox", "/api/knowledge/findings",
-                 "/api/onboarding", "/api/todos", "/api/contacts", "/api/outreach", "/api/proof", "/api/preflight", "/api/merits")  # fmt: skip
+                 "/api/onboarding", "/api/todos", "/api/contacts", "/api/outreach", "/api/proof", "/api/preflight", "/api/merits", "/api/packets")  # fmt: skip
 # Writes that aren't page edits: connector syncs, jobs, imports and notifications (system processes with their
 # own audit trail in memory/ or the cache).
 SYSTEM_ROUTES = {
@@ -349,6 +349,7 @@ SAMPLES = {
     ("POST", "/api/preflight/run"): ("/api/preflight/run", {}, "preflight.run"),
     ("POST", "/api/exhibits/{exhibit_id}/organization"): ("/api/exhibits/{exhibit}/organization",
                                                           {"json": {"organization": "Lakeside Hacks"}}, "evidence.organization"),
+    ("POST", "/api/packets"): ("/api/packets", {}, "packet.build"),
     ("POST", "/api/merits/benchmarks"): ("/api/merits/benchmarks", {}, "merits.benchmarks", "_openalex_offline"),
     ("POST", "/api/preflight/{issue_id}/dismiss"): ("/api/preflight/{preflight_issue}/dismiss", {"json": {"note": "Known"}},
                                                      "preflight.dismiss", "_preflight_ran"),

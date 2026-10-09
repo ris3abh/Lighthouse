@@ -618,6 +618,30 @@ def create_app(ws: Case, allowed_hosts: list[str] | None = None, engine: Engine 
 
     # ------------------------------------------------------------------ preflight (ADR 0018)
 
+    # ------------------------------------------------------------------ review packet (ADR 0020)
+
+    @app.get("/api/packets")
+    def get_packets() -> list[dict[str, Any]]:
+        from areao1.criteria import packet
+
+        return packet.builds(ws)
+
+    @app.post("/api/packets")
+    def post_packet() -> dict[str, Any]:
+        return svc.build_packet(vault)
+
+    @app.get("/api/packets/{name}/{filename}")
+    def get_packet_file(name: str, filename: str) -> FileResponse:
+        from areao1.criteria import packet
+
+        try:
+            path = packet.built_file(ws, name, filename)
+        except FileNotFoundError as exc:
+            raise HTTPException(404, "no such packet file") from exc
+        return FileResponse(
+            path, filename=f"{name}-{filename}" if not filename.startswith("attorney") else f"{name}.zip"
+        )
+
     @app.get("/api/preflight")
     def get_preflight() -> dict[str, Any]:
         from areao1.criteria import preflight

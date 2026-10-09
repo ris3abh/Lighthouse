@@ -230,6 +230,21 @@ export interface Exhibit {
   organization?: string;
 }
 
+/** A built review packet (ADR 0020), from its manifest. */
+export interface PacketBuild {
+  name: string;
+  label: string;
+  as_of: string;
+  input_hash: string;
+  profile: string;
+  exhibits: { number: string; id: string; title: string; pages: string }[];
+  claims: number;
+  open_issues: number;
+  dropped_sentences: number;
+  pages: number;
+  files_present: string[];
+}
+
 /** The final-merits view (ADR 0019): rule-computed themes over the counted evidence. Never a score or verdict. */
 export type ThemeStatus = "strong" | "building" | "missing";
 export interface MeritsTheme {
@@ -1001,6 +1016,8 @@ export const api = {
   remap: (id: string, criterion: string) => request<Exhibit>("PATCH", `/exhibits/${enc(id)}`, { criterion }),
   proof: () => request<{ checklists: ProofChecklist[] }>("GET", "/proof"),
   merits: () => request<MeritsReport>("GET", "/merits"),
+  packets: () => request<PacketBuild[]>("GET", "/packets"),
+  buildPacket: () => request<PacketBuild>("POST", "/packets"),
   fetchBenchmarks: () => request<{ authors: number; benchmarks: number }>("POST", "/merits/benchmarks"),
   setOrganization: (id: string, organization: string) => request<Exhibit>("POST", `/exhibits/${enc(id)}/organization`, { organization }),
   preflight: () => request<{ report: PreflightReport | null }>("GET", "/preflight"),

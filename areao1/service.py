@@ -416,6 +416,19 @@ class Service:
         )
         return out
 
+    def build_packet(self, vault: Any = None) -> dict[str, Any]:
+        """Build review packet (ADR 0020) into exports/. The change log keeps the manifest's summary."""
+        from areao1.criteria import packet
+
+        out: dict[str, Any] = {}
+
+        def go() -> dict[str, Any]:
+            out.update(packet.build(self.ws, vault))
+            return {"id": out["name"], "input_hash": out["input_hash"], "pages": out["pages"]}
+
+        self._record("packet.build", "packet", go, target_id="packet", summary="review packet")
+        return out
+
     def remap_exhibit(self, exhibit_id: str, criterion: str, evidence_type: str | None = None) -> Exhibit:
         before = self._find(self.ws.exhibits().exhibits, exhibit_id, "exhibit")
         return self._record("evidence.remap", "exhibit",
