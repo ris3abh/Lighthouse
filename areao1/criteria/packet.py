@@ -447,8 +447,9 @@ def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str
                           [[t.label, t.status, t.why, t.rule] for t in p.merits.themes], [100, 52, 190, 162]))  # fmt: skip
         if p.merits.standard:
             flow.append(Spacer(1, 8))
-            flow.append(table(["The standard", "Source", "Check"],
-                              [[s.text, s.title or s.source_id, s.status] for s in p.merits.standard], [262, 182, 60]))  # fmt: skip
+            flow.append(table(["The standard, quoted", "Where", "Check"],
+                              [[f"“{s.quote}”", s.section or s.title or s.source_id, s.status]
+                               for s in p.merits.standard], [292, 152, 60]))  # fmt: skip
     flow += [PageBreak(), section("Open preflight issues")]
     flow.append(table(["Severity", "Issue", "Detail"],
                       [[i["severity"], i["title"], i.get("detail", "")] for i in grouped(p.issues)]
@@ -611,6 +612,10 @@ def docx(p: Packet) -> bytes:
                 [[t.label, t.status, t.why, t.rule] for t in p.merits.themes],
             )
         )
+        if p.merits.standard:
+            body.append(_tbl(["The standard, quoted", "Where", "Check"],
+                             [[f"“{s.quote}”", s.section or s.title or s.source_id, s.status]
+                              for s in p.merits.standard]))  # fmt: skip
     body.append(_p("Open preflight issues", "Heading1"))
     body.append(
         _tbl(

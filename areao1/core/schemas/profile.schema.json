@@ -56,10 +56,17 @@
     },
     "MeritsCitation": {
       "additionalProperties": false,
-      "description": "A sentence explaining the standard, and the passage in a vault source that says it.",
+      "description": "A passage of the standard, quoted word for word from a vault source, with where it is in that source.",
       "properties": {
         "quote": {
+          "description": "A whole sentence, exactly as the source has it.",
           "title": "Quote",
+          "type": "string"
+        },
+        "section": {
+          "default": "",
+          "description": "Where in the source, e.g. \"USCIS Policy Manual, Vol. 6, Part F, Ch. 2, Sec. B\".",
+          "title": "Section",
           "type": "string"
         },
         "source_id": {
@@ -67,14 +74,15 @@
           "type": "string"
         },
         "text": {
+          "default": "",
+          "description": "Optional plain-language lead shown before the quote.",
           "title": "Text",
           "type": "string"
         }
       },
       "required": [
-        "text",
-        "source_id",
-        "quote"
+        "quote",
+        "source_id"
       ],
       "title": "MeritsCitation",
       "type": "object"

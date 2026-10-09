@@ -1,0 +1,26 @@
+{
+  "about": "Where each vault fixture came from. tests/test_standard_quotes.py checks the files still match these hashes; scripts/check_vault_fixtures.py fetches the live sources again and repeats the check (network).",
+  "fixtures": [
+    {
+      "file": "uscis-pm-eb1-extraordinary.html.gz",
+      "source_url": "https://www.uscis.gov/policy-manual/volume-6-part-f-chapter-2",
+      "sha256": "1a5bb92b75491f947307fd6cd9b12a79cf8a1a4218dff13fcd04482f5ae27c65",
+      "checked_on": "2026-10-09",
+      "check": "every sentence of its text (over 60 characters) is in the live page"
+    },
+    {
+      "file": "uscis-pm-o1.html.gz",
+      "source_url": "https://www.uscis.gov/policy-manual/volume-2-part-m-chapter-4",
+      "sha256": "7eb7a2b00510a7d568c57e796313ba0bfa8216bd990d4c22c9e2a94ed156caec",
+      "checked_on": "2026-10-09",
+      "check": "every sentence of its text (over 60 characters) is in the live page"
+    },
+    {
+      "file": "kazarian.pdf",
+      "source_url": "https://cdn.ca9.uscourts.gov/datastore/opinions/2010/03/04/07-56774.pdf",
+      "sha256": "7b77bc7679598c600804b51e21b66c3e8655550ad53e5c0062562fc1a087ab9b",
+      "checked_on": "2026-10-09",
+      "check": "byte-identical to the court's PDF"
+    }
+  ]
+}

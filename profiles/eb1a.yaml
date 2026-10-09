@@ -173,19 +173,21 @@ final_merits:
       building: 1
       evidence_types: [adoption_evidence]
       signals: [widely_adopted, used_by_others]
+  # Each passage is a whole sentence copied word for word from the source (checked against the live pages on
+  # 2026-10-09); the page shows it with its section and checks it against your vault's copy.
   standard:
-    - text: USCIS reviews an extraordinary-ability petition in two steps.
+    - quote: Officers should use a two-step analysis to evaluate the evidence submitted with the petition to demonstrate eligibility for classification as a person with extraordinary ability.
       source_id: uscis-pm-6-f-2
-      quote: Officers should use a two-step analysis to evaluate the evidence submitted with the petition
-    - text: In the second step, the final merits determination, the officer evaluates all of the evidence together.
+      section: USCIS Policy Manual, Vol. 6, Part F, Ch. 2, Sec. B (Evidence of Extraordinary Ability)
+    - quote: Evaluate all the evidence together when considering the petition in its entirety for the final merits determination, in the context of the high level of expertise required for this immigrant classification.
       source_id: uscis-pm-6-f-2
-      quote: Evaluate all the evidence together when considering the petition in its entirety for the final merits determination
-    - text: Whether the person has risen to the very top of the field with sustained acclaim is addressed in that second step.
+      section: USCIS Policy Manual, Vol. 6, Part F, Ch. 2, Sec. B, table "Overview of Two-Step Evidentiary Review", Step 2
+    - quote: The question of whether the person is one of that small percentage who have risen to the very top of the field of endeavor and enjoys sustained national or international acclaim should be addressed in the second step of the analysis (final merits determination).
       source_id: uscis-pm-6-f-2
-      quote: should be addressed in the second step of the analysis (final merits determination)
-    - text: Being stronger in one area than another is expected; the totality of the evidence is what's weighed.
+      section: USCIS Policy Manual, Vol. 6, Part F, Ch. 2, Sec. B.1 (Initial Evidence of Extraordinary Ability)
+    - quote: While a person may be stronger in one particular evidentiary area than in others, the totality of the evidence must establish that the person is extraordinary.
       source_id: uscis-pm-6-f-2
-      quote: While a person may be stronger in one particular evidentiary area than in others, the totality of the evidence must establish that the person is extraordinary.
-    - text: Kazarian v. USCIS set this two-step review; questions like how often others cite your work belong to the final merits step, not to counting criteria.
+      section: USCIS Policy Manual, Vol. 6, Part F, Ch. 2, Sec. B.2 (Final Merits Determination)
+    - quote: While other authors’ citations (or a lack thereof) might be relevant to the final merits determination of whether a petitioner is at the very top of his or her field of endeavor, they are not relevant to the antecedent procedural question of whether the petitioner has provided at least three types of evidence.
       source_id: kazarian-v-uscis
-      quote: relevant to the final merits determination of whether a
+      section: Kazarian v. USCIS, 596 F.3d 1115 (9th Cir. 2010), slip op. at 3440

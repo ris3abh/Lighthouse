@@ -409,11 +409,13 @@ class MeritsTheme(_Model):
 
 
 class MeritsCitation(_Model):
-    """A sentence explaining the standard, and the passage in a vault source that says it."""
+    """A passage of the standard, quoted word for word from a vault source, with where it is in that source."""
 
-    text: str
+    quote: str = Field(description="A whole sentence, exactly as the source has it.")
     source_id: str
-    quote: str
+    section: str = Field("", description='Where in the source, e.g. "USCIS Policy Manual, Vol. 6, Part F, Ch. 2, '
+                         'Sec. B".')  # fmt: skip
+    text: str = Field("", description="Optional plain-language lead shown before the quote.")
 
 
 class FinalMeritsRules(_Model):

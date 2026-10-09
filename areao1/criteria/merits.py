@@ -55,7 +55,8 @@ class Benchmark(BaseModel):
 
 
 class StandardSentence(BaseModel):
-    text: str
+    text: str = ""
+    section: str = ""
     source_id: str
     title: str = ""
     link: str = ""
@@ -245,11 +246,21 @@ def benchmarks(ws: Any) -> list[Benchmark]:
     return sorted(out, key=lambda b: -b.percentile)
 
 
+def passage_text(text: str) -> str:
+    """A snapshot's text for checking a quote word for word: words a PDF broke across lines with a hyphen are
+    joined ("peti-\ntioner" -> "petitioner") and runs of whitespace become one space. Nothing else changes."""
+    return re.sub(r"\s+", " ", re.sub(r"(\w)-[ \t]*\n\s*(\w)", r"\1\2", text)).strip()
+
+
+def quoted_in(quote: str, text: str) -> bool:
+    """Is this quote, word for word, in the source text (see passage_text)?"""
+    q = re.sub(r"\s+", " ", quote).strip()
+    return len(q) >= 8 and q in passage_text(text)
+
+
 def check_standard(profile: Profile, vault: Any) -> list[StandardSentence]:
     """Each sentence about the standard against the passage it cites: verified when the quote is in the source's
     current, fresh copy; stale when the copy has expired; unverified when there's no copy or the quote isn't in it."""
-    from areao1.vault.rulecheck import find_quote
-
     rules = profile.final_merits
     if rules is None:
         return []
@@ -257,13 +268,14 @@ def check_standard(profile: Profile, vault: Any) -> list[StandardSentence]:
     out = []
     for cite in rules.standard:
         st = status.get(cite.source_id) or {}
-        common = {"text": cite.text, "source_id": cite.source_id, "quote": cite.quote, "title": st.get("title", ""),
+        common = {"text": cite.text, "section": cite.section, "source_id": cite.source_id, "quote": cite.quote,
+                  "title": st.get("title", ""),
                   "link": st.get("link") or st.get("url") or ""}  # fmt: skip
         if not st.get("sha256"):
             out.append(StandardSentence(**common, status="unverified",
                                         why="This source isn't in your vault yet: sync Knowledge, or save the page."))  # fmt: skip
             continue
-        if find_quote(cite.quote, vault.snapshot_text(st["sha256"])) is None:
+        if not quoted_in(cite.quote, vault.snapshot_text(st["sha256"])):
             out.append(
                 StandardSentence(
                     **common, status="unverified", why="The quoted passage isn't in the current copy."

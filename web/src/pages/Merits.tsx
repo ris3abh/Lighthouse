@@ -272,20 +272,18 @@ function Standard({ r }: { r: MeritsReport }) {
           const Icon = c.icon;
           return (
             <li key={i} className="px-5 py-4">
-              <p className="text-[15px]">
-                {s.text}{" "}
+              {s.text && <p className="mb-2 text-[15px]">{s.text}</p>}
+              <blockquote className="border-l-2 border-line pl-3 text-[15px]">“{s.quote}”</blockquote>
+              <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-muted">
                 <Chip tone={c.tone}>
                   <Icon aria-hidden /> {c.label}
                 </Chip>
-              </p>
-              <blockquote className="mt-2 border-l-2 border-line pl-3 text-sm text-ink-2">“{s.quote}”</blockquote>
-              <p className="mt-1 flex flex-wrap items-center gap-x-2 font-mono text-[11px] text-muted">
                 {s.link ? (
                   <a className="link inline-flex items-center gap-1" href={s.link} target="_blank" rel="noreferrer">
-                    {s.title || s.source_id} <ExternalLink className="size-3" aria-hidden />
+                    {s.section || s.title || s.source_id} <ExternalLink className="size-3" aria-hidden />
                   </a>
                 ) : (
-                  <span>{s.title || s.source_id}</span>
+                  <span>{s.section || s.title || s.source_id}</span>
                 )}
                 <span>· {s.why}</span>
               </p>

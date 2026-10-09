@@ -270,7 +270,7 @@ export interface MeritsReport {
   themes: MeritsTheme[];
   openalex_authors: number;
   benchmarks: { claim_id: string; work: string; year: number | null; percentile: number; review: string; source_url: string }[];
-  standard: { text: string; source_id: string; title: string; link: string; quote: string; status: "verified" | "stale" | "unverified"; why: string }[];
+  standard: { text: string; section: string; source_id: string; title: string; link: string; quote: string; status: "verified" | "stale" | "unverified"; why: string }[];
   no_organization: string[];
   exhibits: Record<string, { title: string; criterion: string; date: string; organization: string }>;
   criteria: Record<string, string>;

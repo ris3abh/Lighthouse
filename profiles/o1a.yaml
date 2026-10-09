@@ -153,10 +153,11 @@ final_merits:
       building: 1
       evidence_types: [adoption_evidence]
       signals: [widely_adopted, used_by_others]
+  # Whole sentences, word for word from the source (checked against the live page on 2026-10-09).
   standard:
-    - text: Once the evidentiary criteria are met, the officer considers all the evidence in the record in its totality.
+    - quote: Rather, USCIS must determine eligibility based on whether the totality of the evidence submitted demonstrates that the beneficiary meets the relevant standard.
       source_id: uscis-pm-2-m-4
-      quote: the officer must then consider all the evidence in the record in its totality
-    - text: Eligibility turns on whether the totality of the evidence meets the standard, not on the count of criteria alone.
+      section: USCIS Policy Manual, Vol. 2, Part M, Ch. 4, Sec. B (Determining Eligibility for O-1 Classification)
+    - quote: If the petitioner meets the evidentiary requirements, the officer must then consider all the evidence in the record in its totality to determine if the beneficiary is an alien of extraordinary ability or achievement as defined in INA 101(a)(15)(O)(i) and 8 CFR 214.2(o).
       source_id: uscis-pm-2-m-4
-      quote: USCIS must determine eligibility based on whether the totality of the evidence submitted demonstrates that the beneficiary meets the relevant standard.
+      section: USCIS Policy Manual, Vol. 2, Part M, Ch. 4, Sec. B (Determining Eligibility for O-1 Classification)
