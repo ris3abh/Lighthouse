@@ -22,52 +22,134 @@ from areao1.criteria.sentences import Fact, problems, sentence
 ROOT = Path(__file__).parents[1]
 
 
-def _f(
-    predicate,
-    value,
-    kind,
-    *,
-    on=date(2024, 5, 20),
-    org="",
-    work="",
-    excerpt="The text the claim was read from.",
-):
-    return Fact(person="Maya", predicate=predicate, value=value, evidence_type=kind, exhibit="C1-01", excerpt=excerpt,
-                on=on, org=org, work=work)  # fmt: skip
+def _f(predicate, value, kind, excerpt, *, on=date(2024, 5, 20), org="", work=""):
+    return Fact(person="Maya", full_name="Maya Chen", predicate=predicate, value=value, evidence_type=kind,
+                exhibit="C1-01", excerpt=excerpt, on=on, org=org, work=work, captured=on)  # fmt: skip
 
 
-@pytest.mark.parametrize(
-    ("fact", "expected"),
-    [
-        (_f("award_received", "Northwind Engineering Excellence Award", "award_certificate"),
-         "Maya received the Northwind Engineering Excellence Award in 2024 (Exhibit C1-01)."),
-        (_f("judged_event", "Example Hackathon Series 2024 finals", "panel_letter"),
-         "Maya served as a judge for the Example Hackathon Series 2024 finals (Exhibit C1-01)."),
-        (_f("program_committee", "Example Systems Conf", "program_committee", on=date(2025, 6, 2)),
-         "Maya served on the program committee of Example Systems Conf in 2025 (Exhibit C1-01)."),
-        (_f("reviewer_for", "the Example Learning Symposium", "reviewer_record"),
-         "Maya reviewed for the Example Learning Symposium in 2024 (Exhibit C1-01)."),
-        (_f("press_feature", "The engineer making queues boring again", "press_article", org="Example Tech Weekly"),
-         "Example Tech Weekly featured Maya in “The engineer making queues boring again” in 2024 (Exhibit C1-01)."),
-        (_f("membership", "Example Engineering Society", "membership_certificate"),
-         "Maya was admitted to the Example Engineering Society in 2024 (Exhibit C1-01)."),
-        (_f("paper_published", "Queues at scale", "conference_paper"),
-         "Maya published “Queues at scale” in 2024 (Exhibit C1-01)."),
-        (_f("adopted_by", "Acme Robotics", "adoption_evidence", work="FastQueue", on=date(2025, 9, 15)),
-         "Acme Robotics uses FastQueue, as of September 2025 (Exhibit C1-01)."),
-        (_f("repo_stars", 4800, "open_source_project", work="FastQueue", on=date(2025, 9, 15)),
-         "FastQueue had 4,800 GitHub stars as of September 2025 (Exhibit C1-01)."),
-        (_f("monthly_downloads", 120000, "adoption_evidence", work="FastQueue", on=date(2026, 2, 28)),
-         "FastQueue had 120,000 downloads a month as of February 2026 (Exhibit C1-01)."),
-        (_f("role_title", "Tech lead", "role_letter", org="Example Corp"),
-         "Maya held the role of Tech lead at Example Corp in 2024 (Exhibit C1-01)."),
-        (_f("salary", "$310,000 a year", "pay_stub"), "Maya's compensation was $310,000 a year in 2024 (Exhibit C1-01)."),
-        (_f("patent", "US Patent 12,345,678", "patent"), "Maya is a named inventor on US Patent 12,345,678 (Exhibit C1-01)."),
-    ],
-)  # fmt: skip
+SENTENCES = [
+    (_f("award_received", "Northwind Engineering Excellence Award", "award_certificate",
+        "Maya Chen received the Northwind Engineering Excellence Award on May 20, 2024."),
+     "Maya received the Northwind Engineering Excellence Award in May 2024 (Exhibit C1-01)."),
+    (_f("award_received", "Northwind Engineering Excellence Award", "award_certificate",
+        "Maya Chen won the Northwind Engineering Excellence Award in 2024."),
+     "Maya won the Northwind Engineering Excellence Award in 2024 (Exhibit C1-01)."),  # the source's verb
+    (_f("judged_event", "Example Hackathon Series 2024 finals", "panel_letter",
+        "Maya Chen served as a judge for the Example Hackathon Series 2024 finals on November 9, 2024."),
+     "Maya served as a judge for the Example Hackathon Series 2024 finals (Exhibit C1-01)."),
+    (_f("program_committee", "Example Systems Conf", "program_committee",
+        "Maya Chen served on the program committee of Example Systems Conf in June 2025.", on=date(2025, 6, 2)),
+     "Maya served on the program committee of Example Systems Conf in June 2025 (Exhibit C1-01)."),
+    (_f("reviewer_for", "the Example Learning Symposium", "reviewer_record",
+        "Maya Chen reviewed for the Example Learning Symposium."),
+     "Maya reviewed for the Example Learning Symposium, as captured on May 20, 2024 (Exhibit C1-01)."),
+    (_f("press_feature", "The engineer making queues boring again", "press_article",
+        "Example Tech Weekly profiled Maya Chen in “The engineer making queues boring again” on February 11, 2025.",
+        org="Example Tech Weekly", on=date(2025, 2, 11)),
+     "Example Tech Weekly profiled Maya in “The engineer making queues boring again” in February 2025 (Exhibit C1-01)."),
+    (_f("membership", "Example Engineering Society", "membership_certificate",
+        "Maya Chen was elected to the Example Engineering Society in 2024."),
+     "Maya was elected to the Example Engineering Society in 2024 (Exhibit C1-01)."),
+    (_f("paper_published", "Queues at scale", "conference_paper",
+        "Queues at scale, by Maya Chen, was published in 2024."),
+     "Maya published “Queues at scale” in 2024 (Exhibit C1-01)."),
+    (_f("adopted_by", "Harborview Robotics", "adoption_evidence",
+        "Harborview Robotics adopted FastQueue for on-device inference.", work="FastQueue", on=date(2026, 2, 1)),
+     "Harborview Robotics adopted FastQueue, as captured on February 1, 2026 (Exhibit C1-01)."),  # adopted, not uses
+    (_f("adopted_by", "Acme Robotics", "adoption_evidence",
+        "Acme Robotics runs FastQueue in production across its warehouse fleet.", work="FastQueue", on=date(2025, 9, 15)),
+     "Acme Robotics runs FastQueue, as captured on September 15, 2025 (Exhibit C1-01)."),
+    (_f("repo_stars", 4800, "open_source_project", "The FastQueue repository had 4,800 GitHub stars in September 2025.",
+        work="FastQueue", on=date(2025, 9, 15)),
+     "FastQueue had 4,800 GitHub stars in September 2025 (Exhibit C1-01)."),
+    (_f("monthly_downloads", 120000, "adoption_evidence", "The FastQueue package was downloaded 120,000 times.",
+        work="FastQueue", on=date(2026, 2, 28)),
+     "FastQueue had 120,000 downloads a month, as captured on February 28, 2026 (Exhibit C1-01)."),
+    (_f("role_title", "Tech lead", "role_letter", "Maya Chen held the role of Tech lead at Example Corp in 2024.",
+        org="Example Corp"),
+     "Maya held the role of Tech lead at Example Corp in 2024 (Exhibit C1-01)."),
+    (_f("salary", "$310,000 a year", "pay_stub", "Maya Chen's base salary is $310,000 a year (2024)."),
+     "Maya's compensation was $310,000 a year in 2024 (Exhibit C1-01)."),
+    (_f("patent", "US Patent 12,345,678", "patent", "Maya Chen is a named inventor on US Patent 12,345,678."),
+     "Maya is a named inventor on US Patent 12,345,678 (Exhibit C1-01)."),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("fact", "expected"), SENTENCES)
 def test_each_evidence_type_has_a_natural_sentence(fact, expected):
     assert sentence(fact) == expected
     assert problems(expected, (fact.predicate,)) == []
+
+
+# The words a template adds of its own; everything else in a templated sentence must come from the quote.
+GLUE = {"in", "the", "of", "for", "on", "as", "captured", "had", "a", "month", "week", "compensation", "was",
+        "at", "exhibit", "an", "is", "stars", "github", "downloads", "citations", "readers"}  # fmt: skip
+MONTHS = {d.strftime("%B").lower() for d in (date(2024, m, 1) for m in range(1, 13))}
+
+
+def faithful(f: Fact, s: str) -> list[str]:
+    """Words a templated sentence adds that its quote doesn't have (dates are checked separately: a date the quote
+    doesn't state must read "as captured on")."""
+    if s.startswith(f"Exhibit {f.exhibit} states:"):
+        return []  # a quote is the source
+    body = re.sub(r"\(Exhibit [^)]*\)\.$", "", s)
+    stated = body.split(", as captured on ")[0]
+    if ", as captured on " not in body:
+        for y in re.findall(r"\b(?:19|20)\d\d\b", stated):
+            assert y in f.excerpt, (s, "a year the quote doesn't state")
+    quote = {w.lower() for w in re.findall(r"[\w’'$,.-]+", f.excerpt)}
+    quote |= {w.rstrip(".,") for w in quote}
+    extra = []
+    for w in re.findall(r"[\w’'$,.-]+", stated):
+        lw = w.lower().rstrip(".,")
+        if (
+            lw in quote
+            or lw in GLUE
+            or lw in MONTHS
+            or lw.isdigit()
+            or lw == f.person.lower()
+            or lw == f"{f.person.lower()}'s"
+        ):
+            continue
+        if any(q.startswith(lw[:6]) for q in quote if len(lw) > 5):  # downloads ~ downloaded
+            continue
+        extra.append(w)
+    return extra
+
+
+@pytest.mark.parametrize(("fact", "expected"), SENTENCES)
+def test_no_template_changes_the_meaning_of_its_quote(fact, expected):
+    assert faithful(fact, sentence(fact)) == [], sentence(fact)
+
+
+@pytest.mark.parametrize(
+    "fact",
+    [
+        _f(
+            "adopted_by",
+            "Acme Robotics",
+            "adoption_evidence",
+            "Acme Robotics evaluated FastQueue last year.",
+            work="FastQueue",
+        ),  # evaluated isn't adopted: no verb of the template, so it's quoted
+        _f(
+            "award_received", "Northwind Award", "award_certificate", "She received the Northwind Award."
+        ),  # who?
+        _f(
+            "press_feature",
+            "Queues",
+            "press_article",
+            "Maya Chen was profiled in “Queues”.",
+            org="Example Weekly",
+        ),
+        _f("repo_stars", 4800, "open_source_project", "FastQueue is popular.", work="FastQueue"),  # no number
+        _f(
+            "award_received", "Northwind Award", "award_certificate", "Maya Chen received an award."
+        ),  # no name
+    ],
+)
+def test_when_the_quote_doesnt_say_it_that_way_it_is_quoted(fact):
+    assert sentence(fact) == f"Exhibit C1-01 states: “{fact.excerpt}”"
 
 
 @pytest.mark.parametrize(
@@ -96,25 +178,39 @@ def test_without_a_fitting_template_the_exhibit_is_quoted(fact):
     assert problems(s, (fact.predicate,)) == []
 
 
-def test_no_template_and_value_leaves_a_slot_or_raw_token():
+def test_no_template_and_value_leaves_a_slot_or_raw_token_or_changes_the_meaning():
     values = ["Example Award", "the Example Award", "", "17", 17, 0, 3.5, None, True, "x", "hacks_2024", "2024",
-              "Award 2024", {"k": "v"}, ["a"], "$1,000"]  # fmt: skip
-    for types, _, _ in sentences.NAMED:
+              "Award 2024", {"k": "v"}, ["a"], "$1,000", 4800]  # fmt: skip
+    predicates = ("award_received", "judged_event", "program_committee", "reviewer_for", "press_feature", "membership",
+                  "paper_published", "patent", "adopted_by", "created", "role_title", "salary", "repo_stars",
+                  "monthly_downloads", "citation_count", "award_selectivity")  # fmt: skip
+    for types, _, verbs, _ in sentences.NAMED:
         for kind in types:
-            for predicate in ("award_received", "judged_event", "program_committee", "reviewer_for", "press_feature",
-                              "membership", "paper_published", "patent", "adopted_by", "created", "role_title",
-                              "salary", "repo_stars", "monthly_downloads", "citation_count", "award_selectivity"):  # fmt: skip
+            for predicate in predicates:
                 for value in values:
-                    for on in (date(2024, 1, 2), None):
-                        for org in ("", "Example Org"):
-                            f = Fact(person="Maya", predicate=predicate, value=value, evidence_type=kind,
-                                     exhibit="C2-03", excerpt="The document says so.", on=on, org=org,
-                                     work="FastQueue")  # fmt: skip
-                            s = sentence(f)
-                            assert problems(s, (predicate,)) == [], (s, predicate, value, kind)
-                            assert problems(sentences.label(f), ()) in ([], [f"snake_case {value}"]), (
-                                sentences.label(f)
-                            )
+                    shown = sentences.plain(value)
+                    for excerpt in ("The document says so.",
+                                    f"Maya Chen {verbs[0]} {shown} at Example Org, FastQueue, 4,800 GitHub stars, in 2024.",
+                                    f"Example Org {verbs[-1]} FastQueue and {shown or 'more'}."):  # fmt: skip
+                        for on in (date(2024, 1, 2), None):
+                            for org in ("", "Example Org"):
+                                f = Fact(person="Maya", full_name="Maya Chen", predicate=predicate, value=value,
+                                         evidence_type=kind, exhibit="C2-03", excerpt=excerpt, on=on, org=org,
+                                         work="FastQueue", captured=on)  # fmt: skip
+                                s = sentence(f)
+                                quoted = s.startswith(
+                                    "Exhibit C2-03 states:"
+                                )  # the source's own words, as they are
+                                found = [
+                                    x
+                                    for x in problems(s, (predicate,))
+                                    if not (quoted and x.startswith("snake"))
+                                ]
+                                assert found == [], (s, predicate, value, kind)
+                                assert faithful(f, s) == [], (s, excerpt)
+                                assert problems(sentences.label(f), ()) in ([], [f"snake_case {value}"]), (
+                                    sentences.label(f)
+                                )
 
 
 def test_the_check_catches_what_the_old_template_wrote():
@@ -181,8 +277,8 @@ def test_mayas_packet_reads_naturally_with_footnotes(monkeypatch, tmp_path):
     out = ws.root / "exports" / m["name"]
     lines = _check(ws, out)
     text = "\n".join(lines)
-    assert "Maya received the Northwind Engineering Excellence Award in 2024 (Exhibit C1-01)." in text
-    assert "FastQueue had 4,800 GitHub stars as of September 2025 (Exhibit C5-01)." in text
+    assert "Maya received the Northwind Engineering Excellence Award in May 2024 (Exhibit C1-01)." in text
+    assert "FastQueue had 4,800 GitHub stars in September 2025 (Exhibit C5-01)." in text
     assert "Exhibit C1-01 states: “The jury selected 3 recipients from 412 nominees.”" in text
     with zipfile.ZipFile(out / "packet.docx") as z:
         doc, notes = z.read("word/document.xml").decode(), z.read("word/footnotes.xml").decode()
@@ -202,7 +298,8 @@ def test_ravis_packet_reads_naturally(monkeypatch, tmp_path):
     m = packet.build(ws, Vault(ws))
     text = "\n".join(_check(ws, ws.root / "exports" / m["name"]))
     assert (
-        "Ravi published “Calibrated Uncertainty in Vision-Language Models” in 2024 (Exhibit C6-01)." in text
+        "Ravi published “Calibrated Uncertainty in Vision-Language Models” in March 2024 (Exhibit C6-01)."
+        in text
     )
     assert "Ravi reviewed for the Example Learning Symposium 2024 (Exhibit C4-01)." in text
     assert len(m["exhibits"]) == 7 and m["claims"] == 12

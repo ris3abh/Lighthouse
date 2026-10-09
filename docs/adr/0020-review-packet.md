@@ -69,3 +69,12 @@ The first outline wrote each sentence from the claim's raw parts ("Maya Chen: aw
   shape, and over every reader-facing line of Maya's and Ravi's packets.
 - In the packet's issue table, a low-severity rule with more than three issues is one row naming the first few;
   `preflight.json` keeps every issue.
+
+## Amendment (2026-10-09): the source's words
+
+A template may not change what its quote says. It is used only when one of its verbs is in the quote, and it
+writes that verb ("Harborview Robotics adopted sparse-router", not "uses"); every name it writes (the person, the
+organization, the work, the value) must be in the quote; a date is written as the quote states it, and when the
+quote gives none the sentence says "as captured on <the exhibit's date>" instead of implying when it happened.
+Otherwise the sentence quotes the exhibit. A test sweeps every template, evidence type, value shape and quote and
+fails on any word the sentence adds beyond the template's fixed words, or a year the quote doesn't state.

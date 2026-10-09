@@ -52,11 +52,17 @@ old value.
 The outline is a starting point for your attorney to rewrite. It is drafted only from approved, current facts,
 one sentence each, from a template for the exhibit's evidence type:
 
-> Maya received the Northwind Engineering Excellence Award in 2024 (Exhibit C1-01).¹
+> Maya received the Northwind Engineering Excellence Award in May 2024 (Exhibit C1-01).¹
 >
-> FastQueue had 4,800 GitHub stars as of September 2025 (Exhibit C5-01).²
+> Acme Robotics runs FastQueue, as captured on September 15, 2025 (Exhibit C5-01).²
 
-When no template fits (a detail such as "3 of 412 nominees"), the sentence quotes the exhibit instead:
+A template keeps the source's words. It is used only when its verb is in the quote, and it writes that verb: an
+exhibit that says "adopted" reads "adopted", never "uses". The person, the organization and the value it names must
+be in the quote too. A date reads as the quote states it ("in May 2024"); when the quote gives no date, the sentence
+says when the exhibit was captured ("as captured on September 15, 2025") rather than implying when it happened.
+
+When no template fits the quote (a detail such as "3 of 412 nominees", or a quote that says it another way), the
+sentence quotes the exhibit instead:
 
 > Exhibit C1-01 states: “The jury selected 3 recipients from 412 nominees.”³
 

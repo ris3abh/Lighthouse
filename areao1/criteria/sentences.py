@@ -19,35 +19,45 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
-# (evidence types, predicate, template). The predicate pattern must match the whole predicate, so a template
+# (evidence types, predicate, verbs, template). The predicate pattern must match the whole predicate, so a template
 # fires only for the fact the exhibit is about ("award_received"), never a detail of it ("award_selectivity").
-# The first match wins; {the_value} adds "the" to a proper name.
+# A template keeps the source's words: it's used only when one of its verbs is in the quote, and that verb is the one
+# written ({verb}); "Acme Robotics runs FastQueue" stays "runs", "adopted" stays "adopted". Every name it writes
+# (the person, the organization, the work, the value) must be in the quote too, and a date is written as the quote
+# states it, or as the day it was captured. Otherwise the sentence quotes the exhibit. The first match wins;
+# {the_value} adds "the" to a proper name.
 JUDGING = frozenset({"judge_invite", "panel_letter", "reviewer_record", "program_committee"})
-NAMED: list[tuple[frozenset[str], str, str]] = [
+NAMED: list[tuple[frozenset[str], str, tuple[str, ...], str]] = [
     (frozenset({"award_certificate", "award_notice", "fellowship", "hackathon_win"}),
      r"(award|prize|honou?r|fellowship)(_(received|won|name|title))?|(received|won)_(award|prize|honou?r|fellowship)",
-     "{person} received {the_value} in {year}"),
+     ("received", "won", "was awarded", "was named"), "{person} {verb} {the_value}{when}"),
     (JUDGING, r"(program_)?committee(_member(ship)?)?|pc_member|served_on_committee",
-     "{person} served on the program committee of {value} in {year}"),
-    (JUDGING, r"review(er)?(_for|_of)?|reviewed(_for)?", "{person} reviewed for {value} in {year}"),
-    (JUDGING, r"judg(e|ed|ing)(_event|_for|_at|_of)?|panel(ist)?", "{person} served as a judge for {the_value} in {year}"),
+     ("served on the program committee of", "joined the program committee of"), "{person} {verb} {value}{when}"),
+    (JUDGING, r"review(er)?(_for|_of)?|reviewed(_for)?", ("reviewed for", "was a reviewer for", "served as a reviewer for"),
+     "{person} {verb} {value}{when}"),
+    (JUDGING, r"judg(e|ed|ing)(_event|_for|_at|_of)?|panel(ist)?",
+     ("served as a judge for", "was a judge for", "judged"), "{person} {verb} {the_value}{when}"),
     (frozenset({"press_article", "interview", "podcast_feature", "media_mention"}),
      r"(press|media)(_(mention|feature|coverage|article))?|featured(_in)?|feature|article(_title)?|profile"
-     r"|interview|headline|podcast(_feature)?", "{org_featured} {person} in {quoted} in {year}"),
+     r"|interview|headline|podcast(_feature)?", ("profiled", "featured", "interviewed", "covered"),
+     "{org} {verb} {person} in {quoted}{when}"),
     (frozenset({"membership_certificate", "membership_letter", "membership_bylaws"}),
      r"member(ship)?(_(of|in|granted|admitted))?|admitted(_to)?|elected(_to)?",
-     "{person} was admitted to {the_value} in {year}"),
+     ("was elected to", "was admitted to", "joined", "became a member of"), "{person} {verb} {the_value}{when}"),
     (frozenset({"paper", "preprint", "journal_article", "conference_paper"}),
-     r"(paper|article)(_(published|title))?|published(_paper)?|publication(_title)?", "{person} published {quoted} in {year}"),
-    (frozenset({"patent"}), r"patent(_(granted|number|title))?|inventor(_on)?", "{person} is a named inventor on {value}"),
+     r"(paper|article)(_(published|title))?|published(_paper)?|publication(_title)?", ("published",),
+     "{person} {verb} {quoted}{when}"),
+    (frozenset({"patent"}), r"patent(_(granted|number|title))?|inventor(_on)?", ("is a named inventor on", "is an inventor on"),
+     "{person} {verb} {value}"),
     (frozenset({"open_source_project", "ml_model", "dataset", "adoption_evidence", "expert_letter"}),
-     r"adopted_by|used_by|user_org|customer|deployed_by", "{value} uses {work}, as of {month}"),
+     r"adopted_by|used_by|user_org|customer|deployed_by",
+     ("adopted", "uses", "used", "runs", "deployed", "integrated", "relies on", "built on"), "{value} {verb} {work}{when}"),
     (frozenset({"open_source_project", "ml_model", "dataset"}), r"created|authored|maintainer|built",
-     "{person} created {value} in {year}"),
+     ("created", "built", "wrote", "maintains"), "{person} {verb} {value}{when}"),
     (frozenset({"role_letter", "org_chart", "offer_letter", "org_reputation"}), r"role(_title)?|title|position|job_title",
-     "{person} held the role of {value}{at_org} in {year}"),
+     ("held the role of", "serves as", "served as", "was promoted to"), "{person} {verb} {value}{at_org}{when}"),
     (frozenset({"pay_stub", "offer_letter", "w2", "salary_survey"}), r"(base_)?salary|compensation|pay|wage",
-     "{person_s} compensation was {value} in {year}"),
+     ("salary", "compensation", "paid", "earned"), "{person_s} compensation was {value}{when}"),
 ]  # fmt: skip
 
 # A count's unit, by a word in the predicate.
@@ -74,6 +84,8 @@ class Fact:
     on: date | None  # the claim's date, else the exhibit's
     org: str = ""  # who issued the exhibit
     work: str = ""  # the subject's name ("FastQueue")
+    full_name: str = ""  # "Maya Chen", when the quote names her in full
+    captured: date | None = None  # when the source was captured, for a fact the quote doesn't date
 
 
 def first_name(name: str) -> str:
@@ -116,10 +128,6 @@ def _quoted(s: str) -> str:
     return "“" + s.strip("\"'“”‘’ ") + "”"
 
 
-def _month(d: date | None) -> str:
-    return f"{d:%B} {d.year}" if d else ""
-
-
 def _clip(text: str) -> str:
     text = re.sub(r"\s+", " ", text).strip()
     if len(text) <= MAX_QUOTE:
@@ -128,14 +136,51 @@ def _clip(text: str) -> str:
     return cut + "…"
 
 
+def _has(phrase: str, text: str) -> bool:
+    return bool(phrase) and re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text, re.I) is not None
+
+
+def _when(f: Fact, value: str = "") -> str:
+    """The date as the quote states it ("in May 2024", "in 2024"), nothing when the value already names the year,
+    or the day the fact was captured (", as captured on September 15, 2025") when the quote gives no date."""
+    if not f.on:
+        return ""
+    if str(f.on.year) in value:
+        return ""
+    if _has(f"{f.on:%B} {f.on.year}", f.excerpt) or _has(f"{f.on:%B} {f.on.day}, {f.on.year}", f.excerpt):
+        return f" in {f.on:%B} {f.on.year}"
+    if _has(str(f.on.year), f.excerpt):
+        return f" in {f.on.year}"
+    seen = f.captured or f.on
+    return f", as captured on {seen:%B} {seen.day}, {seen.year}"
+
+
+def _number_in(v: Any, text: str) -> bool:
+    if isinstance(v, int | float) and not isinstance(v, bool):
+        return any(_has(form, text) for form in {f"{v:,}", str(v)})
+    return _has(str(v).strip(), text)
+
+
+# How a quote says a unit: "downloaded 120,000 times" is downloads, "cited 212 times" is citations.
+UNIT_WORDS = {"GitHub stars": ("stars",), "forks": ("forks",), "downloads": ("downloads", "downloaded"),
+              "citations": ("citations", "cited"), "followers": ("followers",), "readers": ("readers",),
+              "subscribers": ("subscribers",), "users": ("users",), "installs": ("installs", "installed"),
+              "views": ("views", "viewed"), "likes": ("likes",)}  # fmt: skip
+
+
 def _metric(f: Fact) -> str | None:
     words = f.predicate.lower().split("_")
     unit = next((METRICS[w] for w in reversed(words) if w in METRICS), None)
     if unit is None or not _is_count(f.value) or not f.on:
         return None
-    work = f.work if f.work and _is_words(f.work) else f"{f.person}'s work"
+    if not _number_in(f.value, f.excerpt) or not any(
+        _has(w, f.excerpt) for w in UNIT_WORDS.get(unit, (unit,))
+    ):
+        return None  # the quote must say this number of these things
+    if not (f.work and _is_words(f.work) and _has(f.work, f.excerpt)):
+        return None
     per = " a month" if "monthly" in words else " a week" if "weekly" in words else ""
-    return f"{work} had {plain(f.value)} {unit}{per} as of {_month(f.on)}"
+    return f"{f.work} had {plain(f.value)} {unit}{per}{_when(f)}"
 
 
 def _named(f: Fact) -> str | None:
@@ -146,33 +191,38 @@ def _named(f: Fact) -> str | None:
             return None  # an amount with its currency and period, as the document says it
     elif not _is_words(value) or value[:1].isdigit():
         return None  # "3 of 412 nominees" is a detail, not a name: it's quoted instead
-    for types, pattern, template in NAMED:
+    bare = re.sub(r"(?i)^(the|a|an)\s+", "", value)
+    if not _has(bare, f.excerpt):
+        return None  # the value is the quote's own words, or it isn't templated
+    for types, pattern, verbs, template in NAMED:
         if f.evidence_type not in types or not re.fullmatch(pattern, f.predicate, re.I):
             continue
-        if f.on and str(f.on.year) in value:
-            template = template.replace(
-                " in {year}", ""
-            )  # "the Example Systems Conf 2025", not "… 2025 in 2025"
+        verb = next((v for v in verbs if _has(v, f.excerpt)), None)
+        if verb is None:
+            continue  # the quote doesn't say it this way: quote it instead of rewording it
+        needs = set(re.findall(r"\{(\w+)\}", template))
+        if needs & {"person", "person_s"} and not (_has(f.person, f.excerpt) or _has(f.full_name, f.excerpt)):
+            continue  # the quote must say who
+        if "org" in needs and not (f.org and _has(f.org, f.excerpt)):
+            continue
+        if "work" in needs and not (f.work and _has(f.work, f.excerpt)):
+            continue
+        at_org = f" at {f.org}" if f.org and _has(f.org, f.excerpt) else ""
         slots = {"person": f.person, "person_s": f"{f.person}'s", "value": value, "the_value": _the(value),
-                 "quoted": _quoted(value), "year": str(f.on.year) if f.on else "", "month": _month(f.on),
-                 "org_featured": f"{f.org} featured" if f.org else "Coverage featured",
-                 "at_org": f" at {f.org}" if f.org else "",
-                 "work": f.work if f.work and _is_words(f.work) else f"{f.person}'s work"}  # fmt: skip
-        needed = re.findall(r"\{(\w+)\}", template)
-        if any(not slots[s] for s in needed):
-            continue  # a slot this template needs is empty: try the next, then fall back
+                 "quoted": _quoted(value), "verb": verb, "when": _when(f, value), "org": f.org, "at_org": at_org,
+                 "work": f.work}  # fmt: skip
         return template.format(**slots)
     return None
 
 
-def factplain(f: Fact) -> str | None:
+def fact_text(f: Fact) -> str | None:
     """The sentence's fact, without the exhibit reference; None when only a quote will do."""
     return _named(f) or _metric(f)
 
 
 def sentence(f: Fact) -> str:
     """One reader-facing sentence, ending with its exhibit. No claim id: the caller adds the footnote."""
-    fact = factplain(f)
+    fact = fact_text(f)
     if fact:
         return f"{fact} (Exhibit {f.exhibit})."  # never re-capitalized: "sparse-router had …" keeps its name
     quote = _clip(f.excerpt).strip('"“” ')
@@ -184,7 +234,7 @@ def sentence(f: Fact) -> str:
 
 def label(f: Fact) -> str:
     """A short name for the claim in a table: the fact when a template fits, else 'Predicate: value'."""
-    fact = factplain(f)
+    fact = fact_text(f)
     if fact:
         return fact
     words = f.predicate.replace("_", " ").strip()

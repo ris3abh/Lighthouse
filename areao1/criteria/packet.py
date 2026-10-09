@@ -81,7 +81,8 @@ class Row:
         return sentences.Fact(person=sentences.first_name(person), predicate=self.claim.predicate,
                               value=self.claim.value, evidence_type=e.evidence_type, exhibit=self.item.number,
                               excerpt=self.claim.excerpt, on=self.claim.event_date or e.date,
-                              org=e.organization.strip(), work=self.subject)  # fmt: skip
+                              org=e.organization.strip(), work=self.subject, full_name=person.strip(),
+                              captured=e.date)  # fmt: skip
 
     def where(self) -> str:
         """The footnote: where the quote is, and the quote."""
