@@ -155,6 +155,23 @@ criteria:
   reviewer would see this" note, clearly labeled as an opinion.
 - EB-1A is a second profile over the same evidence store: stricter rubric, plus a "final merits / sustained
   acclaim" narrative layer. Switching profile re-scores, never re-collects.
+- **Proof recipes** (ADR 0017, `profiles/recipes/*.yaml`): when an activity reaches accepted, completed, granted
+  or published (an exhibit) or done (a pipeline item), its criterion's recipe becomes a checklist of what to save;
+  each item links an upload or an existing exhibit, missing items show in This week, and matching mail and source
+  finds are proposed to the Inbox by rule.
+- **Evidence preflight** (ADR 0018): a run of rule checks over exhibits, letters, drafts and approved claims
+  (facts without a primary exhibit, conflicting identity facts, differing metrics, outdated or unsupported values
+  cited, undated exhibits, invited without completed proof, web captures without a primary copy), each with a
+  severity and links; it never blocks anything, and issues can be dismissed.
+- **Final merits** (ADR 0019): the counted evidence as a whole, by rules in the profile (`final_merits`): a
+  sustained-acclaim timeline and five themes (independent recognition, outside the employer, multiple years,
+  peer-relative context, external adoption), each strong, building or missing with the rule and the evidence
+  shown; OpenAlex field benchmarks only on request; the standard's sentences checked against the vault. No score.
+- **Review packet** (ADR 0020): "Build review packet", never "generate petition". Counted exhibits numbered per
+  criterion (`C4-01`), an index with page ranges, the claim -> exhibit -> page/quote matrix (pages found, never
+  guessed), an outline of one templated sentence per approved claim with the claim as a footnote (ids in the CSV
+  only), final merits and the open issues; .docx, review PDF, matrix CSV, PROV-JSON and an attorney ZIP;
+  byte-identical rebuilds.
 - Shipping profiles: o1a, eb1a in v1. Community targets: o1b, eb2-niw, uk-global-talent.
 
 ## 5a. Knowledge vault: verified O-1 / EB-1A guidance
@@ -304,10 +321,11 @@ file change. DASHBOARD.md is still generated for terminal and agent use.
 | Page | What it shows | Key actions |
 |---|---|---|
 | Overview | criteria scoreboard, profile progress (e.g. 2 banked / 3 needed), this week's human-only tasks, next 3 deadlines, metric sparklines | switch profile O-1A / EB-1A |
-| Inbox | candidates from imports, Gmail and scans, grouped by criterion | accept, edit, reject, snooze |
-| Evidence | exhibits per criterion with status have / need / gap, file previews, naming check | upload, re-map, mark gap |
+| Inbox | candidates from imports, Gmail and scans, grouped by criterion | accept, edit, reject, snooze; bulk review (groups, filters, selection, batch actions, one Undo per batch, keyboard) |
+| Evidence | exhibits per criterion with status have / need / gap, file previews, naming check, proof checklists | upload, re-map, mark gap, run preflight, build review packet |
+| Final merits | the counted evidence as a whole: timeline by year, rule-computed themes, field benchmarks, the standard rule-checked | set an exhibit's organization, fetch benchmarks |
 | Metrics | line charts per source over time, deltas since last snapshot | snapshot now, export CSV |
-| Pipeline | kanban of in-flight items (Idea, Applied, Waiting, Done) with staleness flags | add, move, set follow-up date |
+| Pipeline | kanban of in-flight items (Idea, Applied, Waiting, Done) with staleness flags | add, move (drag, arrow buttons or arrow keys), set follow-up date |
 | Letters | writer roster, relationship (employer / independent / co-author), criteria covered, status, draft | generate draft, mark sent / signed |
 | Opportunities | scan results scored against your current gaps | add to pipeline, dismiss, mute source |
 | Calendar | deadlines + recurring jobs, .ics subscribe link | add deadline |
@@ -529,7 +547,8 @@ against the fictional fixture workspace and your own.
       unconfirmed or suspicious (ADR 0016); results go to the Inbox (no separate Opportunities page)
 - [x] Letters page + letter drafts from approved claims (each sentence cites its claims), sent to the writer through
       outreach approval
-- [ ] EB-1A final-merits narrative layer; attorney export
+- [x] Final merits (ADR 0019) and the review packet with the attorney export (ADR 0020); proof recipes (ADR 0017)
+      and evidence preflight (ADR 0018)
 - [x] Memory page as a constellation (time slider, provenance trail, filters; ADR 0012)
 - [ ] Session context packs + MCP memory tools
 - [ ] Evaluation harness (5c): three systems, five scenarios, metrics, ablations; research-portfolio profile +

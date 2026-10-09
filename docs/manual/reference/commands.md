@@ -17,6 +17,10 @@ Run `areao1 --help`, or `areao1 <command> --help`, for the same information in y
 | `areao1 run dashboard` | Re-score the criteria and regenerate `DASHBOARD.md` |
 | `areao1 up` | Serve the dashboard on `127.0.0.1:7777`; a new workspace opens into onboarding |
 | `areao1 validate` | Check every workspace file against its schema and the evidence naming rules |
+| `areao1 preflight` | Evidence preflight: what a reviewer would notice, by severity (writes `data/preflight.json`) |
+| `areao1 packet` | Build review packet: numbered exhibits, the claim/exhibit/page matrix, an outline, as .docx, PDF and ZIP |
+| `areao1 repair-dates` | Date exhibits filed before dates were tracked, from the documents themselves (`--apply` to write) |
+| `areao1 qa` | The browser QA suite, from a checkout of the repo (contributors) |
 | `areao1 notify test` | Send a test notification to every channel routed for `test` |
 | `areao1 secret set <ref>` | Store a token, webhook URL or SMTP password in the OS keychain |
 | `areao1 secret delete <ref>` | Remove a secret from the keychain (and the workspace `.env` fallback) |
@@ -144,6 +148,47 @@ The knowledge vault holds official sources, fetched, snapshotted and searchable.
 | `areao1 vault status` | Each source's tier, freshness, last check and last change |
 
 Each takes `-w` / `--workspace`.
+
+## areao1 preflight
+
+```sh
+areao1 preflight [-w <dir>]
+```
+
+The same checks as **Run preflight** on Evidence, printed by severity and written to `data/preflight.json`. It
+never changes your evidence. See [Evidence preflight](../how-it-works/preflight.md).
+
+## areao1 packet
+
+```sh
+areao1 packet [-w <dir>]
+```
+
+Build review packet into `exports/packet-<date>-<hash>/` in your workspace: the review PDF, an editable .docx,
+`matrix.csv`, the preflight issues, provenance files and an attorney ZIP. Every page is labeled "Draft for
+attorney review". The same inputs give the same files. See [The review packet](../how-it-works/review-packet.md).
+
+## areao1 repair-dates
+
+```sh
+areao1 repair-dates [-w <dir>] [--apply]
+```
+
+For exhibits filed before Area O1 tracked document dates: sets each one's date from the document itself (an
+email's Date header, a PDF's creation date, its facts' event dates), or marks it "date unconfirmed" when the only
+date is the day it was filed. Without `--apply` it only shows what it would change.
+
+## areao1 qa
+
+```sh
+areao1 qa [--runs 3] [-k <expression>] [--out <dir>]
+```
+
+For contributors, from a checkout of the repo: the browser suite in `tests/e2e` (every page and control, the main
+flows, light and dark, laptop and phone, accessibility checks). It only uses throwaway fictional workspaces, fake
+Gmail and a scripted model. `--runs` repeats the suite to tell flaky failures from real ones. Findings,
+screenshots and the report go to `out/qa/` (gitignored) unless you pass `--out`. It needs
+`pip install -e '.[dev,e2e]'`, `playwright install chromium` and `npm --prefix web install`.
 
 ## areao1 extension
 

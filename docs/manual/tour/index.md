@@ -10,7 +10,8 @@ open, back up or hand to an agent.
 |---|---|
 | [Overview](overview.md) | Where you stand: criteria banked, what to do this week, next deadlines |
 | [Inbox](inbox.md) | Proposed evidence and trackers waiting for your decision |
-| [Evidence](evidence.md) | Accepted exhibits per criterion, and what each criterion still needs |
+| [Evidence](evidence.md) | Accepted exhibits per criterion, what each still needs, preflight and the review packet |
+| [Final merits](merits.md) | The evidence as a whole: by year, and by theme against rules you can read |
 | [Metrics](metrics.md) | Dated snapshots of stars, downloads, citations and more |
 | [Pipeline](pipeline.md) | In-flight work: ideas, applications, things you're waiting on |
 | [Letters](letters.md) | Recommendation letter writers and drafts |

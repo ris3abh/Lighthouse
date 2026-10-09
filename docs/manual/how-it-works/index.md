@@ -20,6 +20,9 @@ sources ──> observations ──> claims ──> Inbox candidates ──> you
 
 - **The rule check.** Anything the agent writes about the rules (fees, forms, criteria wording) is checked against official sources in the knowledge vault before it can enter your records. See [Rule check and the knowledge vault](rule-check.md).
 - **The capture extension.** Some official sites block automated reading. An optional browser extension saves those pages to your vault when you visit them. See [Capture extension and community vault](extension.md).
+- **Proof recipes.** When an activity is done, its criterion's recipe lists what to save. See [Proof recipes](proof-recipes.md).
+- **Preflight.** Checks your exhibits, letters and facts for gaps and inconsistencies, without blocking anything. See [Evidence preflight](preflight.md).
+- **The review packet.** Your case in order for your attorney, every fact matched to its page. See [The review packet](review-packet.md).
 - **The daily opportunity check.** If you turn it on, invitations in your Gmail become Inbox candidates, each marked verified, unconfirmed or suspicious. See [Daily opportunity check](opportunities.md).
 
 ## Where things live

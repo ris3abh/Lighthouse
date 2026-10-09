@@ -5,6 +5,58 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-08
+
+### Highlights
+- **Build review packet** (ADR 0020): the case organized for an attorney to review, never a petition. Counted
+  exhibits numbered per criterion (`C4-01`), an index with each exhibit's page range, every approved claim matched
+  to the page its quote is on (found, never guessed), an outline of one plain sentence per approved claim with a
+  footnote saying where it is, final merits and the open preflight issues. A review PDF with continuous page
+  numbers, an editable .docx, `matrix.csv`, provenance (plain and W3C PROV-JSON) and an attorney ZIP with the
+  original files. Every page is labeled "Draft for attorney review"; the same inputs give byte-identical files.
+- **Final merits** (ADR 0019): the counted evidence as a whole, by rules in the profile anyone can read: a
+  sustained-acclaim timeline by year, five themes (independent recognition, outside the employer, multiple years,
+  peer-relative context, external adoption) each strong, building or missing with the rule and the evidence shown,
+  OpenAlex field benchmarks only when you ask, and the standard's sentences checked against the vault. No score.
+- **Evidence preflight** (ADR 0018): Run preflight (or `areao1 preflight`) finds what a reviewer would notice:
+  documents citing outdated values, letters citing unapproved facts, conflicting identity facts, differing metrics,
+  undated exhibits, invitations without completed proof, web captures without a primary copy. It never blocks.
+- **Proof recipes** (ADR 0017): when an activity is done, its criterion's recipe (`profiles/recipes/*.yaml`)
+  becomes a checklist of what to save; missing items show in This week, and matching finds come to the Inbox.
+- **Bulk review in the Inbox**: groups by source, filters, selection (shift-click ranges), batch accept and reject,
+  one Undo per batch, keyboard keys. Rejecting 400 items takes seconds.
+- **Ground rules with guard tests** (SPEC §2a): no approval probability anywhere; every generated sentence cites
+  approved claims or is dropped; drafts are labeled for attorney review and never state a verdict; self-reported
+  material is never evidence.
+
+### Added
+- `areao1 packet`, `areao1 preflight`, `areao1 repair-dates` (date exhibits filed before dates were tracked, from
+  the documents themselves) and `areao1 qa` (the browser QA suite, for contributors).
+- Final merits page and `/api/merits`; exhibits gain an organization (read from the source address when empty,
+  settable on the page); `/api/merits/benchmarks`.
+- Review packet panel on Evidence, `/api/packets`; new dependency ReportLab (BSD).
+- Exhibits are dated by the document (an email's Date header, a PDF's creation date, the source), else asked and
+  marked "date unconfirmed".
+- A browser QA suite (Playwright, `tests/e2e`): a crawler of every route and control, flow tests, every page in
+  light and dark at laptop and phone widths with axe-core; blocking in CI. Its output goes to `out/qa/`.
+- Zenodo concept DOI badge and CITATION.cff identifiers.
+
+### Changed
+- Everything that costs money or sends something runs once per click, with a busy state and a server-side
+  idempotency key.
+- Onboarding lookups run with read-only tools.
+- Chat-history imports propose a note only when it names a person, a date or deadline, or a case item;
+  near-duplicates are merged; notes are low priority and collapsed.
+- Preflight shows values as people write them (52,000, not 52000).
+
+### Fixed
+- Accessibility: labeled deadline fields, screen-reader text for animated numbers, download buttons no longer
+  nested in links, and Pipeline cards that can be reached with Tab and moved with the arrow keys (the focus moves
+  with the card).
+- A deep link to a criterion stays on it while panels above it load.
+- An Inbox card is usable again after Save without accepting; letter writers who are already contacts are merged.
+- Friendly errors when an onboarding lookup can't reach a site.
+
 ## [0.2.0] - 2026-10-08
 
 ### Highlights
@@ -272,6 +324,7 @@ this release.
   by source and content (the snapshot file is still shared).
 - The chat panel crashed in browsers where `scrollIntoView()` returns a Promise (an effect returned it).
 
-[Unreleased]: https://github.com/ris3abh/areao1/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/ris3abh/areao1/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ris3abh/areao1/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ris3abh/areao1/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ris3abh/areao1/releases/tag/v0.1.0

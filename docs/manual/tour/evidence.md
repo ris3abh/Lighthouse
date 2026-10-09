@@ -29,4 +29,14 @@ Files live in `evidence/<criterion>/` in your workspace, named `<criterion>_<yyy
 listed in `data/exhibits.json`. Switching between O-1A and EB-1A re-scores the same exhibits against the other
 profile.
 
+## Before you hand it over
+
+- **Proof checklists.** When an exhibit reaches accepted, completed, granted or published, its criterion's
+  recipe lists what else to save. See [Proof recipes](../how-it-works/proof-recipes.md).
+- **Run preflight** looks for gaps and inconsistencies across your exhibits, letters and facts. It never blocks
+  anything. See [Evidence preflight](../how-it-works/preflight.md).
+- **Build review packet** puts it all in order for your attorney: numbered exhibits, every fact matched to its
+  page, an outline and the open issues. See [The review packet](../how-it-works/review-packet.md).
+- **[Final merits](merits.md)** shows the evidence as a whole, by year and by theme.
+
 See also: [Evidence that holds up](../best-practices/evidence.md).

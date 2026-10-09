@@ -1,6 +1,6 @@
 # Roadmap
 
-What's planned after v0.2.0.
+What's planned after v0.3.0.
 
 These are plans, not promises. Priorities can change, and some items may land differently or not at all. The working plan is in [SPEC.md](https://github.com/ris3abh/areao1/blob/main/SPEC.md) (section 11, build phases), progress is in [TODO.md](https://github.com/ris3abh/areao1/blob/main/TODO.md), and what changed in each release is in the [CHANGELOG](https://github.com/ris3abh/areao1/blob/main/CHANGELOG.md).
 
@@ -14,7 +14,6 @@ Product work comes first: Area O1 should be easy to install and useful out of th
 
 ## Later in the plan
 
-- **EB-1A final-merits narrative and an attorney export.** A layer for the second, final-merits step of an EB-1A case, and an export your attorney can work from.
 - **Session context packs and MCP memory tools.** Richer ways for an agent to load what's relevant to a task from your claim memory.
 - **An evaluation harness.** Measured results for the claim memory (three systems, five scenarios, metrics and ablations), with a research-portfolio profile and fixture workspace. Area O1 makes no performance claims until this exists.
 - **A Docker image** and a GitHub Actions template for running jobs.

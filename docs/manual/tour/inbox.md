@@ -34,4 +34,7 @@ Expand a candidate to see the exact claims behind it, each quoting its source wo
     the proof that it happened (a thank-you note, a certificate, the program). Accepting records your decision;
     it doesn't certify legal sufficiency.
 
+With a long Inbox, **review in bulk**: group candidates, filter them, select many and accept or reject them as one
+batch, with one Undo for the batch. See [Bulk review](../how-it-works/bulk-review.md).
+
 More: [Review](../how-it-works/review.md).

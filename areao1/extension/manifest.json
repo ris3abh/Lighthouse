@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Area O1 capture",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "When you visit an official page your Area O1 vault lists, saves it to Area O1 on this computer. Never browses on its own.",
   "permissions": ["storage", "scripting"],
   "host_permissions": [

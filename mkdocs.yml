@@ -74,6 +74,7 @@ nav:
       - Overview: tour/overview.md
       - Inbox: tour/inbox.md
       - Evidence: tour/evidence.md
+      - Final merits: tour/merits.md
       - Metrics: tour/metrics.md
       - Pipeline: tour/pipeline.md
       - Letters: tour/letters.md
@@ -104,6 +105,10 @@ nav:
       - Claims and provenance: how-it-works/claims.md
       - Invited vs completed: how-it-works/invited-vs-completed.md
       - Review: how-it-works/review.md
+      - Bulk review: how-it-works/bulk-review.md
+      - Proof recipes: how-it-works/proof-recipes.md
+      - Evidence preflight: how-it-works/preflight.md
+      - The review packet: how-it-works/review-packet.md
       - Rule check and the knowledge vault: how-it-works/rule-check.md
       - Capture extension and community vault: how-it-works/extension.md
       - Daily opportunity check: how-it-works/opportunities.md

@@ -285,7 +285,8 @@ never enters the packet as evidence.
         Maya's and Ravi's packets rebuilt (scripts/demo_cases.py)
   - [x] B-2 Pipeline cards focusable, moved with the arrow keys and buttons (focus follows); crawler checks it
   - [x] B-3 checkpoint and QA output in a gitignored out/ (out/qa, out/packets), not brag-output/
-- [ ] 5. Docs pages per feature, SPEC.md, CHANGELOG; v0.3.0 prepared (not published)
+- [x] 5. Docs pages per feature (proof recipes, preflight, final merits, review packet, bulk review), SPEC.md,
+      CHANGELOG; v0.3.0 prepared (version, CITATION.cff, docs/releases-v0.3.0.md; not tagged or published)
 
 ## Phase 0 checklist
 
