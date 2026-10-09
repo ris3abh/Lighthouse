@@ -50,7 +50,9 @@ old value.
 ### The outline
 
 The outline is a starting point for your attorney to rewrite. It is drafted only from approved, current facts,
-one sentence each, from a template for the exhibit's evidence type:
+one sentence each, from a template for the exhibit's evidence type. It goes criterion by criterion, then exhibit
+by exhibit (each under its number and title): the exhibit's main fact first, then its figures, then the supporting
+details.
 
 > Maya received the Northwind Engineering Excellence Award in May 2024 (Exhibit C1-01).¹
 >

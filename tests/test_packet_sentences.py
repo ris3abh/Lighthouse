@@ -280,6 +280,15 @@ def test_mayas_packet_reads_naturally_with_footnotes(monkeypatch, tmp_path):
     assert "Maya received the Northwind Engineering Excellence Award in May 2024 (Exhibit C1-01)." in text
     assert "FastQueue had 4,800 GitHub stars in September 2025 (Exhibit C5-01)." in text
     assert "Exhibit C1-01 states: “The jury selected 3 recipients from 412 nominees.”" in text
+    # grouped by exhibit, main fact first, figures, then supporting details (read in the Outline section)
+    text = text[text.index("Drafted from approved claims only") :]
+    head, main, detail = (text.index("Exhibit C1-01: Northwind Engineering Excellence Award"),
+                          text.index("Maya received the Northwind"), text.index("Exhibit C1-01 states: “The jury"))  # fmt: skip
+    assert head < main < detail
+    assert text.index("Acme Robotics runs FastQueue") < text.index("FastQueue had 4,800 GitHub stars")
+    c4 = [text.index(t) for t in ("Exhibit C4-01:", "Maya served as a judge for", "Exhibit C4-01 states:",
+                                  "Exhibit C4-02:", "Maya served on the program committee", "Exhibit C4-02 states:")]  # fmt: skip
+    assert c4 == sorted(c4), c4
     with zipfile.ZipFile(out / "packet.docx") as z:
         doc, notes = z.read("word/document.xml").decode(), z.read("word/footnotes.xml").decode()
     assert doc.count("<w:footnoteReference ") == m["claims"] == notes.count("<w:footnoteRef/>")

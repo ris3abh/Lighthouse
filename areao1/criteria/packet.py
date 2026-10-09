@@ -163,33 +163,42 @@ def _value(v: Any) -> str:
 
 
 def outline(items: list[Item], rows: list[Row], person: str = "") -> tuple[str, list[str], list[str]]:
-    """An outline from approved claims only: one sentence per claim, from its evidence type's template, ending with
-    ``[claim id]`` (the renderers turn it into a footnote). Returns (text, cited, dropped)."""
+    """An outline from approved claims only, by criterion, then by exhibit in number order: each exhibit's main fact
+    first, then its figures, then supporting details. One sentence per claim, from its evidence type's template,
+    ending with ``[claim id]`` (the renderers turn it into a footnote). Returns (text, cited, dropped)."""
     lines = [f"# Outline ({LABEL.lower()})", ""]
-    by_crit: dict[str, list[Row]] = {}
+    by_crit: dict[str, dict[str, list[Row]]] = {}
     for r in rows:
-        by_crit.setdefault(r.item.criterion, []).append(r)
+        by_crit.setdefault(r.item.criterion, {}).setdefault(r.item.number, []).append(r)
     cited, dropped = [], []
-    for crit, mine in by_crit.items():
+    for crit, by_item in by_crit.items():
         lines.append(f"## {crit}")
-        for r in mine:
-            text = sentences.sentence(r.fact(person))
-            if is_verdict(text):
-                dropped.append(text)  # never an eligibility verdict, even quoted
-                continue
-            lines.append(f"{text} [{r.claim.id}]")
-            cited.append(r.claim.id)
+        for number, mine in by_item.items():
+            facts = [(r, r.fact(person)) for r in mine]
+            ordered = sorted(enumerate(facts), key=lambda x: (sentences.rank(x[1][1]), x[0]))
+            kept = []
+            for _, (r, f) in ordered:
+                text = sentences.sentence(f)
+                if is_verdict(text):
+                    dropped.append(text)  # never an eligibility verdict, even quoted
+                    continue
+                kept.append(f"{text} [{r.claim.id}]")
+                cited.append(r.claim.id)
+            if kept:
+                lines += [f"### Exhibit {number}: {mine[0].item.exhibit.title}", *kept]
         lines.append("")
     return "\n".join(lines).strip(), cited, dropped
 
 
 def footnoted(outline_text: str, rows: list[Row]) -> list[tuple[str, str, list[str]]]:
-    """The outline as (kind, text, footnotes) lines: kind is "h2" or "p"; each sentence's claim ids become
+    """The outline as (kind, text, footnotes) lines: kind is "h2", "h3" or "p"; each sentence's claim ids become
     footnotes saying where the quote is. Numbering runs through the outline."""
     by_id = {r.claim.id: r for r in rows}
     out: list[tuple[str, str, list[str]]] = []
     for line in outline_text.splitlines():
-        if line.startswith("## "):
+        if line.startswith("### "):
+            out.append(("h3", line[4:], []))
+        elif line.startswith("## "):
             out.append(("h2", line[3:], []))
         elif line.strip() and not line.startswith("# "):
             ids = [i.strip() for m in CITE.finditer(line) for i in m.group(1).split(",")]
@@ -344,6 +353,9 @@ def _styles() -> Any:
         "label": ParagraphStyle(
             "label", parent=ss["BodyText"], fontName="Helvetica-Bold", fontSize=11, leading=14
         ),
+        "h3": ParagraphStyle(
+            "h3", parent=ss["BodyText"], fontName="Helvetica-Bold", fontSize=9.5, leading=13, spaceBefore=6
+        ),
     }
 
 
@@ -428,9 +440,9 @@ def _front(p: Packet, toc: dict[str, int], offset: int) -> tuple[bytes, dict[str
 
     seen: list[str] = []
     for kind, text, foot in footnoted(p.outline, p.rows):
-        if kind == "h2":
+        if kind in ("h2", "h3"):
             flush()
-            flow.append(Paragraph(escape(text), st["h2"]))
+            flow.append(Paragraph(escape(text), st[kind]))
             continue
         marks = []
         for note in foot:
@@ -596,8 +608,8 @@ def docx(p: Packet) -> bytes:
     body += [_p("Outline", "Heading1"), _p(LABEL, "Label")]
     notes: list[str] = []
     for kind, text, foot in footnoted(p.outline, p.rows):
-        if kind == "h2":
-            body.append(_p(text, "Heading2"))
+        if kind in ("h2", "h3"):
+            body.append(_p(text, "Heading2" if kind == "h2" else "Heading3"))
             continue
         refs = ""
         for note in foot:
@@ -659,6 +671,7 @@ def docx(p: Packet) -> bytes:
               '</w:rPr></w:rPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal">'
               '<w:name w:val="Normal"/><w:qFormat/></w:style>' + style("Title", "Title", 44, True)
               + style("Heading1", "heading 1", 30, True) + style("Heading2", "heading 2", 24, True)
+              + style("Heading3", "heading 3", 21, True)
               + style("Label", "Label", 22, True)
               + '<w:style w:type="paragraph" w:styleId="FootnoteText"><w:name w:val="footnote text"/>'
               '<w:basedOn w:val="Normal"/><w:rPr><w:sz w:val="16"/></w:rPr></w:style>'

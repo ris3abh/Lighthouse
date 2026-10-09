@@ -215,6 +215,12 @@ def _named(f: Fact) -> str | None:
     return None
 
 
+def rank(f: Fact) -> int:
+    """Where a fact goes among its exhibit's: 0 the exhibit's main fact (a template for what the exhibit is about),
+    1 a figure (a metric), 2 a supporting detail (quoted)."""
+    return 0 if _named(f) else 1 if _metric(f) else 2
+
+
 def fact_text(f: Fact) -> str | None:
     """The sentence's fact, without the exhibit reference; None when only a quote will do."""
     return _named(f) or _metric(f)
