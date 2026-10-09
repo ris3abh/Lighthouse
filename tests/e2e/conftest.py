@@ -4,7 +4,7 @@ scripted model, in-memory keychain, no network). Runs only with AREAO1_E2E=1 (CI
 Every test records findings through ``qa``; ``errors`` (uncaught JS errors, console errors, 5xx responses, broken
 links, serious accessibility violations, horizontal overflow) fail the test, ``warnings`` (dead controls, controls
 the keyboard can't reach, 4xx responses, pages slower than 1s) are reported only. The run's findings, coverage and
-screenshots go to $AREAO1_QA_OUT (default tests/e2e/.out)."""
+screenshots go to $AREAO1_QA_OUT (default out/qa, gitignored)."""
 
 from __future__ import annotations
 

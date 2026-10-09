@@ -31,5 +31,6 @@ film-maya/
 # local brag-document output
 brag-output/
 
-# browser QA suite output (findings, screenshots, reports)
+# local output: the browser QA suite (out/qa), checkpoints and demo packets (out/packets)
+out/
 tests/e2e/.out/

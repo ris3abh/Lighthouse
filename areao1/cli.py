@@ -232,7 +232,7 @@ def qa(
         ) from exc
     if not (root / "web" / "node_modules" / "axe-core").is_dir():
         raise _fail("install the web dependencies first: npm --prefix web install")
-    base = out or root / "tests" / "e2e" / ".out"
+    base = out or root / "out" / "qa"
     dirs = []
     for n in range(1, runs + 1):
         run_dir = base / f"run-{n}"

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = Path(os.environ.get("AREAO1_QA_OUT", ROOT / "tests" / "e2e" / ".out"))
+OUT = Path(os.environ.get("AREAO1_QA_OUT", ROOT / "out" / "qa"))
 AXE = ROOT / "web" / "node_modules" / "axe-core" / "axe.min.js"
 CHROME = Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 SIZES = {"laptop": {"width": 1440, "height": 900}, "phone": {"width": 390, "height": 844}}
