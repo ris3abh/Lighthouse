@@ -87,10 +87,17 @@ Any create, update or move a page or the agent makes goes through `areao1/servic
 ## The filming workspace
 
 The vault's test fixtures (the Policy Manual chapters and Kazarian) are real copies of the sources, recorded in
-`tests/fixtures/vault/SOURCES.json`. `python scripts/check_vault_fixtures.py` fetches the live sources and checks the
-fixtures and every quoted passage of the standard still match them. It uses the network, so CI never runs it on
-push; a weekly workflow (`.github/workflows/vault-fixtures.yml`) does, and opens an issue labeled `vault-wording`
-when a source's wording changes.
+`tests/fixtures/vault/SOURCES.json`. Two checks keep them, and the quoted passages of the standard, honest:
+
+- **Weekly in CI** (`.github/workflows/vault-fixtures.yml`, never on push): `python scripts/check_vault_fixtures.py`
+  reads Kazarian live. uscis.gov blocks GitHub's runners, so the Policy Manual chapters are compared through the
+  community library's newest hash-verified snapshot, and the report says "checked via community snapshot, captured
+  <date>". Only a real wording mismatch turns the run red and opens an issue labeled `vault-wording`. A source with
+  neither a live copy nor a snapshot newer than 30 days is a "stale" warning.
+- **Daily on your machine**: Area O1's `vault-watch` job reads the live pages (they load for you) and compares them
+  with the quoted passages and the library's newest copy. With `vault.report_wording: true` it opens the issue with
+  `gh`; with `vault.share_captures: true` it pushes a fresh snapshot to the library when the wording changed or the
+  library's copy is over 30 days old, so the CI check stays current.
 
 To record a demo, `scripts/film_demo.py` builds a fictional, offline workspace (Gmail, the AI and the keychain are all in-memory fakes) and serves it:
 

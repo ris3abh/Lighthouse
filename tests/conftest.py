@@ -108,6 +108,22 @@ def no_real_dns(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def no_real_curl_or_gh(monkeypatch):
+    """vault-watch's check of the standard shells out to curl (live pages) and gh (issues, pushes): never in tests.
+    Tests that exercise it pass their own get= and run=."""
+    from areao1.vault import standard
+
+    def refuse_fetch(url):
+        raise standard.FetchError("no network in tests")
+
+    def refuse_gh(*a, **k):
+        raise AssertionError("a test tried to run the real gh")
+
+    monkeypatch.setattr(standard, "fetch", refuse_fetch)
+    monkeypatch.setattr(standard, "gh", refuse_gh)
+
+
+@pytest.fixture(autouse=True)
 def no_undo_wait(monkeypatch):
     """Approve & send sends at once in tests; test_undo_send sets the window itself."""
     from areao1.google import outreach

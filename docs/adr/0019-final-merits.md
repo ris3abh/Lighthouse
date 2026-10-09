@@ -47,3 +47,19 @@ of guess Area O1 should not make.
 - Employer is read from approved `employer` / `role_title` claims and the person's profile; exhibits name their
   organization in a field the person can correct, so "outside the employer" is checkable.
 - OpenAlex calls are the only new network use; they're user-initiated and cached as claims.
+
+## Amendment (2026-10-09): watching the quoted wording
+
+The standard is quoted word for word, so a change in the source's wording has to be noticed.
+`areao1/vault/standard.py` compares a source's current text with the quoted passages and with the community
+library's newest hash-verified snapshot, sentence by sentence.
+
+- **Daily, on the person's machine**, inside `vault-watch` (no separate job): the quoted sources are read live,
+  because uscis.gov serves a browser-like client there. A change opens a GitHub issue with `gh` only when
+  `vault.report_wording` is on (default off, so no install files issues on anyone's behalf). A fresh snapshot is
+  pushed to the community library only when `vault.share_captures` is on and the person can push to it, when the
+  wording changed or the library's newest copy is over 30 days old. Nothing is concluded from a page that didn't
+  load.
+- **Weekly, in CI** (`scripts/check_vault_fixtures.py`): Kazarian is read live; uscis.gov blocks GitHub's runners, so
+  the Policy Manual chapters are compared through the community snapshot, reported with its capture date. Only a
+  real mismatch fails; a source with neither a live copy nor a snapshot newer than 30 days is "stale", a warning.

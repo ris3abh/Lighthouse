@@ -562,8 +562,13 @@ class VaultConfig(_Model):
                             "community library (ADR 0011 §3).")  # fmt: skip
     community_url: str = Field("https://raw.githubusercontent.com/ris3abh/areao1-community-vault/main",
                                description="Where the community library's manifest.json lives.")  # fmt: skip
-    share_captures: bool = Field(False, description="Prepare captures of public government pages for the community "
-                                 "library (written to a local outbox; nothing is uploaded).")  # fmt: skip
+    share_captures: bool = Field(False, description="Share captures of public government pages with the community "
+                                 "library: written to a local outbox, and pushed by vault-watch's check of the "
+                                 "standard (with gh, when you can push to the library) when a source's wording "
+                                 "changed or the library's copy is over 30 days old.")  # fmt: skip
+    report_wording: bool = Field(False, description="When vault-watch finds that a source Area O1 quotes changed its "
+                                 "wording, open a GitHub issue in report_repo with gh (your GitHub login).")  # fmt: skip
+    report_repo: str = Field("ris3abh/areao1", description="Where wording-change issues go (owner/repo).")
 
 
 class OutreachConfig(_Model):

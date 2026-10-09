@@ -1,9 +1,12 @@
 name: Vault sources (weekly)
 
-# Re-checks the vault test fixtures and every quoted passage of the standard against the live sources (the USCIS
-# Policy Manual chapters and the Ninth Circuit's Kazarian opinion). It uses the network, so it never runs on push or
-# in pull requests; only weekly and by hand. If a source's wording changed it opens an issue (or comments on the
-# one already open). If a source can't be reached, the run fails and nothing is concluded about its wording.
+# Re-checks the vault test fixtures and every quoted passage of the standard against their sources. It uses the
+# network, so it never runs on push or in pull requests; only weekly and by hand. Kazarian is read live. uscis.gov
+# blocks GitHub's runners, so the Policy Manual chapters are compared through the community library's newest
+# hash-verified snapshot ("checked via community snapshot, captured <date>"); Area O1's vault-watch on the owner's
+# machine reads them live and keeps those snapshots fresh. Only a real wording mismatch turns this red (and opens an
+# issue, or comments on the open one); a source with neither a live copy nor a snapshot newer than 30 days is a
+# "stale" warning.
 
 on:
   schedule:
@@ -31,7 +34,7 @@ jobs:
           cache: pip
       - name: Install
         run: python -m pip install -e .
-      - name: Check against the live sources
+      - name: Check against the sources (live, else the community snapshot)
         id: check
         run: |
           set +e
@@ -39,6 +42,9 @@ jobs:
           code=$?
           echo "code=$code" >> "$GITHUB_OUTPUT"
           cat report.md >> "$GITHUB_STEP_SUMMARY"
+          if grep -q "stale" report.md; then
+            grep "stale" report.md | sed 's/^- //' | while read -r line; do echo "::warning title=Stale source::$line"; done
+          fi
           exit 0
       - name: Open or update the issue (wording changed)
         if: steps.check.outputs.code == '1'
@@ -62,9 +68,9 @@ jobs:
           else
             gh issue create --title "Vault source wording changed ($(date -u +%Y-%m-%d))" --label vault-wording --body-file body.md
           fi
-          exit 1  # the run shows red too
-      - name: Fail when a source couldn't be reached
-        if: steps.check.outputs.code == '2'
+          exit 1  # a real mismatch: the run shows red
+      - name: Fail when the check itself couldn't run
+        if: steps.check.outputs.code != '0' && steps.check.outputs.code != '1'
         run: |
-          echo "::error::A source couldn't be fetched (blocked or down); nothing was concluded about its wording."
+          echo "::error::The check couldn't run (exit ${{ steps.check.outputs.code }}); see the log. No issue was opened."
           exit 1

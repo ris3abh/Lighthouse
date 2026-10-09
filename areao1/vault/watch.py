@@ -90,4 +90,9 @@ def run_watch(ws: Workspace, scheduled: bool = False, client: httpx.AsyncClient 
     for sent in (notify_changes(ws, vault, results), remind_manual(ws, vault)):
         if sent:
             lines.append(sent)
+    from areao1.vault import standard
+
+    lines += standard.watch(
+        ws, vault
+    )  # do the quoted sources still say it? (read live, here where they load)
     return lines

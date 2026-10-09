@@ -63,6 +63,10 @@ All notable changes to this project are documented here. The format follows
   Policy Manual and the Ninth Circuit's Kazarian opinion); "verified" means an exact substring of the vault's copy.
 - Preflight: "outdated" only when a document presents an older value as current or cites it undated; dated values
   of a metric that changes over time no longer "differ".
+- The quoted sources are watched: vault-watch reads them live on your machine and, when you opt in, opens a GitHub
+  issue on a wording change (`vault.report_wording`) and pushes a fresh snapshot to the community library
+  (`vault.share_captures`); a weekly CI check compares the fixtures against Kazarian live and the Policy Manual
+  through the community snapshot (uscis.gov blocks CI), red only on a real mismatch, "stale" as a warning.
 
 
 ### Fixed

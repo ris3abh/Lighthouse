@@ -483,9 +483,21 @@
           "title": "Enabled",
           "type": "boolean"
         },
+        "report_repo": {
+          "default": "ris3abh/areao1",
+          "description": "Where wording-change issues go (owner/repo).",
+          "title": "Report Repo",
+          "type": "string"
+        },
+        "report_wording": {
+          "default": false,
+          "description": "When vault-watch finds that a source Area O1 quotes changed its wording, open a GitHub issue in report_repo with gh (your GitHub login).",
+          "title": "Report Wording",
+          "type": "boolean"
+        },
         "share_captures": {
           "default": false,
-          "description": "Prepare captures of public government pages for the community library (written to a local outbox; nothing is uploaded).",
+          "description": "Share captures of public government pages with the community library: written to a local outbox, and pushed by vault-watch's check of the standard (with gh, when you can push to the library) when a source's wording changed or the library's copy is over 30 days old.",
           "title": "Share Captures",
           "type": "boolean"
         }

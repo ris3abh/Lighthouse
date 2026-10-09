@@ -148,7 +148,9 @@ The missions and `daily-opportunities` do nothing until they're turned on (`agen
 | `vault.enabled` | `true` | Fetch the public official sources listed in the vault manifest |
 | `vault.community` | `true` | Pull hash-verified snapshots of blocked official pages from the community library |
 | `vault.community_url` | `https://raw.githubusercontent.com/ris3abh/areao1-community-vault/main` | Where the community library's `manifest.json` lives |
-| `vault.share_captures` | `false` | Prepare captures of public government pages for the community library (written to a local outbox; nothing is uploaded) |
+| `vault.share_captures` | `false` | Share captures of public government pages with the community library: written to a local outbox, and pushed (with `gh`, when you can push to the library) by vault-watch's check of the standard when a quoted source's wording changed or the library's copy is over 30 days old |
+| `vault.report_wording` | `false` | When vault-watch finds that a source Area O1 quotes changed its wording, open a GitHub issue in `vault.report_repo` with `gh` (your GitHub login) |
+| `vault.report_repo` | `ris3abh/areao1` | Where those issues go (`owner/repo`) |
 
 ## mail
 
